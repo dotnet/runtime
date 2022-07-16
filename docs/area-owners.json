@@ -1,0 +1,1351 @@
+{
+  "architectures": [
+    {
+      "lead": "lewing",
+      "owners": [
+        "BrzVlad",
+        "lewing"
+      ],
+      "label": "arch-wasm"
+    }
+  ],
+  "areas": [
+    {
+      "lead": "agocke",
+      "owners": [
+        "agocke",
+        "vitek-karas",
+        "vsadov"
+      ],
+      "label": "area-AssemblyLoader-coreclr"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "lambdageek"
+      ],
+      "label": "area-AssemblyLoader-mono"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "akoeplinger"
+      ],
+      "label": "area-Build-mono"
+    },
+    {
+      "lead": "dotnet/dnr-codeflow",
+      "owners": [
+        "danmoseley",
+        "jeffschwMSFT",
+        "marek-safar"
+      ],
+      "label": "area-Codeflow"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "area-Codegen-AOT-mono"
+    },
+    {
+      "lead": "JulieLeeMSFT",
+      "owners": [
+        "amanasifkhalid",
+        "AndyAyersMS",
+        "BruceForstall",
+        "EgorBo",
+        "erozenfeld",
+        "jakobbotsch",
+        "JulieLeeMSFT",
+        "kunalspathak",
+        "markples",
+        "SingleAccretion",
+        "TIHan"
+      ],
+      "label": "area-CodeGen-coreclr"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "BrzVlad"
+      ],
+      "label": "area-Codegen-Interpreter-mono"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "area-Codegen-JIT-mono"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "area-Codegen-LLVM-mono"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "area-Codegen-meta-mono"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "area-CoreLib-mono"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "cshung",
+        "davidwrighton",
+        "ivdiazsa",
+        "jakobbotsch",
+        "janvorli",
+        "jkotas",
+        "mangod9",
+        "MichalStrehovsky",
+        "trylek"
+      ],
+      "label": "area-CrossGen/NGEN-coreclr"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "cshung",
+        "davidwrighton",
+        "ivdiazsa",
+        "jakobbotsch",
+        "janvorli",
+        "jkotas",
+        "mangod9",
+        "MichalStrehovsky",
+        "trylek"
+      ],
+      "label": "area-crossgen2-coreclr"
+    },
+    {
+      "lead": "lewing",
+      "owners": [
+        "radical",
+        "thaystg"
+      ],
+      "label": "area-Debugger-mono"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-DependencyModel"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "tommcdon"
+      ],
+      "label": "area-Diagnostics-coreclr"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "lateralusX",
+        "mdh1418"
+      ],
+      "label": "area-Diagnostics-mono"
+    },
+    {
+      "lead": "marek-safar",
+      "owners": [
+        "lambdageek"
+      ],
+      "label": "area-EnC-mono"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "janvorli"
+      ],
+      "label": "area-ExceptionHandling-coreclr"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-Caching"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-Configuration"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-DependencyInjection"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee",
+        "maryamariyan"
+      ],
+      "label": "area-Extensions-FileSystem"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-Hosting"
+    },
+    {
+      "lead": "karelz",
+      "owners": [
+        "antonfirsov",
+        "CarnaViire",
+        "greenEkatherine",
+        "halter73",
+        "karelz",
+        "ManickaP",
+        "MihaZupan",
+        "rzikm",
+        "wfurt"
+      ],
+      "label": "area-Extensions-HttpClientFactory"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-Logging"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-Options"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-Extensions-Primitives"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "Maoni0"
+      ],
+      "label": "area-GC-coreclr"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "BrzVlad"
+      ],
+      "label": "area-GC-mono"
+    },
+    {
+      "lead": "agocke",
+      "owners": [
+        "",
+        "jeffschwMSFT",
+        "vitek-karas",
+        "vsadov"
+      ],
+      "label": "area-Host"
+    },
+    {
+      "lead": "agocke",
+      "owners": [
+        "vitek-karas"
+      ],
+      "label": "area-HostModel"
+    },
+    {
+      "lead": "JulieLeeMSFT",
+      "owners": [
+        "amanasifkhalid",
+        "AndyAyersMS",
+        "BruceForstall",
+        "EgorBo",
+        "erozenfeld",
+        "jakobbotsch",
+        "JulieLeeMSFT",
+        "kunalspathak",
+        "markples",
+        "SingleAccretion",
+        "TIHan"
+      ],
+      "label": "area-ILTools-coreclr"
+    },
+    {
+      "lead": "JulieLeeMSFT",
+      "owners": [
+        "amanasifkhalid",
+        "AndyAyersMS",
+        "BruceForstall",
+        "EgorBo",
+        "erozenfeld",
+        "jakobbotsch",
+        "JulieLeeMSFT",
+        "kunalspathak",
+        "markples",
+        "SingleAccretion",
+        "TIHan"
+      ],
+      "label": "area-ILVerification"
+    },
+    {
+      "lead": "agocke",
+      "owners": [
+        "jeffschwMSFT",
+        "MichaelSimons"
+      ],
+      "label": "area-Infrastructure"
+    },
+    {
+      "lead": "agocke",
+      "owners": [
+        "jeffschwMSFT",
+        "trylek"
+      ],
+      "label": "area-Infrastructure-coreclr"
+    },
+    {
+      "lead": "MichaelSimons",
+      "owners": [
+        "NikolaMilosavljevic"
+      ],
+      "label": "area-Infrastructure-installer"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "bartonjs",
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-Infrastructure-libraries"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "directhex"
+      ],
+      "label": "area-Infrastructure-mono"
+    },
+    {
+      "lead": "jeffschwMSFT",
+      "owners": [
+        "AaronRobinsonMSFT",
+        "jeffschwMSFT"
+      ],
+      "label": "area-Interop-coreclr"
+    },
+    {
+      "lead": "marek-safar",
+      "owners": [
+        "lambdageek"
+      ],
+      "label": "area-Interop-mono"
+    },
+    {
+      "lead": "danmoseley",
+      "owners": [
+        "danmoseley",
+        "ericstj",
+        "jeffhandley"
+      ],
+      "label": "area-Meta"
+    },
+    {
+      "lead": "jaredpar",
+      "owners": [
+        "333fred",
+        "cston"
+      ],
+      "label": "area-Microsoft.CSharp"
+    },
+    {
+      "lead": "ericstj",
+      "owners": null,
+      "label": "area-Microsoft.Extensions"
+    },
+    {
+      "lead": "jaredpar",
+      "owners": [
+        "333fred",
+        "cston"
+      ],
+      "label": "area-Microsoft.VisualBasic"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-Microsoft.Win32"
+    },
+    {
+      "lead": "agocke",
+      "owners": [
+        "jkotas",
+        "MichalStrehovsky"
+      ],
+      "label": "area-NativeAOT-coreclr"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "janvorli"
+      ],
+      "label": "area-PAL-coreclr"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "SamMonoRT"
+      ],
+      "label": "area-Performance-mono"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "trylek"
+      ],
+      "label": "area-R2RDump-coreclr"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "trylek"
+      ],
+      "label": "area-ReadyToRun-coreclr"
+    },
+    {
+      "lead": "HongGit",
+      "owners": [
+        "HongGit",
+        "StephenMolloy"
+      ],
+      "label": "area-Serialization"
+    },
+    {
+      "lead": "MichaelSimons",
+      "owners": [
+        "NikolaMilosavljevic"
+      ],
+      "label": "area-Setup"
+    },
+    {
+      "lead": "agocke",
+      "owners": [
+        "vitek-karas",
+        "vsadov"
+      ],
+      "label": "area-Single-File"
+    },
+    {
+      "lead": "MichaelSimons",
+      "owners": [
+        "leecow",
+        "MichaelSimons",
+        "NikolaMilosavljevic"
+      ],
+      "label": "area-Snap"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "dakersnar",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley",
+        "michaelgsharp",
+        "tannergooding"
+      ],
+      "label": "area-System.Buffers"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.CodeDom"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "eiriktsarpalis",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley",
+        "krwq",
+        "layomia"
+      ],
+      "label": "area-System.Collections"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-System.ComponentModel"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-System.ComponentModel.Composition"
+    },
+    {
+      "lead": "ajcvickers",
+      "owners": [
+        "ajcvickers",
+        "lajones"
+      ],
+      "label": "area-System.ComponentModel.DataAnnotations"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "eerhardt",
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-System.Composition"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.Configuration"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee"
+      ],
+      "label": "area-System.Console"
+    },
+    {
+      "lead": "ajcvickers",
+      "owners": [
+        "ajcvickers",
+        "david-engel",
+        "davoudeshtehari"
+      ],
+      "label": "area-System.Data"
+    },
+    {
+      "lead": "ajcvickers",
+      "owners": [
+        "ajcvickers"
+      ],
+      "label": "area-System.Data.Odbc"
+    },
+    {
+      "lead": "ajcvickers",
+      "owners": [
+        "ajcvickers"
+      ],
+      "label": "area-System.Data.OleDB"
+    },
+    {
+      "lead": "David-Engel",
+      "owners": [
+        "david-engel",
+        "davoudeshtehari",
+        "jrahnama"
+      ],
+      "label": "area-System.Data.SqlClient"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "tommcdon"
+      ],
+      "label": "area-System.Diagnostics"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "tommcdon"
+      ],
+      "label": "area-System.Diagnostics-coreclr"
+    },
+    {
+      "lead": "lewing",
+      "owners": [
+        "radical",
+        "thaystg"
+      ],
+      "label": "area-System.Diagnostics-mono"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "eerhardt",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-System.Diagnostics.Activity"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-System.Diagnostics.EventLog"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "noahfalk"
+      ],
+      "label": "area-System.Diagnostics.Metric"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-System.Diagnostics.PerformanceCounter"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee"
+      ],
+      "label": "area-System.Diagnostics.Process"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "noahfalk",
+        "tarekgh",
+        "tommcdon"
+      ],
+      "label": "area-System.Diagnostics.Tracing"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-System.Diagnostics.TraceSource"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.DirectoryServices"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-System.Drawing"
+    },
+    {
+      "lead": "jaredpar",
+      "owners": [
+        "333fred",
+        "cston"
+      ],
+      "label": "area-System.Dynamic.Runtime"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "bartonjs",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley"
+      ],
+      "label": "area-System.Formats.Asn1"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "bartonjs",
+        "eiriktsarpalis",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley"
+      ],
+      "label": "area-System.Formats.Cbor"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "ericstj",
+        "jeffhandley",
+        "maryamariyan",
+        "tarekgh"
+      ],
+      "label": "area-System.Globalization"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee"
+      ],
+      "label": "area-System.IO"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee"
+      ],
+      "label": "area-System.IO.Compression"
+    },
+    {
+      "lead": "kevinpi",
+      "owners": [
+        "davidfowl",
+        "halter73",
+        "jkotalik"
+      ],
+      "label": "area-System.IO.Pipelines"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "eiriktsarpalis",
+        "ericstj",
+        "jeffhandley",
+        "krwq",
+        "layomia"
+      ],
+      "label": "area-System.Linq"
+    },
+    {
+      "lead": "jaredpar",
+      "owners": [
+        "333fred",
+        "cston"
+      ],
+      "label": "area-System.Linq.Expressions"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "ericstj",
+        "jeffhandley",
+        "Jozkee",
+        "tarekgh"
+      ],
+      "label": "area-System.Linq.Parallel"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-System.Management"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "adamsitnik",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley",
+        "Jozkee"
+      ],
+      "label": "area-System.Memory"
+    },
+    {
+      "lead": "karelz",
+      "owners": [
+        "antonfirsov",
+        "CarnaViire",
+        "greenEkatherine",
+        "halter73",
+        "karelz",
+        "ManickaP",
+        "MihaZupan",
+        "rzikm",
+        "wfurt"
+      ],
+      "label": "area-System.Net"
+    },
+    {
+      "lead": "karelz",
+      "owners": [
+        "antonfirsov",
+        "CarnaViire",
+        "greenEkatherine",
+        "halter73",
+        "karelz",
+        "ManickaP",
+        "MihaZupan",
+        "rzikm",
+        "wfurt"
+      ],
+      "label": "area-System.Net.Http"
+    },
+    {
+      "lead": "karelz",
+      "owners": [
+        "antonfirsov",
+        "CarnaViire",
+        "greenEkatherine",
+        "halter73",
+        "karelz",
+        "ManickaP",
+        "MihaZupan",
+        "rzikm",
+        "wfurt"
+      ],
+      "label": "area-System.Net.Quic"
+    },
+    {
+      "lead": "karelz",
+      "owners": [
+        "antonfirsov",
+        "CarnaViire",
+        "greenEkatherine",
+        "halter73",
+        "karelz",
+        "ManickaP",
+        "MihaZupan",
+        "rzikm",
+        "wfurt"
+      ],
+      "label": "area-System.Net.Security"
+    },
+    {
+      "lead": "karelz",
+      "owners": [
+        "antonfirsov",
+        "CarnaViire",
+        "greenEkatherine",
+        "halter73",
+        "karelz",
+        "ManickaP",
+        "MihaZupan",
+        "rzikm",
+        "wfurt"
+      ],
+      "label": "area-System.Net.Sockets"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "dakersnar",
+        "ericstj",
+        "jeffhandley",
+        "michaelgsharp",
+        "tannergooding"
+      ],
+      "label": "area-System.Numerics"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "dakersnar",
+        "ericstj",
+        "jeffhandley",
+        "michaelgsharp",
+        "tannergooding"
+      ],
+      "label": "area-System.Numerics.Tensors"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.Reflection"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "lambdageek"
+      ],
+      "label": "area-System.Reflection-mono"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.Reflection.Emit"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.Reflection.Metadata"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter",
+        "tarekgh"
+      ],
+      "label": "area-System.Resources"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "dakersnar",
+        "ericstj",
+        "jeffhandley",
+        "michaelgsharp",
+        "tannergooding"
+      ],
+      "label": "area-System.Runtime"
+    },
+    {
+      "lead": "HongGit",
+      "owners": [
+        "HongGit",
+        "StephenMolloy"
+      ],
+      "label": "area-System.Runtime.Caching"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.Runtime.CompilerServices"
+    },
+    {
+      "lead": "jeffschwMSFT",
+      "owners": [
+        "AaronRobinsonMSFT",
+        "jkoritzinsky"
+      ],
+      "label": "area-System.Runtime.InteropServices"
+    },
+    {
+      "lead": "lewing",
+      "owners": [
+        "pavelsavara"
+      ],
+      "label": "area-System.Runtime.InteropServices.JavaScript"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "dakersnar",
+        "jeffhandley",
+        "michaelgsharp",
+        "tannergooding"
+      ],
+      "label": "area-System.Runtime.Intrinsics"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "bartonjs",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley",
+        "krwq"
+      ],
+      "label": "area-System.Security"
+    },
+    {
+      "lead": "HongGit",
+      "owners": [
+        "HongGit",
+        "mconnew"
+      ],
+      "label": "area-System.ServiceModel"
+    },
+    {
+      "lead": "HongGit",
+      "owners": [
+        "HongGit",
+        "StephenMolloy"
+      ],
+      "label": "area-System.ServiceModel.Syndication"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "carlossanlop",
+        "ericstj",
+        "jeffhandley",
+        "smasher164",
+        "ViktorHofer"
+      ],
+      "label": "area-System.ServiceProcess"
+    },
+    {
+      "lead": "danmoseley",
+      "owners": [
+        "danmoseley"
+      ],
+      "label": "area-System.Speech"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "bartonjs",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley",
+        "tarekgh"
+      ],
+      "label": "area-System.Text.Encoding"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "bartonjs",
+        "ericstj",
+        "GrabYourPitchforks",
+        "jeffhandley",
+        "tarekgh"
+      ],
+      "label": "area-System.Text.Encodings.Web"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "eiriktsarpalis",
+        "ericstj",
+        "jeffhandley",
+        "krwq",
+        "layomia",
+        "steveharter"
+      ],
+      "label": "area-System.Text.Json"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "steveharter"
+      ],
+      "label": "area-System.Text.RegularExpressions"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "kouvel"
+      ],
+      "label": "area-System.Threading"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "stephentoub",
+        "steveharter"
+      ],
+      "label": "area-System.Threading.Channels"
+    },
+    {
+      "lead": "rafikiassumani-msft",
+      "owners": [
+        "BrennanConroy",
+        "halter73"
+      ],
+      "label": "area-System.Threading.RateLimiting"
+    },
+    {
+      "lead": "ericstj",
+      "owners": [
+        "buyaa-n",
+        "ericstj",
+        "jeffhandley",
+        "joperezr",
+        "stephentoub",
+        "steveharter"
+      ],
+      "label": "area-System.Threading.Tasks"
+    },
+    {
+      "lead": "HongGit",
+      "owners": [
+        "HongGit"
+      ],
+      "label": "area-System.Transactions"
+    },
+    {
+      "lead": "jeffhandley",
+      "owners": [
+        "eiriktsarpalis",
+        "ericstj",
+        "jeffhandley",
+        "krwq",
+        "layomia"
+      ],
+      "label": "area-System.Xml"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "lambdageek"
+      ],
+      "label": "area-Threading-mono"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "kouvel"
+      ],
+      "label": "area-TieredCompilation-coreclr"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "josalem",
+        "sywhang"
+      ],
+      "label": "area-Tracing-coreclr"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "lateralusX"
+      ],
+      "label": "area-Tracing-mono"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "davidwrighton",
+        "janvorli",
+        "mangod9",
+        "MichalStrehovsky"
+      ],
+      "label": "area-TypeSystem-coreclr"
+    },
+    {
+      "lead": "tommcdon",
+      "owners": [
+        "jashook"
+      ],
+      "label": "area-UWP"
+    },
+    {
+      "lead": "mangod9",
+      "owners": [
+        "mangod9"
+      ],
+      "label": "area-VM-coreclr"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "lambdageek"
+      ],
+      "label": "area-VM-meta-mono"
+    }
+  ],
+  "operatingSystems": [
+    {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "os-alpine"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "akoeplinger"
+      ],
+      "label": "os-android"
+    },
+    {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "os-freebsd"
+    },
+    {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "os-mac-os-x"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        ""
+      ],
+      "label": "os-maccatalyst"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "os-ios"
+    },
+    {
+      "lead": "alpencolt",
+      "owners": [
+        "clamp03",
+        "gbalykov",
+        "hjleee",
+        "wscho77"
+      ],
+      "label": "os-tizen"
+    },
+    {
+      "lead": "steveisok",
+      "owners": [
+        "vargaz"
+      ],
+      "label": "os-tvos"
+    }
+  ]
+}
