@@ -3,6 +3,10 @@
 
 #include "createdump.h"
 
+#ifndef PT_ARM_EXIDX
+#define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
+#endif
+
 extern CrashInfo* g_crashInfo;
 
 int g_readProcessMemoryErrno = 0;
@@ -356,9 +360,6 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
     case PT_DYNAMIC:
     case PT_NOTE:
 #if defined(TARGET_ARM)
-#ifndef PT_ARM_EXIDX
-#define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
-#endif
     case PT_ARM_EXIDX:
 #endif
         if (phdr->p_vaddr != 0 && phdr->p_memsz != 0)

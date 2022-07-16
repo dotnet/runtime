@@ -2539,16 +2539,16 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
         ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
         return FALSE;
     }
-    unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
+    ehFrameHdrAddr += sizeof(eh_frame_hdr);
     unw_word_t ehFramePtr;
     unw_word_t fdeCount;
 
     // Decode the eh_frame_hdr info
-    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFramePtr)) {
+    if (!ReadEncodedPointer(&info, &ehFrameHdrAddr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFramePtr)) {
         ERROR("decoding eh_frame_ptr\n");
         return FALSE;
     }
-    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
+    if (!ReadEncodedPointer(&info, &ehFrameHdrAddr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
         ERROR("decoding fde_count_enc\n");
         return FALSE;
     }
@@ -2563,7 +2563,7 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
     uint64_t totalSize = 0;
     uint64_t encounteredCieCount = 0;
     uint64_t encounteredFdeCount = 0;
-    addr = ehFramePtr;
+    unw_word_t addr = ehFramePtr;
 
     while (true)
     {
@@ -2589,8 +2589,8 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
             }
             else
             {
-                // 32 bit encoding
-                initialLength = static_cast<uint64_t>(initialLength32);
+                ASSERT("Length encoding not supported: %08x\n", initialLength32);
+                return FALSE;
             }
         }
         else
