@@ -12,10 +12,10 @@ namespace System.Threading.RateLimiting
     public abstract class PartitionedRateLimiter<TResource> : IAsyncDisposable, IDisposable
     {
         /// <summary>
-        /// An estimated count of available permits.
+        /// Gets a snapshot of the statistics for the <paramref name="resource"/> if available.
         /// </summary>
-        /// <returns></returns>
-        public abstract int GetAvailablePermits(TResource resource);
+        /// <returns>An instance of <see cref="RateLimiterStatistics"/> containing a snapshot of the statistics for a <paramref name="resource"/>.</returns>
+        public abstract RateLimiterStatistics? GetStatistics(TResource resource);
 
         /// <summary>
         /// Fast synchronous attempt to acquire permits.

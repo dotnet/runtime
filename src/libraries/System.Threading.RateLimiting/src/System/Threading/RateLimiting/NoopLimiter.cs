@@ -9,6 +9,13 @@ namespace System.Threading.RateLimiting
     internal sealed class NoopLimiter : RateLimiter
     {
         private static readonly RateLimitLease _lease = new NoopLease();
+        private static readonly RateLimiterStatistics _stats = new RateLimiterStatistics()
+        {
+            CurrentAvailablePermits = long.MaxValue,
+            CurrentQueuedCount = 0,
+            TotalFailedLeases = 0,
+            TotalSuccessfulLeases = 0,
+        };
 
         private NoopLimiter() { }
 
@@ -16,7 +23,10 @@ namespace System.Threading.RateLimiting
 
         public override TimeSpan? IdleDuration => null;
 
-        public override int GetAvailablePermits() => int.MaxValue;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            return _stats;
+        }
 
         protected override RateLimitLease AttemptAcquireCore(int permitCount) => _lease;
 

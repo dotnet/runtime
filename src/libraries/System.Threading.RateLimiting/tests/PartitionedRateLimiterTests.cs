@@ -61,7 +61,7 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public void Create_GetAvailablePermitsCallsUnderlyingPartitionsLimiter()
+        public void Create_GetStatisticsCallsUnderlyingPartitionsLimiter()
         {
             var limiterFactory = new TrackingRateLimiterFactory<int>();
             using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
@@ -69,9 +69,9 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(1, key => limiterFactory.GetLimiter(key));
             });
 
-            limiter.GetAvailablePermits("");
+            limiter.GetStatistics("");
             Assert.Equal(1, limiterFactory.Limiters.Count);
-            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.GetAvailablePermitsCallCount);
+            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.GetStatisticsCallCount);
         }
 
         [Fact]

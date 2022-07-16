@@ -21,6 +21,9 @@ namespace System.Threading.RateLimiting
         private long? _idleSince;
         private bool _disposed;
 
+        private long _failedLeasesCount;
+        private long _successfulLeasesCount;
+
         private readonly Timer? _renewTimer;
         private readonly SlidingWindowRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -89,7 +92,16 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _requestCount;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = _requestCount,
+                CurrentQueuedCount = _queueCount,
+                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+            };
+        }
 
         /// <inheritdoc/>
         protected override RateLimitLease AttemptAcquireCore(int requestCount)
@@ -119,6 +131,7 @@ namespace System.Threading.RateLimiting
                 }
 
                 // TODO: Acquire additional metadata during a failed lease decision
+                Interlocked.Increment(ref _failedLeasesCount);
                 return FailedLease;
             }
         }
@@ -163,11 +176,16 @@ namespace System.Threading.RateLimiting
                             {
                                 _queueCount += oldestRequest.Count;
                             }
+                            else
+                            {
+                                Interlocked.Increment(ref _failedLeasesCount);
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < requestCount);
                     }
                     else
                     {
+                        Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(FailedLease);
                     }
@@ -214,6 +232,7 @@ namespace System.Threading.RateLimiting
                     _requestsPerSegment[_currentSegmentIndex] += requestCount;
                     _requestCount -= requestCount;
                     Debug.Assert(_requestCount >= 0);
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     lease = SuccessfulLease;
                     return true;
                 }
@@ -313,6 +332,13 @@ namespace System.Threading.RateLimiting
                             _requestsPerSegment[_currentSegmentIndex] -= nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
+                        }
+                        else
+                        {
+                            if (nextPendingRequest.Count != 0)
+                            {
+                                Interlocked.Increment(ref _successfulLeasesCount);
+                            }
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);

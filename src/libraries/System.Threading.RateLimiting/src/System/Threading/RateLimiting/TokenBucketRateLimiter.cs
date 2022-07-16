@@ -19,6 +19,9 @@ namespace System.Threading.RateLimiting
         private long? _idleSince;
         private bool _disposed;
 
+        private long _failedLeasesCount;
+        private long _successfulLeasesCount;
+
         private readonly Timer? _renewTimer;
         private readonly TokenBucketRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -83,7 +86,16 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _tokenCount;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = _tokenCount,
+                CurrentQueuedCount = _queueCount,
+                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+            };
+        }
 
         /// <inheritdoc/>
         protected override RateLimitLease AttemptAcquireCore(int tokenCount)
@@ -112,6 +124,7 @@ namespace System.Threading.RateLimiting
                     return lease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return CreateFailedTokenLease(tokenCount);
             }
         }
@@ -157,11 +170,16 @@ namespace System.Threading.RateLimiting
                                 // Updating queue count is handled by the cancellation code
                                 _queueCount += oldestRequest.Count;
                             }
+                            else
+                            {
+                                Interlocked.Increment(ref _failedLeasesCount);
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
                     }
                     else
                     {
+                        Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(CreateFailedTokenLease(tokenCount));
                     }
@@ -218,6 +236,7 @@ namespace System.Threading.RateLimiting
                     _idleSince = null;
                     _tokenCount -= tokenCount;
                     Debug.Assert(_tokenCount >= 0);
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     lease = SuccessfulLease;
                     return true;
                 }
@@ -317,6 +336,13 @@ namespace System.Threading.RateLimiting
                             _tokenCount += nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
+                        }
+                        else
+                        {
+                            if (nextPendingRequest.Count != 0)
+                            {
+                                Interlocked.Increment(ref _successfulLeasesCount);
+                            }
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);

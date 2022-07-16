@@ -23,21 +23,36 @@ namespace System.Threading.RateLimiting
             _limiters = limiters;
         }
 
-        public override int GetAvailablePermits(TResource resource)
+        public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
             ThrowIfDisposed();
-            int lowestPermitCount = int.MaxValue;
+            long lowestAvailablePermits = long.MaxValue;
+            long lowestQueuedCount = long.MaxValue;
+            long totalFailedLeases = 0;
+            long totalSuccessfulLeases = 0;
             foreach (PartitionedRateLimiter<TResource> limiter in _limiters)
             {
-                int permitCount = limiter.GetAvailablePermits(resource);
-
-                if (permitCount < lowestPermitCount)
+                if (limiter.GetStatistics(resource) is { } statistics)
                 {
-                    lowestPermitCount = permitCount;
+                    if (statistics.CurrentAvailablePermits < lowestAvailablePermits)
+                    {
+                        lowestAvailablePermits = statistics.CurrentAvailablePermits;
+                    }
+                    if (statistics.CurrentQueuedCount < lowestQueuedCount)
+                    {
+                        lowestQueuedCount = statistics.CurrentQueuedCount;
+                    }
+                    totalFailedLeases += statistics.TotalFailedLeases;
+                    totalSuccessfulLeases += statistics.TotalSuccessfulLeases;
                 }
             }
-
-            return lowestPermitCount;
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = lowestAvailablePermits,
+                CurrentQueuedCount = lowestQueuedCount,
+                TotalFailedLeases = totalFailedLeases,
+                TotalSuccessfulLeases = totalSuccessfulLeases,
+            };
         }
 
         protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
