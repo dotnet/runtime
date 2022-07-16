@@ -7,7 +7,7 @@ two existing limitations of the current design:
 1) R2R code never benefits from Dynamic PGO as it's not instrumented and is promoted straight to Tier1 when it's hot
 2) Instrumentation in Tier0 comes with a big overhead and it's better to only instrument hot Tier0 code (whether it's ILOnly or R2R)
 
-A good example explaining the problem with non-instrumented R2R code is this TechEmpower benchmark:
+A good example explaining boths problems is this TechEmpower benchmark (plaintext-plaintext):
 
 ![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext.png)
 
@@ -16,8 +16,7 @@ Legend:
 * Black  - `DOTNET_TieredPGO=1`, `DOTNET_ReadyToRun=1`
 * Yellow - `DOTNET_TieredPGO=1`, `DOTNET_ReadyToRun=0`
 
-Yellow line provides the highest level performance (RPS) by sacrificing start up speed (and, hence, time to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R. It also explains why the black line (when we enabled Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate instrumentation tier for hot R2R we achieve "Yellow"-level of performance while maintaining the same fast start up speed as was before:
-
+Yellow line provides the highest level of performance (RPS) by sacrificing start up speed (and, hence, time it takes to process the first request). It happens because the benchmark is quite simple and most of its code is already prejitted so we can only instrument it when we completely drop R2R and compile everything from scratch. It also explains why the black line (when we enable Dynamic PGO but still rely on R2R) didn't really show a lot of improvements. With the separate instrumentation tier for hot R2R we achieve "Yellow"-level of performance while maintaining the same start up speed as it was before. Also, for the mode where we have to compile a lot of code to Tier0, switching to "instrument only hot Tier0 code" strategy shows ~8% time-to-first-request reduction across all TE benchmarks.
 
 ![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext-opt.png)
 (_predicted results according to local runs of crank with custom binaries_)
