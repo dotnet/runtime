@@ -85,7 +85,7 @@ namespace System.CommandLine
                 return TargetArchitecture.ARM;
             else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
-            else if (archArg.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
+            else if (token.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.LoongArch64;
 
             throw new CommandLineException($"Target architecture '{token}' is not supported");
