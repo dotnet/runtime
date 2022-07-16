@@ -5812,7 +5812,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
             namespaceManager.AddNamespace("p2", "http://book.htm");
             namespaceManager.AddNamespace("p3", "http://movie.htm");
             namespaceManager.AddNamespace("p4", "http://book2.htm");
-            namespaceManager.AddNamespace("p5", "http://documentary.htm");
+            namespaceManager.AddNamespace("p5", "http://documentry.htm");
             var expected = new XPathResult(0);
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
@@ -5847,7 +5847,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
             namespaceManager.AddNamespace("p2", "http://book.htm");
             namespaceManager.AddNamespace("p3", "http://movie.htm");
             namespaceManager.AddNamespace("p4", "http://book2.htm");
-            namespaceManager.AddNamespace("p5", "http://documentary.htm");
+            namespaceManager.AddNamespace("p5", "http://documentry.htm");
             var expected = new XPathResult(0);
 
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,

@@ -1828,7 +1828,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     LocalName = "NSmovie",
                     Name = "NSmovie",
                     HasNameTable = true,
-                    Value = "http://documentary.htm"
+                    Value = "http://documentry.htm"
                 },
                 new XPathResultToken
                 {
@@ -1844,7 +1844,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     LocalName = "NSmovie",
                     Name = "NSmovie",
                     HasNameTable = true,
-                    Value = "http://documentary.htm"
+                    Value = "http://documentry.htm"
                 },
                 new XPathResultToken
                 {
@@ -1860,7 +1860,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     LocalName = "NSmovie",
                     Name = "NSmovie",
                     HasNameTable = true,
-                    Value = "http://documentary.htm"
+                    Value = "http://documentry.htm"
                 },
                 new XPathResultToken
                 {
@@ -2006,8 +2006,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 {
                     NodeType = XPathNodeType.Element,
                     HasChildren = true,
-                    LocalName = "documentary",
-                    Name = "documentary",
+                    LocalName = "documentry",
+                    Name = "documentry",
                     HasNameTable = true,
                     Value = "\n\t\t\t\n\t\t\t\tJinnah\n\t\t\t\n\t\t"
                 },
@@ -2018,7 +2018,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasAttributes = true,
                     LocalName = "movie",
                     Name = "NSmovie:movie",
-                    NamespaceURI = "http://documentary.htm",
+                    NamespaceURI = "http://documentry.htm",
                     HasNameTable = true,
                     Prefix = "NSmovie",
                     Value = "\n\t\t\t\tJinnah\n\t\t\t"
@@ -2029,7 +2029,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasChildren = true,
                     LocalName = "title",
                     Name = "NSmovie:title",
-                    NamespaceURI = "http://documentary.htm",
+                    NamespaceURI = "http://documentry.htm",
                     HasNameTable = true,
                     Prefix = "NSmovie",
                     Value = "Jinnah"
@@ -6630,33 +6630,33 @@ namespace XPathTests.FunctionalTests.Location.Paths
 
         /// <summary>
         /// namespace declared in the ancestors twice. Check that the last one overwrites the previous one.
-        /// NS16: string(/store/moviesection/documentary/NSmovie:movie/namespace::NSmovie)
+        /// NS16: string(/store/moviesection/documentry/NSmovie:movie/namespace::NSmovie)
         /// </summary>
         [Fact]
         public static void AxesTest1162()
         {
             var xml = "name.xml";
-            var testExpression = @"string(/store/moviesection/documentary/NSmovie:movie/namespace::NSmovie)";
+            var testExpression = @"string(/store/moviesection/documentry/NSmovie:movie/namespace::NSmovie)";
             var namespaceManager = new XmlNamespaceManager(new NameTable());
 
-            namespaceManager.AddNamespace("NSmovie", "http://documentary.htm");
-            var expected = @"http://documentary.htm";
+            namespaceManager.AddNamespace("NSmovie", "http://documentry.htm");
+            var expected = @"http://documentry.htm";
 
             Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// namespace declared in the ancestors twice. Check that the last one overwrites the previous one.
-        /// NS17: /store/moviesection/documentary/NSmovie:movie/namespace::NSmovie
+        /// NS17: /store/moviesection/documentry/NSmovie:movie/namespace::NSmovie
         /// </summary>
         [Fact]
         public static void AxesTest1163()
         {
             var xml = "name.xml";
-            var testExpression = @"/store/moviesection/documentary/NSmovie:movie/namespace::NSmovie";
+            var testExpression = @"/store/moviesection/documentry/NSmovie:movie/namespace::NSmovie";
             var namespaceManager = new XmlNamespaceManager(new NameTable());
 
-            namespaceManager.AddNamespace("NSmovie", "http://documentary.htm");
+            namespaceManager.AddNamespace("NSmovie", "http://documentry.htm");
             var expected = new XPathResult(0,
                 new XPathResultToken
                 {
@@ -6664,7 +6664,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     LocalName = "NSmovie",
                     Name = "NSmovie",
                     HasNameTable = true,
-                    Value = "http://documentary.htm"
+                    Value = "http://documentry.htm"
                 });
             ;
 
