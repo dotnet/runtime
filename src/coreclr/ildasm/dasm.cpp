@@ -7029,7 +7029,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
+    sprintf_s(szString,SZSTRING_SIZE,"//  .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {
