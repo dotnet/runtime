@@ -10,14 +10,14 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Implements generating code for an <see cref="ICustomNativeTypeMarshallingStrategy"/> instance.
+    /// Implements generating code for an <see cref="ICustomTypeMarshallingStrategy"/> instance.
     /// </summary>
-    internal sealed class CustomNativeTypeMarshallingGenerator : IMarshallingGenerator
+    internal sealed class CustomTypeMarshallingGenerator : IMarshallingGenerator
     {
         private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
         private readonly bool _enableByValueContentsMarshalling;
 
-        public CustomNativeTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
+        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
             _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
@@ -72,10 +72,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
-                        if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithGuaranteedUnmarshal)
-                        {
-                            return strategyWithGuaranteedUnmarshal.GenerateNotifyForSuccessfulInvokeStatements(info, context);
-                        }
+                        return _nativeTypeMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.UnmarshalCapture:
@@ -96,10 +93,7 @@ namespace Microsoft.Interop
                         || (info.IsByRef && info.RefKind != RefKind.In)
                         || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
                     {
-                        if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithGuaranteedUnmarshal)
-                        {
-                            return strategyWithGuaranteedUnmarshal.GenerateGuaranteedUnmarshalStatements(info, context);
-                        }
+                        return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:

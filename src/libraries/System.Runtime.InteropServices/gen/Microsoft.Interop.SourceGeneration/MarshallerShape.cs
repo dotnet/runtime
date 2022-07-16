@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -669,7 +666,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetManagedValuesSource(ITypeSymbol type, ITypeSymbol readOnlySpanOfT)
             {
                 // static ReadOnlySpan<TManagedElement> GetManagedValuesSource()
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesSource)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && SymbolEqualityComparer.Default.Equals(readOnlySpanOfT, returnType.ConstructedFrom));
@@ -678,7 +675,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetUnmanagedValuesDestination(ITypeSymbol type, ITypeSymbol spanOfT)
             {
                 // static Span<TUnmanagedElement> GetUnmanagedValuesDestination()
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesDestination)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesDestination)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && SymbolEqualityComparer.Default.Equals(spanOfT, returnType.ConstructedFrom));
@@ -687,7 +684,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetManagedValuesDestination(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
             {
                 // static Span<TManagedElement> GetManagedValuesDestination(int numElements)
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
@@ -697,7 +694,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetUnmanagedValuesSource(ITypeSymbol type, ITypeSymbol readOnlySpanOfT)
             {
                 // static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
