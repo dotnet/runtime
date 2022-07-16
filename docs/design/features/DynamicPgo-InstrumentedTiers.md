@@ -43,7 +43,7 @@ flowchart
 
    
     hasR2R -->|Yes| R2R
-    R2R["Use <b><ins>R2R</ins></b> code<br/><br/>(optimized, not instrumented,<br/>no patchpoints)"] -->|Running...|ishot1
+    R2R["Use <b><ins>R2R</ins></b> code<br/><br/>(optimized, not instrumented,<br/>with patchpoints)"] -->|Running...|ishot1
     ishot1{"Is hot?<br/>(called >30 times)"}-.->|No,<br/>keep running...|ishot1
     ishot1--->|"Yes"|istier1inst
     tier0["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5

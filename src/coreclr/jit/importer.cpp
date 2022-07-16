@@ -22265,7 +22265,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
         return false;
     }
 
-    assert(opts.OptimizationDisabled() || opts.IsOSR());
+    assert(opts.OptimizationDisabled() || opts.IsInstrumentedOptimized());
     assert(!compIsForInlining());
 
     // During importation, optionally flag this block as one that
