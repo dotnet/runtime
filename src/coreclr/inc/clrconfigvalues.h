@@ -637,7 +637,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 //    * Currently, we won't instrument inlinees -> we'll probably miss a lot of oportunities and produce less accurate profile
 //      leading to a less optimized final tier
 //
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_Strategy, W("TieredPGO_Strategy"), 0, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_Strategy, W("TieredPGO_Strategy"), 1, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
 #endif
 
 ///
