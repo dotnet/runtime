@@ -826,7 +826,7 @@ namespace System
             return g;
         }
 
-        // Returns whether bytes are sucessfully written to given span.
+        // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
             if (BitConverter.IsLittleEndian)

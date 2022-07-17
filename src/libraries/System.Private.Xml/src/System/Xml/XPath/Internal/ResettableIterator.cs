@@ -5,14 +5,14 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal abstract class ResetableIterator : XPathNodeIterator
+    internal abstract class ResettableIterator : XPathNodeIterator
     {
         // the best place for this constructors to be is XPathNodeIterator, to avoid DCR at this time let's ground them here
-        public ResetableIterator()
+        public ResettableIterator()
         {
             base.count = -1;
         }
-        protected ResetableIterator(ResetableIterator other)
+        protected ResettableIterator(ResettableIterator other)
         {
             base.count = other.count;
         }

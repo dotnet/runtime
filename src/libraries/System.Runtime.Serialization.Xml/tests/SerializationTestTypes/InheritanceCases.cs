@@ -240,7 +240,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(DerivedDC))]
-    public class TestInheritence
+    public class TestInheritance
     {
         private BaseDC _b;
         private DerivedDC _d;
@@ -270,11 +270,11 @@ namespace SerializationTestTypes
             }
         }
 
-        public TestInheritence()
+        public TestInheritance()
         {
         }
 
-        public TestInheritence(bool init)
+        public TestInheritance(bool init)
         {
             derivedDC = new DerivedDC(true);
             baseDC = derivedDC;
@@ -285,7 +285,7 @@ namespace SerializationTestTypes
     [KnownType(typeof(DerivedSerializable))]
     [KnownType(typeof(Derived2Serializable))]
 
-    public class TestInheritence9
+    public class TestInheritance9
     {
         [DataMember]
         public BaseSerializable baseDC;
@@ -296,11 +296,11 @@ namespace SerializationTestTypes
         [DataMember]
         public Derived2Serializable derived2;
 
-        public TestInheritence9()
+        public TestInheritance9()
         {
         }
 
-        public TestInheritence9(bool init)
+        public TestInheritance9(bool init)
         {
             derivedDC = new DerivedSerializable(true);
             baseDC = derivedDC;
@@ -313,7 +313,7 @@ namespace SerializationTestTypes
     [KnownType(typeof(DerivedSerializable))]
     [KnownType(typeof(Derived2Serializable))]
     [KnownType(typeof(Derived3Derived2Serializable))]
-    public class TestInheritence91
+    public class TestInheritance91
     {
         [DataMember]
         public BaseSerializable baseDC;
@@ -326,11 +326,11 @@ namespace SerializationTestTypes
         [DataMember]
         public Derived3Derived2Serializable derived3;
 
-        public TestInheritence91()
+        public TestInheritance91()
         {
         }
 
-        public TestInheritence91(bool init)
+        public TestInheritance91(bool init)
         {
             derivedDC = new DerivedSerializable(true);
             baseDC = derivedDC;
@@ -342,7 +342,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(DerivedDC))]
-    public class TestInheritence5
+    public class TestInheritance5
     {
         [DataMember]
         public BaseDC baseDC = null;
@@ -350,27 +350,27 @@ namespace SerializationTestTypes
         [DataMember]
         public DerivedDC derivedDC = null;
 
-        public TestInheritence5()
+        public TestInheritance5()
         {
         }
 
-        public TestInheritence5(bool init)
+        public TestInheritance5(bool init)
         {
             baseDC = derivedDC;
         }
     }
 
     [DataContract]
-    public class TestInheritence10
+    public class TestInheritance10
     {
         public BaseSerializable baseDC = null;
         public DerivedSerializable derivedDC = null;
 
-        public TestInheritence10()
+        public TestInheritance10()
         {
         }
 
-        public TestInheritence10(bool init)
+        public TestInheritance10(bool init)
         {
             baseDC = derivedDC;
         }
@@ -378,7 +378,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(DerivedDC))]
-    public class TestInheritence2
+    public class TestInheritance2
     {
         [DataMember]
         public BaseDC baseDC;
@@ -386,11 +386,11 @@ namespace SerializationTestTypes
         [DataMember]
         public DerivedDC derivedDC;
 
-        public TestInheritence2()
+        public TestInheritance2()
         {
         }
 
-        public TestInheritence2(bool init)
+        public TestInheritance2(bool init)
         {
             derivedDC = new DerivedDC(true);
             baseDC = new BaseDC(true);
@@ -407,18 +407,18 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public class TestInheritence11
+    public class TestInheritance11
     {
         [DataMember]
         public BaseSerializable baseDC;
         [DataMember]
         public DerivedSerializable derivedDC;
 
-        public TestInheritence11()
+        public TestInheritance11()
         {
         }
 
-        public TestInheritence11(bool init)
+        public TestInheritance11(bool init)
         {
             derivedDC = new DerivedSerializable(true);
             baseDC = new BaseSerializable(true);
@@ -436,7 +436,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(DerivedDC))]
-    public class TestInheritence3
+    public class TestInheritance3
     {
         [DataMember]
         public BaseDC baseDC;
@@ -444,11 +444,11 @@ namespace SerializationTestTypes
         [DataMember]
         public DerivedDC derivedDC;
 
-        public TestInheritence3()
+        public TestInheritance3()
         {
         }
 
-        public TestInheritence3(bool init)
+        public TestInheritance3(bool init)
         {
             derivedDC = new DerivedDC(true);
             baseDC = new BaseDC(true);
@@ -465,18 +465,18 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public class TestInheritence16
+    public class TestInheritance16
     {
         [DataMember]
         public BaseSerializable baseDC;
         [DataMember]
         public DerivedSerializable derivedDC;
 
-        public TestInheritence16()
+        public TestInheritance16()
         {
         }
 
-        public TestInheritence16(bool init)
+        public TestInheritance16(bool init)
         {
             derivedDC = new DerivedSerializable(true);
             baseDC = new BaseSerializable(true);
@@ -494,7 +494,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(DerivedDC))]
-    public class TestInheritence4
+    public class TestInheritance4
     {
         [DataMember]
         public BaseDC baseDC;
@@ -502,11 +502,11 @@ namespace SerializationTestTypes
         [DataMember]
         public DerivedDC derivedDC;
 
-        public TestInheritence4()
+        public TestInheritance4()
         {
         }
 
-        public TestInheritence4(bool init)
+        public TestInheritance4(bool init)
         {
             derivedDC = new DerivedDC(true);
             baseDC = new BaseDC(true);
@@ -522,18 +522,18 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public class TestInheritence12
+    public class TestInheritance12
     {
         [DataMember]
         public BaseSerializable baseDC;
         [DataMember]
         public DerivedSerializable derivedDC;
 
-        public TestInheritence12()
+        public TestInheritance12()
         {
         }
 
-        public TestInheritence12(bool init)
+        public TestInheritance12(bool init)
         {
             derivedDC = new DerivedSerializable(true);
             baseDC = new BaseSerializable(true);
@@ -551,7 +551,7 @@ namespace SerializationTestTypes
     [DataContract(IsReference = true)]
     [KnownType(typeof(DerivedDC))]
     [KnownType(typeof(Derived2DC))]
-    public class TestInheritence6
+    public class TestInheritance6
     {
         [DataMember]
         public BaseDC baseDC;
@@ -562,11 +562,11 @@ namespace SerializationTestTypes
         [DataMember]
         public Derived2DC derived2DC;
 
-        public TestInheritence6()
+        public TestInheritance6()
         {
         }
 
-        public TestInheritence6(bool init)
+        public TestInheritance6(bool init)
         {
             baseDC = new BaseDC(true);
             derivedDC = new DerivedDC(true);
@@ -588,7 +588,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(Derived2DC))]
-    public class TestInheritence7
+    public class TestInheritance7
     {
         [DataMember]
         public BaseDC baseDC;
@@ -596,11 +596,11 @@ namespace SerializationTestTypes
         [DataMember]
         public Derived2DC derived2DC;
 
-        public TestInheritence7()
+        public TestInheritance7()
         {
         }
 
-        public TestInheritence7(bool init)
+        public TestInheritance7(bool init)
         {
             baseDC = new BaseDC(true);
             derived2DC = new Derived2DC(true);
@@ -614,18 +614,18 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public class TestInheritence14
+    public class TestInheritance14
     {
         [DataMember]
         public BaseSerializable baseDC;
         [DataMember]
         public Derived2Serializable derived2DC;
 
-        public TestInheritence14()
+        public TestInheritance14()
         {
         }
 
-        public TestInheritence14(bool init)
+        public TestInheritance14(bool init)
         {
             baseDC = new BaseSerializable(true);
             derived2DC = new Derived2Serializable(true);
@@ -640,7 +640,7 @@ namespace SerializationTestTypes
 
     [DataContract(IsReference = true)]
     [KnownType(typeof(Derived2DC))]
-    public class TestInheritence8
+    public class TestInheritance8
     {
         [DataMember]
         public BaseDC baseDC;
@@ -648,11 +648,11 @@ namespace SerializationTestTypes
         [DataMember]
         public Derived2DC derived2DC;
 
-        public TestInheritence8()
+        public TestInheritance8()
         {
         }
 
-        public TestInheritence8(bool init)
+        public TestInheritance8(bool init)
         {
             derived2DC = new Derived2DC(true);
             baseDC = new BaseDC(true);

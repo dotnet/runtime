@@ -4,7 +4,7 @@
 //
 //                   The Power ABI version 2 allows for special parameter
 //                   passing and returning optimizations for certain
-//                   structures of homogenous composition (like all ints).
+//                   structures of homogeneous composition (like all ints).
 //                   This set of tests checks all the possible combinations
 //                   that use the special parm/return rules and one beyond.
 //
@@ -125,7 +125,7 @@ public class Test_sbyte {
 	}
 
 	// This structure has nested structures within it but they are
-	//  homogenous and thus should still use the special rules.
+	//  homogeneous and thus should still use the special rules.
 	public struct sbyte16_nested1 {
 		public sbyte f1;
 	};

@@ -124,7 +124,7 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("byteIndex", () => encoding.GetBytes("a", 0, 1, new byte[1], 2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("byteIndex", () => encoding.GetBytes(new char[1], 0, 1, new byte[1], 2));
 
-            // Bytes does not have enough capacity to accomodate result
+            // Bytes does not have enough capacity to accommodate result
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("a", 0, 1, new byte[0], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("abc", 0, 3, new byte[1], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("\uD800\uDC00", 0, 2, new byte[1], 0));
@@ -151,7 +151,7 @@ namespace System.Text.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetBytes(pCharsLocal, -1, pBytesLocal, bytes.Length));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetBytes(pCharsLocal, chars.Length, pBytesLocal, -1));
 
-                // Bytes does not have enough capacity to accomodate result
+                // Bytes does not have enough capacity to accommodate result
                 AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(pCharsLocal, chars.Length, pSmallBytesLocal, smallBytes.Length));
             }
         }
@@ -221,7 +221,7 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("charIndex", () => encoding.GetChars(new byte[4], 0, 4, new char[1], -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("charIndex", () => encoding.GetChars(new byte[4], 0, 4, new char[1], 2));
 
-            // Chars does not have enough capacity to accomodate result
+            // Chars does not have enough capacity to accommodate result
             AssertExtensions.Throws<ArgumentException>("chars", () => encoding.GetChars(new byte[4], 0, 4, new char[1], 1));
 
             byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
@@ -243,7 +243,7 @@ namespace System.Text.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetChars(pBytesLocal, -1, pCharsLocal, chars.Length));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("charCount", () => encoding.GetChars(pBytesLocal, bytes.Length, pCharsLocal, -1));
 
-                // Chars does not have enough capacity to accomodate result
+                // Chars does not have enough capacity to accommodate result
                 AssertExtensions.Throws<ArgumentException>("chars", () => encoding.GetChars(pBytesLocal, bytes.Length, pSmallCharsLocal, smallChars.Length));
             }
         }

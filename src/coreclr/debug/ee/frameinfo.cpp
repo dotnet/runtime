@@ -2015,7 +2015,7 @@ bool PrepareLeafUMChain(DebuggerFrameData * pData, CONTEXT * pCtxTemp)
         }
 
         // @todo - this context is less important because the RS will overwrite it with the live context.
-        // We don't need to even bother getting it. We can just intialize the regdisplay w/ a sentinal.
+        // We don't need to even bother getting it. We can just initialize the regdisplay w/ a sentinel.
         fOk = g_pEEInterface->InitRegDisplay(thread, pRDSrc, pCtxTemp, false);
         thread->ResumeThread();
 

@@ -764,7 +764,7 @@ namespace Microsoft.Extensions.Configuration
                 foreach (PropertyInfo property in properties)
                 {
                     // if the property is virtual, only add the base-most definition so
-                    // overriden properties aren't duplicated in the list.
+                    // overridden properties aren't duplicated in the list.
                     MethodInfo? setMethod = property.GetSetMethod(true);
 
                     if (setMethod is null || !setMethod.IsVirtual || setMethod == setMethod.GetBaseDefinition())

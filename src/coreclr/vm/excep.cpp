@@ -6188,7 +6188,12 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
 
         if (exceptionCode == STATUS_CLR_GCCOVER_CODE)
         {
-            if (OnGcCoverageInterrupt(pContext))
+            // GCStress processing can disturb last error, so preserve it.
+            BOOL res;
+            BEGIN_PRESERVE_LAST_ERROR;
+            res = OnGcCoverageInterrupt(pContext);
+            END_PRESERVE_LAST_ERROR;
+            if (res)
             {
                 return true;
             }
@@ -8241,7 +8246,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
 
         if (name != NULL && strcmp(name, "get_StackTrace") == 0)
         {
-            // see if the slot is overriden by pMT
+            // see if the slot is overridden by pMT
             MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
             return (pDerivedMD != pMD);
         }

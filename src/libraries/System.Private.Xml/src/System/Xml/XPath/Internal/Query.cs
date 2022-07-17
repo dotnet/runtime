@@ -27,7 +27,7 @@ namespace MS.Internal.Xml.XPath
     // Turn off DebuggerDisplayAttribute. in subclasses of Query.
     // Calls to Current in the XPathNavigator.DebuggerDisplayProxy may change state or throw
     [DebuggerDisplay("{ToString()}")]
-    internal abstract class Query : ResetableIterator
+    internal abstract class Query : ResettableIterator
     {
         public Query() { }
         protected Query(Query other) : base(other) { }

@@ -6,6 +6,14 @@
     <!-- ApiCompat should perform compatibility checks on the trimmed assemblies. -->
     <ApiCompatDependsOn>$(ApiCompatDependsOn);ILLinkTrimAssembly</ApiCompatDependsOn>
   </PropertyGroup>
+  
+  <!-- Flow the IsTrimmable property down to consuming projects, in order for oob.proj
+       to exclude non trimmable assemblies. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsTrimmable>$(IsTrimmable)</IsTrimmable>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>

@@ -382,6 +382,48 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task SendAsync_RequestRejected_ClientRetries()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
+                    stream.Abort(0x10B); // H3_REQUEST_REJECTED
+                    await stream.DisposeAsync();
+                    // shutdown the connection gracefully via GOAWAY frame for good measure
+                    await connection1.ShutdownAsync(true);
+                }
+
+                // expect second connection to be established by the client
+                await using (Http3LoopbackConnection connection2 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection2.AcceptRequestStreamAsync();
+                    await stream.HandleRequestAsync();
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+
+        [Fact]
         public async Task ServerClosesConnection_ResponseContentStream_ThrowsHttpProtocolException()
         {
             const long GeneralProtocolError = 0x101;

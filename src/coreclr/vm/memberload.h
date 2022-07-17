@@ -198,7 +198,7 @@ private:
     static const FM_Flags FM_SpecialVirtualMask = (FM_Flags) (FM_ExcludeNonVirtual |
                                                               FM_ExcludeVirtual);
 
-    // Typedef for string comparition functions.
+    // Typedef for string comparison functions.
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
 
     static inline UTF8StringCompareFuncPtr FM_GetStrCompFunc(DWORD dwFlags)

@@ -126,14 +126,14 @@ namespace System.ConfigurationTests
         }
 
         [TypeConverter(typeof(DummyCanConverter))]
-        public class MyConvertableClass
+        public class MyConvertibleClass
         {
         }
 
         [Fact]
         public void TypeConverterRecognized()
         {
-            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyConvertableClass));
+            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyConvertibleClass));
             Assert.IsType<DummyCanConverter>(property.Converter);
         }
 
@@ -143,19 +143,19 @@ namespace System.ConfigurationTests
         {
             FooFailsValidator validator = new FooFailsValidator();
             DummyCanConverter converter = new DummyCanConverter();
-            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyConvertableClass), null, converter, validator, ConfigurationPropertyOptions.None, "bar");
+            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyConvertibleClass), null, converter, validator, ConfigurationPropertyOptions.None, "bar");
             Assert.Equal("bar", property.Description);
         }
 
         [TypeConverter(typeof(DummyCantConverter))]
-        public class MyUnconvertableClass
+        public class MyUnconvertibleClass
         {
         }
 
         [Fact]
-        public void UnconvertableFailsOnConverterAccess()
+        public void UnconvertibleFailsOnConverterAccess()
         {
-            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyUnconvertableClass));
+            ConfigurationProperty property = new ConfigurationProperty("foo", typeof(MyUnconvertibleClass));
             Assert.Throws<ConfigurationErrorsException>(() => property.Converter);
         }
 

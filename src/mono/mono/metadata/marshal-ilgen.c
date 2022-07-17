@@ -492,7 +492,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* Create managed array */
 		/*
 		 * The LPArray marshalling spec says that sometimes param_num starts
-		 * from 1, sometimes it starts from 0. But MS seems to allways start
+		 * from 1, sometimes it starts from 0. But MS seems to always start
 		 * from 0.
 		 */
 

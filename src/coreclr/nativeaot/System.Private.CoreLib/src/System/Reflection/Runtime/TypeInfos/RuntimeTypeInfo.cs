@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //     that apply only to generic parameters.)
     //
     //   - Inverts the DeclaredMembers/DeclaredX relationship (DeclaredMembers is auto-implemented, others
-    //     are overriden as abstract. This ordering makes more sense when reading from metadata.)
+    //     are overridden as abstract. This ordering makes more sense when reading from metadata.)
     //
     //   - Overrides many "NotImplemented" members in TypeInfo with abstracts so failure to implement
     //     shows up as build error.
@@ -356,7 +356,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // Left unsealed as there are so many subclasses. Need to be overriden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
+        // Left unsealed as there are so many subclasses. Need to be overridden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
         //
         public abstract override int MetadataToken
         {

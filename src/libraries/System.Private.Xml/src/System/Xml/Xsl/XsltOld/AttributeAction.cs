@@ -122,16 +122,16 @@ namespace System.Xml.Xsl.XsltOld
                 case Initialized:
                     if (_qname != null)
                     {
-                        frame.CalulatedName = _qname;
+                        frame.CalculatedName = _qname;
                     }
                     else
                     {
-                        frame.CalulatedName = CreateAttributeQName(
+                        frame.CalculatedName = CreateAttributeQName(
                             _nameAvt == null ? _name! : _nameAvt.Evaluate(processor, frame),
                             _nsAvt == null ? _nsUri : _nsAvt.Evaluate(processor, frame),
                             _manager
                         );
-                        if (frame.CalulatedName == null)
+                        if (frame.CalculatedName == null)
                         {
                             // name == "xmlns" case. Ignore xsl:attribute
                             frame.Finished();
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.XsltOld
                     goto case NameDone;
                 case NameDone:
                     {
-                        PrefixQName qname = frame.CalulatedName!;
+                        PrefixQName qname = frame.CalculatedName!;
                         if (processor.BeginEvent(XPathNodeType.Attribute, qname.Prefix, qname.Name, qname.Namespace, false) == false)
                         {
                             // Come back later

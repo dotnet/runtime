@@ -719,9 +719,9 @@ ep_rt_shutdown (void)
 static
 inline
 bool
-ep_rt_config_aquire (void)
+ep_rt_config_acquire (void)
 {
-	return ep_rt_spin_lock_aquire (ep_rt_mono_config_lock_get ());
+	return ep_rt_spin_lock_acquire (ep_rt_mono_config_lock_get ());
 }
 
 static
@@ -1557,7 +1557,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock)
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 {
 	EP_UNREACHABLE ("Not implemented on Mono.");
 }
@@ -1653,7 +1653,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 static
 inline
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	if (spin_lock && spin_lock->lock) {
 		mono_coop_mutex_lock (spin_lock->lock);

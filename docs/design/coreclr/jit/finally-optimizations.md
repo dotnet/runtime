@@ -378,7 +378,7 @@ integrity of the handler table.
 
 ### Finally Cloning (Sketch)
 
-Skip over all methods, if the runtime suports thread abort. More on
+Skip over all methods, if the runtime supports thread abort. More on
 this below.
 
 Skip over methods that have no EH, are compiled with min opts, or

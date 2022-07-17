@@ -139,7 +139,7 @@ namespace System.Security.Principal
 
                 // 8 byte or less name that indicates the source of the access token. This choice of name is visible to callers through the native GetTokenInformation() api
                 // so we'll use the same name the CLR used even though we're not actually the "CLR."
-                byte[] sourceName = { (byte)'C', (byte)'L', (byte)'R', (byte)0 };
+                ReadOnlySpan<byte> sourceName = "CLR\0"u8;
 
                 TOKEN_SOURCE sourceContext;
                 unsafe
@@ -147,7 +147,7 @@ namespace System.Security.Principal
                     if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
                         throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
-                    sourceName.AsSpan().CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
+                    sourceName.CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
                 }
 
                 ArgumentNullException.ThrowIfNull(sUserPrincipalName);
@@ -186,7 +186,7 @@ namespace System.Security.Principal
                         ushort sourceNameLength = checked((ushort)(sourceName.Length));
                         using (SafeLocalAllocHandle sourceNameBuffer = SafeLocalAllocHandle.LocalAlloc(sourceNameLength))
                         {
-                            Marshal.Copy(sourceName, 0, sourceNameBuffer.DangerousGetHandle(), sourceName.Length);
+                            sourceName.CopyTo(new Span<byte>((void*)sourceNameBuffer.DangerousGetHandle(), sourceName.Length));
                             LSA_STRING lsaOriginName = new LSA_STRING(sourceNameBuffer.DangerousGetHandle(), sourceNameLength);
 
                             int ntStatus = Interop.SspiCli.LsaLogonUser(
@@ -1249,7 +1249,7 @@ namespace System.Security.Principal
 
                 Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION claimAttributes = *(Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION*)(safeAllocHandle!.DangerousGetHandle());
                 // An attribute represents a collection of claims.  Inside each attribute a claim can be multivalued, we create a claim for each value.
-                // It is a ragged multi-dimentional array, where each cell can be of different lenghts.
+                // It is a ragged multi-dimentional array, where each cell can be of different lengths.
 
                 for (int attribute = 0; attribute < claimAttributes.AttributeCount; attribute++)
                 {

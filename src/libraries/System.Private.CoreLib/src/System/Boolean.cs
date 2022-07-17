@@ -61,13 +61,13 @@ namespace System
         public static readonly string FalseString = FalseLiteral;
 
         //
-        // Overriden Instance Methods
+        // Overridden Instance Methods
         //
         /*=================================GetHashCode==================================
         **Args:  None
         **Returns: 1 or 0 depending on whether this instance represents true or false.
         **Exceptions: None
-        **Overriden From: Value
+        **Overridden From: Value
         ==============================================================================*/
         // Provides a hash code for this instance.
         public override int GetHashCode()

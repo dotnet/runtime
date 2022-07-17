@@ -58,12 +58,12 @@ namespace System.IO.IsolatedStorage
 
         [Theory]
         [MemberData(nameof(ValidStores))]
-        public void FileExists_Existance(PresetScopes scope)
+        public void FileExists_Existence(PresetScopes scope)
         {
             using (var isf = GetPresetScope(scope))
             {
                 string root = isf.GetUserRootDirectory();
-                string file = "FileExists_Existance";
+                string file = "FileExists_Existence";
                 isf.CreateTestFile(file);
 
                 Assert.True(File.Exists(Path.Combine(root, file)), "exists per file.io where expected");

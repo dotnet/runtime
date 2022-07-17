@@ -81,7 +81,7 @@
   this can be done just for locals as a start, so that at least
   part of the stack is handled precisely.
 
- *) test/fix endianess issues
+ *) test/fix endianness issues
 
  *) Implement a card table as the write barrier instead of remembered
     sets?  Card tables are not easy to implement with our current
@@ -1179,7 +1179,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		/*
 		Do the first bridge step here, as the collector liveness state will become useless after that.
 
-		An important optimization is to only proccess the possibly dead part of the object graph and skip
+		An important optimization is to only process the possibly dead part of the object graph and skip
 		over all live objects as we transitively know everything they point must be alive too.
 
 		The above invariant is completely wrong if we let the gray queue be drained and mark/copy everything.

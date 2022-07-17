@@ -67,14 +67,14 @@
 }
 
 // ========================================================================================
-// Main base type with various virtual methods that will be overriden later
+// Main base type with various virtual methods that will be overridden later
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed  { ret }
 
-  .method public hidebysig newslot virtual instance object MyFunc(string& res) 
+  .method public hidebysig newslot virtual instance object MyFunc(string& res)
   {
     ldarg.1
     ldstr "object GenBaseType.MyFunc()"
@@ -82,7 +82,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IB MyFunc(string& res) 
+  .method public hidebysig newslot virtual instance class IB MyFunc(string& res)
   {
     ldarg.1
     ldstr "IB GenBaseType.MyFunc()"
@@ -106,7 +106,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IB GenToNonGen(string& res) 
+  .method public hidebysig newslot virtual instance class IB GenToNonGen(string& res)
   {
     ldarg.1
     ldstr "IB GenBaseType.GenToNonGen()"
@@ -114,7 +114,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IB NonGenThroughGenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class IB NonGenThroughGenFunc(string& res)
   {
     ldarg.1
     ldstr "IB GenBaseType.NonGenThroughGenFunc()"
@@ -122,7 +122,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IGenRetType<int32,object> MyGenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class IGenRetType<int32,object> MyGenFunc(string& res)
   {
     ldarg.1
     ldstr "IGenRetType<int32,object> GenBaseType.MyGenFunc()"
@@ -130,7 +130,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IGenRetType<!A, class IDictionary<string,!B>> MyGenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class IGenRetType<!A, class IDictionary<string,!B>> MyGenFunc(string& res)
   {
     ldarg.1
     ldstr "IGenRetType<!A, class IDictionary<string,!B>> GenBaseType.MyGenFunc()"
@@ -150,7 +150,7 @@
 }
 
 // ========================================================================================
-// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with 
+// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with
 // covariant return types (more derived return types)
 // ========================================================================================
 
@@ -205,7 +205,7 @@
 
 
 // ========================================================================================
-// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with 
+// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with
 // covariant return types (more derived return types than the ones used in GenMiddleType)
 // ========================================================================================
 
@@ -252,7 +252,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class IGenRetType<!U,!V> MyFunc(string& res)
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
@@ -263,7 +263,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class IC MyFunc(string& res)
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
@@ -327,14 +327,14 @@
     newobj instance void [System.Runtime]System.Exception::.ctor(string)
     throw
   }
-  
+
   .method public hidebysig virtual instance object MyFunc(string& res)
   {
     ldstr "Should never execute this method"
     newobj instance void [System.Runtime]System.Exception::.ctor(string)
     throw
   }
-  
+
   .method public hidebysig virtual instance class IB MyFunc(string& res)
   {
     ldstr "Should never execute this method"
@@ -358,7 +358,7 @@
 }
 
 // ========================================================================================
-// FOURTH LAYER type: overrides all virtuals from GenBaseType using MethodImpls with 
+// FOURTH LAYER type: overrides all virtuals from GenBaseType using MethodImpls with
 // covariant return types (classes that implement the interfaces used as return types)
 // ========================================================================================
 
@@ -405,7 +405,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class GenRetType<!U,!V> MyFunc(string& res)
   {
     .override method instance object class GenBaseType<!U,!V>::MyFunc(string& res)
@@ -415,7 +415,7 @@
     ldnull
     ret
   }
-  
+
   .method public hidebysig newslot virtual instance class C MyFunc(string& res)
   {
     .override method instance class IB class GenBaseType<!U,!V>::MyFunc(string& res)
@@ -496,7 +496,7 @@
         string a,
         [opt] string b,
         [opt] string c,
-        [opt] string d) cil managed 
+        [opt] string d) cil managed
   {
     .param [3] = nullref
     .param [4] = nullref
@@ -588,14 +588,14 @@
   // ============== Test using GenTestType ============== //
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
-  //    2) The signature from GenMiddleType with covariant returns (when applicable)    
+  //    2) The signature from GenMiddleType with covariant returns (when applicable)
   //    3) The signature from GenTestType with covariant returns
   // And verify that the override on GetTestType is the one that executes
-  
-  .method public static bool RunTest1() noinlining 
+
+  .method public static bool RunTest1() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance object class GenBaseType<int32,object>::MyFunc(string&)
@@ -615,10 +615,10 @@
     ret
   }
 
-  .method public static bool RunTest2() noinlining 
+  .method public static bool RunTest2() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::MyFunc(string&)
@@ -637,11 +637,11 @@
     call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
-  
-  .method public static bool RunTest3() noinlining 
+
+  .method public static bool RunTest3() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IGenRetType<!0, class IDictionary<string,!1>> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -666,10 +666,10 @@
     ret
   }
 
-  .method public static bool RunTest4() noinlining 
+  .method public static bool RunTest4() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IGenRetType<int32,object> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -694,10 +694,10 @@
     ret
   }
 
-  .method public static bool RunTest5() noinlining 
+  .method public static bool RunTest5() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::GenToNonGen(string&)
@@ -722,10 +722,10 @@
     ret
   }
 
-  .method public static bool RunTest6() noinlining 
+  .method public static bool RunTest6() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::NonGenThroughGenFunc(string&)
@@ -820,12 +820,12 @@
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
   //    2) The signature from GenMiddleType with covariant returns
-  // And verify that the override on GenMiddleType is the one that executes  
-  
-  .method public static bool RunTest_Middle1() noinlining 
+  // And verify that the override on GenMiddleType is the one that executes
+
+  .method public static bool RunTest_Middle1() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<object,int32>::.ctor()
     ldloca.s   0
     callvirt   instance class IGenRetType<!0, class IDictionary<string,!1>> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -845,10 +845,10 @@
     ret
   }
 
-  .method public static bool RunTest_Middle2() noinlining 
+  .method public static bool RunTest_Middle2() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<object,int32>::.ctor()
     ldloca.s   0
     callvirt   instance class IGenRetType<int32,object> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -868,10 +868,10 @@
     ret
   }
 
-  .method public static bool RunTest_Middle3() noinlining 
+  .method public static bool RunTest_Middle3() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<object,int32>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::GenToNonGen(string&)
@@ -891,10 +891,10 @@
     ret
   }
 
-  .method public static bool RunTest_Middle4() noinlining 
+  .method public static bool RunTest_Middle4() noinlining
   {
     .locals init (string res1, string res2, string res3)
-    
+
     newobj     instance void class GenMiddleType<object,int32>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::NonGenThroughGenFunc(string&)
@@ -913,19 +913,19 @@
     call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
-  
+
   // ============== Test using GenMoreDerived ============== //
   // These test methods will callvirt each method using:
   //    1) The signature from GetBaseType
-  //    2) The signature from GenMiddleType with covariant returns (when applicable)    
+  //    2) The signature from GenMiddleType with covariant returns (when applicable)
   //    3) The signature from GenTestType with covariant returns
-  //    4) The signature from GenMoreDerived with covariant returns    
+  //    4) The signature from GenMoreDerived with covariant returns
   // And verify that the override on GenMoreDerived is the one that executes
-  
-  .method public static bool RunTest_MoreDerived1() noinlining 
+
+  .method public static bool RunTest_MoreDerived1() noinlining
   {
     .locals init (string res1, string res2, string res3, string res4)
-    
+
     newobj     instance void class GenMoreDerived<object,int32,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance object class GenBaseType<int32,object>::MyFunc(string&)
@@ -950,10 +950,10 @@
     ret
   }
 
-  .method public static bool RunTest_MoreDerived2() noinlining 
+  .method public static bool RunTest_MoreDerived2() noinlining
   {
     .locals init (string res1, string res2, string res3, string res4)
-    
+
     newobj     instance void class GenMoreDerived<object,int32,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::MyFunc(string&)
@@ -977,11 +977,11 @@
     call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
-  
-  .method public static bool RunTest_MoreDerived3() noinlining 
+
+  .method public static bool RunTest_MoreDerived3() noinlining
   {
     .locals init (string res1, string res2, string res3, string res4)
-    
+
     newobj     instance void class GenMoreDerived<object,int32,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IGenRetType<!0, class IDictionary<string,!1>> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -1011,10 +1011,10 @@
     ret
   }
 
-  .method public static bool RunTest_MoreDerived4() noinlining 
+  .method public static bool RunTest_MoreDerived4() noinlining
   {
     .locals init (string res1, string res2, string res3, string res4)
-    
+
     newobj     instance void class GenMoreDerived<object,int32,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IGenRetType<int32,object> class GenBaseType<int32,object>::MyGenFunc(string&)
@@ -1044,10 +1044,10 @@
     ret
   }
 
-  .method public static bool RunTest_MoreDerived5() noinlining 
+  .method public static bool RunTest_MoreDerived5() noinlining
   {
     .locals init (string res1, string res2, string res3, string res4)
-    
+
     newobj     instance void class GenMoreDerived<object,int32,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::GenToNonGen(string&)
@@ -1077,10 +1077,10 @@
     ret
   }
 
-  .method public static bool RunTest_MoreDerived6() noinlining 
+  .method public static bool RunTest_MoreDerived6() noinlining
   {
     .locals init (string res1, string res2, string res3, string res4)
-    
+
     newobj     instance void class GenMoreDerived<object,int32,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class IB class GenBaseType<int32,object>::NonGenThroughGenFunc(string&)
@@ -1113,14 +1113,14 @@
 
   // ===================================================================================== //
 
-  .method public static void RunTest_Invalid1() noinlining 
+  .method public static void RunTest_Invalid1() noinlining
   {
     newobj     instance void class Invalid1<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunTest_Invalid2() noinlining 
+  .method public static void RunTest_Invalid2() noinlining
   {
     newobj     instance void class Invalid2<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
@@ -1144,40 +1144,40 @@
     .entrypoint
     .maxstack  2
     .locals init ( bool result )
-    
+
     ldc.i4.1
     stloc.0
-    
+
     T1:
     call bool CMain::RunTest1()
     brtrue.s T2
     ldc.i4.0
     stloc.0
-    
+
     T2:
     call bool CMain::RunTest2()
     brtrue.s T3
     ldc.i4.0
     stloc.0
-    
+
     T3:
     call bool CMain::RunTest3()
     brtrue.s T4
     ldc.i4.0
     stloc.0
-    
+
     T4:
     call bool CMain::RunTest4()
     brtrue.s T5
     ldc.i4.0
     stloc.0
-    
+
     T5:
     call bool CMain::RunTest5()
     brtrue.s T6
     ldc.i4.0
     stloc.0
-    
+
     T6:
     call bool CMain::RunTest6()
     brtrue.s T7
@@ -1203,31 +1203,31 @@
     stloc.0
 
     // ===================================================================================== //
-    
+
     M1:
     call bool CMain::RunTest_Middle1()
     brtrue.s M2
     ldc.i4.0
     stloc.0
-    
+
     M2:
     call bool CMain::RunTest_Middle2()
     brtrue.s M3
     ldc.i4.0
     stloc.0
-    
+
     M3:
     call bool CMain::RunTest_Middle3()
     brtrue.s M4
     ldc.i4.0
     stloc.0
-    
+
     M4:
     call bool CMain::RunTest_Middle4()
     brtrue.s MOREDERIVED1
     ldc.i4.0
     stloc.0
-    
+
     // ===================================================================================== //
 
     MOREDERIVED1:
@@ -1235,37 +1235,37 @@
     brtrue.s MOREDERIVED2
     ldc.i4.0
     stloc.0
-    
+
     MOREDERIVED2:
     call bool CMain::RunTest_MoreDerived2()
     brtrue.s MOREDERIVED3
     ldc.i4.0
     stloc.0
-    
+
     MOREDERIVED3:
     call bool CMain::RunTest_MoreDerived3()
     brtrue.s MOREDERIVED4
     ldc.i4.0
     stloc.0
-    
+
     MOREDERIVED4:
     call bool CMain::RunTest_MoreDerived4()
     brtrue.s MOREDERIVED5
     ldc.i4.0
     stloc.0
-    
+
     MOREDERIVED5:
     call bool CMain::RunTest_MoreDerived5()
     brtrue.s MOREDERIVED6
     ldc.i4.0
     stloc.0
-    
+
     MOREDERIVED6:
     call bool CMain::RunTest_MoreDerived6()
     brtrue.s INVALID1
     ldc.i4.0
-    stloc.0    
-    
+    stloc.0
+
     // ===================================================================================== //
 
     INVALID1:
@@ -1279,13 +1279,13 @@
         leave.s INVALID2
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s INVALID2
     }
-    
+
     INVALID2:
     .try
     {
@@ -1297,10 +1297,10 @@
         leave.s INVALID3
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s INVALID3
     }
 
@@ -1332,7 +1332,7 @@
     call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.s   101
     ret
-    
+
     PASS:
     ldstr      "Test PASSED"
     call       void [System.Console]System.Console::WriteLine(string)

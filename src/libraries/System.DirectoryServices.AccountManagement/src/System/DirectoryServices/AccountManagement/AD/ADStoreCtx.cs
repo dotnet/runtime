@@ -1457,7 +1457,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (sr == null)
                     {
-                        // no match so we better do a root level search in case we are targetting a domain where
+                        // no match so we better do a root level search in case we are targeting a domain where
                         // the user is not an FSP.
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf(ctx): No match");

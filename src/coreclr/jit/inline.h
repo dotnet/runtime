@@ -913,7 +913,7 @@ public:
     // Root context
     InlineContext* GetRootContext();
 
-    // Context for the last sucessful inline
+    // Context for the last successful inline
     // (or root if no inlines)
     InlineContext* GetLastContext() const
     {

@@ -13,7 +13,7 @@ namespace System
     /// </summary>
     public static class BitConverter
     {
-        // This field indicates the "endianess" of the architecture.
+        // This field indicates the "endianness" of the architecture.
         // The value is set to true if the architecture is
         // little endian; false if it is big endian.
 #if BIGENDIAN

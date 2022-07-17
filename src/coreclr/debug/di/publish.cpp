@@ -314,7 +314,7 @@ HRESULT CorpubPublish::GetProcessInternal(
     }
 
     // Acquire the mutex, only waiting two seconds.
-    // We can't actually gaurantee that the target put a mutex object in here.
+    // We can't actually guarantee that the target put a mutex object in here.
     DWORD dwRetVal = WaitForSingleObject(hMutex, SAFETY_TIMEOUT);
 
     if (dwRetVal == WAIT_OBJECT_0)
@@ -406,7 +406,7 @@ CorpubProcess::CorpubProcess(DWORD dwProcessId,
         // need to load it dynamically.
         if (fpGetModuleFileNameEx != NULL)
         {
-            // MSDN is very confused about whether the lenght is in bytes (MSDN 2002) or chars (MSDN 2004).
+            // MSDN is very confused about whether the length is in bytes (MSDN 2002) or chars (MSDN 2004).
             // We err on the safe side by having buffer that's twice as large, and ignoring
             // the units on the return value.
             WCHAR szName[MAX_LONGPATH * sizeof(WCHAR)];
@@ -674,7 +674,7 @@ HRESULT CorpubProcess::EnumAppDomains(ICorPublishAppDomainEnum **ppIEnum)
     int iAppDomainCount = 0;
     AppDomainInfo *pADI = NULL;
 
-    // Make a copy of the IPC block so that we can gaurantee that it's not changing on us.
+    // Make a copy of the IPC block so that we can guarantee that it's not changing on us.
     AppDomainEnumerationIPCBlock tempBlock;
     memcpy(&tempBlock, m_AppDomainCB, sizeof(tempBlock));
 

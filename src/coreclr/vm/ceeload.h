@@ -1633,7 +1633,7 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    // This helper returns to offsets for the slots/bytes/handles. They return the offset in bytes from the beggining
+    // This helper returns to offsets for the slots/bytes/handles. They return the offset in bytes from the beginning
     // of the 1st GC pointer in the statics block for the module.
     void        GetOffsetsForRegularStaticData(
                     mdTypeDef cl,
@@ -1826,7 +1826,7 @@ private:
                                                 // this map *always* overrides the Metadata RVA
         PTR_DynamicILBlobTable   m_pDynamicILBlobTable;
 
-                                                // maps tokens for to their corresponding overriden IL blobs
+                                                // maps tokens for to their corresponding overridden IL blobs
                                                 // this map conditionally overrides the Metadata RVA and the DynamicILBlobTable
         PTR_DynamicILBlobTable   m_pTemporaryILBlobTable;
 

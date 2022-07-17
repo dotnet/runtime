@@ -74,11 +74,11 @@ namespace GCStressPolicy
         // controls when GCs may occur.
         static Volatile<DWORD> s_nGcStressDisabled;
 
-        bool m_bAquired;
+        bool m_bAcquired;
 
     public:
         InhibitHolder()
-        { LIMITED_METHOD_CONTRACT; ++s_nGcStressDisabled; m_bAquired = true; }
+        { LIMITED_METHOD_CONTRACT; ++s_nGcStressDisabled; m_bAcquired = true; }
 
         ~InhibitHolder()
         { LIMITED_METHOD_CONTRACT; Release(); }
@@ -86,10 +86,10 @@ namespace GCStressPolicy
         void Release()
         {
             LIMITED_METHOD_CONTRACT;
-            if (m_bAquired)
+            if (m_bAcquired)
             {
                 --s_nGcStressDisabled;
-                m_bAquired = false;
+                m_bAcquired = false;
             }
         }
 

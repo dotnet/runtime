@@ -243,7 +243,7 @@ namespace ILCompiler
                             return actualModuleData.Module;
                         }
                     }
-                    mappedViewAccessor = null; // Ownership has been transfered
+                    mappedViewAccessor = null; // Ownership has been transferred
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
@@ -342,7 +342,7 @@ namespace ILCompiler
                     if (!File.Exists(candidatePath))
                         continue;
                 }
-                
+
                 pdbFileName = candidatePath;
                 pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
                 break;

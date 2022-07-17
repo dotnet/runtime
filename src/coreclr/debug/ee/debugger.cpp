@@ -1585,7 +1585,7 @@ DebuggerHeap * Debugger::GetInteropSafeExecutableHeap_NoThrow()
 void Debugger::RaiseStartupNotification()
 {
     // Right-side will read this field from OOP via DAC-primitive to determine attach or launch case.
-    // We do an interlocked increment to gaurantee this is an atomic memory write, and to ensure
+    // We do an interlocked increment to guarantee this is an atomic memory write, and to ensure
     // that it's flushed from any CPU cache into memory.
     InterlockedIncrement(&m_fLeftSideInitialized);
 
@@ -1687,7 +1687,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
 //    This will start a synchronization.
 //
 // Notes:
-//    In V2, this also gives the RS a chance to intialize the IPC protocol.
+//    In V2, this also gives the RS a chance to initialize the IPC protocol.
 //    Spefically, this needs to be sent before the LS can send a sync-complete.
 //---------------------------------------------------------------------------------------
 void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
@@ -7336,7 +7336,7 @@ struct SendExceptionOnHelperThreadParams
 //   dwFlags : additional flags (see CorDebugExceptionFlags).
 //
 // Returns:
-//    S_OK on sucess. Else some error. May also throw.
+//    S_OK on success. Else some error. May also throw.
 //
 // Notes:
 //    This is a helper for code:Debugger.SendExceptionEventsWorker.
@@ -8502,7 +8502,7 @@ void Debugger::MarkDebuggerUnattachedInternal()
 
 //-----------------------------------------------------------------------------
 // Favor to do lazy initialization on helper thread.
-// This is needed to allow lazy intialization in Stack Overflow scenarios.
+// This is needed to allow lazy initialization in Stack Overflow scenarios.
 // We may or may not already be initialized.
 //-----------------------------------------------------------------------------
 void LazyInitFavor(void *)
@@ -10134,7 +10134,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     _ASSERTE(ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE);
 
     // We must adjust the result address to point to the right place
-    ipce->FuncEvalComplete.resultAddr = ArgSlotEndianessFixup((ARG_SLOT*)ipce->FuncEvalComplete.resultAddr,
+    ipce->FuncEvalComplete.resultAddr = ArgSlotEndiannessFixup((ARG_SLOT*)ipce->FuncEvalComplete.resultAddr,
         GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType));
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
@@ -10430,7 +10430,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         StartCanaryThread();
 
         // In V3 after attaching event was handled we iterate throughout all ADs and made shadow copies of PDBs in the BIN directories.
-        // After all AppDomain, DomainAssembly and modules iteration was available in out-of-proccess model in V4 the code that enables
+        // After all AppDomain, DomainAssembly and modules iteration was available in out-of-process model in V4 the code that enables
         // PDBs to be copied was not called at attach time.
         // Eliminating PDBs copying side effect is an issue: Dev10 #927143
         EX_TRY
@@ -14910,7 +14910,7 @@ HRESULT Debugger::TerminateAppDomainIPC(void)
     RemoteHANDLE m = m_pAppDomainCB->m_hMutex;
     m_pAppDomainCB->m_hMutex.m_hLocal = NULL;
 
-    // And bring us back to a fully unintialized state.
+    // And bring us back to a fully uninitialized state.
     ZeroMemory(m_pAppDomainCB, sizeof(*m_pAppDomainCB));
 
     // We're done. release and close the mutex.  Note that this must be done

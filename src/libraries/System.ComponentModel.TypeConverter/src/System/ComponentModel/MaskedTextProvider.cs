@@ -361,7 +361,7 @@ namespace System.ComponentModel
                             caseConversion = CaseConversion.ToUpper;
                             continue;
 
-                        case '|':   // no convertion performed on the chars that follow.
+                        case '|':   // no conversion performed on the chars that follow.
                             caseConversion = CaseConversion.None;
                             continue;
 
@@ -1852,7 +1852,7 @@ namespace System.ComponentModel
                 return RemoveAt(startPosition, endPosition, out testPosition, out resultHint);
             }
 
-            // If replacing the entire text with a same-lenght text, we are just setting (not replacing) the test string to the new value;
+            // If replacing the entire text with a same-length text, we are just setting (not replacing) the test string to the new value;
             // in this case we just call SetString.
             // If the text length is different than the specified range we would need to remove or insert characters; there are three possible
             // cases as follows:

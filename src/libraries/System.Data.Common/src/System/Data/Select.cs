@@ -630,7 +630,7 @@ namespace System.Data
             }
             catch (Exception e) when (ADP.IsCatchableExceptionType(e))
             {
-                throw ExprException.FilterConvertion(_rowFilter!.Expression);
+                throw ExprException.FilterConversion(_rowFilter!.Expression);
             }
             return result;
         }

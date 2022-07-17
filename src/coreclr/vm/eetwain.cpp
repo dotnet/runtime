@@ -991,6 +991,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     UINT32 oldSizeOfPreservedArea = oldGcDecoder.GetSizeOfEditAndContinuePreservedArea();
     UINT32 newSizeOfPreservedArea = newGcDecoder.GetSizeOfEditAndContinuePreservedArea();
 
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Got old and new EnC preserved area sizes of %u and %u\n", oldSizeOfPreservedArea, newSizeOfPreservedArea));
     // This ensures the JIT generated EnC compliant code.
     if ((oldSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ||
         (newSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA))
@@ -1000,6 +1001,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     }
 
     TADDR oldStackBase = GetSP(&oldCtx);
+
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old SP=%p, FP=%p\n", (void*)oldStackBase, (void*)GetFP(&oldCtx)));
 
 #if defined(TARGET_AMD64)
     // Note: we cannot assert anything about the relationship between oldFixedStackSize
@@ -1013,12 +1016,16 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     _ASSERTE(pOldCodeInfo->HasFrameRegister());
     _ASSERTE(pNewCodeInfo->HasFrameRegister());
 
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
+
     // x64: SP == FP before localloc
     if (oldStackBase != GetFP(&oldCtx))
         return E_FAIL;
 #elif defined(TARGET_ARM64)
     DWORD oldFixedStackSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
     DWORD newFixedStackSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
 
     // ARM64: FP + 16 == SP + oldFixedStackSize before localloc
     if (GetFP(&oldCtx) + 16 != oldStackBase + oldFixedStackSize)
@@ -1128,7 +1135,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pOldVar->startOffset <= oldMethodOffset &&
                 pOldVar->endOffset   >  oldMethodOffset)
             {
-                oldMethodVarsSorted[varNumber] = *pOldVar;
+                oldMethodVarsSorted[(int)varNumber] = *pOldVar;
             }
         }
 
@@ -1180,7 +1187,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pNewVar->startOffset <= newMethodOffset &&
                 pNewVar->endOffset   >  newMethodOffset)
             {
-                newMethodVarsSorted[varNumber] = *pNewVar;
+                newMethodVarsSorted[(int)varNumber] = *pNewVar;
             }
         }
 
@@ -1937,7 +1944,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
                        S   indicates that register ESI is an interior pointer
                        D   indicates that register EDI is an interior pointer
                        the list count is the number of entries in the list
-                       the list size gives the byte-lenght of the list
+                       the list size gives the byte-length of the list
                        the offsets in the list are variable-length
   */
         while (scanOffs < curOffs)

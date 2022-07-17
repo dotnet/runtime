@@ -971,7 +971,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
                 _ASSERTE(!bObjectCreated);
 
-                *value = pMTValue->Box((void*)ArgSlotEndianessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
+                *value = pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
         }
 
         *ppBlobStart = pBlob;

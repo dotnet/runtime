@@ -3709,7 +3709,7 @@ HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
 // Arguments:
 //     output: pbHasBaseIndices - true iff the array has more than one dimension and pbHasBaseIndices is not null
 // Return Value: S_OK on success or E_INVALIDARG if pbHasBaseIndices is null
-HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
+HRESULT CordbArrayValue::HasBaseIndices(BOOL *pbHasBaseIndices)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -3717,7 +3717,7 @@ HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
 
     *pbHasBaseIndices = m_info.arrayInfo.offsetToLowerBounds != 0;
     return S_OK;
-} // CordbArrayValue::HasBaseIndicies
+} // CordbArrayValue::HasBaseIndices
 
 // gets the base indices for a multidimensional array
 // Arguments:
@@ -3725,7 +3725,7 @@ HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
 //            indices - an array to hold the base indices for the array dimensions (allocated and managed
 //                      by the caller, it must have space for cdim elements)
 // Return Value: S_OK on success or E_INVALIDARG if cdim is not equal to the array rank or indices is null
-HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
+HRESULT CordbArrayValue::GetBaseIndices(ULONG32 cdim, ULONG32 indices[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -3743,7 +3743,7 @@ HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
         indices[i] = m_arrayLowerBase[i];
 
     return S_OK;
-} // CordbArrayValue::GetBaseIndicies
+} // CordbArrayValue::GetBaseIndices
 
 // Get an element at the position indicated by the values in indices (one index for each dimension)
 // Arguments:

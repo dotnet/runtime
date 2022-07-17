@@ -610,12 +610,12 @@ namespace DebuggerTests
                      X = TNumber(5)
                  }, "pf_arr0_props", num_fields: 4);
 
-                var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
+                var invalid_accessors = new object[] { "NonExistent", "10000", "-2", 10000, -2, null, String.Empty };
                 foreach (var invalid_accessor in invalid_accessors)
                 {
                     // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
                     res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
-                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
+                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existent accessor");
                 }
            });
 

@@ -30,7 +30,7 @@ BYTE PerAppDomainTPCountList::s_padding[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) LONG PerAppDomainTPCountList::s_ADHint = -1;
 
-// Move out of from preceeding variables' cache line
+// Move out of from preceding variables' cache line
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) UnManagedPerAppDomainTPCount PerAppDomainTPCountList::s_unmanagedTPCount;
 //The list of all per-appdomain work-request counts.
 ArrayListStatic PerAppDomainTPCountList::s_appDomainIndexList;

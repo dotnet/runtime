@@ -74,10 +74,8 @@ namespace System.Net
         public void AuthenticationError(string? uri, string message) =>
             WriteEvent(AuthenticationErrorId, uri, message);
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = "Parameters to this method are primitive and are trimmer safe")]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3, string? arg4, string? arg5)
         {

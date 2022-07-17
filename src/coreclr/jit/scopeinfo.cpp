@@ -306,7 +306,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
             // See lvaSetStruct for further detail.
             //
             // Now, the VM expects a special enum for these type of local vars: VLT_STK_BYREF
-            // to accomodate for this situation.
+            // to accommodate for this situation.
             if (varDsc->lvIsImplicitByRef)
             {
                 assert(varDsc->lvIsParam);

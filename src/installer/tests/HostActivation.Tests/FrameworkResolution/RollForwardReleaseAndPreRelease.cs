@@ -145,7 +145,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         // Verifies that rollForward settings behave as expected when starting from 4.0.0 which doesn't exit
         // to other available 4.1.* versions (both release and pre-release). So roll forward on minor version.
-        // Specifically targetting the behavior that starting from release should by default prefer release versions.
+        // Specifically targeting the behavior that starting from release should by default prefer release versions.
         // Also verifying behavior when DOTNET_ROLL_FORWARD_TO_PRERELEASE is set.
         [Theory] // rollForward                               applyPatches rollForwardToPreRelease resolvedFramework
         [InlineData(Constants.RollForwardSetting.Minor,       null,        false,                  "4.1.2")]
@@ -178,7 +178,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         // Verifies that rollForward settings behave as expected when starting from 3.0.0 which does exit
         // to other available 4.1.* versions (both release and pre-release). So roll forward on major version.
-        // Specifically targetting the behavior that starting from release should by default prefer release versions.
+        // Specifically targeting the behavior that starting from release should by default prefer release versions.
         // Also verifying behavior when DOTNET_ROLL_FORWARD_TO_PRERELEASE is set.
         [Theory] // rollForward                               applyPatches rollForwardToPreRelease resolvedFramework
         [InlineData(Constants.RollForwardSetting.Major,       null,        false,                  "4.1.2")]

@@ -361,7 +361,7 @@ void CopyWriteBarrier(PCODE dstCode, PCODE srcCode, PCODE endCode)
 #if _DEBUG
 void ValidateWriteBarriers()
 {
-    // Post-grow WB are bigger than pre-grow so validating that target WB has space to accomodate those
+    // Post-grow WB are bigger than pre-grow so validating that target WB has space to accommodate those
     _ASSERTE( ((PBYTE)JIT_WriteBarrier_End - (PBYTE)JIT_WriteBarrier) >= ((PBYTE)JIT_WriteBarrier_MP_Post_End - (PBYTE)JIT_WriteBarrier_MP_Post));
     _ASSERTE( ((PBYTE)JIT_WriteBarrier_End - (PBYTE)JIT_WriteBarrier) >= ((PBYTE)JIT_WriteBarrier_SP_Post_End - (PBYTE)JIT_WriteBarrier_SP_Post));
 
