@@ -9512,14 +9512,12 @@ int CEEInfo::getExactClasses (
         MODE_ANY;
     } CONTRACTL_END;
 
-    int exactClassesCount;
+    int exactClassesCount = 0;
 
     JIT_TO_EE_TRANSITION();
 
     // This function is currently implemented only on NativeAOT
     // but can be implemented for CoreCLR as well (e.g. for internal types)
-
-    exactClassesCount = 0;
 
     EE_TO_JIT_TRANSITION();
 
