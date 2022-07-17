@@ -1,6 +1,6 @@
 <!--
 ***********************************************************************************************
-Sdk.targets
+Microsoft.NET.ILCompiler.props
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -11,7 +11,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <!-- Only import the build props if the NativeAot package isn't referenced via NuGet. -->
-  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.DotNet.ILCompiler.targets" Condition="'$(PublishAot)' == 'true'"/>
-
+  <PropertyGroup>
+    <!-- N.B. The ILLinkTargetsPath is used as a sentinel to indicate a version of this file has already been imported. It will also be the path
+         used to import the targets later in the SDK. -->
+    <ILCompilerTargetsPath>$(MSBuildThisFileDirectory)Microsoft.DotNet.ILCompiler.targets</ILCompilerTargetsPath>
+  </PropertyGroup>
 </Project>
