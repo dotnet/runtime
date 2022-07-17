@@ -276,67 +276,63 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
-            using (Socket socket = GetRawSocket(socketConfig))
-            {
-                int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
-                CancellationTokenSource timeoutTokenSource = new CancellationTokenSource(timeout);
+            CancellationToken timeoutOrCancellationToken = _timeoutOrCancellationSource!.Token;
 
-                try
+            SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
+            using Socket socket = GetRawSocket(socketConfig);
+            int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
+
+            try
+            {
+                await socket.SendToAsync(
+                    socketConfig.SendBuffer.AsMemory(),
+                    SocketFlags.None,
+                    socketConfig.EndPoint,
+                    timeoutOrCancellationToken)
+                    .ConfigureAwait(false);
+
+                byte[] receiveBuffer = new byte[2 * (MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes) + buffer.Length];
+
+                // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
+                // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
+                // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
+                long startingTimestamp = Stopwatch.GetTimestamp();
+                while (!timeoutOrCancellationToken.IsCancellationRequested)
                 {
-                    await socket.SendToAsync(
-                        new ArraySegment<byte>(socketConfig.SendBuffer),
-                        SocketFlags.None, socketConfig.EndPoint,
-                        timeoutTokenSource.Token)
+                    SocketReceiveFromResult receiveResult = await socket.ReceiveFromAsync(
+                        receiveBuffer.AsMemory(),
+                        SocketFlags.None,
+                        socketConfig.EndPoint,
+                        timeoutOrCancellationToken)
                         .ConfigureAwait(false);
 
-                    byte[] receiveBuffer = new byte[2 * (MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes) + buffer.Length];
-
-                    // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
-                    // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
-                    // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
-                    long startingTimestamp = Stopwatch.GetTimestamp();
-                    while (!timeoutTokenSource.IsCancellationRequested)
+                    int bytesReceived = receiveResult.ReceivedBytes;
+                    if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
                     {
-                        SocketReceiveFromResult receiveResult = await socket.ReceiveFromAsync(
-                            new ArraySegment<byte>(receiveBuffer),
-                            SocketFlags.None,
-                            socketConfig.EndPoint,
-                            timeoutTokenSource.Token)
-                            .ConfigureAwait(false);
+                        continue; // Not enough bytes to reconstruct IP header + ICMP header.
+                    }
 
-                        int bytesReceived = receiveResult.ReceivedBytes;
-                        if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
-                        {
-                            continue; // Not enough bytes to reconstruct IP header + ICMP header.
-                        }
-
-                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, startingTimestamp, ref ipHeaderLength, out PingReply? reply))
-                        {
-                            return reply;
-                        }
+                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, startingTimestamp, ref ipHeaderLength, out PingReply? reply))
+                    {
+                        return reply;
                     }
                 }
-                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
-                {
-                }
-                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
-                {
-                    return CreatePingReply(IPStatus.PacketTooBig);
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                finally
-                {
-                    timeoutTokenSource.Dispose();
-                }
-
-                // We have exceeded our timeout duration, and no reply has been received.
-                return CreatePingReply(IPStatus.TimedOut);
             }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+            {
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
+            {
+                return CreatePingReply(IPStatus.PacketTooBig);
+            }
+            catch (OperationCanceledException) when (!_canceled)
+            {
+            }
+
+            // We have exceeded our timeout duration, and no reply has been received.
+            return CreatePingReply(IPStatus.TimedOut);
         }
 
         private static PingReply CreatePingReply(IPStatus status, IPAddress? address = null, long rtt = 0)

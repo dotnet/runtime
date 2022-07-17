@@ -73,33 +73,29 @@ namespace System.Net.NetworkInformation
 
         private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, timeout, options))
+            CancellationToken timeoutOrCancellationToken = _timeoutOrCancellationSource!.Token;
+
+            using Process pingProcess = GetPingProcess(address, buffer, timeout, options);
+            pingProcess.Start();
+
+            try
             {
-                var processCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                p.EnableRaisingEvents = true;
-                p.Exited += (s, e) => processCompletion.SetResult();
-                p.Start();
+                await pingProcess.WaitForExitAsync(timeoutOrCancellationToken).ConfigureAwait(false);
 
-                try
+                string stdout = await pingProcess.StandardOutput.ReadToEndAsync(timeoutOrCancellationToken).ConfigureAwait(false);
+                return ParsePingUtilityOutput(address, pingProcess.ExitCode, stdout);
+            }
+            catch when (timeoutOrCancellationToken.IsCancellationRequested)
+            {
+                if (!pingProcess.HasExited)
                 {
-                    await processCompletion.Task.WaitAsync(TimeSpan.FromMilliseconds(timeout)).ConfigureAwait(false);
+                    pingProcess.Kill();
                 }
-                catch (TimeoutException)
+                if (_canceled)
                 {
-                    p.Kill();
-                    return CreatePingReply(IPStatus.TimedOut);
+                    throw;
                 }
-
-                try
-                {
-                    string stdout = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                    return ParsePingUtilityOutput(address, p.ExitCode, stdout);
-                }
-                catch (Exception)
-                {
-                    // If the standard output cannot be successfully parsed, throw a generic PingException.
-                    throw new PingException(SR.net_ping);
-                }
+                return CreatePingReply(IPStatus.TimedOut);
             }
         }
 
