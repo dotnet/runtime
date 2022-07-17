@@ -74,7 +74,7 @@ namespace System.Runtime
             {
                 Debug.Assert((_state & (int)State.Started) == 0 && _thread == null);
 
-                // Nested ControlledExecution.Run methods are not supported
+                // Recursive ControlledExecution.Run calls are not supported
                 if (t_execution != null)
                     throw new InvalidOperationException(SR.InvalidOperation_NestedControlledExecutionRun);
 
