@@ -625,7 +625,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 //  0 -    [Default] Use InstrumentedTier for non-R2R code as the initial tier
 //  1 -              Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTier
 //  2 - [Not tested] Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTierOptimized
-//  3 - [Not tested] Promote hot Tier0/R2R to InstrumentedTier
+//  3 -              Promote hot Tier0/R2R to InstrumentedTier
 //  4 - [Not tested] Promote hot Tier0/R2R to InstrumentedTierOptimized
 //
 // Pros & cons of using optimizations inside the instrumented tiers (modes '2' and '4')
@@ -637,7 +637,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 //    * Currently, we won't instrument inlinees -> we'll probably miss a lot of oportunities and produce less accurate profile
 //      leading to a less optimized final tier
 //
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_Strategy, W("TieredPGO_Strategy"), 3, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_Strategy, W("TieredPGO_Strategy"), 0, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
 #endif
 
 ///
