@@ -562,7 +562,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
         [Theory]
         [InlineData(
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+#pragma warning restore SYSLIB0039
             Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1 |
             Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1 |
             Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2)]

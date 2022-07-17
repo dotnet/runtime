@@ -503,9 +503,9 @@ namespace UniversalGen
     public class UCGSamples<T, U> : Base
     {
         public T[] _elements = new T[10];
-        
+
         public T member;
-        
+
         public T getMember() { return this.member; }
 
         public override object GetElementAt(int index)
@@ -524,18 +524,18 @@ namespace UniversalGen
                 _elements[index] = (T)value;
             }
         }
-        
+
         private void Empty(T t, T u)
         {
         }
-        
+
         public override void nestedTest()
         {
             testMethodInner();
             //testMethodInner2();
             testMethodInner3();
         }
-        
+
         private MyGenStruct<UCGSamples<T,U>> testMethodInner()
         {
             return default(MyGenStruct<UCGSamples<T,U>>);
@@ -544,14 +544,14 @@ namespace UniversalGen
         {
             return default(MyGenStruct<MyGenStruct<UCGSamples<T,U>>>);
         }
-        
+
         public override bool EmptyMethodTest(object param)
         {
             T t = (T) param;
             Empty(t, t);
             return true;
         }
-        
+
         private T dupTestInternal(T t1, T t2)
         {
             // IL for this method uses a 'dup' opcode
@@ -560,46 +560,46 @@ namespace UniversalGen
             {
                 local = t2;
             }
-            return local;            
+            return local;
         }
-        
+
         public override object dupTest(object o1, object o2)
         {
             return (object) dupTestInternal((T) o1, (T) o2);
         }
-        
+
         private void set(T t)
         {
             member = t;
         }
-        
+
         private void setEQ(T t1, T t2)
         {
             t2 = t1;
         }
-        
+
         private void setByRefInner(T t, ref T tRef)
         {
             tRef = t;
-        } 
-        
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void setInner(T t1, T t2)
         {
             t1 = t2;
         }
-        
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void setOuter(T t1, T t2)
         {
             setInner(t1, t2);
         }
-        
+
         private void setByRef(T t, ref T tRef)
         {
             setByRefInner(t, ref tRef);
         }
-        
+
         public override bool FunctionCallTestsSetMember(object o1)
         {
             // eventually calls this.set(T) which sets this.member
@@ -607,7 +607,7 @@ namespace UniversalGen
             set(t);
             return this.member.Equals(t) && t.Equals(this.getMember());
         }
-        
+
         public override bool FunctionCallTestsSetMemberByRef(object o1)
         {
             // same as 'FunctionCallTestsSetMember', but sets this.member via passing it byref
@@ -616,7 +616,7 @@ namespace UniversalGen
             setByRef(t, ref this.member);
             return this.member.Equals(t);
         }
-        
+
         public override bool FunctionCallTestsSetByValue(object o1)
         {
             // Calls setEQ, which sets second arg equal to first
@@ -625,7 +625,7 @@ namespace UniversalGen
             setEQ(t, this.member);
             return !this.member.Equals(t);
         }
-        
+
         public override bool FunctionCallTestsSetLocalByRef(object o1)
         {
             // same as 'FunctionCallTests', but sets a local via passing it byref
@@ -644,7 +644,7 @@ namespace UniversalGen
             return !this.member.Equals(t);
         }
     }
-    
+
     public class InterlockedClass<T, U> : Base where T : class
     {
         T member= default(T);
@@ -675,14 +675,14 @@ namespace UniversalGen
             this.setMember((T)o1);
             T ret = this.exchangeTest((T)o2);
             Assert.IsTrue(ret.Equals(o1));
-            
+
             this.setMember((T)o1);
             Assert.IsTrue(this.member.Equals((T) o1));
             ret = this.compareExchangeTest((T)o2);
-            Assert.IsTrue(ret.Equals(o1));            
+            Assert.IsTrue(ret.Equals(o1));
         }
     }
-    
+
     public class Test
     {
         [TestMethod]
@@ -692,7 +692,7 @@ namespace UniversalGen
             Base o = (Base)Activator.CreateInstance(t);
             o.InterlockedTests((object)"abc", (object)"def");
         }
-        
+
         [TestMethod]
         public static void TestArraysAndGC()
         {
@@ -738,15 +738,15 @@ namespace UniversalGen
             Assert.IsTrue(o.EmptyMethodTest((short) 45));
             Assert.AreEqual((short)o.dupTest((short)12, (short)-453),
                             (short)12);
-                            
-            o.nestedTest();            
-           
+
+            o.nestedTest();
+
             Assert.IsTrue(o.FunctionCallTestsSetMember((short) 79));
             Assert.IsTrue(o.FunctionCallTestsSetMemberByRef((short) 85));
             Assert.IsTrue(o.FunctionCallTestsSetByValue((short) 138));
             Assert.IsTrue(o.FunctionCallTestsSetLocalByRef((short) 19));
             Assert.IsTrue(o.FunctionCallTestsSetByValue2((short) 99));
-            
+
             for (int i = 0; i < 10; i++)
             {
                 // No explicit typecasts
@@ -774,7 +774,7 @@ namespace UniversalGen
                 Assert.AreEqual(((short)o.GetElementAt(i)).ToString(), val.ToString());
             }
         }
-        
+
         [TestMethod]
         public static void TestMakeGenericType()
         {
@@ -919,7 +919,7 @@ namespace UniversalGen
         {
             // In this test, we set values using static code, and the universal shared generic is supposed to read from
             // the same static variables
-            
+
             // Test with primitive types as field types
             TestFieldsBase o = new UCGStaticFieldsLayoutCompatStatic<int, int>();
             o.SetVal1(10);
@@ -1007,7 +1007,7 @@ namespace PartialUSC
         public virtual void TestVirtualCall3(object o, bool TAndUAreTheSame, string instTypeName) { }
         public virtual void TestVirtualCall4(object o, string instTypeName) { }
     }
-    
+
     public class UCGTestVirtualCalls<T, U> : TestVirtualCallsBase
     {
         public override void TestVirtualCall0(object o)
@@ -1169,7 +1169,7 @@ namespace PartialUSC
 
             Assert.IsTrue(result == (short)123);
         }
-        
+
         [TestMethod]
         public static void TestVirtualCalls()
         {
@@ -1605,7 +1605,7 @@ namespace CallingConvention
         public virtual object TestNonVirtualInstanceFunction(object o, object value) { return null; }
     }
 
-    public class UCGSeperateClass<T>
+    public class UCGSeparateClass<T>
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         public object BoxParam(T t)
@@ -1618,7 +1618,7 @@ namespace CallingConvention
     {
         public override object TestNonVirtualInstanceFunction(object o, object value)
         {
-            return ((UCGSeperateClass<T>)o).BoxParam((T)value);
+            return ((UCGSeparateClass<T>)o).BoxParam((T)value);
         }
     }
 
@@ -2084,17 +2084,17 @@ namespace CallingConvention
             }
         }
 
-        
+
         [TestMethod]
         public static void TestCallInstanceFunction()
         {
             var t = TypeOf.CCT_UCGTestNonVirtualFunctionCallUse.MakeGenericType(TypeOf.Short);
             TestNonVirtualFunctionCallUseBase o = (TestNonVirtualFunctionCallUseBase)Activator.CreateInstance(t);
 
-            new UCGSeperateClass<short>().BoxParam(4);
+            new UCGSeparateClass<short>().BoxParam(4);
 
             short testValue = (short)3817;
-            object returnValue = o.TestNonVirtualInstanceFunction(new UCGSeperateClass<short>(), (object)testValue);
+            object returnValue = o.TestNonVirtualInstanceFunction(new UCGSeparateClass<short>(), (object)testValue);
             Assert.AreEqual(testValue, (short)returnValue);
         }
 
@@ -2251,10 +2251,10 @@ namespace DynamicInvoke
             // SimpleMethod2
             {
                 MethodInfo simpleMethod2 = t.GetTypeInfo().GetDeclaredMethod("SimpleMethod2");
-                object[] args = new object[] { 
-                    123, 
-                    "456", 
-                    new Dictionary<object, string>(), 
+                object[] args = new object[] {
+                    123,
+                    "456",
+                    new Dictionary<object, string>(),
                     new List<float>(new float[]{1.2f, 3.4f, 5.6f})
                 };
 
@@ -2340,7 +2340,7 @@ namespace TypeLayout
         public X x;
         public Y y;
         public Z z;
-        
+
         // This forces recursive type layout to ensure that we come up with a sensible result.
         public static GenStructDynamic<X, Y, Z> test;
     }
@@ -2379,7 +2379,7 @@ namespace TypeLayout
             return t.GetType();
         }
     }
-    
+
 
     public class Test
     {
@@ -2435,7 +2435,7 @@ namespace TypeLayout
             s_staticClass.x = s_dynamicClass.x;
             s_staticClass.y = s_dynamicClass.y;
             s_staticClass.z = s_dynamicClass.z;
-            
+
             GenStructDynamic<sbyte, sbyte, sbyte>.test.x = 0;
 
             Type staticType = null;
@@ -2535,7 +2535,7 @@ namespace TypeLayout
             s_dynamicStruct.x = s_staticStruct.x;
             s_dynamicStruct.y = s_staticStruct.y;
             s_dynamicStruct.z = s_staticStruct.z;
-            
+
 
             Type staticType = null;
             Type dynamicType = null;
@@ -2655,7 +2655,7 @@ namespace TypeLayout
             staticType = typeof(GenStructStatic<short, double, double>);
             dynamicType = typeof(GenStructDynamic<,,>).MakeGenericType(TypeOf.Int16, TypeOf.Double, TypeOf.Double);
             AssertTypesSimilar(staticType, dynamicType);
-            
+
             // top level int
             // mid level bool
             staticType = typeof(GenStructStatic<int, bool, bool>);
@@ -2712,7 +2712,7 @@ namespace TypeLayout
             staticType = typeof(GenStructStatic<int, double, double>);
             dynamicType = typeof(GenStructDynamic<,,>).MakeGenericType(TypeOf.Int32, TypeOf.Double, TypeOf.Double);
             AssertTypesSimilar(staticType, dynamicType);
-            
+
             // top level double
             // mid level bool
             staticType = typeof(GenStructStatic<double, bool, bool>);
@@ -2781,7 +2781,7 @@ namespace ActivatorCreateInstance
         public ReferenceType() { _field = "ReferenceType.ctor"; }
         public override string ToString() { return _field; }
     }
-    public class GenReferenceType<T> 
+    public class GenReferenceType<T>
     {
         string _field;
         public GenReferenceType() { _field = "GenReferenceType<" + typeof(T) + ">.ctor"; }
@@ -2816,8 +2816,8 @@ namespace ActivatorCreateInstance
     }
 
 
-    public class Base 
-    { 
+    public class Base
+    {
         public virtual string Func() { return null; }
     }
     public class ACI_Instantiator<T, U> : Base
@@ -2861,7 +2861,7 @@ namespace ActivatorCreateInstance
             TestActivatorCreateInstance_Inner(TypeOf.ACI_GenReferenceTypeNoDefaultCtor.MakeGenericType(TypeOf.Double), null, true);
             TestActivatorCreateInstance_Inner(typeof(GenReferenceTypeNoDefaultCtor<CommonType1>), null, true);
 
-            TestActivatorCreateInstance_Inner(typeof(AValueType), "AValueType.ctor00");            
+            TestActivatorCreateInstance_Inner(typeof(AValueType), "AValueType.ctor00");
             TestActivatorCreateInstance_Inner(TypeOf.ACI_AGenValueType.MakeGenericType(TypeOf.String), "AGenValueType<System.String>.ctor");
             TestActivatorCreateInstance_Inner(TypeOf.ACI_AGenValueType.MakeGenericType(TypeOf.Double), "AGenValueType<System.Double>.ctor0");
 #if USC
@@ -2970,15 +2970,15 @@ namespace Heuristics
             return typeof(T).ToString();
         }
     }
-    
+
     //
-    // Test USG reflection heuristics by using an rd.xml entry to root the type.  
+    // Test USG reflection heuristics by using an rd.xml entry to root the type.
     // Only look up the type with Type.GetType(string) so it is never statically referenced.
     //
     public struct OnlyUseViaReflection<T>
     {
         T _a;
-        
+
         public OnlyUseViaReflection(int dummyToMakeCscPass) { _a = default(T); }
         public override string ToString() { return "OnlyUseViaReflection<" + typeof(T) + ">.ctor" + _a; }
         public string GenericMethodNotCalledStatically<U>(U u)
@@ -2986,7 +2986,7 @@ namespace Heuristics
             return typeof(U).ToString();
         }
     }
-    
+
     public class OnlyUseViaReflectionGenMethod
     {
         public string GenericMethodNotCalledStatically<T>(T t)
@@ -2994,7 +2994,7 @@ namespace Heuristics
             return typeof(T).ToString();
         }
     }
-    
+
     public class TestHeuristics
     {
         [TestMethod]
@@ -3004,12 +3004,12 @@ namespace Heuristics
             t = TypeOf.OnlyUseViaReflection.MakeGenericType(TypeOf.Double);
             Object o = Activator.CreateInstance(t);
             Assert.IsTrue(o != null);
-            
+
             t = TypeOf.OnlyUseViaReflectionGenMethod;
             Object obj = Activator.CreateInstance(t);
             Assert.IsTrue(obj != null);
         }
-        
+
         //
         // Try instantiating all reflectable generics in this test app over a specific value type to ensure
         // everything marked reflectable works with USG
@@ -3065,7 +3065,7 @@ namespace ArrayVarianceTest
     {
         public string RunTest(object input_obj, int testId)
         {
-            // These typecases will cause RhTypeCast_IsInstanceOfInterface to execute, 
+            // These typecases will cause RhTypeCast_IsInstanceOfInterface to execute,
             // which will check for variance equalities between types.
             IEnumerable<T> source = input_obj as IEnumerable<T>;
             ICollection<T> collection = source as ICollection<T>;
@@ -3317,7 +3317,7 @@ namespace FieldLayoutBugRepro
     }
 
     public interface IMyComparer<T> { }
-    public class MyComparer<T> : IMyComparer<T> 
+    public class MyComparer<T> : IMyComparer<T>
     {
         public override string ToString() { return "MyComparer<" + typeof(T) + ">"; }
     }
@@ -3406,9 +3406,6 @@ namespace FieldLayoutBugRepro
         {
             Type targ1 = typeof(EventPattern<>).MakeGenericType(TypeOf.String);
             Type targ2 = typeof(StateProducer<>).MakeGenericType(targ1);
-            // *** RANDOME REFLECTION BUG: this works on the desktop CLR, but doesn't in ProjectN :) ***:
-            //Type targ3 = targ2.GetTypeInfo().GetDeclaredNestedType("State").MakeGenericType(targ1);
-            // Use this workaround instead:
             Type targ3 = typeof(StateProducer<>).GetTypeInfo().GetDeclaredNestedType("State").MakeGenericType(targ1);
             Type delType = typeof(Func<,,>).MakeGenericType(typeof(IInterface), targ3, TypeOf.String);
 
@@ -4183,7 +4180,7 @@ namespace ComparerOfTTests
 
             int actualResult = 0;
             bool actualThrow = false;
-          
+
             try
             {
                 actualResult = e.Compare(x,y);
@@ -4296,7 +4293,7 @@ namespace DefaultValueDelegateParameterTests
 
             // Test not using default parameter
             result = del.DynamicInvoke(new object[]{ (object)(short)3, 5});
-            Assert.AreEqual(result, 5); 
+            Assert.AreEqual(result, 5);
         }
     }
 }

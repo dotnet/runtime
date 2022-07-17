@@ -4,6 +4,7 @@
 //
 //.corflags 0x00000002
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -11,26 +12,28 @@
 }
 .assembly 'ptr'
 { }
+.namespace Test_ptr
+{
 // MVID: {6048B3F7-DE21-4008-935A-6B43C5338841}
 .class value private explicit ansi sealed $MultiByte$size$120
 {
   .pack 1
   .size 120
-} // end of class '$MultiByte$size$120'
+} // end of class 'Test_ptr.$MultiByte$size$120'
 
 .class value private explicit ansi sealed $MultiByte$size$7
 {
   .pack 1
   .size 7
-} // end of class '$MultiByte$size$7'
+} // end of class 'Test_ptr.$MultiByte$size$7'
 
 .class value private explicit ansi sealed $MultiByte$size$32000
 {
   .pack 1
   .size 32000
-} // end of class '$MultiByte$size$32000'
+} // end of class 'Test_ptr.$MultiByte$size$32000'
 
-.class AA {
+.class public AA {
 .method public static void qsort(native unsigned int A_0,
               unsigned int32 A_1,
               unsigned int32 A_2,
@@ -44,8 +47,8 @@
            int8 * V_4,
            native uint V_5,
            int8 * V_6,
-           value class $MultiByte$size$120 V_7,
-           value class $MultiByte$size$120 V_8)
+           value class Test_ptr.$MultiByte$size$120 V_7,
+           value class Test_ptr.$MultiByte$size$120 V_8)
   IL_0000:  ldarg.1
   IL_0001:  ldc.i4.2
   IL_0002:  blt.un.s   IL_0007
@@ -83,7 +86,7 @@
   IL_0029:  ldloc.s    V_4
   IL_002b:  ldarg.2
   IL_002c:  ldarg.3
-  IL_002d:  call       void AA::shortsort(native unsigned int, native unsigned int, unsigned int32, method int32 *(native unsigned int,native unsigned int))
+  IL_002d:  call       void Test_ptr.AA::shortsort(native unsigned int, native unsigned int, unsigned int32, method int32 *(native unsigned int,native unsigned int))
   IL_0032:  br         IL_00ef
 
   IL_0037:  ldloc.0
@@ -98,7 +101,7 @@
   IL_0041:  ldloc.s    V_6
   IL_0043:  ldloc.0
   IL_0044:  ldarg.2
-  IL_0045:  call       void  AA::swap(native unsigned int, native unsigned int, unsigned int32)
+  IL_0045:  call       void  Test_ptr.AA::swap(native unsigned int, native unsigned int, unsigned int32)
   IL_004a:  ldloc.0
   IL_004b:  stloc.3
   IL_004c:  ldloc.s    V_4
@@ -144,13 +147,13 @@
   IL_007e:  ldloc.3
   IL_007f:  ldloc.2
   IL_0080:  ldarg.2
-  IL_0081:  call       void AA::swap(native unsigned int, native unsigned int, unsigned int32)
+  IL_0081:  call       void Test_ptr.AA::swap(native unsigned int, native unsigned int, unsigned int32)
   IL_0086:  br.s       IL_0051
 
   IL_0088:  ldloc.0
   IL_0089:  ldloc.2
   IL_008a:  ldarg.2
-  IL_008b:  call       void AA::swap(native unsigned int, native unsigned int, unsigned int32)
+  IL_008b:  call       void Test_ptr.AA::swap(native unsigned int, native unsigned int, unsigned int32)
   IL_0090:  ldloc.2
   IL_0091:  ldc.i4.1
   IL_0092:  sub
@@ -302,7 +305,7 @@
   IL_0023:  ldloc.1
   IL_0024:  ldarg.1
   IL_0025:  ldarg.2
-  IL_0026:  call       void  AA::swap(native unsigned int, native unsigned int, unsigned int32)
+  IL_0026:  call       void  Test_ptr.AA::swap(native unsigned int, native unsigned int, unsigned int32)
   IL_002b:  ldarg.1
   IL_002c:  ldarg.2
   IL_002d:  sub
@@ -388,11 +391,14 @@
 
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  4
   .locals (int32 V_0,
            unsigned int32 V_1,
-           value class $MultiByte$size$32000 V_2,
+           value class Test_ptr.$MultiByte$size$32000 V_2,
            int32 V_3)
   IL_0000:  ldc.i4     0x1f40
   IL_0005:  stloc.3
@@ -430,8 +436,8 @@
   IL_0034:  ldloca.s   V_2
   IL_0036:  ldc.i4     0x1f40
   IL_003b:  ldc.i4.4
-  			ldftn  int32 AA::mycomp(native unsigned int A_0, native unsigned int A_1)
-  IL_0041:  call       void AA::qsort(native unsigned int,unsigned int32,unsigned int32,
+  			ldftn  int32 Test_ptr.AA::mycomp(native unsigned int A_0, native unsigned int A_1)
+  IL_0041:  call       void Test_ptr.AA::qsort(native unsigned int,unsigned int32,unsigned int32,
   							method int32 *(native unsigned int, native unsigned int))
   IL_0046:  ldc.i4.1
   IL_0047:  stloc.0
@@ -481,4 +487,5 @@
   IL_0090:  ldc.i4.0
   IL_0091:  ret
 } // end of global method 'main'
-} //class AA
+} //class Test_ptr.AA
+}

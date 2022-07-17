@@ -26,12 +26,12 @@ namespace System.Runtime
     {
         private const string RuntimeLibrary = "*";
 
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial ulong RhpGetTickCount64();
 
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial IntPtr RhpGetCurrentThread();
 
@@ -69,7 +69,7 @@ namespace System.Runtime
         private static extern bool _RhReRegisterForFinalize(object obj);
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         private static partial void RhWaitForPendingFinalizers(int allowReentrantWait);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -82,7 +82,7 @@ namespace System.Runtime
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
 
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.
@@ -187,7 +187,18 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetTotalAllocatedBytes")]
         internal static extern long RhGetTotalAllocatedBytes();
 
-        [GeneratedDllImport(RuntimeLibrary)]
+        internal enum GCConfigurationType
+        {
+            Int64,
+            StringUtf8,
+            Boolean
+        }
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+
+        [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial long RhGetTotalAllocatedBytesPrecise();
 
@@ -195,11 +206,15 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
 
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTotalPauseDuration")]
+        internal static extern long RhGetTotalPauseDuration();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
@@ -281,14 +296,14 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesEquivalent")]
-        private static unsafe extern bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
+        private static extern unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
 
         internal static unsafe bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
             => AreTypesEquivalent(pType1.ToPointer(), pType2.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
-        private static unsafe extern bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
+        private static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
         internal static unsafe bool AreTypesAssignable(EETypePtr pSourceType, EETypePtr pTargetType)
             => AreTypesAssignable(pSourceType.ToPointer(), pTargetType.ToPointer());
@@ -299,18 +314,18 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        private static unsafe extern object IsInstanceOf(MethodTable* pTargetType, object obj);
+        private static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
             => IsInstanceOf(pTargetType.ToPointer(), obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        private  static unsafe extern object IsInstanceOfClass(MethodTable* pTargetType, object obj);
+        private  static extern unsafe object IsInstanceOfClass(MethodTable* pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static unsafe extern object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
+        internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
             => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
@@ -323,28 +338,28 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
-        private static unsafe extern object RhBoxAny(ref byte pData, MethodTable* pEEType);
+        private static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
 
         internal static unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType)
             => RhBoxAny(ref pData, pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        private static unsafe extern object RhNewObject(MethodTable* pEEType);
+        private static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         internal static unsafe object RhNewObject(EETypePtr pEEType)
             => RhNewObject(pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        private static unsafe extern Array RhNewArray(MethodTable* pEEType, int length);
+        private static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
 
         internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
             => RhNewArray(pEEType.ToPointer(), length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static unsafe extern string RhNewString(MethodTable* pEEType, int length);
+        internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
 
         internal static unsafe string RhNewString(EETypePtr pEEType, int length)
             => RhNewString(pEEType.ToPointer(), length);
@@ -368,25 +383,25 @@ namespace System.Runtime
         internal static extern object RhMemberwiseClone(object obj);
 
         // Busy spin for the given number of iterations.
-        [GeneratedDllImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
-        [GeneratedDllImport(RuntimeLibrary, EntryPoint = "RhYield")]
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         private static partial int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
 
-        [GeneratedDllImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhFlushProcessWriteBuffers();
 
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -445,12 +460,15 @@ namespace System.Runtime
         internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
-        internal static extern IntPtr RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        internal static extern IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot);
+        // For my life cannot figure out the ordering of modifiers this is expecting.
+#pragma warning disable IDE0036
+        internal static extern unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext);
+
+        internal static unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot)
+        {
+            return RhResolveDispatchOnType(instanceType, interfaceType, slot, null);
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]
@@ -531,19 +549,19 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static unsafe extern object[] RhGetThreadStaticStorageForModule(int moduleIndex);
+        internal static extern unsafe object[] RhGetThreadStaticStorageForModule(int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static unsafe extern bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
+        internal static extern unsafe bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        internal static unsafe extern IntPtr RhCurrentNativeThreadId();
+        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
-        internal static unsafe extern ulong RhCurrentOSThreadId();
+        internal static extern unsafe ulong RhCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]
@@ -617,7 +635,7 @@ namespace System.Runtime
         internal static extern void RhCallDescrWorker(IntPtr callDescr);
 
         // For Managed to Native calls
-        [GeneratedDllImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
         internal static partial void RhCallDescrWorkerNative(IntPtr callDescr);
 
         // Moves memory from smem to dmem. Size must be a positive value.
@@ -935,14 +953,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
 
-        [GeneratedDllImport(RuntimeImports.RuntimeLibrary)]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
         internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
 
-        [GeneratedDllImport(RuntimeImports.RuntimeLibrary)]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
         internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
 #if TARGET_X86 || TARGET_AMD64
-        [GeneratedDllImport(RuntimeLibrary)]
+        [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
 #endif

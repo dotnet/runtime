@@ -1010,8 +1010,8 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
     // may change and the cached value will not match.
     if (!m_fCachedMethodValuesValid)
     {
-        PCCOR_SIGNATURE functionSignature;
-        ULONG size;
+        PCCOR_SIGNATURE functionSignature = NULL;
+        ULONG size = 0;
         DWORD methodAttr = 0;
         uint32_t argCount;
 
@@ -1169,7 +1169,7 @@ HRESULT CordbFunction::GetArgumentType(DWORD dwIndex,
 // that they will return when asked for native code. The 1:1 mapping between
 // function and code was invalidated by generics but debuggers continue to use
 // the old API. When they do we need to have some code to hand them back even
-// though it is an arbitrary instantiation. Note that that the cannonical code
+// though it is an arbitrary instantiation. Note that the cannonical code
 // here is merely the first one that a user inspects... it is not guaranteed to
 // be the same in each debugging session but once set it will never change. It is
 // also definately NOT guaranteed to be the instantation over the runtime type
@@ -1208,7 +1208,7 @@ HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCod
 
     CordbReJitILCode * pILCode = m_reJitILCodes.GetBase(VmPtrToCookie(vmILCodeVersionNode));
 
-    // special case non-existance as need to add to the hash table too
+    // special case non-existence as need to add to the hash table too
     if (pILCode == NULL)
     {
         // we don't yet support ENC and ReJIT together, so the version should be 1

@@ -427,16 +427,18 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // This would be easier to write with the gcc extension typeof,
 // but it is not widely enough implemented (i.e. Microsoft C).
 // The value copy is needed in cases computing value causes a GC
-#define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
-		TYPE __val = (VALUE);	\
+#define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do { \
+		MONO_DISABLE_WARNING(4189) \
+		TYPE __val = (VALUE); \
 		if (0) { TYPE * typecheck G_GNUC_UNUSED = &MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (HANDLE)->FIELD); } \
 		MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD = __val); \
+		MONO_RESTORE_WARNING \
 	 } while (0)
 
 // handle [idx] = value (for managed pointers)
 #define MONO_HANDLE_ARRAY_SETREF(HANDLE, IDX, VALUE) do {	\
 		uintptr_t __idx = (IDX);	\
-   		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);		\
+		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);		\
 		{	/* FIXME scope needed by Centrinel */		\
 			/* FIXME mono_array_setref_fast is not an expression. */ \
 			MONO_HANDLE_SUPPRESS_SCOPE(1);			\
@@ -605,6 +607,8 @@ mono_handle_assign_raw (MonoObjectHandleOut dest, void *src)
 static inline gpointer
 mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
 {
+	/* TODO: metadata-update: fix all callers */
+	g_assert (!m_field_is_from_update (field));
 	return MONO_HANDLE_SUPPRESS (((gchar *)MONO_HANDLE_RAW (h)) + field->offset);
 }
 

@@ -1,6 +1,5 @@
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.7.3108.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // This test originally triggered incorrect assert that fgGetPtrArgCntMax calculated during morph was lower
 // than maxStackLevel calculated during StackLevelSetter. It happens because long decomposition 

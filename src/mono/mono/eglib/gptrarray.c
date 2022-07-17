@@ -216,14 +216,6 @@ g_ptr_array_sort(GPtrArray *array, GCompareFunc compare)
 	mono_qsort (array->pdata, array->len, sizeof(gpointer), compare);
 }
 
-void
-g_ptr_array_sort_with_data (GPtrArray *array, GCompareDataFunc compare, gpointer user_data)
-{
-	g_assert (array);
-
-	g_qsort_with_data (array->pdata, array->len, sizeof (gpointer), compare, user_data);
-}
-
 guint
 g_ptr_array_capacity (GPtrArray *array)
 {
@@ -234,7 +226,7 @@ gboolean
 g_ptr_array_find (GPtrArray *array, gconstpointer needle, guint *index)
 {
 	g_assert (array);
-	for (int i = 0; i < array->len; i++) {
+	for (guint i = 0; i < array->len; i++) {
 		if (array->pdata [i] == needle) {
 			if (index)
 				*index = i;

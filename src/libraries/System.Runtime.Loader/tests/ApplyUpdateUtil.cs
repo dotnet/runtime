@@ -66,7 +66,7 @@ namespace System.Reflection.Metadata
 
         private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();
 
-        internal static void ApplyUpdate (System.Reflection.Assembly assm)
+        internal static void ApplyUpdate (System.Reflection.Assembly assm, bool usePDB = true)
         {
             int count;
             if (!assembly_count.TryGetValue(assm, out count))
@@ -86,7 +86,10 @@ namespace System.Reflection.Metadata
             string dpdb_name = $"{basename}.{count}.dpdb";
             byte[] dmeta_data = System.IO.File.ReadAllBytes(dmeta_name);
             byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
-            byte[] dpdb_data = System.IO.File.ReadAllBytes(dpdb_name);
+            byte[] dpdb_data = null;
+
+            if (usePDB)
+                dpdb_data = System.IO.File.ReadAllBytes(dpdb_name);
 
             MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
         }

@@ -9,7 +9,8 @@ internal static partial class Interop
     {
         // Note: It's somewhat unusual to use an API enum as a parameter type to a P/Invoke but in this case, X509KeyUsageFlags was intentionally designed as bit-wise
         // identical to the wincrypt CERT_*_USAGE values.
-        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CertGetIntendedKeyUsage(
             CertEncodingType dwCertEncodingType,
             CERT_INFO* pCertInfo,

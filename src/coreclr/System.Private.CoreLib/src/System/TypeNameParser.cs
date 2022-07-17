@@ -17,7 +17,7 @@ namespace System
     internal sealed partial class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
         private static partial void Release(IntPtr pTypeNameParser);
         #endregion
 
@@ -37,32 +37,34 @@ namespace System
     internal sealed partial class TypeNameParser : IDisposable
     {
         #region QCalls
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
         private static partial void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetTypeArguments")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetTypeArguments")]
         private static partial void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetModifiers")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetModifiers")]
         private static partial void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetAssemblyName")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetAssemblyName")]
         private static partial void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
         #endregion
 
         #region Static Members
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
-            string typeName!!,
+            string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
@@ -172,12 +174,7 @@ namespace System
             }
 
             int[]? modifiers = GetModifiers();
-
-            fixed (int* ptr = modifiers)
-            {
-                IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
-            }
+            return RuntimeTypeHandle.GetTypeHelper(baseType, types!, modifiers);
         }
 
         private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)

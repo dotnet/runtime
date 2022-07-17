@@ -156,7 +156,7 @@ namespace System.Net.Test.Common
 
         public async Task AcceptConnectionAsync(Func<Connection, Task> funcAsync)
         {
-            using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }
@@ -436,7 +436,9 @@ namespace System.Net.Test.Common
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
                 SslProtocols.Tls13 |
 #endif
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+#pragma warning restore SYSLIB0039
             }
         }
 
@@ -652,7 +654,7 @@ namespace System.Net.Test.Common
                 return null;
             }
 
-            public override void Dispose()
+            public override async ValueTask DisposeAsync()
             {
                 try
                 {
@@ -664,7 +666,12 @@ namespace System.Net.Test.Common
                 }
                 catch (Exception) { }
 
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
+                await _stream.DisposeAsync().ConfigureAwait(false);
+#else
                 _stream.Dispose();
+                await Task.CompletedTask.ConfigureAwait(false);
+#endif
                 _socket?.Dispose();
             }
 
@@ -1074,7 +1081,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }

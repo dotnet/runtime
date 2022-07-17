@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -14,14 +15,15 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// RegexCompiler translates a block of RegexCode to MSIL, and creates a subclass of the RegexRunner type.
     /// </summary>
+    [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
     internal abstract class RegexCompiler
     {
-        private static readonly FieldInfo s_runtextbegField = RegexRunnerField("runtextbeg");
-        private static readonly FieldInfo s_runtextendField = RegexRunnerField("runtextend");
         private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
-        private static readonly FieldInfo s_runtextField = RegexRunnerField("runtext");
+        private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
+        private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -29,22 +31,33 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isMatchedMethod = RegexRunnerMethod("IsMatched");
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
-        private static readonly MethodInfo s_isBoundaryMethod = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
         private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
-        private static readonly MethodInfo s_isECMABoundaryMethod = RegexRunnerMethod("IsECMABoundary");
+        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
 
+        private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitUpperMethod = typeof(char).GetMethod("IsAsciiHexDigitUpper", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsNumberMethod = typeof(char).GetMethod("IsNumber", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsPunctuationMethod = typeof(char).GetMethod("IsPunctuation", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsSeparatorMethod = typeof(char).GetMethod("IsSeparator", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsSymbolMethod = typeof(char).GetMethod("IsSymbol", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
-        private static readonly MethodInfo s_cultureInfoGetTextInfoMethod = typeof(CultureInfo).GetMethod("get_TextInfo")!;
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
@@ -57,19 +70,22 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
+        // Note:
+        // IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
+        // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
 
         /// <summary>The ILGenerator currently in use.</summary>
         protected ILGenerator? _ilg;
         /// <summary>The options for the expression.</summary>
         protected RegexOptions _options;
-        /// <summary>The code written for the expression.</summary>
-        protected RegexCode? _code;
+        /// <summary>The <see cref="RegexTree"/> written for the expression.</summary>
+        protected RegexTree? _regexTree;
         /// <summary>Whether this expression has a non-infinite timeout.</summary>
         protected bool _hasTimeout;
 
@@ -77,13 +93,6 @@ namespace System.Text.RegularExpressions
         private Stack<LocalBuilder>? _int32LocalsPool;
         /// <summary>Pool of ReadOnlySpan of char locals.</summary>
         private Stack<LocalBuilder>? _readOnlySpanCharLocalsPool;
-
-        /// <summary>Local representing a cached TextInfo for the culture to use for all case-insensitive operations.</summary>
-        private LocalBuilder? _textInfo;
-        /// <summary>Local representing a timeout counter for loops (set loops and node loops).</summary>
-        private LocalBuilder? _loopTimeoutCounter;
-        /// <summary>A frequency with which the timeout should be validated.</summary>
-        private const int LoopTimeoutCheckCount = 2048;
 
         private static FieldInfo RegexRunnerField(string fieldname) => typeof(RegexRunner).GetField(fieldname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
@@ -93,8 +102,8 @@ namespace System.Text.RegularExpressions
         /// Entry point to dynamically compile a regular expression.  The expression is compiled to
         /// an in-memory assembly.
         /// </summary>
-        internal static RegexRunnerFactory? Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
-            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
+        internal static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
+            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, regexTree, options, hasTimeout);
 
         /// <summary>A macro for _ilg.DefineLabel</summary>
         private Label DefineLabel() => _ilg!.DefineLabel();
@@ -180,12 +189,26 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldarg_0).</summary>
         protected void Ldthis() => _ilg!.Emit(OpCodes.Ldarg_0);
 
+        /// <summary>A macro for _ilgEmit(OpCodes.Ldarg_1) </summary>
+        private void Ldarg_1() => _ilg!.Emit(OpCodes.Ldarg_1);
+
         /// <summary>A macro for Ldthis(); Ldfld();</summary>
         protected void Ldthisfld(FieldInfo ft)
         {
             Ldthis();
             _ilg!.Emit(OpCodes.Ldfld, ft);
         }
+
+        /// <summary>A macro for Ldthis(); Ldflda();</summary>
+        protected void Ldthisflda(FieldInfo ft)
+        {
+            Ldthis();
+            _ilg!.Emit(OpCodes.Ldflda, ft);
+        }
+
+        /// <summary>Fetches the address of argument in passed in <paramref name="position"/></summary>
+        /// <param name="position">The position of the argument which address needs to be fetched.</param>
+        private void Ldarga_s(int position) => _ilg!.Emit(OpCodes.Ldarga_S, position);
 
         /// <summary>A macro for Ldthis(); Ldfld(); Stloc();</summary>
         private void Mvfldloc(FieldInfo ft, LocalBuilder lt)
@@ -202,6 +225,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Call, mt).</summary>
         protected void Call(MethodInfo mt) => _ilg!.Emit(OpCodes.Call, mt);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Brfalse) (short jump).</summary>
+        private void Brfalse(Label l) => _ilg!.Emit(OpCodes.Brfalse_S, l);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Brfalse) (long form).</summary>
         private void BrfalseFar(Label l) => _ilg!.Emit(OpCodes.Brfalse, l);
@@ -271,6 +297,9 @@ namespace System.Text.RegularExpressions
 
         private void Switch(Label[] table) => _ilg!.Emit(OpCodes.Switch, table);
 
+        /// <summary>Declares a local bool.</summary>
+        private LocalBuilder DeclareBool() => _ilg!.DeclareLocal(typeof(bool));
+
         /// <summary>Declares a local int.</summary>
         private LocalBuilder DeclareInt32() => _ilg!.DeclareLocal(typeof(int));
 
@@ -324,137 +353,106 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Sets the culture local to CultureInfo.CurrentCulture.</summary>
-        private void InitLocalCultureInfo()
+        /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
+        protected void EmitTryFindNextPossibleStartingPosition()
         {
-            Debug.Assert(_textInfo != null);
-            Call(s_cultureInfoGetCurrentCultureMethod);
-            Callvirt(s_cultureInfoGetTextInfoMethod);
-            Stloc(_textInfo);
-        }
-
-        /// <summary>Whether ToLower operations should be performed with the invariant culture as opposed to the one in <see cref="_textInfo"/>.</summary>
-        private bool UseToLowerInvariant => _textInfo == null || (_options & RegexOptions.CultureInvariant) != 0;
-
-        /// <summary>Invokes either char.ToLowerInvariant(c) or _textInfo.ToLower(c).</summary>
-        private void CallToLower()
-        {
-            if (UseToLowerInvariant)
-            {
-                Call(s_charToLowerInvariantMethod);
-            }
-            else
-            {
-                using RentedLocalBuilder currentCharLocal = RentInt32Local();
-                Stloc(currentCharLocal);
-                Ldloc(_textInfo!);
-                Ldloc(currentCharLocal);
-                Callvirt(s_textInfoToLowerMethod);
-            }
-        }
-
-        /// <summary>Generates the implementation for FindFirstChar.</summary>
-        protected void EmitFindFirstChar()
-        {
-            Debug.Assert(_code != null);
+            Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
             LocalBuilder inputSpan = DeclareReadOnlySpanChar();
             LocalBuilder pos = DeclareInt32();
-            LocalBuilder end = DeclareInt32();
-
-            _textInfo = null;
-            if ((_options & RegexOptions.CultureInvariant) == 0)
-            {
-                bool needsCulture = _code.FindOptimizations.FindMode switch
-                {
-                    FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive or
-                    FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive or
-                    FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive => true,
-
-                    _ when _code.FindOptimizations.FixedDistanceSets is List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets => sets.Exists(set => set.CaseInsensitive),
-
-                    _ => false,
-                };
-
-                if (needsCulture)
-                {
-                    _textInfo = DeclareTextInfo();
-                    InitLocalCultureInfo();
-                }
-            }
+            bool rtl = (_options & RegexOptions.RightToLeft) != 0;
 
             // Load necessary locals
             // int pos = base.runtextpos;
-            // int end = base.runtextend;
-            // ReadOnlySpan<char> inputSpan = base.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = dynamicMethodArg; // TODO: We can reference the arg directly rather than using another local.
             Mvfldloc(s_runtextposField, pos);
-            Mvfldloc(s_runtextendField, end);
-            Ldthisfld(s_runtextField);
-            Call(s_stringAsSpanMethod);
+            Ldarg_1();
             Stloc(inputSpan);
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
-            // especially since we want the "return false" code regardless.
-            int minRequiredLength = _code.Tree.MinRequiredLength;
+            // especially since we want the "return false" code regardless.  This differs from the source
+            // generator, where the return false is emitted at the end of the find method, and thus
+            // avoids the branch for the 0 case.
+            int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
             Label returnFalse = DefineLabel();
             Label finishedLengthCheck = DefineLabel();
 
-            // if (pos > end - _code.Tree.MinRequiredLength)
+            // if (pos > inputSpan.Length - minRequiredLength) // or pos < minRequiredLength for rtl
             // {
-            //     base.runtextpos = end;
+            //     base.runtextpos = inputSpan.Length; // or 0 for rtl
             //     return false;
             // }
             Ldloc(pos);
-            Ldloc(end);
-            if (minRequiredLength > 0)
+            if (!rtl)
+            {
+                Ldloca(inputSpan);
+                Call(s_spanGetLengthMethod);
+                if (minRequiredLength > 0)
+                {
+                    Ldc(minRequiredLength);
+                    Sub();
+                }
+                Ble(finishedLengthCheck);
+            }
+            else
             {
                 Ldc(minRequiredLength);
-                Sub();
+                Bge(finishedLengthCheck);
             }
-            Ble(finishedLengthCheck);
 
             MarkLabel(returnFalse);
             Ldthis();
-            Ldloc(end);
-
+            if (!rtl)
+            {
+                Ldloca(inputSpan);
+                Call(s_spanGetLengthMethod);
+            }
+            else
+            {
+                Ldc(0);
+            }
             Stfld(s_runtextposField);
             Ldc(0);
             Ret();
             MarkLabel(finishedLengthCheck);
 
             // Emit any anchors.
-            if (GenerateAnchors())
+            if (EmitAnchors())
             {
                 return;
             }
 
             // Either anchors weren't specified, or they don't completely root all matches to a specific location.
-            switch (_code.FindOptimizations.FindMode)
+            switch (_regexTree.FindOptimizations.FindMode)
             {
-                case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
-                    Debug.Assert(!string.IsNullOrEmpty(_code.FindOptimizations.LeadingCaseSensitivePrefix));
-                    EmitIndexOf_LeftToRight(_code.FindOptimizations.LeadingCaseSensitivePrefix);
+                case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
+                    EmitIndexOf_LeftToRight();
                     break;
 
-                case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
-                case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
-                case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
-                case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
-                    Debug.Assert(_code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+                case FindNextStartingPositionMode.LeadingString_RightToLeft:
+                    EmitIndexOf_RightToLeft();
+                    break;
+
+                case FindNextStartingPositionMode.LeadingSet_LeftToRight:
+                case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                     EmitFixedSet_LeftToRight();
                     break;
 
-                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
-                    Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
+                    EmitFixedSet_RightToLeft();
+                    break;
+
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
                     EmitLiteralAfterAtomicLoop();
                     break;
 
                 default:
-                    Debug.Fail($"Unexpected mode: {_code.FindOptimizations.FindMode}");
+                    Debug.Fail($"Unexpected mode: {_regexTree.FindOptimizations.FindMode}");
                     goto case FindNextStartingPositionMode.NoSearch;
 
                 case FindNextStartingPositionMode.NoSearch:
@@ -466,44 +464,47 @@ namespace System.Text.RegularExpressions
 
             // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
             // searching is required; otherwise, false.
-            bool GenerateAnchors()
+            bool EmitAnchors()
             {
                 Label label;
 
-                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
-                switch (_code.FindOptimizations.FindMode)
+                // Anchors that fully implement TryFindNextPossibleStartingPosition, with a check that leads to immediate success or failure determination.
+                switch (_regexTree.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                        label = DefineLabel();
+                        // if (pos != 0) goto returnFalse;
+                        // return true;
                         Ldloc(pos);
-                        Ldthisfld(s_runtextbegField);
-                        Ble(label);
-                        Br(returnFalse);
-                        MarkLabel(label);
+                        Ldc(0);
+                        Bne(returnFalse);
                         Ldc(1);
                         Ret();
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
-                        label = DefineLabel();
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
+                        // if (pos != base.runtextstart) goto returnFalse;
+                        // return true;
                         Ldloc(pos);
                         Ldthisfld(s_runtextstartField);
-                        Ble(label);
-                        Br(returnFalse);
-                        MarkLabel(label);
+                        Bne(returnFalse);
                         Ldc(1);
                         Ret();
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                        // if (pos < inputSpan.Length - 1) base.runtextpos = inputSpan.Length - 1;
+                        // return true;
                         label = DefineLabel();
                         Ldloc(pos);
-                        Ldloc(end);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
                         Ldc(1);
                         Sub();
                         Bge(label);
                         Ldthis();
-                        Ldloc(end);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
                         Ldc(1);
                         Sub();
                         Stfld(s_runtextposField);
@@ -513,14 +514,69 @@ namespace System.Text.RegularExpressions
                         return true;
 
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                        // if (pos < inputSpan.Length) base.runtextpos = inputSpan.Length;
+                        // return true;
                         label = DefineLabel();
                         Ldloc(pos);
-                        Ldloc(end);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
                         Bge(label);
                         Ldthis();
-                        Ldloc(end);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
                         Stfld(s_runtextposField);
                         MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
+                        // if (pos != 0) base.runtextpos = 0;
+                        // return true;
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldc(0);
+                        Beq(label);
+                        Ldthis();
+                        Ldc(0);
+                        Stfld(s_runtextposField);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
+                        // if (pos < inputSpan.Length - 1 || ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\n') goto returnFalse;
+                        // return true;
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        Ldc(1);
+                        Sub();
+                        Blt(returnFalse);
+                        Ldloc(pos);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        BgeUn(label);
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Call(s_spanGetItemMethod);
+                        LdindU2();
+                        Ldc('\n');
+                        Bne(returnFalse);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
+                        // if (pos < inputSpan.Length) goto returnFalse;
+                        // return true;
+                        Ldloc(pos);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        Blt(returnFalse);
                         Ldc(1);
                         Ret();
                         return true;
@@ -529,16 +585,18 @@ namespace System.Text.RegularExpressions
                     case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
                         // Jump to the end, minus the min required length, which in this case is actually the fixed length.
                         {
-                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            int extraNewlineBump = _regexTree.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
                             label = DefineLabel();
                             Ldloc(pos);
-                            Ldloc(end);
-                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Ldloca(inputSpan);
+                            Call(s_spanGetLengthMethod);
+                            Ldc(_regexTree.FindOptimizations.MinRequiredLength + extraNewlineBump);
                             Sub();
                             Bge(label);
                             Ldthis();
-                            Ldloc(end);
-                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Ldloca(inputSpan);
+                            Call(s_spanGetLengthMethod);
+                            Ldc(_regexTree.FindOptimizations.MinRequiredLength + extraNewlineBump);
                             Sub();
                             Stfld(s_runtextposField);
                             MarkLabel(label);
@@ -549,109 +607,135 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Now handle anchors that boost the position but don't determine immediate success or failure.
-
-                switch (_code.FindOptimizations.LeadingAnchor)
+                if (!rtl) // we haven't done the work to validate these optimizations for RightToLeft
                 {
-                    case RegexNodeKind.Bol:
-                        {
-                            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
-                            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-                            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-                            // to boost our position to the next line, and then continue normally with any prefix or char class searches.
-
-                            label = DefineLabel();
-
-                            // if (pos > runtextbeg...
-                            Ldloc(pos!);
-                            Ldthisfld(s_runtextbegField);
-                            Ble(label);
-
-                            // ... && inputSpan[pos - 1] != '\n') { ... }
-                            Ldloca(inputSpan);
-                            Ldloc(pos);
-                            Ldc(1);
-                            Sub();
-                            Call(s_spanGetItemMethod);
-                            LdindU2();
-                            Ldc('\n');
-                            Beq(label);
-
-                            // int tmp = inputSpan.Slice(pos).IndexOf('\n');
-                            Ldloca(inputSpan);
-                            Ldloc(pos);
-                            Call(s_spanSliceIntMethod);
-                            Ldc('\n');
-                            Call(s_spanIndexOfChar);
-                            using (RentedLocalBuilder newlinePos = RentInt32Local())
+                    switch (_regexTree.FindOptimizations.LeadingAnchor)
+                    {
+                        case RegexNodeKind.Bol:
                             {
-                                Stloc(newlinePos);
+                                // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+                                // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+                                // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+                                // to boost our position to the next line, and then continue normally with any prefix or char class searches.
 
-                                // if (newlinePos < 0 || newlinePos + pos + 1 > end)
-                                // {
-                                //     base.runtextpos = end;
-                                //     return false;
-                                // }
-                                Ldloc(newlinePos);
+                                label = DefineLabel();
+
+                                // if (pos > 0...
+                                Ldloc(pos!);
                                 Ldc(0);
-                                Blt(returnFalse);
-                                Ldloc(newlinePos);
-                                Ldloc(pos);
-                                Add();
-                                Ldc(1);
-                                Add();
-                                Ldloc(end);
-                                Bgt(returnFalse);
+                                Ble(label);
 
-                                // pos += newlinePos + 1;
+                                // ... && inputSpan[pos - 1] != '\n') { ... }
+                                Ldloca(inputSpan);
                                 Ldloc(pos);
-                                Ldloc(newlinePos);
-                                Add();
                                 Ldc(1);
-                                Add();
-                                Stloc(pos);
+                                Sub();
+                                Call(s_spanGetItemMethod);
+                                LdindU2();
+                                Ldc('\n');
+                                Beq(label);
+
+                                // int tmp = inputSpan.Slice(pos).IndexOf('\n');
+                                Ldloca(inputSpan);
+                                Ldloc(pos);
+                                Call(s_spanSliceIntMethod);
+                                Ldc('\n');
+                                Call(s_spanIndexOfChar);
+                                using (RentedLocalBuilder newlinePos = RentInt32Local())
+                                {
+                                    Stloc(newlinePos);
+
+                                    // if (newlinePos < 0 || newlinePos + pos + 1 > inputSpan.Length)
+                                    // {
+                                    //     base.runtextpos = inputSpan.Length;
+                                    //     return false;
+                                    // }
+                                    Ldloc(newlinePos);
+                                    Ldc(0);
+                                    Blt(returnFalse);
+                                    Ldloc(newlinePos);
+                                    Ldloc(pos);
+                                    Add();
+                                    Ldc(1);
+                                    Add();
+                                    Ldloca(inputSpan);
+                                    Call(s_spanGetLengthMethod);
+                                    Bgt(returnFalse);
+
+                                    // pos += newlinePos + 1;
+                                    Ldloc(pos);
+                                    Ldloc(newlinePos);
+                                    Add();
+                                    Ldc(1);
+                                    Add();
+                                    Stloc(pos);
+
+                                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                                    // if (pos > inputSpan.Length - minRequiredLength) returnFalse;
+                                    Ldloca(inputSpan);
+                                    Call(s_spanGetLengthMethod);
+                                    if (minRequiredLength != 0)
+                                    {
+                                        Ldc(minRequiredLength);
+                                        Sub();
+                                    }
+                                    Ldloc(pos);
+                                    BltFar(returnFalse);
+                                }
+
+                                MarkLabel(label);
                             }
-
-                            MarkLabel(label);
-                        }
-                        break;
-                }
-
-                switch (_code.FindOptimizations.TrailingAnchor)
-                {
-                    case RegexNodeKind.End or RegexNodeKind.EndZ when _code.FindOptimizations.MaxPossibleLength is int maxLength:
-                        // Jump to the end, minus the max allowed length.
-                        {
-                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
-                            label = DefineLabel();
-                            Ldloc(pos);
-                            Ldloc(end);
-                            Ldc(maxLength + extraNewlineBump);
-                            Sub();
-                            Bge(label);
-                            Ldloc(end);
-                            Ldc(maxLength + extraNewlineBump);
-                            Sub();
-                            Stloc(pos);
-                            MarkLabel(label);
                             break;
-                        }
+                    }
+
+                    switch (_regexTree.FindOptimizations.TrailingAnchor)
+                    {
+                        case RegexNodeKind.End or RegexNodeKind.EndZ when _regexTree.FindOptimizations.MaxPossibleLength is int maxLength:
+                            // Jump to the end, minus the max allowed length.
+                            {
+                                int extraNewlineBump = _regexTree.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                                label = DefineLabel();
+                                Ldloc(pos);
+                                Ldloca(inputSpan);
+                                Call(s_spanGetLengthMethod);
+                                Ldc(maxLength + extraNewlineBump);
+                                Sub();
+                                Bge(label);
+                                Ldloca(inputSpan);
+                                Call(s_spanGetLengthMethod);
+                                Ldc(maxLength + extraNewlineBump);
+                                Sub();
+                                Stloc(pos);
+                                MarkLabel(label);
+                                break;
+                            }
+                    }
                 }
 
                 return false;
             }
 
-            void EmitIndexOf_LeftToRight(string prefix)
+            // Emits a case-sensitive left-to-right search for a substring.
+            void EmitIndexOf_LeftToRight()
             {
+                RegexFindOptimizations opts = _regexTree.FindOptimizations;
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.FixedDistanceString_LeftToRight);
+
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = inputSpan.Slice(pos, end - pos).IndexOf(prefix);
+                // int i = inputSpan.Slice(pos).IndexOf(prefix);
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Ldloc(end);
-                Ldloc(pos);
-                Sub();
-                Call(s_spanSliceIntIntMethod);
-                Ldstr(prefix);
+                if (opts.FindMode == FindNextStartingPositionMode.FixedDistanceString_LeftToRight &&
+                    opts.FixedDistanceLiteral is { Distance: > 0 } literal)
+                {
+                    Ldc(literal.Distance);
+                    Add();
+                }
+                Call(s_spanSliceIntMethod);
+                Ldstr(opts.FindMode == FindNextStartingPositionMode.LeadingString_LeftToRight ?
+                    opts.LeadingPrefix :
+                    opts.FixedDistanceLiteral.String!);
                 Call(s_stringAsSpanMethod);
                 Call(s_spanIndexOfSpan);
                 Stloc(i);
@@ -672,29 +756,62 @@ namespace System.Text.RegularExpressions
                 Ret();
             }
 
+            // Emits a case-sensitive right-to-left search for a substring.
+            void EmitIndexOf_RightToLeft()
+            {
+                string prefix = _regexTree.FindOptimizations.LeadingPrefix;
+                Debug.Assert(!string.IsNullOrEmpty(prefix));
+
+                // pos = inputSpan.Slice(0, pos).LastIndexOf(prefix);
+                Ldloca(inputSpan);
+                Ldc(0);
+                Ldloc(pos);
+                Call(s_spanSliceIntIntMethod);
+                Ldstr(prefix);
+                Call(s_stringAsSpanMethod);
+                Call(s_spanLastIndexOfSpan);
+                Stloc(pos);
+
+                // if (pos < 0) goto ReturnFalse;
+                Ldloc(pos);
+                Ldc(0);
+                BltFar(returnFalse);
+
+                // base.runtextpos = pos + prefix.Length;
+                // return true;
+                Ldthis();
+                Ldloc(pos);
+                Ldc(prefix.Length);
+                Add();
+                Stfld(s_runtextposField);
+                Ldc(1);
+                Ret();
+            }
+
+            // Emits a search for a set at a fixed position from the start of the pattern,
+            // and potentially other sets at other fixed positions in the pattern.
             void EmitFixedSet_LeftToRight()
             {
-                List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? sets = _code.FindOptimizations.FixedDistanceSets;
-                (char[]? Chars, string Set, int Distance, bool CaseInsensitive) primarySet = sets![0];
+                Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
+                List<(char[]? Chars, string Set, int Distance)>? sets = _regexTree.FindOptimizations.FixedDistanceSets;
+                (char[]? Chars, string Set, int Distance) primarySet = sets![0];
                 const int MaxSets = 4;
                 int setsToUse = Math.Min(sets.Count, MaxSets);
 
                 using RentedLocalBuilder iLocal = RentInt32Local();
                 using RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal();
 
-                // ReadOnlySpan<char> span = inputSpan.Slice(pos, end - pos);
+                // ReadOnlySpan<char> span = inputSpan.Slice(pos);
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Ldloc(end);
-                Ldloc(pos);
-                Sub();
-                Call(s_spanSliceIntIntMethod);
+                Call(s_spanSliceIntMethod);
                 Stloc(textSpanLocal);
 
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
                 int setIndex = 0;
-                bool canUseIndexOf = !primarySet.CaseInsensitive && primarySet.Chars is not null;
+                bool canUseIndexOf = primarySet.Chars is not null;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 Label checkSpanLengthLabel = default;
@@ -798,16 +915,29 @@ namespace System.Text.RegularExpressions
                         BltFar(returnFalse);
                     }
 
-                    // if (i >= slice.Length - (minRequiredLength - 1)) goto returnFalse;
-                    if (sets.Count > 1)
+                    if (setsToUse > 1)
                     {
-                        Debug.Assert(needLoop);
-                        Ldloca(textSpanLocal);
-                        Call(s_spanGetLengthMethod);
-                        Ldc(minRequiredLength - 1);
-                        Sub();
-                        Ldloc(iLocal);
-                        BleFar(returnFalse);
+                        // Of the remaining sets we're going to check, find the maximum distance of any of them.
+                        // If it's further than the primary set we checked, we need a bounds check.
+                        int maxDistance = sets[1].Distance;
+                        for (int i = 2; i < setsToUse; i++)
+                        {
+                            maxDistance = Math.Max(maxDistance, sets[i].Distance);
+                        }
+                        if (maxDistance > primarySet.Distance)
+                        {
+                            // if ((uint)(i + maxDistance) >= slice.Length) goto returnFalse;
+                            if (setsToUse > 1)
+                            {
+                                Debug.Assert(needLoop);
+                                Ldloc(iLocal);
+                                Ldc(maxDistance);
+                                Add();
+                                Ldloca(textSpanLocal);
+                                Call(s_spanGetLengthMethod);
+                                _ilg!.Emit(OpCodes.Bge_Un, returnFalse);
+                            }
+                        }
                     }
                 }
 
@@ -816,7 +946,7 @@ namespace System.Text.RegularExpressions
                 // if (!CharInClass(slice[i + 2], prefix[2], "...")) continue;
                 // ...
                 Debug.Assert(setIndex is 0 or 1);
-                for ( ; setIndex < sets.Count; setIndex++)
+                for ( ; setIndex < setsToUse; setIndex++)
                 {
                     Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
@@ -828,7 +958,7 @@ namespace System.Text.RegularExpressions
                     }
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitMatchCharacterClass(sets[setIndex].Set, sets[setIndex].CaseInsensitive);
+                    EmitMatchCharacterClass(sets[setIndex].Set);
                     BrfalseFar(charNotInClassLabel);
                 }
 
@@ -864,17 +994,87 @@ namespace System.Text.RegularExpressions
                     }
                     BltFar(loopBody);
 
-                    // base.runtextpos = end;
+                    // base.runtextpos = inputSpan.Length;
                     // return false;
                     BrFar(returnFalse);
+                }
+            }
+
+            // Emits a right-to-left search for a set at a fixed position from the start of the pattern.
+            // (Currently that position will always be a distance of 0, meaning the start of the pattern itself.)
+            void EmitFixedSet_RightToLeft()
+            {
+                Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
+
+                (char[]? Chars, string Set, int Distance) set = _regexTree.FindOptimizations.FixedDistanceSets![0];
+                Debug.Assert(set.Distance == 0);
+
+                if (set.Chars is { Length: 1 })
+                {
+                    // pos = inputSpan.Slice(0, pos).LastIndexOf(set.Chars[0]);
+                    Ldloca(inputSpan);
+                    Ldc(0);
+                    Ldloc(pos);
+                    Call(s_spanSliceIntIntMethod);
+                    Ldc(set.Chars[0]);
+                    Call(s_spanLastIndexOfChar);
+                    Stloc(pos);
+
+                    // if (pos < 0) goto returnFalse;
+                    Ldloc(pos);
+                    Ldc(0);
+                    BltFar(returnFalse);
+
+                    // base.runtextpos = pos + 1;
+                    // return true;
+                    Ldthis();
+                    Ldloc(pos);
+                    Ldc(1);
+                    Add();
+                    Stfld(s_runtextposField);
+                    Ldc(1);
+                    Ret();
+                }
+                else
+                {
+                    Label condition = DefineLabel();
+
+                    // while ((uint)--pos < (uint)inputSpan.Length)
+                    MarkLabel(condition);
+                    Ldloc(pos);
+                    Ldc(1);
+                    Sub();
+                    Stloc(pos);
+                    Ldloc(pos);
+                    Ldloca(inputSpan);
+                    Call(s_spanGetLengthMethod);
+                    BgeUnFar(returnFalse);
+
+                    // if (!MatchCharacterClass(inputSpan[i], set.Set)) goto condition;
+                    Ldloca(inputSpan);
+                    Ldloc(pos);
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    EmitMatchCharacterClass(set.Set);
+                    Brfalse(condition);
+
+                    // base.runtextpos = pos + 1;
+                    // return true;
+                    Ldthis();
+                    Ldloc(pos);
+                    Ldc(1);
+                    Add();
+                    Stfld(s_runtextposField);
+                    Ldc(1);
+                    Ret();
                 }
             }
 
             // Emits a search for a literal following a leading atomic single-character loop.
             void EmitLiteralAfterAtomicLoop()
             {
-                Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _code.FindOptimizations.LiteralAfterLoop.Value;
+                Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _regexTree.FindOptimizations.LiteralAfterLoop.Value;
 
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
@@ -884,14 +1084,11 @@ namespace System.Text.RegularExpressions
                 Label loopEnd = DefineLabel();
                 MarkLabel(loopBody);
 
-                // ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);
+                // ReadOnlySpan<char> slice = inputSpan.Slice(pos);
                 using RentedLocalBuilder slice = RentReadOnlySpanCharLocal();
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Ldloc(end);
-                Ldloc(pos);
-                Sub();
-                Call(s_spanSliceIntIntMethod);
+                Call(s_spanSliceIntMethod);
                 Stloc(slice);
 
                 // Find the literal.  If we can't find it, we're done searching.
@@ -960,7 +1157,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(prev);
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                EmitMatchCharacterClass(target.LoopNode.Str!, caseInsensitive: false);
+                EmitMatchCharacterClass(target.LoopNode.Str!);
                 BrtrueFar(innerLoopBody);
                 MarkLabel(innerLoopEnd);
 
@@ -992,11 +1189,10 @@ namespace System.Text.RegularExpressions
                 }
 
                 // We have a winner.  The starting position is just after the last position that failed to match the loop.
-                // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
-                // after the loop, so that it doesn't need to re-match the loop.
+                // We also store the position after the loop into runtrackpos (an extra, unused field on RegexRunner) in order
+                // to communicate this position to the match algorithm such that it can skip the loop.
 
                 // base.runtextpos = pos + prev + 1;
-                // return true;
                 Ldthis();
                 Ldloc(pos);
                 Ldloc(prev);
@@ -1004,20 +1200,29 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Add();
                 Stfld(s_runtextposField);
+
+                // base.runtrackpos = pos + i;
+                Ldthis();
+                Ldloc(pos);
+                Ldloc(i);
+                Add();
+                Stfld(s_runtrackposField);
+
+                // return true;
                 Ldc(1);
                 Ret();
 
                 // }
                 MarkLabel(loopEnd);
 
-                // base.runtextpos = end;
+                // base.runtextpos = inputSpan.Length;
                 // return false;
                 BrFar(returnFalse);
             }
         }
 
-        /// <summary>Generates the implementation for Go.</summary>
-        protected void EmitGo()
+        /// <summary>Generates the implementation for TryMatchAtCurrentPosition.</summary>
+        protected void EmitTryMatchAtCurrentPosition()
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -1036,74 +1241,69 @@ namespace System.Text.RegularExpressions
             // label that code should jump back to when backtracking.  That way, a subsequent EmitXx function doesn't need to know exactly
             // where to jump: it simply always jumps to "doneLabel" on match failure, and "doneLabel" is always configured to point to
             // the right location.  In an expression without backtracking, or before any backtracking constructs have been encountered,
-            // "doneLabel" is simply the final return location from the Go method that will undo any captures and exit, signaling to
+            // "doneLabel" is simply the final return location from the TryMatchAtCurrentPosition method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
-            Debug.Assert(_code != null);
+            Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
             // Get the root Capture node of the tree.
-            RegexNode node = _code.Tree.Root;
+            RegexNode node = _regexTree.Root;
             Debug.Assert(node.Kind == RegexNodeKind.Capture, "Every generated tree should begin with a capture node");
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
 
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
 
-
-            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
-            // We can special case these to do essentially nothing in Go other than emit the capture.
+            // In some limited cases, TryFindNextPossibleStartingPosition will only return true if it successfully matched the whole expression.
+            // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
             switch (node.Kind)
             {
-                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
+                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set:
                     // This is the case for single and multiple characters, though the whole thing is only guaranteed
-                    // to have been validated in FindFirstChar when doing case-sensitive comparison.
+                    // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
                     // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
                     // base.runtextpos = base.runtextpos + node.Str.Length;
-                    // return;
+                    // return true;
+                    int length = node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1;
+                    if ((node.Options & RegexOptions.RightToLeft) != 0)
+                    {
+                        length = -length;
+                    }
                     Ldthis();
                     Dup();
                     Ldc(0);
                     Ldthisfld(s_runtextposField);
                     Dup();
-                    Ldc(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1);
+                    Ldc(length);
                     Add();
                     Call(s_captureMethod);
                     Ldthisfld(s_runtextposField);
-                    Ldc(node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1);
+                    Ldc(length);
                     Add();
                     Stfld(s_runtextposField);
+                    Ldc(1);
                     Ret();
                     return;
 
-                // The source generator special-cases RegexNode.Empty, for purposes of code learning rather than
-                // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
+                    // The source generator special-cases RegexNode.Empty, for purposes of code learning rather than
+                    // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
             }
+
+            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(_regexTree);
 
             // Initialize the main locals used throughout the implementation.
             LocalBuilder inputSpan = DeclareReadOnlySpanChar();
             LocalBuilder originalPos = DeclareInt32();
             LocalBuilder pos = DeclareInt32();
             LocalBuilder slice = DeclareReadOnlySpanChar();
-            LocalBuilder end = DeclareInt32();
-            Label stopSuccessLabel = DefineLabel();
             Label doneLabel = DefineLabel();
             Label originalDoneLabel = doneLabel;
-            if (_hasTimeout)
-            {
-                _loopTimeoutCounter = DeclareInt32();
-            }
 
-            // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
-            InitializeCultureForGoIfNecessary();
-
-            // ReadOnlySpan<char> inputSpan = base.runtext.AsSpan();
-            // int end = base.runtextend;
-            Ldthisfld(s_runtextField);
-            Call(s_stringAsSpanMethod);
+            // ReadOnlySpan<char> inputSpan = input;
+            Ldarg_1();
             Stloc(inputSpan);
-            Mvfldloc(s_runtextendField, end);
 
             // int pos = base.runtextpos;
             // int originalpos = pos;
@@ -1126,15 +1326,17 @@ namespace System.Text.RegularExpressions
             int sliceStaticPos = 0;
             SliceInputSpan();
 
+            // Check whether there are captures anywhere in the expression. If there isn't, we can skip all
+            // the boilerplate logic around uncapturing, as there won't be anything to uncapture.
+            bool expressionHasCaptures = analysis.MayContainCapture(node);
+
             // Emit the code for all nodes in the tree.
-            bool expressionHasCaptures = (node.Options & RegexNode.HasCapturesFlag) != 0;
             EmitNode(node);
 
-            // Success:
             // pos += sliceStaticPos;
             // base.runtextpos = pos;
             // Capture(0, originalpos, pos);
-            MarkLabel(stopSuccessLabel);
+            // return true;
             Ldthis();
             Ldloc(pos);
             if (sliceStaticPos > 0)
@@ -1150,6 +1352,16 @@ namespace System.Text.RegularExpressions
             Ldloc(originalPos);
             Ldloc(pos);
             Call(s_captureMethod);
+            Ldc(1);
+            Ret();
+
+            // NOTE: The following is a difference from the source generator.  The source generator emits:
+            //     UncaptureUntil(0);
+            //     return false;
+            // at every location where the all-up match is known to fail. In contrast, the compiler currently
+            // emits this uncapture/return code in one place and jumps to it upon match failure.  The difference
+            // stems primarily from the return-at-each-location pattern resulting in cleaner / easier to read
+            // source code, which is not an issue for RegexCompiler emitting IL instead of C#.
 
             // If the graph contained captures, undo any remaining to handle failed matches.
             if (expressionHasCaptures)
@@ -1180,24 +1392,20 @@ namespace System.Text.RegularExpressions
                 MarkLabel(originalDoneLabel);
             }
 
-            // return;
+            // return false;
+            Ldc(0);
             Ret();
 
             // Generated code successfully.
             return;
 
-            static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
-
             // Slices the inputSpan starting at pos until end and stores it into slice.
             void SliceInputSpan()
             {
-                // slice = inputSpan.Slice(pos, end - pos);
+                // slice = inputSpan.Slice(pos);
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Ldloc(end);
-                Ldloc(pos);
-                Sub();
-                Call(s_spanSliceIntIntMethod);
+                Call(s_spanSliceIntMethod);
                 Stloc(slice);
             }
 
@@ -1231,38 +1439,27 @@ namespace System.Text.RegularExpressions
                 BgeUnFar(doneLabel);
             }
 
-            // Emits code to get ref slice[sliceStaticPos]
-            void EmitTextSpanOffset()
-            {
-                Ldloc(slice);
-                Call(s_memoryMarshalGetReference);
-                if (sliceStaticPos > 0)
-                {
-                    Ldc(sliceStaticPos * sizeof(char));
-                    Add();
-                }
-            }
-
-            // Adds the value of sliceStaticPos into the pos local, slices textspan by the corresponding amount,
-            // and zeros out sliceStaticPos.
-            void TransferSliceStaticPosToPos()
+            // Adds the value of sliceStaticPos into the pos local, zeros out sliceStaticPos,
+            // and resets slice to be inputSpan.Slice(pos).
+            void TransferSliceStaticPosToPos(bool forceSliceReload = false)
             {
                 if (sliceStaticPos > 0)
                 {
                     // pos += sliceStaticPos;
+                    // sliceStaticPos = 0;
                     Ldloc(pos);
                     Ldc(sliceStaticPos);
                     Add();
                     Stloc(pos);
-
-                    // slice = slice.Slice(sliceStaticPos);
-                    Ldloca(slice);
-                    Ldc(sliceStaticPos);
-                    Call(s_spanSliceIntMethod);
-                    Stloc(slice);
-
-                    // sliceStaticPos = 0;
                     sliceStaticPos = 0;
+
+                    // slice = inputSpan.Slice(pos);
+                    SliceInputSpan();
+                }
+                else if (forceSliceReload)
+                {
+                    // slice = inputSpan.Slice(pos);
+                    SliceInputSpan();
                 }
             }
 
@@ -1281,7 +1478,7 @@ namespace System.Text.RegularExpressions
                 // successfully prevent backtracking into this child node, we can emit better / cheaper code
                 // for an Alternate when it is atomic, so we still take it into account here.
                 Debug.Assert(node.Parent is not null);
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // Label to jump to when any branch completes successfully.
                 Label matchLabel = DefineLabel();
@@ -1314,7 +1511,7 @@ namespace System.Text.RegularExpressions
                 // what they were at the start of the alternation.  Of course, if there are no captures
                 // anywhere in the regex, we don't have to do any of that.
                 LocalBuilder? startingCapturePos = null;
-                if (expressionHasCaptures && ((node.Options & RegexNode.HasCapturesFlag) != 0 || !isAtomic))
+                if (expressionHasCaptures && (analysis.MayContainCapture(node) || !isAtomic))
                 {
                     // startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
@@ -1330,8 +1527,10 @@ namespace System.Text.RegularExpressions
                 // containing either the label for the last backtracking construct in the branch if such a construct
                 // existed (in which case the doneLabel upon emitting that node will be different from before it)
                 // or the label for the next branch.
+                bool canUseLocalsForAllState = !isAtomic && !analysis.IsInLoop(node);
                 var labelMap = new Label[childCount];
                 Label backtrackLabel = DefineLabel();
+                LocalBuilder? currentBranch = canUseLocalsForAllState ? DeclareInt32() : null;
 
                 for (int i = 0; i < childCount; i++)
                 {
@@ -1362,17 +1561,29 @@ namespace System.Text.RegularExpressions
                     // still points to the nextBranch, which similarly is where we'll want to jump to.
                     if (!isAtomic)
                     {
-                        // if (stackpos + 3 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
-                        // base.runstack[stackpos++] = i;
-                        // base.runstack[stackpos++] = startingCapturePos;
-                        // base.runstack[stackpos++] = startingPos;
-                        EmitStackResizeIfNeeded(3);
-                        EmitStackPush(() => Ldc(i));
-                        if (startingCapturePos is not null)
+                        // If we're inside of a loop, push the state we need to preserve on to the
+                        // the backtracking stack.  If we're not inside of a loop, simply ensure all
+                        // the relevant state is stored in our locals.
+                        if (currentBranch is null)
                         {
-                            EmitStackPush(() => Ldloc(startingCapturePos));
+                            // if (stackpos + 3 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
+                            // base.runstack[stackpos++] = i;
+                            // base.runstack[stackpos++] = startingCapturePos;
+                            // base.runstack[stackpos++] = startingPos;
+                            EmitStackResizeIfNeeded(2 + (startingCapturePos is not null ? 1 : 0));
+                            EmitStackPush(() => Ldc(i));
+                            if (startingCapturePos is not null)
+                            {
+                                EmitStackPush(() => Ldloc(startingCapturePos));
+                            }
+                            EmitStackPush(() => Ldloc(startingPos));
                         }
-                        EmitStackPush(() => Ldloc(startingPos));
+                        else
+                        {
+                            // currentBranch = i;
+                            Ldc(i);
+                            Stloc(currentBranch);
+                        }
                     }
                     labelMap[i] = doneLabel;
 
@@ -1394,7 +1605,7 @@ namespace System.Text.RegularExpressions
                     {
                         // NextBranch:
                         // pos = startingPos;
-                        // slice = inputSpan.Slice(pos, end - pos);
+                        // slice = inputSpan.Slice(pos);
                         // while (base.Crawlpos() > startingCapturePos) base.Uncapture();
                         MarkLabel(nextBranch);
                         Ldloc(startingPos);
@@ -1424,17 +1635,31 @@ namespace System.Text.RegularExpressions
                     doneLabel = backtrackLabel;
                     MarkLabel(backtrackLabel);
 
-                    // startingPos = base.runstack[--stackpos];
-                    // startingCapturePos = base.runstack[--stackpos];
-                    // switch (base.runstack[--stackpos]) { ... } // branch number
-                    EmitStackPop();
-                    Stloc(startingPos);
-                    if (startingCapturePos is not null)
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded();
+
+                    if (currentBranch is null)
                     {
+                        // We're in a loop, so we use the backtracking stack to persist our state. Pop it off.
+
+                        // startingPos = base.runstack[--stackpos];
+                        // startingCapturePos = base.runstack[--stackpos];
+                        // switch (base.runstack[--stackpos])
                         EmitStackPop();
-                        Stloc(startingCapturePos);
+                        Stloc(startingPos);
+                        if (startingCapturePos is not null)
+                        {
+                            EmitStackPop();
+                            Stloc(startingCapturePos);
+                        }
+                        EmitStackPop();
                     }
-                    EmitStackPop();
+                    else
+                    {
+                        // We're not in a loop, so our locals already store the state we need.
+                        // switch (currentBranch)
+                        Ldloc(currentBranch);
+                    }
                     Switch(labelMap);
                 }
 
@@ -1448,7 +1673,8 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Backreference, $"Unexpected type: {node.Kind}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
 
                 TransferSliceStaticPosToPos();
 
@@ -1470,9 +1696,17 @@ namespace System.Text.RegularExpressions
                 Call(s_matchLengthMethod);
                 Stloc(matchLength);
 
-                // if (slice.Length < matchLength) goto doneLabel;
-                Ldloca(slice);
-                Call(s_spanGetLengthMethod);
+                if (!rtl)
+                {
+                    // if (slice.Length < matchLength) goto doneLabel;
+                    Ldloca(slice);
+                    Call(s_spanGetLengthMethod);
+                }
+                else
+                {
+                    // if (pos < matchLength) goto doneLabel;
+                    Ldloc(pos);
+                }
                 Ldloc(matchLength);
                 BltFar(doneLabel);
 
@@ -1484,6 +1718,9 @@ namespace System.Text.RegularExpressions
 
                 Label condition = DefineLabel();
                 Label body = DefineLabel();
+                Label charactersMatched = DefineLabel();
+                LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
+                LocalBuilder currentCharacter = _ilg!.DeclareLocal(typeof(char));
 
                 // for (int i = 0; ...)
                 Ldc(0);
@@ -1492,26 +1729,86 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(body);
 
-                // if (inputSpan[matchIndex + i] != slice[i]) goto doneLabel;
+                // char backreferenceChar = inputSpan[matchIndex + i];
                 Ldloca(inputSpan);
                 Ldloc(matchIndex);
                 Ldloc(i);
                 Add();
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                if (IsCaseInsensitive(node))
+                Stloc(backreferenceCharacter);
+                if (!rtl)
                 {
-                    CallToLower();
+                    // char currentChar = slice[i];
+                    Ldloca(slice);
+                    Ldloc(i);
                 }
-                Ldloca(slice);
-                Ldloc(i);
+                else
+                {
+                    // char currentChar = inputSpan[pos - matchLength + i];
+                    Ldloca(inputSpan);
+                    Ldloc(pos);
+                    Ldloc(matchLength);
+                    Sub();
+                    Ldloc(i);
+                    Add();
+                }
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                if (IsCaseInsensitive(node))
+                Stloc(currentCharacter);
+
+                if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
-                    CallToLower();
+                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+
+                    // if (backreferenceChar != currentChar)
+                    Ldloc(backreferenceCharacter);
+                    Ldloc(currentCharacter);
+                    Ceq();
+                    BrtrueFar(charactersMatched);
+
+                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
+                    Ldloc(backreferenceCharacter);
+                    Ldthisfld(s_cultureField);
+                    Ldthisflda(s_caseBehaviorField);
+                    Ldloca(caseEquivalences);
+                    Call(s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
+                    BrfalseFar(doneLabel);
+
+                    // if (equivalences.IndexOf(slice[i]) < 0) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) < 0) when rtl
+                    Ldloc(caseEquivalences);
+                    if (!rtl)
+                    {
+                        Ldloca(slice);
+                        Ldloc(i);
+                    }
+                    else
+                    {
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Ldloc(matchLength);
+                        Sub();
+                        Ldloc(i);
+                        Add();
+                    }
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    Call(s_spanIndexOfChar);
+                    Ldc(0);
+                    // return false; // input didn't match.
+                    BltFar(doneLabel);
                 }
-                BneFar(doneLabel);
+                else
+                {
+                    // if (backreferenceCharacter != currentCharacter)
+                    Ldloc(backreferenceCharacter);
+                    Ldloc(currentCharacter);
+                    Ceq();
+                    // return false; // input didn't match.
+                    BrfalseFar(doneLabel);
+                }
+
+                MarkLabel(charactersMatched);
 
                 // for (...; ...; i++)
                 Ldloc(i);
@@ -1525,12 +1822,23 @@ namespace System.Text.RegularExpressions
                 Ldloc(matchLength);
                 Blt(body);
 
-                // pos += matchLength;
+                // pos += matchLength; // or -= for rtl
                 Ldloc(pos);
                 Ldloc(matchLength);
-                Add();
+                if (!rtl)
+                {
+                    Add();
+                }
+                else
+                {
+                    Sub();
+                }
                 Stloc(pos);
-                SliceInputSpan();
+
+                if (!rtl)
+                {
+                    SliceInputSpan();
+                }
 
                 MarkLabel(backreferenceEnd);
             }
@@ -1541,13 +1849,13 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.BackreferenceConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 2, $"Expected 2 children, found {node.ChildCount()}");
 
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
 
                 // Get the capture number to test.
-                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
 
                 // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
                 // somewhat likely to be Empty.
@@ -1563,6 +1871,7 @@ namespace System.Text.RegularExpressions
                 // to backtrack to.  So, we expose a single Backtrack label and track which branch was
                 // followed in this resumeAt local.
                 LocalBuilder resumeAt = DeclareInt32();
+                bool isInLoop = analysis.IsInLoop(node);
 
                 // if (!base.IsMatched(capnum)) goto refNotMatched;
                 Ldthis();
@@ -1645,10 +1954,15 @@ namespace System.Text.RegularExpressions
                     MarkLabel(backtrack);
 
                     // Pop from the stack the branch that was used and jump back to its backtracking location.
-
-                    // resumeAt = base.runstack[--stackpos];
-                    EmitStackPop();
-                    Stloc(resumeAt);
+                    // If we're not in a loop, though, we won't have pushed it on to the stack as nothing will
+                    // have been able to overwrite it in the interim, so we can just trust the value already in
+                    // the local.
+                    if (isInLoop)
+                    {
+                        // resumeAt = base.runstack[--stackpos];
+                        EmitStackPop();
+                        Stloc(resumeAt);
+                    }
 
                     if (postYesDoneLabel != originalDoneLabel)
                     {
@@ -1674,10 +1988,17 @@ namespace System.Text.RegularExpressions
                         MarkLabel(endConditional);
                     }
 
-                    // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
-                    // base.runstack[stackpos++] = resumeAt;
-                    EmitStackResizeIfNeeded(1);
-                    EmitStackPush(() => Ldloc(resumeAt));
+                    if (isInLoop)
+                    {
+                        // We're not atomic and at least one of the yes or no branches contained backtracking constructs,
+                        // so finish outputting our backtracking logic, which involves pushing onto the stack which
+                        // branch to backtrack into.  If we're not in a loop, though, nothing else can overwrite this local
+                        // in the interim, so we can avoid pushing it.
+                        // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
+                        // base.runstack[stackpos++] = resumeAt;
+                        EmitStackResizeIfNeeded(1);
+                        EmitStackPush(() => Ldloc(resumeAt));
+                    }
                 }
             }
 
@@ -1687,14 +2008,14 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 3, $"Expected 3 children, found {node.ChildCount()}");
 
-                bool isAtomic = node.IsAtomicByParent();
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
 
                 // The first child node is the condition expression.  If this matches, then we branch to the "yes" branch.
                 // If it doesn't match, then we branch to the optional "no" branch if it exists, or simply skip the "yes"
-                // branch, otherwise. The condition is treated as a positive lookahead.
+                // branch, otherwise. The condition is treated as a positive lookaround.
                 RegexNode condition = node.Child(0);
 
                 // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
@@ -1710,15 +2031,17 @@ namespace System.Text.RegularExpressions
                 // backtracking constructs, but the expression after the condition needs a single target
                 // to backtrack to.  So, we expose a single Backtrack label and track which branch was
                 // followed in this resumeAt local.
+                bool isInLoop = false;
                 LocalBuilder? resumeAt = null;
                 if (!isAtomic)
                 {
+                    isInLoop = analysis.IsInLoop(node);
                     resumeAt = DeclareInt32();
                 }
 
                 // If the condition expression has captures, we'll need to uncapture them in the case of no match.
                 LocalBuilder? startingCapturePos = null;
-                if ((condition.Options & RegexNode.HasCapturesFlag) != 0)
+                if (analysis.MayContainCapture(condition))
                 {
                     // int startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
@@ -1728,12 +2051,12 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Emit the condition expression.  Route any failures to after the yes branch.  This code is almost
-                // the same as for a positive lookahead; however, a positive lookahead only needs to reset the position
+                // the same as for a positive lookaround; however, a positive lookaround only needs to reset the position
                 // on a successful match, as a failed match fails the whole expression; here, we need to reset the
                 // position on completion, regardless of whether the match is successful or not.
                 doneLabel = expressionNotMatched;
 
-                // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
+                // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
                 // startingPos = pos;
                 LocalBuilder startingPos = DeclareInt32();
                 Ldloc(pos);
@@ -1746,9 +2069,9 @@ namespace System.Text.RegularExpressions
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
-                // Do not reset captures, which persist beyond the lookahead.
+                // Do not reset captures, which persist beyond the lookaround.
                 // pos = startingPos;
-                // slice = inputSpan.Slice(pos, end - pos);
+                // slice = inputSpan.Slice(pos);
                 Ldloc(startingPos);
                 Stloc(pos);
                 SliceInputSpan();
@@ -1828,9 +2151,15 @@ namespace System.Text.RegularExpressions
                     doneLabel = backtrack;
                     MarkLabel(backtrack);
 
-                    // resumeAt = StackPop();
-                    EmitStackPop();
-                    Stloc(resumeAt);
+                    if (isInLoop)
+                    {
+                        // If we're not in a loop, the local will maintain its value until backtracking occurs.
+                        // If we are in a loop, multiple iterations need their own value, so we need to use the stack.
+
+                        // resumeAt = StackPop();
+                        EmitStackPop();
+                        Stloc(resumeAt);
+                    }
 
                     if (postYesDoneLabel != originalDoneLabel)
                     {
@@ -1854,10 +2183,13 @@ namespace System.Text.RegularExpressions
                     // EndConditional:
                     MarkLabel(endConditional);
 
-                    // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
-                    // base.runstack[stackpos++] = resumeAt;
-                    EmitStackResizeIfNeeded(1);
-                    EmitStackPush(() => Ldloc(resumeAt!));
+                    if (isInLoop)
+                    {
+                        // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
+                        // base.runstack[stackpos++] = resumeAt;
+                        EmitStackResizeIfNeeded(1);
+                        EmitStackPush(() => Ldloc(resumeAt!));
+                    }
                 }
             }
 
@@ -1867,9 +2199,10 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Capture, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                int capnum = RegexParser.MapCaptureNumber(node.M, _code!.Caps);
-                int uncapnum = RegexParser.MapCaptureNumber(node.N, _code.Caps);
-                bool isAtomic = node.IsAtomicByParent();
+                int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
+                int uncapnum = RegexParser.MapCaptureNumber(node.N, _regexTree.CaptureNumberSparseMapping);
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                bool isInLoop = analysis.IsInLoop(node);
 
                 // pos += sliceStaticPos;
                 // slice = slice.Slice(sliceStaticPos);
@@ -1889,7 +2222,6 @@ namespace System.Text.RegularExpressions
                     Call(s_isMatchedMethod);
                     BrfalseFar(doneLabel);
                 }
-
 
                 // Emit child node.
                 Label originalDoneLabel = doneLabel;
@@ -1920,12 +2252,32 @@ namespace System.Text.RegularExpressions
                     Call(s_transferCaptureMethod);
                 }
 
-                if (!isAtomic && (childBacktracks || node.IsInLoop()))
+                if (isAtomic || !childBacktracks)
                 {
-                    // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
-                    // base.runstack[stackpos++] = startingPos;
-                    EmitStackResizeIfNeeded(1);
-                    EmitStackPush(() => Ldloc(startingPos));
+                    // If the capture is atomic and nothing can backtrack into it, we're done.
+                    // Similarly, even if the capture isn't atomic, if the captured expression
+                    // doesn't do any backtracking, we're done.
+                    doneLabel = originalDoneLabel;
+                }
+                else
+                {
+                    // We're not atomic and the child node backtracks.  When it does, we need
+                    // to ensure that the starting position for the capture is appropriately
+                    // reset to what it was initially (it could have changed as part of being
+                    // in a loop or similar).  So, we emit a backtracking section that
+                    // pushes/pops the starting position before falling through.
+
+                    if (isInLoop)
+                    {
+                        // If we're in a loop, different iterations of the loop need their own
+                        // starting position, so push it on to the stack.  If we're not in a loop,
+                        // the local will maintain its value and will suffice.
+
+                        // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
+                        // base.runstack[stackpos++] = startingPos;
+                        EmitStackResizeIfNeeded(1);
+                        EmitStackPush(() => Ldloc(startingPos));
+                    }
 
                     // Skip past the backtracking section
                     // goto backtrackingEnd;
@@ -1935,14 +2287,10 @@ namespace System.Text.RegularExpressions
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     Label backtrack = DefineLabel();
                     MarkLabel(backtrack);
-                    EmitStackPop();
-                    Stloc(startingPos);
-                    if (!childBacktracks)
+                    if (isInLoop)
                     {
-                        // pos = startingPos
-                        Ldloc(startingPos);
-                        Stloc(pos);
-                        SliceInputSpan();
+                        EmitStackPop();
+                        Stloc(startingPos);
                     }
 
                     // goto doneLabel;
@@ -1950,10 +2298,6 @@ namespace System.Text.RegularExpressions
 
                     doneLabel = backtrack;
                     MarkLabel(backtrackingEnd);
-                }
-                else
-                {
-                    doneLabel = originalDoneLabel;
                 }
             }
 
@@ -1978,47 +2322,78 @@ namespace System.Text.RegularExpressions
                 Bgt(body);
             }
 
-            // Emits the code to handle a positive lookahead assertion.
-            void EmitPositiveLookaheadAssertion(RegexNode node)
+            // Emits the code to handle a positive lookaround assertion. This is a positive lookahead
+            // for left-to-right and a positive lookbehind for right-to-left.
+            void EmitPositiveLookaroundAssertion(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
-                Label originalDoneLabel = doneLabel;
+                if (analysis.HasRightToLeft)
+                {
+                    // Lookarounds are the only places in the node tree where we might change direction,
+                    // i.e. where we might go from RegexOptions.None to RegexOptions.RightToLeft, or vice
+                    // versa.  This is because lookbehinds are implemented by making the whole subgraph be
+                    // RegexOptions.RightToLeft and reversed.  Since we use static position to optimize left-to-right
+                    // and don't use it in support of right-to-left, we need to resync the static position
+                    // to the current position when entering a lookaround, just in case we're changing direction.
+                    TransferSliceStaticPosToPos(forceSliceReload: true);
+                }
 
-                // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
+                // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
                 // startingPos = pos;
                 LocalBuilder startingPos = DeclareInt32();
                 Ldloc(pos);
                 Stloc(startingPos);
                 int startingTextSpanPos = sliceStaticPos;
 
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded();
+
                 // Emit the child.
-                EmitNode(node.Child(0));
+                RegexNode child = node.Child(0);
+                if (analysis.MayBacktrack(child))
+                {
+                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(child);
+                }
 
                 // After the child completes successfully, reset the text positions.
-                // Do not reset captures, which persist beyond the lookahead.
+                // Do not reset captures, which persist beyond the lookaround.
                 // pos = startingPos;
-                // slice = inputSpan.Slice(pos, end - pos);
+                // slice = inputSpan.Slice(pos);
                 Ldloc(startingPos);
                 Stloc(pos);
                 SliceInputSpan();
                 sliceStaticPos = startingTextSpanPos;
-
-                doneLabel = originalDoneLabel;
             }
 
-            // Emits the code to handle a negative lookahead assertion.
-            void EmitNegativeLookaheadAssertion(RegexNode node)
+            // Emits the code to handle a negative lookaround assertion. This is a negative lookahead
+            // for left-to-right and a negative lookbehind for right-to-left.
+            void EmitNegativeLookaroundAssertion(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
+                if (analysis.HasRightToLeft)
+                {
+                    // Lookarounds are the only places in the node tree where we might change direction,
+                    // i.e. where we might go from RegexOptions.None to RegexOptions.RightToLeft, or vice
+                    // versa.  This is because lookbehinds are implemented by making the whole subgraph be
+                    // RegexOptions.RightToLeft and reversed.  Since we use static position to optimize left-to-right
+                    // and don't use it in support of right-to-left, we need to resync the static position
+                    // to the current position when entering a lookaround, just in case we're changing direction.
+                    TransferSliceStaticPosToPos(forceSliceReload: true);
+                }
+
                 Label originalDoneLabel = doneLabel;
 
-                // Save off pos.  We'll need to reset this upon successful completion of the lookahead.
+                // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
                 // startingPos = pos;
                 LocalBuilder startingPos = DeclareInt32();
                 Ldloc(pos);
@@ -2028,22 +2403,35 @@ namespace System.Text.RegularExpressions
                 Label negativeLookaheadDoneLabel = DefineLabel();
                 doneLabel = negativeLookaheadDoneLabel;
 
-                // Emit the child.
-                EmitNode(node.Child(0));
+                // Check for timeout. Lookarounds result in re-processing the same input, so while not
+                // technically backtracking, it's appropriate to have a timeout check.
+                EmitTimeoutCheckIfNeeded();
 
-                // If the generated code ends up here, it matched the lookahead, which actually
-                // means failure for a _negative_ lookahead, so we need to jump to the original done.
+                // Emit the child.
+                RegexNode child = node.Child(0);
+                if (analysis.MayBacktrack(child))
+                {
+                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(child);
+                }
+
+                // If the generated code ends up here, it matched the lookaround, which actually
+                // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 // goto originalDoneLabel;
                 BrFar(originalDoneLabel);
 
-                // Failures (success for a negative lookahead) jump here.
+                // Failures (success for a negative lookaround) jump here.
                 MarkLabel(negativeLookaheadDoneLabel);
                 if (doneLabel == negativeLookaheadDoneLabel)
                 {
                     doneLabel = originalDoneLabel;
                 }
 
-                // After the child completes in failure (success for negative lookahead), reset the text positions.
+                // After the child completes in failure (success for negative lookaround), reset the text positions.
                 // pos = startingPos;
                 Ldloc(startingPos);
                 Stloc(pos);
@@ -2053,28 +2441,37 @@ namespace System.Text.RegularExpressions
                 doneLabel = originalDoneLabel;
             }
 
-            // TODO https://github.com/dotnet/runtime/issues/62451:
-            // Replace this with a more robust mechanism.
-            static bool PossiblyBacktracks(RegexNode node) => !(
-                // Certain nodes will never backtrack out of them
-                node.Kind is RegexNodeKind.Atomic or // atomic nodes by definition don't give up anything
-                             RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic or // same for atomic loops
-                             RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set or // individual characters don't backtrack
-                             RegexNodeKind.Multi or // multiple characters don't backtrack
-                             RegexNodeKind.Backreference or // backreferences don't backtrack
-                             RegexNodeKind.Beginning or RegexNodeKind.Bol or RegexNodeKind.Start or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol or RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary or // anchors don't backtrack
-                             RegexNodeKind.Nothing or RegexNodeKind.Empty or RegexNodeKind.UpdateBumpalong // empty/nothing don't do anything
-                // Fixed-size repeaters of single characters or atomic don't backtrack
-                || node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy && node.M == node.N
-                );
-
             // Emits the code for the node.
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
+                // Before we handle general-purpose matching logic for nodes, handle any special-casing.
+                // -
+                if (_regexTree!.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
+                    _regexTree!.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
+                {
+                    Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
+
+                    // pos = base.runtrackpos;
+                    Mvfldloc(s_runtrackposField, pos);
+
+                    SliceInputSpan();
+                    return;
+                }
+
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(EmitNode, node, subsequent, emitLengthChecksIfRequired);
                     return;
+                }
+
+                // RightToLeft doesn't take advantage of static positions.  While RightToLeft won't update static
+                // positions, a previous operation may have left us with a non-zero one.  Make sure it's zero'd out
+                // such that pos and slice are up-to-date.  Note that RightToLeft also shouldn't use the slice span,
+                // as it's not kept up-to-date; any RightToLeft implementation that wants to use it must first update
+                // it from pos.
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    TransferSliceStaticPosToPos();
                 }
 
                 switch (node.Kind)
@@ -2086,116 +2483,141 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.End:
                     case RegexNodeKind.EndZ:
                         EmitAnchors(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Boundary:
                     case RegexNodeKind.NonBoundary:
                     case RegexNodeKind.ECMABoundary:
                     case RegexNodeKind.NonECMABoundary:
                         EmitBoundary(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Multi:
                         EmitMultiChar(node, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.One:
                     case RegexNodeKind.Notone:
                     case RegexNodeKind.Set:
                         EmitSingleChar(node, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Oneloop:
                     case RegexNodeKind.Notoneloop:
                     case RegexNodeKind.Setloop:
                         EmitSingleCharLoop(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Onelazy:
                     case RegexNodeKind.Notonelazy:
                     case RegexNodeKind.Setlazy:
                         EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Oneloopatomic:
                     case RegexNodeKind.Notoneloopatomic:
                     case RegexNodeKind.Setloopatomic:
                         EmitSingleCharAtomicLoop(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Loop:
                         EmitLoop(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Lazyloop:
                         EmitLazy(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Alternate:
                         EmitAlternation(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Concatenate:
                         EmitConcatenation(node, subsequent, emitLengthChecksIfRequired);
-                        break;
+                        return;
 
                     case RegexNodeKind.Atomic:
                         EmitAtomic(node, subsequent);
-                        break;
+                        return;
 
                     case RegexNodeKind.Backreference:
                         EmitBackreference(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.BackreferenceConditional:
                         EmitBackreferenceConditional(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.ExpressionConditional:
                         EmitExpressionConditional(node);
-                        break;
+                        return;
 
                     case RegexNodeKind.Capture:
                         EmitCapture(node, subsequent);
-                        break;
+                        return;
 
                     case RegexNodeKind.PositiveLookaround:
-                        EmitPositiveLookaheadAssertion(node);
-                        break;
+                        EmitPositiveLookaroundAssertion(node);
+                        return;
 
                     case RegexNodeKind.NegativeLookaround:
-                        EmitNegativeLookaheadAssertion(node);
-                        break;
+                        EmitNegativeLookaroundAssertion(node);
+                        return;
 
                     case RegexNodeKind.Nothing:
                         BrFar(doneLabel);
-                        break;
+                        return;
 
                     case RegexNodeKind.Empty:
                         // Emit nothing.
-                        break;
+                        return;
 
                     case RegexNodeKind.UpdateBumpalong:
                         EmitUpdateBumpalong(node);
-                        break;
-
-                    default:
-                        Debug.Fail($"Unexpected node type: {node.Kind}");
-                        break;
+                        return;
                 }
+
+                // All nodes should have been handled.
+                Debug.Fail($"Unexpected node type: {node.Kind}");
             }
 
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Atomic, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
-                // Atomic simply outputs the code for the child, but it ensures that any done label left
-                // set by the child is reset to what it was prior to the node's processing.  That way,
-                // anything later that tries to jump back won't see labels set inside the atomic.
+                RegexNode child = node.Child(0);
+
+                if (!analysis.MayBacktrack(child))
+                {
+                    // If the child has no backtracking, the atomic is a nop and we can just skip it.
+                    // Note that the source generator equivalent for this is in the top-level EmitNode, in order to avoid
+                    // outputting some extra comments and scopes.  As such formatting isn't a concern for the compiler,
+                    // the logic is instead here in EmitAtomic.
+                    EmitNode(child, subsequent);
+                    return;
+                }
+
+                // Grab the current done label and the current backtracking position.  The purpose of the atomic node
+                // is to ensure that nodes after it that might backtrack skip over the atomic, which means after
+                // rendering the atomic's child, we need to reset the label so that subsequent backtracking doesn't
+                // see any label left set by the atomic's child.  We also need to reset the backtracking stack position
+                // so that the state on the stack remains consistent.
                 Label originalDoneLabel = doneLabel;
-                EmitNode(node.Child(0), subsequent);
+
+                // int startingStackpos = stackpos;
+                using RentedLocalBuilder startingStackpos = RentInt32Local();
+                Ldloc(stackpos);
+                Stloc(startingStackpos);
+
+                // Emit the child.
+                EmitNode(child, subsequent);
+
+                // Reset the stack position and done label.
+                // stackpos = startingStackpos;
+                Ldloc(startingStackpos);
+                Stloc(stackpos);
                 doneLabel = originalDoneLabel;
             }
 
@@ -2232,12 +2654,39 @@ namespace System.Text.RegularExpressions
                 for (int i = 0; i < childCount; i++)
                 {
                     // If we can find a subsequence of fixed-length children, we can emit a length check once for that sequence
-                    // and then skip the individual length checks for each.
-                    if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                    // and then skip the individual length checks for each. We can also discover case-insensitive sequences that
+                    // can be checked efficiently with methods like StartsWith.
+                    if ((node.Options & RegexOptions.RightToLeft) == 0 &&
+                        emitLengthChecksIfRequired &&
+                        node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
                     {
                         EmitSpanLengthCheck(requiredLength);
                         for (; i < exclusiveEnd; i++)
                         {
+                            if (node.TryGetOrdinalCaseInsensitiveString(i, exclusiveEnd, out int nodesConsumed, out string? caseInsensitiveString))
+                            {
+                                // if (!sliceSpan.Slice(sliceStaticPause).StartsWith(caseInsensitiveString, StringComparison.OrdinalIgnoreCase)) goto doneLabel;
+                                if (sliceStaticPos > 0)
+                                {
+                                    Ldloca(slice);
+                                    Ldc(sliceStaticPos);
+                                    Call(s_spanSliceIntMethod);
+                                }
+                                else
+                                {
+                                    Ldloc(slice);
+                                }
+                                Ldstr(caseInsensitiveString);
+                                Call(s_stringAsSpanMethod);
+                                Ldc((int)StringComparison.OrdinalIgnoreCase);
+                                Call(s_spanStartsWithSpanComparison);
+                                BrfalseFar(doneLabel);
+
+                                sliceStaticPos += caseInsensitiveString.Length;
+                                i += nodesConsumed - 1;
+                                continue;
+                            }
+
                             EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: false);
                         }
 
@@ -2270,30 +2719,51 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
-                // This only emits a single check, but it's called from the looping constructs in a loop
-                // to generate the code for a single check, so we check for each "family" (one, notone, set)
-                // rather than only for the specific single character nodes.
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                Debug.Assert(!rtl || offset is null);
 
-                // if ((uint)(sliceStaticPos + offset) >= slice.Length || slice[sliceStaticPos + offset] != ch) goto Done;
                 if (emitLengthCheck)
                 {
-                    EmitSpanLengthCheck(1, offset);
+                    if (!rtl)
+                    {
+                        // if ((uint)(sliceStaticPos + offset) >= slice.Length) goto Done;
+                        EmitSpanLengthCheck(1, offset);
+                    }
+                    else
+                    {
+                        // if ((uint)(pos - 1) >= inputSpan.Length) goto Done;
+                        Ldloc(pos);
+                        Ldc(1);
+                        Sub();
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        BgeUnFar(doneLabel);
+                    }
                 }
-                Ldloca(slice);
-                EmitSum(sliceStaticPos, offset);
+
+                if (!rtl)
+                {
+                    // slice[staticPos + offset]
+                    Ldloca(slice);
+                    EmitSum(sliceStaticPos, offset);
+                }
+                else
+                {
+                    // inputSpan[pos - 1]
+                    Ldloca(inputSpan);
+                    EmitSum(-1, pos);
+                }
                 Call(s_spanGetItemMethod);
                 LdindU2();
+
+                // if (loadedChar != ch) goto doneLabel;
                 if (node.IsSetFamily)
                 {
-                    EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                    EmitMatchCharacterClass(node.Str!);
                     BrfalseFar(doneLabel);
                 }
                 else
                 {
-                    if (IsCaseInsensitive(node))
-                    {
-                        CallToLower();
-                    }
                     Ldc(node.Ch);
                     if (node.IsOneFamily)
                     {
@@ -2305,7 +2775,18 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                sliceStaticPos++;
+                if (!rtl)
+                {
+                    sliceStaticPos++;
+                }
+                else
+                {
+                    // pos--;
+                    Ldloc(pos);
+                    Ldc(1);
+                    Sub();
+                    Stloc(pos);
+                }
             }
 
             // Emits the code to handle a boundary check on a character.
@@ -2313,16 +2794,20 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                // if (!IsBoundary(pos + sliceStaticPos, base.runtextbeg, end)) goto doneLabel;
-                Ldthis();
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    // RightToLeft doesn't use static position.  This ensures it's 0.
+                    TransferSliceStaticPosToPos();
+                }
+
+                // if (!IsBoundary(inputSpan, pos + sliceStaticPos)) goto doneLabel;
+                Ldloc(inputSpan);
                 Ldloc(pos);
                 if (sliceStaticPos > 0)
                 {
                     Ldc(sliceStaticPos);
                     Add();
                 }
-                Ldthisfld(s_runtextbegField);
-                Ldloc(end);
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Boundary:
@@ -2352,6 +2837,8 @@ namespace System.Text.RegularExpressions
             void EmitAnchors(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol, $"Unexpected type: {node.Kind}");
+                Debug.Assert((node.Options & RegexOptions.RightToLeft) == 0 || sliceStaticPos == 0);
+                Debug.Assert(sliceStaticPos >= 0);
 
                 Debug.Assert(sliceStaticPos >= 0);
                 switch (node.Kind)
@@ -2366,9 +2853,16 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            // if (pos > base.runtextbeg/start) goto doneLabel;
+                            // if (pos > 0/start) goto doneLabel;
                             Ldloc(pos);
-                            Ldthisfld(node.Kind == RegexNodeKind.Beginning ? s_runtextbegField : s_runtextstartField);
+                            if (node.Kind == RegexNodeKind.Beginning)
+                            {
+                                Ldc(0);
+                            }
+                            else
+                            {
+                                Ldthisfld(s_runtextstartField);
+                            }
                             BneFar(doneLabel);
                         }
                         break;
@@ -2386,11 +2880,11 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            // We can't use our slice in this case, because we'd need to access slice[-1], so we access the runtext field directly:
-                            // if (pos > base.runtextbeg && base.runtext[pos - 1] != '\n') goto doneLabel;
+                            // We can't use our slice in this case, because we'd need to access slice[-1], so we access the inputSpan directly:
+                            // if (pos > 0 && inputSpan[pos - 1] != '\n') goto doneLabel;
                             Label success = DefineLabel();
                             Ldloc(pos);
-                            Ldthisfld(s_runtextbegField);
+                            Ldc(0);
                             Ble(success);
                             Ldloca(inputSpan);
                             Ldloc(pos);
@@ -2405,17 +2899,35 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNodeKind.End:
-                        // if (sliceStaticPos < slice.Length) goto doneLabel;
-                        Ldc(sliceStaticPos);
-                        Ldloca(slice);
+                        if (sliceStaticPos > 0)
+                        {
+                            // if (sliceStaticPos < slice.Length) goto doneLabel;
+                            Ldc(sliceStaticPos);
+                            Ldloca(slice);
+                        }
+                        else
+                        {
+                            // if (pos < inputSpan.Length) goto doneLabel;
+                            Ldloc(pos);
+                            Ldloca(inputSpan);
+                        }
                         Call(s_spanGetLengthMethod);
                         BltUnFar(doneLabel);
                         break;
 
                     case RegexNodeKind.EndZ:
-                        // if (sliceStaticPos < slice.Length - 1) goto doneLabel;
-                        Ldc(sliceStaticPos);
-                        Ldloca(slice);
+                        if (sliceStaticPos > 0)
+                        {
+                            // if (sliceStaticPos < slice.Length - 1) goto doneLabel;
+                            Ldc(sliceStaticPos);
+                            Ldloca(slice);
+                        }
+                        else
+                        {
+                            // if (pos < inputSpan.Length - 1) goto doneLabel
+                            Ldloc(pos);
+                            Ldloca(inputSpan);
+                        }
                         Call(s_spanGetLengthMethod);
                         Ldc(1);
                         Sub();
@@ -2423,8 +2935,9 @@ namespace System.Text.RegularExpressions
                         goto case RegexNodeKind.Eol;
 
                     case RegexNodeKind.Eol:
-                        // if (sliceStaticPos < slice.Length && slice[sliceStaticPos] != '\n') goto doneLabel;
+                        if (sliceStaticPos > 0)
                         {
+                            // if (sliceStaticPos < slice.Length && slice[sliceStaticPos] != '\n') goto doneLabel;
                             Label success = DefineLabel();
                             Ldc(sliceStaticPos);
                             Ldloca(slice);
@@ -2432,6 +2945,22 @@ namespace System.Text.RegularExpressions
                             BgeUn(success);
                             Ldloca(slice);
                             Ldc(sliceStaticPos);
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
+                            Ldc('\n');
+                            BneFar(doneLabel);
+                            MarkLabel(success);
+                        }
+                        else
+                        {
+                            // if ((uint)pos < (uint)inputSpan.Length && inputSpan[pos] != '\n') goto doneLabel;
+                            Label success = DefineLabel();
+                            Ldloc(pos);
+                            Ldloca(inputSpan);
+                            Call(s_spanGetLengthMethod);
+                            BgeUn(success);
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
                             Call(s_spanGetItemMethod);
                             LdindU2();
                             Ldc('\n');
@@ -2446,51 +2975,65 @@ namespace System.Text.RegularExpressions
             void EmitMultiChar(RegexNode node, bool emitLengthCheck)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
-                EmitMultiCharString(node.Str!, IsCaseInsensitive(node), emitLengthCheck);
+                EmitMultiCharString(node.Str!, emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
             }
 
-            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck)
+            void EmitMultiCharString(string str, bool emitLengthCheck, bool rightToLeft)
             {
                 Debug.Assert(str.Length >= 2);
 
-                if (caseInsensitive) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
+                if (rightToLeft)
                 {
-                    // This case should be relatively rare.  It will only occur with IgnoreCase and a series of non-ASCII characters.
+                    Debug.Assert(emitLengthCheck);
+                    TransferSliceStaticPosToPos();
 
-                    if (emitLengthCheck)
-                    {
-                        EmitSpanLengthCheck(str.Length);
-                    }
+                    // if ((uint)(pos - str.Length) >= inputSpan.Length) goto doneLabel;
+                    Ldloc(pos);
+                    Ldc(str.Length);
+                    Sub();
+                    Ldloca(inputSpan);
+                    Call(s_spanGetLengthMethod);
+                    BgeUnFar(doneLabel);
 
-                    foreach (char c in str)
+                    for (int i = str.Length - 1; i >= 0; i--)
                     {
-                        // if (c != slice[sliceStaticPos++]) goto doneLabel;
-                        EmitTextSpanOffset();
-                        sliceStaticPos++;
+                        // if (inputSpan[--pos] != str[str.Length - 1 - i]) goto doneLabel
+                        Ldloc(pos);
+                        Ldc(1);
+                        Sub();
+                        Stloc(pos);
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Call(s_spanGetItemMethod);
                         LdindU2();
-                        CallToLower();
-                        Ldc(c);
+                        Ldc(str[i]);
                         BneFar(doneLabel);
                     }
+
+                    return;
                 }
-                else
-                {
-                    // if (!slice.Slice(sliceStaticPos).StartsWith("...") goto doneLabel;
-                    Ldloca(slice);
-                    Ldc(sliceStaticPos);
-                    Call(s_spanSliceIntMethod);
-                    Ldstr(str);
-                    Call(s_stringAsSpanMethod);
-                    Call(s_spanStartsWith);
-                    BrfalseFar(doneLabel);
-                    sliceStaticPos += str.Length;
-                }
+
+                Ldloca(slice);
+                Ldc(sliceStaticPos);
+                Call(s_spanSliceIntMethod);
+                Ldstr(str);
+                Call(s_stringAsSpanMethod);
+                Call(s_spanStartsWithSpan);
+                BrfalseFar(doneLabel);
+                sliceStaticPos += str.Length;
             }
 
             // Emits the code to handle a backtracking, single-character loop.
             void EmitSingleCharLoop(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop, $"Unexpected type: {node.Kind}");
+
+                // If this is actually atomic based on its parent, emit it as atomic instead; no backtracking necessary.
+                if (analysis.IsAtomicByAncestor(node))
+                {
+                    EmitSingleCharAtomicLoop(node);
+                    return;
+                }
 
                 // If this is actually a repeater, emit that instead; no backtracking necessary.
                 if (node.M == node.N)
@@ -2508,7 +3051,9 @@ namespace System.Text.RegularExpressions
                 Label endLoop = DefineLabel();
                 LocalBuilder startingPos = DeclareInt32();
                 LocalBuilder endingPos = DeclareInt32();
-                LocalBuilder? capturepos = expressionHasCaptures ? DeclareInt32() : null;
+                LocalBuilder? capturePos = expressionHasCaptures ? DeclareInt32() : null;
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool isInLoop = analysis.IsInLoop(node);
 
                 // We're about to enter a loop, so ensure our text position is 0.
                 TransferSliceStaticPosToPos();
@@ -2525,25 +3070,16 @@ namespace System.Text.RegularExpressions
 
                 EmitSingleCharAtomicLoop(node);
 
-                // pos += sliceStaticPos;
                 // int endingPos = pos;
                 TransferSliceStaticPosToPos();
                 Ldloc(pos);
                 Stloc(endingPos);
 
-                // int capturepos = base.Crawlpos();
-                if (capturepos is not null)
-                {
-                    Ldthis();
-                    Call(s_crawlposMethod);
-                    Stloc(capturepos);
-                }
-
-                // startingPos += node.M;
+                // startingPos += node.M; // or -= for rtl
                 if (node.M > 0)
                 {
                     Ldloc(startingPos);
-                    Ldc(node.M);
+                    Ldc(!rtl ? node.M : -node.M);
                     Add();
                     Stloc(startingPos);
                 }
@@ -2556,28 +3092,58 @@ namespace System.Text.RegularExpressions
                 // required, and try again by flowing to everything that comes after this.
 
                 MarkLabel(backtrackingLabel);
-                if (capturepos is not null)
+                if (isInLoop)
                 {
-                    // capturepos = base.runstack[--stackpos];
-                    // while (base.Crawlpos() > capturepos) base.Uncapture();
+                    // This loop is inside of another loop, which means we persist state
+                    // on the backtracking stack rather than relying on locals to always
+                    // hold the right state (if we didn't do that, another iteration of the
+                    // outer loop could have resulted in the locals being overwritten).
+                    // Pop the relevant state from the stack.
+
+                    if (capturePos is not null)
+                    {
+                        // Note that this differs ever so slightly from the source generator.  The source
+                        // generator only defines a local for capturePos if not in a loop, but the compiler
+                        // needs to store the popped stack value somewhere so that it can repeatedly compare
+                        // that value against Crawlpos, so capturePos is always declared if there are captures.
+
+                        // capturepos = base.runstack[--stackpos];
+                        // while (base.Crawlpos() > capturepos) base.Uncapture();
+                        EmitStackPop();
+                        Stloc(capturePos);
+                        EmitUncaptureUntil(capturePos);
+                    }
+
+                    // endingPos = base.runstack[--stackpos];
+                    // startingPos = base.runstack[--stackpos];
                     EmitStackPop();
-                    Stloc(capturepos);
-                    EmitUncaptureUntil(capturepos);
+                    Stloc(endingPos);
+                    EmitStackPop();
+                    Stloc(startingPos);
+                }
+                else if (capturePos is not null)
+                {
+                    // Since we're not in a loop, we're using a local to track the crawl position.
+                    // Unwind back to the position we were at prior to running the code after this loop.
+                    EmitUncaptureUntil(capturePos);
                 }
 
-                // endingPos = base.runstack[--stackpos];
-                // startingPos = base.runstack[--stackpos];
-                EmitStackPop();
-                Stloc(endingPos);
-                EmitStackPop();
-                Stloc(startingPos);
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
 
-                // if (startingPos >= endingPos) goto doneLabel;
+                // if (startingPos >= endingPos) goto doneLabel; // or <= for rtl
                 Ldloc(startingPos);
                 Ldloc(endingPos);
-                BgeFar(doneLabel);
+                if (!rtl)
+                {
+                    BgeFar(doneLabel);
+                }
+                else
+                {
+                    BleFar(doneLabel);
+                }
 
-                if (subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
+                if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
                     // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
@@ -2650,9 +3216,9 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    // endingPos--;
+                    // endingPos--; // or ++ for rtl
                     Ldloc(endingPos);
-                    Ldc(1);
+                    Ldc(!rtl ? 1 : -1);
                     Sub();
                     Stloc(endingPos);
                 }
@@ -2661,16 +3227,41 @@ namespace System.Text.RegularExpressions
                 Ldloc(endingPos);
                 Stloc(pos);
 
-                // slice = inputSpan.Slice(pos, end - pos);
-                SliceInputSpan();
+                if (!rtl)
+                {
+                    // slice = inputSpan.Slice(pos);
+                    SliceInputSpan();
+                }
 
                 MarkLabel(endLoop);
-                EmitStackResizeIfNeeded(expressionHasCaptures ? 3 : 2);
-                EmitStackPush(() => Ldloc(startingPos));
-                EmitStackPush(() => Ldloc(endingPos));
-                if (capturepos is not null)
+                if (isInLoop)
                 {
-                    EmitStackPush(() => Ldloc(capturepos!));
+                    // We're in a loop and thus can't rely on locals correctly holding the state we
+                    // need (the locals could be overwritten by a subsequent iteration).  Push the state
+                    // on to the backtracking stack.
+                    EmitStackResizeIfNeeded(2 + (capturePos is not null ? 1 : 0));
+                    EmitStackPush(() => Ldloc(startingPos));
+                    EmitStackPush(() => Ldloc(endingPos));
+                    if (capturePos is not null)
+                    {
+                        EmitStackPush(() =>
+                        {
+                            // base.Crawlpos();
+                            Ldthis();
+                            Call(s_crawlposMethod);
+                        });
+                    }
+                }
+                else if (capturePos is not null)
+                {
+                    // We're not in a loop and so can trust our locals.  Store the current capture position
+                    // into the capture position local; we'll uncapture back to this when backtracking to
+                    // remove any captures from after this loop that we need to throw away.
+
+                    // capturePos = base.Crawlpos();
+                    Ldthis();
+                    Call(s_crawlposMethod);
+                    Stloc(capturePos);
                 }
 
                 doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
@@ -2690,12 +3281,13 @@ namespace System.Text.RegularExpressions
 
                 // If the whole thing was actually that repeater, we're done. Similarly, if this is actually an atomic
                 // lazy loop, nothing will ever backtrack into this node, so we never need to iterate more than the minimum.
-                if (node.M == node.N || node.IsAtomicByParent())
+                if (node.M == node.N || analysis.IsAtomicByAncestor(node))
                 {
                     return;
                 }
 
                 Debug.Assert(node.M < node.N);
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
 
                 // We now need to match one character at a time, each time allowing the remainder of the expression
                 // to try to match, and only matching another character if the subsequent expression fails to match.
@@ -2760,6 +3352,9 @@ namespace System.Text.RegularExpressions
                     Stloc(iterationCount!);
                 }
 
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
+
                 // Now match the next item in the lazy loop.  We need to reset the pos to the position
                 // just after the last character in this loop was matched, and we need to store the resulting position
                 // for the next time we backtrack.
@@ -2773,68 +3368,140 @@ namespace System.Text.RegularExpressions
 
                 // Now that we've appropriately advanced by one character and are set for what comes after the loop,
                 // see if we can skip ahead more iterations by doing a search for a following literal.
-                if (iterationCount is null &&
+                if (!rtl &&
+                    iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
-                    !IsCaseInsensitive(node) &&
-                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
-                    (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal) // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
                 {
                     // e.g. "<[^>]*?>"
+
+                    // Whether the not'd character matches the subsequent literal. This impacts whether we need to search
+                    // for both or just the literal, as well as what assumptions we can make once a match is found.
+                    bool overlap;
+
                     // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
                     // We can implement it to search for either that char or the literal, whichever comes first.
-                    // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
-
-                    // startingPos = slice.IndexOfAny(node.Ch, literal);
                     Ldloc(slice);
-                    if (literal.Item3 is not null)
+                    if (literal.Item2 is not null) // string literal
                     {
-                        switch (literal.Item3.Length)
+                        overlap = literal.Item2[0] == node.Ch;
+                        if (overlap)
                         {
-                            case 2:
+                            // startingPos = slice.IndexOf(node.Ch);
+                            Ldc(node.Ch);
+                            Call(s_spanIndexOfChar);
+                        }
+                        else
+                        {
+                            // startingPos = slice.IndexOfAny(node.Ch, literal.Item2[0]);
+                            Ldc(node.Ch);
+                            Ldc(literal.Item2[0]);
+                            Call(s_spanIndexOfAnyCharChar);
+                        }
+                    }
+                    else if (literal.Item3 is null) // char literal
+                    {
+                        overlap = literal.Item1 == node.Ch;
+                        if (overlap)
+                        {
+                            // startingPos = slice.IndexOf(node.Ch);
+                            Ldc(node.Ch);
+                            Call(s_spanIndexOfChar);
+                        }
+                        else
+                        {
+                            // startingPos = slice.IndexOfAny(node.Ch, literal.Item1);
+                            Ldc(node.Ch);
+                            Ldc(literal.Item1);
+                            Call(s_spanIndexOfAnyCharChar);
+                        }
+                    }
+                    else // set literal
+                    {
+                        overlap = literal.Item3.Contains(node.Ch);
+                        switch ((overlap, literal.Item3.Length))
+                        {
+                            case (true, 2):
+                                // startingPos = slice.IndexOfAny(literal.Item3[0], literal.Item3[1]);
+                                Ldc(literal.Item3[0]);
+                                Ldc(literal.Item3[1]);
+                                Call(s_spanIndexOfAnyCharChar);
+                                break;
+
+                            case (true, 3):
+                                // startingPos = slice.IndexOfAny(literal.Item3[0], literal.Item3[1], literal.Item3[2]);
+                                Ldc(literal.Item3[0]);
+                                Ldc(literal.Item3[1]);
+                                Ldc(literal.Item3[2]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            case (true, _):
+                                // startingPos = slice.IndexOfAny(literal.Item3);
+                                Ldstr(literal.Item3);
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+
+                            case (false, 2):
+                                // startingPos = slice.IndexOfAny(node.Ch, literal.Item3[0], literal.Item3[1]);
                                 Ldc(node.Ch);
                                 Ldc(literal.Item3[0]);
                                 Ldc(literal.Item3[1]);
                                 Call(s_spanIndexOfAnyCharCharChar);
                                 break;
 
-                            default:
-                                Ldstr(node.Ch + literal.Item3);
+                            case (false, _):
+                                // startingPos = slice.IndexOfAny($"{node.Ch}{literal.Item3}");
+                                Ldstr($"{node.Ch}{literal.Item3}");
                                 Call(s_stringAsSpanMethod);
                                 Call(s_spanIndexOfAnySpan);
                                 break;
                         }
                     }
-                    else
-                    {
-                        Ldc(node.Ch);
-                        Ldc(literal.Item2?[0] ?? literal.Item1);
-                        Call(s_spanIndexOfAnyCharChar);
-                    }
                     Stloc(startingPos);
 
-                    // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
-                    Ldloc(startingPos);
-                    Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
-                    BgeUnFar(doneLabel);
+                    // If the search didn't find anything, fail the match.  If it did find something, then we need to consider whether
+                    // that something is the loop character.  If it's not, we've successfully backtracked to the next lazy location
+                    // where we should evaluate the rest of the pattern.  If it does match, then we need to consider whether there's
+                    // overlap between the loop character and the literal.  If there is overlap, this is also a place to check.  But
+                    // if there's not overlap, and if the found character is the loop character, we also want to fail the match here
+                    // and now, as this means the loop ends before it gets to what needs to come after the loop, and thus the pattern
+                    // can't possibly match here.
+                    if (overlap)
+                    {
+                        // if (startingPos < 0) goto doneLabel;
+                        Ldloc(startingPos);
+                        Ldc(0);
+                        BltFar(doneLabel);
+                    }
+                    else
+                    {
+                        // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
+                        Ldloc(startingPos);
+                        Ldloca(slice);
+                        Call(s_spanGetLengthMethod);
+                        BgeUnFar(doneLabel);
 
-                    // if (slice[startingPos] == node.Ch) goto doneLabel;
-                    Ldloca(slice);
-                    Ldloc(startingPos);
-                    Call(s_spanGetItemMethod);
-                    LdindU2();
-                    Ldc(node.Ch);
-                    BeqFar(doneLabel);
+                        // if (slice[startingPos] == node.Ch) goto doneLabel;
+                        Ldloca(slice);
+                        Ldloc(startingPos);
+                        Call(s_spanGetItemMethod);
+                        LdindU2();
+                        Ldc(node.Ch);
+                        BeqFar(doneLabel);
+                    }
 
                     // pos += startingPos;
-                    // slice = inputSpace.Slice(pos, end - pos);
+                    // slice = inputSpace.Slice(pos);
                     Ldloc(pos);
                     Ldloc(startingPos);
                     Add();
                     Stloc(pos);
                     SliceInputSpan();
                 }
-                else if (iterationCount is null &&
+                else if (!rtl &&
+                    iterationCount is null &&
                     node.Kind is RegexNodeKind.Setlazy &&
                     node.Str == RegexCharClass.AnyClass &&
                     subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
@@ -2888,7 +3555,7 @@ namespace System.Text.RegularExpressions
                     BltFar(doneLabel);
 
                     // pos += startingPos;
-                    // slice = inputSpace.Slice(pos, end - pos);
+                    // slice = inputSpace.Slice(pos);
                     Ldloc(pos);
                     Ldloc(startingPos);
                     Add();
@@ -2915,13 +3582,19 @@ namespace System.Text.RegularExpressions
                     Stloc(capturepos);
                 }
 
-                if (node.IsInLoop())
+                // If this loop is itself not in another loop, nothing more needs to be done:
+                // upon backtracking, locals being used by this loop will have retained their
+                // values and be up-to-date.  But if this loop is inside another loop, multiple
+                // iterations of this loop each need their own state, so we need to use the stack
+                // to hold it, and we need a dedicated backtracking section to handle restoring
+                // that state before jumping back into the loop itself.
+                if (analysis.IsInLoop(node))
                 {
-                    // Store the capture's state
+                    // Store the loop's state
                     // base.runstack[stackpos++] = startingPos;
                     // base.runstack[stackpos++] = capturepos;
                     // base.runstack[stackpos++] = iterationCount;
-                    EmitStackResizeIfNeeded(3);
+                    EmitStackResizeIfNeeded(1 + (capturepos is not null ? 1 : 0) + (iterationCount is not null ? 1 : 0));
                     EmitStackPush(() => Ldloc(startingPos));
                     if (capturepos is not null)
                     {
@@ -2932,14 +3605,15 @@ namespace System.Text.RegularExpressions
                         EmitStackPush(() => Ldloc(iterationCount));
                     }
 
-                    // Skip past the backtracking section
+                    // Skip past the backtracking section.
                     Label backtrackingEnd = DefineLabel();
                     BrFar(backtrackingEnd);
 
-                    // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
+                    // Emit a backtracking section that restores the loop's state and then jumps to the previous done label.
                     Label backtrack = DefineLabel();
                     MarkLabel(backtrack);
 
+                    // Restore the loop's state.
                     // iterationCount = base.runstack[--stackpos];
                     // capturepos = base.runstack[--stackpos];
                     // startingPos = base.runstack[--stackpos];
@@ -2971,56 +3645,57 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
+                RegexNode child = node.Child(0);
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 Label originalDoneLabel = doneLabel;
-                bool isAtomic = node.IsAtomicByParent();
 
-                // If this is actually an atomic lazy loop, we need to output just the minimum number of iterations,
-                // as nothing will backtrack into the lazy loop to get it progress further.
-                if (isAtomic)
+                // If this is actually a repeater, reuse the loop implementation, as a loop and a lazy loop
+                // both need to greedily consume up to their min iteration count and are identical in
+                // behavior when min == max.
+                if (minIterations == maxIterations)
                 {
-                    switch (minIterations)
-                    {
-                        case 0:
-                            // Atomic lazy with a min count of 0: nop.
-                            return;
-
-                        case 1:
-                            // Atomic lazy with a min count of 1: just output the child, no looping required.
-                            EmitNode(node.Child(0));
-                            return;
-                    }
-                }
-
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !PossiblyBacktracks(node.Child(0)))
-                {
-                    EmitNonBacktrackingRepeater(node);
+                    EmitLoop(node);
                     return;
                 }
+
+                // We should only be here if the lazy loop isn't atomic due to an ancestor, as the optimizer should
+                // in such a case have lowered the loop's upper bound to its lower bound, at which point it would
+                // have been handled by the above delegation to EmitLoop.  However, if the optimizer missed doing so,
+                // this loop could still be considered atomic by ancestor by its parent nodes, in which case we want
+                // to make sure the code emitted here conforms (e.g. doesn't leave any state erroneously on the stack).
+                // So, we assert it's not atomic, but still handle that case.
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                Debug.Assert(!isAtomic, "An atomic lazy should have had its upper bound lowered to its lower bound.");
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
                 // So, we transfer sliceStaticPos to pos, and ensure that any path out of here has sliceStaticPos as 0.
                 TransferSliceStaticPosToPos();
 
-                LocalBuilder startingPos = DeclareInt32();
-                LocalBuilder iterationCount = DeclareInt32();
-                LocalBuilder sawEmpty = DeclareInt32();
                 Label body = DefineLabel();
                 Label endLoop = DefineLabel();
 
                 // iterationCount = 0;
-                // startingPos = pos;
-                // sawEmpty = 0; // false
+                LocalBuilder iterationCount = DeclareInt32();
                 Ldc(0);
                 Stloc(iterationCount);
-                Ldloc(pos);
-                Stloc(startingPos);
-                Ldc(0);
-                Stloc(sawEmpty);
+
+                // startingPos = pos;
+                // sawEmpty = 0; // false
+                bool iterationMayBeEmpty = child.ComputeMinLength() == 0;
+                LocalBuilder? startingPos = null;
+                LocalBuilder? sawEmpty = null;
+                if (iterationMayBeEmpty)
+                {
+                    startingPos = DeclareInt32();
+                    Ldloc(pos);
+                    Stloc(startingPos);
+
+                    sawEmpty = DeclareInt32();
+                    Ldc(0);
+                    Stloc(sawEmpty);
+                }
 
                 // If the min count is 0, start out by jumping right to what's after the loop.  Backtracking
                 // will then bring us back in to do further iterations.
@@ -3032,179 +3707,249 @@ namespace System.Text.RegularExpressions
 
                 // Iteration body
                 MarkLabel(body);
-                EmitTimeoutCheck();
 
-                // We need to store the starting pos and crawl position so that it may
-                // be backtracked through later.  This needs to be the starting position from
-                // the iteration we're leaving, so it's pushed before updating it to pos.
-                // base.runstack[stackpos++] = base.Crawlpos();
-                // base.runstack[stackpos++] = startingPos;
-                // base.runstack[stackpos++] = pos;
-                // base.runstack[stackpos++] = sawEmpty;
-                EmitStackResizeIfNeeded(3);
-                if (expressionHasCaptures)
-                {
-                    EmitStackPush(() =>
-                    {
-                        Ldthis();
-                        Call(s_crawlposMethod);
-                    });
-                }
-                EmitStackPush(() => Ldloc(startingPos));
-                EmitStackPush(() => Ldloc(pos));
-                EmitStackPush(() => Ldloc(sawEmpty));
-
-                // Save off some state.  We need to store the current pos so we can compare it against
-                // pos after the iteration, in order to determine whether the iteration was empty. Empty
-                // iterations are allowed as part of min matches, but once we've met the min quote, empty matches
-                // are considered match failures.
-                // startingPos = pos;
-                Ldloc(pos);
-                Stloc(startingPos);
-
-                // Proactively increase the number of iterations.  We do this prior to the match rather than once
-                // we know it's successful, because we need to decrement it as part of a failed match when
-                // backtracking; it's thus simpler to just always decrement it as part of a failed match, even
-                // when initially greedily matching the loop, which then requires we increment it before trying.
-                // iterationCount++;
-                Ldloc(iterationCount);
-                Ldc(1);
-                Add();
-                Stloc(iterationCount);
-
-                // Last but not least, we need to set the doneLabel that a failed match of the body will jump to.
-                // Such an iteration match failure may or may not fail the whole operation, depending on whether
-                // we've already matched the minimum required iterations, so we need to jump to a location that
-                // will make that determination.
-                Label iterationFailedLabel = DefineLabel();
-                doneLabel = iterationFailedLabel;
-
-                // Finally, emit the child.
-                Debug.Assert(sliceStaticPos == 0);
-                EmitNode(node.Child(0));
-                TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
-                if (doneLabel == iterationFailedLabel)
-                {
-                    doneLabel = originalDoneLabel;
-                }
-
-                // Loop condition.  Continue iterating if we've not yet reached the minimum.
-                if (minIterations > 0)
-                {
-                    // if (iterationCount < minIterations) goto body;
-                    Ldloc(iterationCount);
-                    Ldc(minIterations);
-                    BltFar(body);
-                }
-
-                // If the last iteration was empty, we need to prevent further iteration from this point
-                // unless we backtrack out of this iteration.  We can do that easily just by pretending
-                // we reached the max iteration count.
-                // if (pos == startingPos) sawEmpty = 1; // true
-                Label skipSawEmptySet = DefineLabel();
-                Ldloc(pos);
-                Ldloc(startingPos);
-                Bne(skipSawEmptySet);
-                Ldc(1);
-                Stloc(sawEmpty);
-                MarkLabel(skipSawEmptySet);
-
-                // We matched the next iteration.  Jump to the subsequent code.
-                // goto endLoop;
-                BrFar(endLoop);
-
-                // Now handle what happens when an iteration fails.  We need to reset state to what it was before just that iteration
-                // started.  That includes resetting pos and clearing out any captures from that iteration.
-                MarkLabel(iterationFailedLabel);
-
-                // iterationCount--;
-                Ldloc(iterationCount);
-                Ldc(1);
-                Sub();
-                Stloc(iterationCount);
-
-                // if (iterationCount < 0) goto originalDoneLabel;
-                Ldloc(iterationCount);
-                Ldc(0);
-                BltFar(originalDoneLabel);
-
-                // sawEmpty = base.runstack[--stackpos];
-                // pos = base.runstack[--stackpos];
-                // startingPos = base.runstack[--stackpos];
-                // capturepos = base.runstack[--stackpos];
-                // while (base.Crawlpos() > capturepos) base.Uncapture();
-                EmitStackPop();
-                Stloc(sawEmpty);
-                EmitStackPop();
-                Stloc(pos);
-                EmitStackPop();
-                Stloc(startingPos);
-                if (expressionHasCaptures)
-                {
-                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
-                    EmitStackPop();
-                    Stloc(poppedCrawlPos);
-                    EmitUncaptureUntil(poppedCrawlPos);
-                }
-                SliceInputSpan();
-
-                if (doneLabel == originalDoneLabel)
-                {
-                    // goto originalDoneLabel;
-                    BrFar(originalDoneLabel);
-                }
-                else
-                {
-                    // if (iterationCount == 0) goto originalDoneLabel;
-                    // goto doneLabel;
-                    Ldloc(iterationCount);
-                    Ldc(0);
-                    BeqFar(originalDoneLabel);
-                    BrFar(doneLabel);
-                }
-
-                MarkLabel(endLoop);
-
+                // In case iterations are backtracked through and unwound, we need to store the current position (so that
+                // matching can resume from that location), the current crawl position if captures are possible (so that
+                // we can uncapture back to that position), and both the starting position from the iteration we're leaving
+                // and whether we've seen an empty iteration (if iterations may be empty).  Since there can be multiple
+                // iterations, this state needs to be stored on to the backtracking stack.
                 if (!isAtomic)
                 {
-                    // Store the capture's state and skip the backtracking section
-                    EmitStackResizeIfNeeded(3);
-                    EmitStackPush(() => Ldloc(startingPos));
-                    EmitStackPush(() => Ldloc(iterationCount));
-                    EmitStackPush(() => Ldloc(sawEmpty));
-                    Label skipBacktrack = DefineLabel();
-                    BrFar(skipBacktrack);
-
-                    // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
-                    Label backtrack = DefineLabel();
-                    MarkLabel(backtrack);
-
-                    // sawEmpty = base.runstack[--stackpos];
-                    // iterationCount = base.runstack[--stackpos];
-                    // startingPos = base.runstack[--stackpos];
-                    EmitStackPop();
-                    Stloc(sawEmpty);
-                    EmitStackPop();
-                    Stloc(iterationCount);
-                    EmitStackPop();
-                    Stloc(startingPos);
-
-                    if (maxIterations == int.MaxValue)
+                    // base.runstack[stackpos++] = pos;
+                    // base.runstack[stackpos++] = startingPos;
+                    // base.runstack[stackpos++] = sawEmpty;
+                    // base.runstack[stackpos++] = base.Crawlpos();
+                    int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
+                    EmitStackResizeIfNeeded(entriesPerIteration);
+                    EmitStackPush(() => Ldloc(pos));
+                    if (iterationMayBeEmpty)
                     {
-                        // if (sawEmpty != 0) goto doneLabel;
-                        Ldloc(sawEmpty);
-                        Ldc(0);
-                        BneFar(doneLabel);
+                        EmitStackPush(() => Ldloc(startingPos!));
+                        EmitStackPush(() => Ldloc(sawEmpty!));
+                    }
+                    if (expressionHasCaptures)
+                    {
+                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
+                    }
+
+                    if (iterationMayBeEmpty)
+                    {
+                        // We need to store the current pos so we can compare it against pos after the iteration, in order to
+                        // determine whether the iteration was empty.
+                        // startingPos = pos;
+                        Ldloc(pos);
+                        Stloc(startingPos!);
+                    }
+
+                    // Proactively increase the number of iterations.  We do this prior to the match rather than once
+                    // we know it's successful, because we need to decrement it as part of a failed match when
+                    // backtracking; it's thus simpler to just always decrement it as part of a failed match, even
+                    // when initially greedily matching the loop, which then requires we increment it before trying.
+                    // iterationCount++;
+                    Ldloc(iterationCount);
+                    Ldc(1);
+                    Add();
+                    Stloc(iterationCount);
+
+                    // Last but not least, we need to set the doneLabel that a failed match of the body will jump to.
+                    // Such an iteration match failure may or may not fail the whole operation, depending on whether
+                    // we've already matched the minimum required iterations, so we need to jump to a location that
+                    // will make that determination.
+                    Label iterationFailedLabel = DefineLabel();
+                    doneLabel = iterationFailedLabel;
+
+                    // Finally, emit the child.
+                    Debug.Assert(sliceStaticPos == 0);
+                    EmitNode(child);
+                    TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
+                    if (doneLabel == iterationFailedLabel)
+                    {
+                        doneLabel = originalDoneLabel;
+                    }
+
+                    // Loop condition.  Continue iterating if we've not yet reached the minimum.  We just successfully
+                    // matched an iteration, so the only reason we'd need to forcefully loop around again is if the
+                    // minimum were at least 2.
+                    if (minIterations >= 2)
+                    {
+                        // if (iterationCount < minIterations) goto body;
+                        Ldloc(iterationCount);
+                        Ldc(minIterations);
+                        BltFar(body);
+                    }
+
+                    if (iterationMayBeEmpty)
+                    {
+                        // If the last iteration was empty, we need to prevent further iteration from this point
+                        // unless we backtrack out of this iteration.
+                        // if (pos == startingPos) sawEmpty = 1; // true
+                        Label skipSawEmptySet = DefineLabel();
+                        Ldloc(pos);
+                        Ldloc(startingPos!);
+                        Bne(skipSawEmptySet);
+                        Ldc(1);
+                        Stloc(sawEmpty!);
+                        MarkLabel(skipSawEmptySet);
+                    }
+
+                    // We matched the next iteration.  Jump to the subsequent code.
+                    // goto endLoop;
+                    BrFar(endLoop);
+
+                    // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
+                    // when it's required to satisfy the loop by definition of being lazy, the loop is failing).  We need
+                    // to reset state to what it was before just that iteration started.  That includes resetting pos and
+                    // clearing out any captures from that iteration.
+                    MarkLabel(iterationFailedLabel);
+
+                    // Fail this loop iteration, including popping state off the backtracking stack that was pushed
+                    // on as part of the failing iteration.
+
+                    // iterationCount--;
+                    Ldloc(iterationCount);
+                    Ldc(1);
+                    Sub();
+                    Stloc(iterationCount);
+
+                    // poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    // sawEmpty = base.runstack[--stackpos];
+                    // startingPos = base.runstack[--stackpos];
+                    // pos = base.runstack[--stackpos];
+                    // slice = inputSpan.Slice(pos);
+                    EmitUncaptureUntilPopped();
+                    if (iterationMayBeEmpty)
+                    {
+                        EmitStackPop();
+                        Stloc(sawEmpty!);
+                        EmitStackPop();
+                        Stloc(startingPos!);
+                    }
+                    EmitStackPop();
+                    Stloc(pos);
+                    SliceInputSpan();
+
+                    // If the loop's child doesn't backtrack, then this loop has failed.
+                    // If the loop's child does backtrack, we need to backtrack back into the previous iteration if there was one.
+                    if (doneLabel == originalDoneLabel)
+                    {
+                        // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
+                        // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
+                        // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
+                        // will expect the stack to be cleared of any child state.
+
+                        // stackpos -= iterationCount * entriesPerIteration;
+                        Debug.Assert(entriesPerIteration >= 1);
+                        Ldloc(stackpos);
+                        Ldloc(iterationCount);
+                        if (entriesPerIteration > 1)
+                        {
+                            Ldc(entriesPerIteration);
+                            Mul();
+                        }
+                        Sub();
+                        Stloc(stackpos);
                     }
                     else
                     {
-                        // if (iterationCount >= maxIterations || sawEmpty != 0) goto doneLabel;
+                        // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
+                        // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
+
+                        // if (iterationCount != 0) goto doneLabel;
+                        Ldloc(iterationCount);
+                        Ldc(0);
+                        BneFar(doneLabel);
+                    }
+
+                    // goto originalDoneLabel;
+                    BrFar(originalDoneLabel);
+
+                    MarkLabel(endLoop);
+
+                    // If the lazy loop is not atomic, then subsequent code may backtrack back into this lazy loop, either
+                    // causing it to add additional iterations, or backtracking into existing iterations and potentially
+                    // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
+                    // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
+                    // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
+                    // backtracking section that a subsequent construct will see as its backtracking target.
+                    // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
+                    // If we're not inside of a loop, the local's used for this construct are sufficient, as nothing
+                    // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
+                    // of another loop, then any number of iterations might have such state that needs to be stored,
+                    // and thus it needs to be pushed on to the backtracking stack.
+                    // base.runstack[stackpos++] = pos;
+                    // base.runstack[stackpos++] = iterationCount;
+                    // base.runstack[stackpos++] = startingPos;
+                    // base.runstack[stackpos++] = sawEmpty;
+                    bool isInLoop = analysis.IsInLoop(node);
+                    EmitStackResizeIfNeeded(1 + (isInLoop ? 1 + (iterationMayBeEmpty ? 2 : 0) : 0) + (expressionHasCaptures ? 1 : 0));
+                    EmitStackPush(() => Ldloc(pos));
+                    if (isInLoop)
+                    {
+                        EmitStackPush(() => Ldloc(iterationCount));
+                        if (iterationMayBeEmpty)
+                        {
+                            EmitStackPush(() => Ldloc(startingPos!));
+                            EmitStackPush(() => Ldloc(sawEmpty!));
+                        }
+                    }
+                    if (expressionHasCaptures)
+                    {
+                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
+                    }
+
+                    Label skipBacktrack = DefineLabel();
+                    BrFar(skipBacktrack);
+
+                    // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
+                    // the appropriate label.
+                    Label backtrack = DefineLabel();
+                    MarkLabel(backtrack);
+
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded();
+
+                    // int poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    EmitUncaptureUntilPopped();
+
+                    if (isInLoop)
+                    {
+                        // sawEmpty = base.runstack[--stackpos];
+                        // startingPos = base.runstack[--stackpos];
+                        // iterationCount = base.runstack[--stackpos];
+                        // pos = base.runstack[--stackpos];
+                        if (iterationMayBeEmpty)
+                        {
+                            EmitStackPop();
+                            Stloc(sawEmpty!);
+                            EmitStackPop();
+                            Stloc(startingPos!);
+                        }
+                        EmitStackPop();
+                        Stloc(iterationCount);
+                    }
+                    EmitStackPop();
+                    Stloc(pos);
+                    SliceInputSpan();
+
+                    // Determine where to branch, either back to the lazy loop body to add an additional iteration,
+                    // or to the last backtracking label.
+
+                    if (iterationMayBeEmpty)
+                    {
+                        // if (sawEmpty != 0) goto doneLabel;
+                        Ldloc(sawEmpty!);
+                        Ldc(0);
+                        BneFar(doneLabel);
+                    }
+
+                    if (maxIterations != int.MaxValue)
+                    {
+                        // if (iterationCount >= maxIterations) goto doneLabel;
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
                         BgeFar(doneLabel);
-                        Ldloc(sawEmpty);
-                        Ldc(0);
-                        BneFar(doneLabel);
                     }
 
                     // goto body;
@@ -3223,6 +3968,8 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 int iterations = node.M;
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+
                 switch (iterations)
                 {
                     case 0:
@@ -3234,11 +3981,43 @@ namespace System.Text.RegularExpressions
                         EmitSingleChar(node, emitLengthChecksIfRequired);
                         return;
 
-                    case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
+                    case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily:
                         // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
                         // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
-                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthChecksIfRequired);
+                        EmitMultiCharString(new string(node.Ch, iterations), emitLengthChecksIfRequired, rtl);
                         return;
+                }
+
+                if (rtl)
+                {
+                    TransferSliceStaticPosToPos(); // we don't use static position with rtl
+                    Label conditionLabel = DefineLabel();
+                    Label bodyLabel = DefineLabel();
+
+                    // for (int i = 0; ...)
+                    using RentedLocalBuilder iterationLocal = RentInt32Local();
+                    Ldc(0);
+                    Stloc(iterationLocal);
+                    BrFar(conditionLabel);
+
+                    // TimeoutCheck();
+                    // HandleSingleChar();
+                    MarkLabel(bodyLabel);
+                    EmitSingleChar(node);
+
+                    // for (...; ...; i++)
+                    Ldloc(iterationLocal);
+                    Ldc(1);
+                    Add();
+                    Stloc(iterationLocal);
+
+                    // for (...; i < iterations; ...)
+                    MarkLabel(conditionLabel);
+                    Ldloc(iterationLocal);
+                    Ldc(iterations);
+                    BltFar(bodyLabel);
+
+                    return;
                 }
 
                 // if ((uint)(sliceStaticPos + iterations - 1) >= (uint)slice.Length) goto doneLabel;
@@ -3288,7 +4067,6 @@ namespace System.Text.RegularExpressions
                     BrFar(conditionLabel);
 
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     LocalBuilder tmpTextSpanLocal = slice; // we want EmitSingleChar to refer to this temporary
                     int tmpTextSpanPos = sliceStaticPos;
@@ -3335,6 +4113,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.N > node.M);
                 int minIterations = node.M;
                 int maxIterations = node.N;
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
 
                 using RentedLocalBuilder iterationLocal = RentInt32Local();
 
@@ -3343,9 +4122,75 @@ namespace System.Text.RegularExpressions
                 Span<char> setChars = stackalloc char[5]; // max optimized by IndexOfAny today
                 int numSetChars = 0;
 
-                if (node.IsNotoneFamily &&
-                    maxIterations == int.MaxValue &&
-                    (!IsCaseInsensitive(node)))
+                if (rtl)
+                {
+                    TransferSliceStaticPosToPos(); // we don't use static position for rtl
+
+                    Label conditionLabel = DefineLabel();
+                    Label bodyLabel = DefineLabel();
+
+                    // int i = 0;
+                    Ldc(0);
+                    Stloc(iterationLocal);
+                    BrFar(conditionLabel);
+
+                    // Body:
+                    // TimeoutCheck();
+                    MarkLabel(bodyLabel);
+
+                    // if (pos <= iterationLocal) goto atomicLoopDoneLabel;
+                    Ldloc(pos);
+                    Ldloc(iterationLocal);
+                    BleFar(atomicLoopDoneLabel);
+
+                    // if (inputSpan[pos - i - 1] != ch) goto atomicLoopDoneLabel;
+                    Ldloca(inputSpan);
+                    Ldloc(pos);
+                    Ldloc(iterationLocal);
+                    Sub();
+                    Ldc(1);
+                    Sub();
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    if (node.IsSetFamily)
+                    {
+                        EmitMatchCharacterClass(node.Str!);
+                        BrfalseFar(atomicLoopDoneLabel);
+                    }
+                    else
+                    {
+                        Ldc(node.Ch);
+                        if (node.IsOneFamily)
+                        {
+                            BneFar(atomicLoopDoneLabel);
+                        }
+                        else // IsNotoneFamily
+                        {
+                            BeqFar(atomicLoopDoneLabel);
+                        }
+                    }
+
+                    // i++;
+                    Ldloc(iterationLocal);
+                    Ldc(1);
+                    Add();
+                    Stloc(iterationLocal);
+
+                    // if (i >= maxIterations) goto atomicLoopDoneLabel;
+                    MarkLabel(conditionLabel);
+                    if (maxIterations != int.MaxValue)
+                    {
+                        Ldloc(iterationLocal);
+                        Ldc(maxIterations);
+                        BltFar(bodyLabel);
+                    }
+                    else
+                    {
+                        BrFar(bodyLabel);
+                    }
+                }
+                else if (node.IsNotoneFamily &&
+                    maxIterations == int.MaxValue)
                 {
                     // For Notone, we're looking for a specific character, as everything until we find
                     // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
@@ -3385,7 +4230,6 @@ namespace System.Text.RegularExpressions
                 }
                 else if (node.IsSetFamily &&
                     maxIterations == int.MaxValue &&
-                    !IsCaseInsensitive(node) &&
                     (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0 &&
                     RegexCharClass.IsNegated(node.Str!))
                 {
@@ -3423,7 +4267,7 @@ namespace System.Text.RegularExpressions
                         default:
                             Ldstr(setChars.Slice(0, numSetChars).ToString());
                             Call(s_stringAsSpanMethod);
-                            Call(s_spanIndexOfSpan);
+                            Call(s_spanIndexOfAnySpan);
                             break;
                     }
                     Stloc(iterationLocal);
@@ -3448,9 +4292,10 @@ namespace System.Text.RegularExpressions
                     // .* was used with RegexOptions.Singleline, which means it'll consume everything.  Just jump to the end.
                     // The unbounded constraint is the same as in the Notone case above, done purely for simplicity.
 
-                    // int i = end - pos;
+                    // int i = inputSpan.Length - pos;
                     TransferSliceStaticPosToPos();
-                    Ldloc(end);
+                    Ldloca(inputSpan);
+                    Call(s_spanGetLengthMethod);
                     Ldloc(pos);
                     Sub();
                     Stloc(iterationLocal);
@@ -3473,7 +4318,6 @@ namespace System.Text.RegularExpressions
                     // Body:
                     // TimeoutCheck();
                     MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
 
                     // if ((uint)i >= (uint)slice.Length) goto atomicLoopDoneLabel;
                     Ldloc(iterationLocal);
@@ -3488,15 +4332,11 @@ namespace System.Text.RegularExpressions
                     LdindU2();
                     if (node.IsSetFamily)
                     {
-                        EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                        EmitMatchCharacterClass(node.Str!);
                         BrfalseFar(atomicLoopDoneLabel);
                     }
                     else
                     {
-                        if (IsCaseInsensitive(node))
-                        {
-                            CallToLower();
-                        }
                         Ldc(node.Ch);
                         if (node.IsOneFamily)
                         {
@@ -3542,17 +4382,28 @@ namespace System.Text.RegularExpressions
                 // Now that we've completed our optional iterations, advance the text span
                 // and pos by the number of iterations completed.
 
-                // slice = slice.Slice(i);
-                Ldloca(slice);
-                Ldloc(iterationLocal);
-                Call(s_spanSliceIntMethod);
-                Stloc(slice);
+                if (!rtl)
+                {
+                    // slice = slice.Slice(i);
+                    Ldloca(slice);
+                    Ldloc(iterationLocal);
+                    Call(s_spanSliceIntMethod);
+                    Stloc(slice);
 
-                // pos += i;
-                Ldloc(pos);
-                Ldloc(iterationLocal);
-                Add();
-                Stloc(pos);
+                    // pos += i;
+                    Ldloc(pos);
+                    Ldloc(iterationLocal);
+                    Add();
+                    Stloc(pos);
+                }
+                else
+                {
+                    // pos -= i;
+                    Ldloc(pos);
+                    Ldloc(iterationLocal);
+                    Sub();
+                    Stloc(pos);
+                }
             }
 
             // Emits the code to handle a non-backtracking optional zero-or-one loop.
@@ -3561,30 +4412,53 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.M == 0 && node.N == 1);
 
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                if (rtl)
+                {
+                    TransferSliceStaticPosToPos(); // we don't use static pos for rtl
+                }
+
                 Label skipUpdatesLabel = DefineLabel();
 
-                // if ((uint)sliceStaticPos >= (uint)slice.Length) goto skipUpdatesLabel;
-                Ldc(sliceStaticPos);
-                Ldloca(slice);
-                Call(s_spanGetLengthMethod);
-                BgeUnFar(skipUpdatesLabel);
+                if (!rtl)
+                {
+                    // if ((uint)sliceStaticPos >= (uint)slice.Length) goto skipUpdatesLabel;
+                    Ldc(sliceStaticPos);
+                    Ldloca(slice);
+                    Call(s_spanGetLengthMethod);
+                    BgeUnFar(skipUpdatesLabel);
+                }
+                else
+                {
+                    // if (pos == 0) goto skipUpdatesLabel;
+                    Ldloc(pos);
+                    Ldc(0);
+                    BeqFar(skipUpdatesLabel);
+                }
 
-                // if (slice[sliceStaticPos] != ch) goto skipUpdatesLabel;
-                Ldloca(slice);
-                Ldc(sliceStaticPos);
+                if (!rtl)
+                {
+                    // if (slice[sliceStaticPos] != ch) goto skipUpdatesLabel;
+                    Ldloca(slice);
+                    Ldc(sliceStaticPos);
+                }
+                else
+                {
+                    // if (inputSpan[pos - 1] != ch) goto skipUpdatesLabel;
+                    Ldloca(inputSpan);
+                    Ldloc(pos);
+                    Ldc(1);
+                    Sub();
+                }
                 Call(s_spanGetItemMethod);
                 LdindU2();
                 if (node.IsSetFamily)
                 {
-                    EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                    EmitMatchCharacterClass(node.Str!);
                     BrfalseFar(skipUpdatesLabel);
                 }
                 else
                 {
-                    if (IsCaseInsensitive(node))
-                    {
-                        CallToLower();
-                    }
                     Ldc(node.Ch);
                     if (node.IsOneFamily)
                     {
@@ -3596,17 +4470,28 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                // slice = slice.Slice(1);
-                Ldloca(slice);
-                Ldc(1);
-                Call(s_spanSliceIntMethod);
-                Stloc(slice);
+                if (!rtl)
+                {
+                    // slice = slice.Slice(1);
+                    Ldloca(slice);
+                    Ldc(1);
+                    Call(s_spanSliceIntMethod);
+                    Stloc(slice);
 
-                // pos++;
-                Ldloc(pos);
-                Ldc(1);
-                Add();
-                Stloc(pos);
+                    // pos++;
+                    Ldloc(pos);
+                    Ldc(1);
+                    Add();
+                    Stloc(pos);
+                }
+                else
+                {
+                    // pos--;
+                    Ldloc(pos);
+                    Ldc(1);
+                    Sub();
+                    Stloc(pos);
+                }
 
                 MarkLabel(skipUpdatesLabel);
             }
@@ -3617,7 +4502,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.M == node.N, $"Unexpected M={node.M} == N={node.N}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
-                Debug.Assert(!PossiblyBacktracks(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
+                Debug.Assert(!analysis.MayBacktrack(node.Child(0)), $"Expected non-backtracking node {node.Kind}");
 
                 // Ensure every iteration of the loop sees a consistent value.
                 TransferSliceStaticPosToPos();
@@ -3655,17 +4540,32 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
                 Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                RegexNode child = node.Child(0);
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool isAtomic = node.IsAtomicByParent();
 
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !PossiblyBacktracks(node.Child(0)))
+                // Special-case some repeaters.
+                if (minIterations == maxIterations)
                 {
-                    EmitNonBacktrackingRepeater(node);
-                    return;
+                    switch (minIterations)
+                    {
+                        case 0:
+                            // No iteration. Nop.
+                            return;
+
+                        case 1:
+                            // One iteration.  Just emit the child without any loop ceremony.
+                            EmitNode(child);
+                            return;
+
+                        case > 1 when !analysis.MayBacktrack(child):
+                            // The child doesn't backtrack.  Emit it as a non-backtracking repeater.
+                            // (If the child backtracks, we need to fall through to the more general logic
+                            // that supports unwinding iterations.)
+                            EmitNonBacktrackingRepeater(node);
+                            return;
+                    }
                 }
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
@@ -3673,43 +4573,70 @@ namespace System.Text.RegularExpressions
                 // So, we transfer sliceStaticPos to pos, and ensure that any path out of here has sliceStaticPos as 0.
                 TransferSliceStaticPosToPos();
 
-                Label originalDoneLabel = doneLabel;
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                LocalBuilder? startingStackpos = null;
+                if (isAtomic)
+                {
+                    startingStackpos = DeclareInt32();
+                    Ldloc(stackpos);
+                    Stloc(startingStackpos);
+                }
 
-                LocalBuilder startingPos = DeclareInt32();
-                LocalBuilder iterationCount = DeclareInt32();
+                Label originalDoneLabel = doneLabel;
                 Label body = DefineLabel();
                 Label endLoop = DefineLabel();
+                LocalBuilder iterationCount = DeclareInt32();
+
+                // Loops that match empty iterations need additional checks in place to prevent infinitely matching (since
+                // you could end up looping an infinite number of times at the same location).  We can avoid those
+                // additional checks if we can prove that the loop can never match empty, which we can do by computing
+                // the minimum length of the child; only if it's 0 might iterations be empty.
+                bool iterationMayBeEmpty = child.ComputeMinLength() == 0;
+                LocalBuilder? startingPos = iterationMayBeEmpty ? DeclareInt32() : null;
 
                 // iterationCount = 0;
                 // startingPos = 0;
                 Ldc(0);
                 Stloc(iterationCount);
-                Ldc(0);
-                Stloc(startingPos);
+                if (startingPos is not null)
+                {
+                    Ldc(0);
+                    Stloc(startingPos);
+                }
 
                 // Iteration body
                 MarkLabel(body);
-                EmitTimeoutCheck();
 
-                // We need to store the starting pos and crawl position so that it may
-                // be backtracked through later.  This needs to be the starting position from
-                // the iteration we're leaving, so it's pushed before updating it to pos.
-                EmitStackResizeIfNeeded(3);
+                // We need to store the starting pos and crawl position so that it may be backtracked through later.
+                // This needs to be the starting position from the iteration we're leaving, so it's pushed before updating
+                // it to pos. Note that unlike some other constructs that only need to push state on to the stack if
+                // they're inside of a loop (because if they're not inside of a loop, nothing would overwrite the locals),
+                // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
+                // need to know where each iteration began so when backtracking we can jump back to that location.  This is
+                // true even if the loop is atomic, as we might need to backtrack within the loop in order to match the
+                // minimum iteration count.
+                EmitStackResizeIfNeeded(1 + (expressionHasCaptures ? 1 : 0) + (startingPos is not null ? 1 : 0));
                 if (expressionHasCaptures)
                 {
                     // base.runstack[stackpos++] = base.Crawlpos();
                     EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
                 }
-                EmitStackPush(() => Ldloc(startingPos));
+                if (startingPos is not null)
+                {
+                    EmitStackPush(() => Ldloc(startingPos));
+                }
                 EmitStackPush(() => Ldloc(pos));
 
                 // Save off some state.  We need to store the current pos so we can compare it against
                 // pos after the iteration, in order to determine whether the iteration was empty. Empty
                 // iterations are allowed as part of min matches, but once we've met the min quote, empty matches
                 // are considered match failures.
-                // startingPos = pos;
-                Ldloc(pos);
-                Stloc(startingPos);
+                if (startingPos is not null)
+                {
+                    // startingPos = pos;
+                    Ldloc(pos);
+                    Stloc(startingPos);
+                }
 
                 // Proactively increase the number of iterations.  We do this prior to the match rather than once
                 // we know it's successful, because we need to decrement it as part of a failed match when
@@ -3730,20 +4657,20 @@ namespace System.Text.RegularExpressions
 
                 // Finally, emit the child.
                 Debug.Assert(sliceStaticPos == 0);
-                EmitNode(node.Child(0));
+                EmitNode(child);
                 TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
                 bool childBacktracks = doneLabel != iterationFailedLabel;
 
                 // Loop condition.  Continue iterating greedily if we've not yet reached the maximum.  We also need to stop
                 // iterating if the iteration matched empty and we already hit the minimum number of iterations. Otherwise,
                 // we've matched as many iterations as we can with this configuration.  Jump to what comes after the loop.
-                switch ((minIterations > 0, maxIterations == int.MaxValue))
+                switch ((minIterations > 0, maxIterations == int.MaxValue, iterationMayBeEmpty))
                 {
-                    case (true, true):
+                    case (true, true, true):
                         // if (pos != startingPos || iterationCount < minIterations) goto body;
                         // goto endLoop;
                         Ldloc(pos);
-                        Ldloc(startingPos);
+                        Ldloc(startingPos!);
                         BneFar(body);
                         Ldloc(iterationCount);
                         Ldc(minIterations);
@@ -3751,14 +4678,14 @@ namespace System.Text.RegularExpressions
                         BrFar(endLoop);
                         break;
 
-                    case (true, false):
+                    case (true, false, true):
                         // if ((pos != startingPos || iterationCount < minIterations) && iterationCount < maxIterations) goto body;
                         // goto endLoop;
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
                         BgeFar(endLoop);
                         Ldloc(pos);
-                        Ldloc(startingPos);
+                        Ldloc(startingPos!);
                         BneFar(body);
                         Ldloc(iterationCount);
                         Ldc(minIterations);
@@ -3766,24 +4693,42 @@ namespace System.Text.RegularExpressions
                         BrFar(endLoop);
                         break;
 
-                    case (false, true):
+                    case (false, true, true):
                         // if (pos != startingPos) goto body;
                         // goto endLoop;
                         Ldloc(pos);
-                        Ldloc(startingPos);
+                        Ldloc(startingPos!);
                         BneFar(body);
                         BrFar(endLoop);
                         break;
 
-                    case (false, false):
+                    case (false, false, true):
                         // if (pos == startingPos || iterationCount >= maxIterations) goto endLoop;
                         // goto body;
                         Ldloc(pos);
-                        Ldloc(startingPos);
+                        Ldloc(startingPos!);
                         BeqFar(endLoop);
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
                         BgeFar(endLoop);
+                        BrFar(body);
+                        break;
+
+                    // Iterations won't be empty, but there is an upper bound. Whether or not there's a min iterations required, we need to keep
+                    // iterating until we're at the maximum, and since the min is never more than the max, we don't need to check the min.
+                    case (_, false, false):
+                        // if (iterationCount >= maxIterations) goto endLoop;
+                        // goto body;
+                        Ldloc(iterationCount);
+                        Ldc(maxIterations);
+                        BgeFar(endLoop);
+                        BrFar(body);
+                        break;
+
+                    // The loop has no upper bound and iterations can't be empty; regardless of whether there's a min iterations required,
+                    // we need to loop again.
+                    default:
+                        // goto body;
                         BrFar(body);
                         break;
                 }
@@ -3805,39 +4750,69 @@ namespace System.Text.RegularExpressions
                 BltFar(originalDoneLabel);
 
                 // pos = base.runstack[--stackpos];
+                // slice = inputSpan.Slice(pos);
                 // startingPos = base.runstack[--stackpos];
+                // int poppedCrawlPos = base.runstack[--stackpos];
+                // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
                 EmitStackPop();
                 Stloc(pos);
-                EmitStackPop();
-                Stloc(startingPos);
-                if (expressionHasCaptures)
-                {
-                    // int poppedCrawlPos = base.runstack[--stackpos];
-                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
-                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
-                    EmitStackPop();
-                    Stloc(poppedCrawlPos);
-                    EmitUncaptureUntil(poppedCrawlPos);
-                }
                 SliceInputSpan();
+                if (startingPos is not null)
+                {
+                    EmitStackPop();
+                    Stloc(startingPos);
+                }
+                EmitUncaptureUntilPopped();
 
+
+                // If there's a required minimum iteration count, validate now that we've processed enough iterations.
                 if (minIterations > 0)
                 {
-                    // if (iterationCount == 0) goto originalDoneLabel;
-                    Ldloc(iterationCount);
-                    Ldc(0);
-                    BeqFar(originalDoneLabel);
+                    if (childBacktracks)
+                    {
+                        // The child backtracks.  If we don't have any iterations, there's nothing to backtrack into,
+                        // and at least one iteration is required, so fail the loop.
+                        // if (iterationCount == 0) goto originalDoneLabel;
+                        Ldloc(iterationCount);
+                        Ldc(0);
+                        BeqFar(originalDoneLabel);
 
-                    // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
-                    Ldloc(iterationCount);
-                    Ldc(minIterations);
-                    BltFar(childBacktracks ? doneLabel : originalDoneLabel);
+                        // We have at least one iteration; if that's insufficient to meet the minimum, backtrack
+                        // into the previous iteration.  We only need to do this check if the min iteration requirement
+                        // is more than one, since the above check already handles the case where the min count is 1,
+                        // since the only value that wouldn't meet that is 0.
+                        if (minIterations > 1)
+                        {
+                            // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
+                            Ldloc(iterationCount);
+                            Ldc(minIterations);
+                            BltFar(doneLabel);
+                        }
+                    }
+                    else
+                    {
+                        // The child doesn't backtrack, which means there's no other way the matched iterations could
+                        // match differently, so if we haven't already greedily processed enough iterations, fail the loop.
+                        // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
+                        Ldloc(iterationCount);
+                        Ldc(minIterations);
+                        BltFar(originalDoneLabel);
+                    }
                 }
 
                 if (isAtomic)
                 {
                     doneLabel = originalDoneLabel;
                     MarkLabel(endLoop);
+
+                    // The loop is atomic, which means any backtracking will go around this loop.  That also means we can't leave
+                    // stack polluted with state from successful iterations, so we need to remove all such state; such state will
+                    // only have been pushed if minIterations > 0.
+                    if (startingStackpos is not null)
+                    {
+                        Ldloc(startingStackpos);
+                        Stloc(stackpos);
+                    }
                 }
                 else
                 {
@@ -3849,6 +4824,9 @@ namespace System.Text.RegularExpressions
                         // Backtrack:
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded();
 
                         // if (iterationCount == 0) goto originalDoneLabel;
                         Ldloc(iterationCount);
@@ -3863,11 +4841,20 @@ namespace System.Text.RegularExpressions
 
                     MarkLabel(endLoop);
 
-                    if (node.IsInLoop())
+                    // If this loop is itself not in another loop, nothing more needs to be done:
+                    // upon backtracking, locals being used by this loop will have retained their
+                    // values and be up-to-date.  But if this loop is inside another loop, multiple
+                    // iterations of this loop each need their own state, so we need to use the stack
+                    // to hold it, and we need a dedicated backtracking section to handle restoring
+                    // that state before jumping back into the loop itself.
+                    if (analysis.IsInLoop(node))
                     {
-                        // Store the capture's state
-                        EmitStackResizeIfNeeded(3);
-                        EmitStackPush(() => Ldloc(startingPos));
+                        // Store the loop's state
+                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0));
+                        if (startingPos is not null)
+                        {
+                            EmitStackPush(() => Ldloc(startingPos));
+                        }
                         EmitStackPush(() => Ldloc(iterationCount));
 
                         // Skip past the backtracking section
@@ -3875,16 +4862,22 @@ namespace System.Text.RegularExpressions
                         Label backtrackingEnd = DefineLabel();
                         BrFar(backtrackingEnd);
 
-                        // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
+                        // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         Label backtrack = DefineLabel();
                         MarkLabel(backtrack);
+
+                        // We're backtracking.  Check the timeout.
+                        EmitTimeoutCheckIfNeeded();
 
                         // iterationCount = base.runstack[--runstack];
                         // startingPos = base.runstack[--runstack];
                         EmitStackPop();
                         Stloc(iterationCount);
-                        EmitStackPop();
-                        Stloc(startingPos);
+                        if (startingPos is not null)
+                        {
+                            EmitStackPop();
+                            Stloc(startingPos);
+                        }
 
                         // goto doneLabel;
                         BrFar(doneLabel);
@@ -3892,6 +4885,23 @@ namespace System.Text.RegularExpressions
                         doneLabel = backtrack;
                         MarkLabel(backtrackingEnd);
                     }
+                }
+            }
+
+            // <summary>
+            // If the expression contains captures, pops a crawl position from the stack and uncaptures
+            // until that position is reached.
+            // </summary>
+            void EmitUncaptureUntilPopped()
+            {
+                if (expressionHasCaptures)
+                {
+                    // poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
+                    EmitStackPop();
+                    Stloc(poppedCrawlPos);
+                    EmitUncaptureUntil(poppedCrawlPos);
                 }
             }
 
@@ -3955,46 +4965,146 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private void InitializeCultureForGoIfNecessary()
+        protected void EmitScan(RegexOptions options, DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
         {
-            _textInfo = null;
-            if ((_options & RegexOptions.CultureInvariant) == 0)
-            {
-                bool needsCulture = (_options & RegexOptions.IgnoreCase) != 0;
-                if (!needsCulture)
-                {
-                    int[] codes = _code!.Codes;
-                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize((RegexOpcode)codes[codepos]))
-                    {
-                        if (((RegexOpcode)codes[codepos] & RegexOpcode.CaseInsensitive) == RegexOpcode.CaseInsensitive)
-                        {
-                            needsCulture = true;
-                            break;
-                        }
-                    }
-                }
+            // As with the source generator, we can emit special code for common circumstances rather than always emitting
+            // the most general purpose scan loop.  Unlike the source generator, however, code appearance isn't important
+            // here, so we don't handle all of the same cases, e.g. we don't special case Empty or Nothing, as they're
+            // not worth spending any code on.
 
-                if (needsCulture)
-                {
-                    // cache CultureInfo in local variable which saves excessive thread local storage accesses
-                    _textInfo = DeclareTextInfo();
-                    InitLocalCultureInfo();
-                }
+            bool rtl = (options & RegexOptions.RightToLeft) != 0;
+            RegexNode root = _regexTree!.Root.Child(0);
+            Label returnLabel = DefineLabel();
+
+            if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
+            {
+                // If the whole expression is just one or more characters, we can rely on the FindOptimizations spitting out
+                // an IndexOf that will find the exact sequence or not, and we don't need to do additional checking beyond that.
+
+                // if (!TryFindNextPossibleStartingPosition(inputSpan)) return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryFindNextStartingPositionMethod);
+                Brfalse(returnLabel);
+
+                // int start = base.runtextpos;
+                LocalBuilder start = DeclareInt32();
+                Mvfldloc(s_runtextposField, start);
+
+                // int end = base.runtextpos = start +/- length;
+                LocalBuilder end = DeclareInt32();
+                Ldloc(start);
+                Ldc((root.Kind == RegexNodeKind.Multi ? root.Str!.Length : 1) * (!rtl ? 1 : -1));
+                Add();
+                Stloc(end);
+                Ldthis();
+                Ldloc(end);
+                Stfld(s_runtextposField);
+
+                // base.Capture(0, start, end);
+                Ldthis();
+                Ldc(0);
+                Ldloc(start);
+                Ldloc(end);
+                Call(s_captureMethod);
             }
+            else if (_regexTree.FindOptimizations.FindMode is
+                    FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning or
+                    FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start or
+                    FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start or
+                    FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End)
+            {
+                // If the expression is anchored in such a way that there's one and only one possible position that can match,
+                // we don't need a scan loop, just a single check and match.
+
+                // if (!TryFindNextPossibleStartingPosition(inputSpan)) return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryFindNextStartingPositionMethod);
+                Brfalse(returnLabel);
+
+                // if (TryMatchAtCurrentPosition(inputSpan)) return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryMatchAtCurrentPositionMethod);
+                Brtrue(returnLabel);
+
+                // base.runtextpos = inputSpan.Length; // or 0 for rtl
+                Ldthis();
+                if (!rtl)
+                {
+                    Ldarga_s(1);
+                    Call(s_spanGetLengthMethod);
+                }
+                else
+                {
+                    Ldc(0);
+                }
+                Stfld(s_runtextposField);
+            }
+            else
+            {
+                // while (TryFindNextPossibleStartingPosition(text))
+                Label whileLoopBody = DefineLabel();
+                MarkLabel(whileLoopBody);
+                Ldthis();
+                Ldarg_1();
+                Call(tryFindNextStartingPositionMethod);
+                BrfalseFar(returnLabel);
+
+                // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
+                //   return;
+                Ldthis();
+                Ldarg_1();
+                Call(tryMatchAtCurrentPositionMethod);
+                BrtrueFar(returnLabel);
+                Ldthisfld(s_runtextposField);
+                if (!rtl)
+                {
+                    Ldarga_s(1);
+                    Call(s_spanGetLengthMethod);
+                }
+                else
+                {
+                    Ldc(0);
+                }
+                Ceq();
+                BrtrueFar(returnLabel);
+
+                // runtextpos++ // or -- for rtl
+                Ldthis();
+                Ldthisfld(s_runtextposField);
+                Ldc(!rtl ? 1 : -1);
+                Add();
+                Stfld(s_runtextposField);
+
+                // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                // operation could do work at least linear in the length of the input.
+                EmitTimeoutCheckIfNeeded();
+
+                // End loop body.
+                BrFar(whileLoopBody);
+            }
+
+            // return;
+            MarkLabel(returnLabel);
+            Ret();
         }
 
-        /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
+        /// <summary>Emits a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
-        private void EmitMatchCharacterClass(string charClass, bool caseInsensitive)
+        private void EmitMatchCharacterClass(string charClass)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
             // some common cases for which we can do much better, such as known character classes
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
+            // In some cases, multiple optimizations are possible for a given character class: the checks
+            // in this method are generally ordered from fastest / simplest to slowest / most complex so
+            // that we get the best optimization for a given char class.
 
             // First, see if the char class is a built-in one for which there's a better function
-            // we can just call directly.  Everything in this section must work correctly for both
-            // case-sensitive and case-insensitive modes, regardless of culture.
+            // we can just call directly.
             switch (charClass)
             {
                 case RegexCharClass.AnyClass:
@@ -4004,60 +5114,127 @@ namespace System.Text.RegularExpressions
                     return;
 
                 case RegexCharClass.DigitClass:
+                case RegexCharClass.NotDigitClass:
                     // char.IsDigit(ch)
                     Call(s_charIsDigitMethod);
-                    return;
-
-                case RegexCharClass.NotDigitClass:
-                    // !char.IsDigit(ch)
-                    Call(s_charIsDigitMethod);
-                    Ldc(0);
-                    Ceq();
+                    NegateIf(charClass == RegexCharClass.NotDigitClass);
                     return;
 
                 case RegexCharClass.SpaceClass:
+                case RegexCharClass.NotSpaceClass:
                     // char.IsWhiteSpace(ch)
                     Call(s_charIsWhiteSpaceMethod);
-                    return;
-
-                case RegexCharClass.NotSpaceClass:
-                    // !char.IsWhiteSpace(ch)
-                    Call(s_charIsWhiteSpaceMethod);
-                    Ldc(0);
-                    Ceq();
+                    NegateIf(charClass == RegexCharClass.NotSpaceClass);
                     return;
 
                 case RegexCharClass.WordClass:
+                case RegexCharClass.NotWordClass:
                     // RegexRunner.IsWordChar(ch)
                     Call(s_isWordCharMethod);
+                    NegateIf(charClass == RegexCharClass.NotWordClass);
                     return;
 
-                case RegexCharClass.NotWordClass:
-                    // !RegexRunner.IsWordChar(ch)
-                    Call(s_isWordCharMethod);
-                    Ldc(0);
-                    Ceq();
+                case RegexCharClass.ControlClass:
+                case RegexCharClass.NotControlClass:
+                    // char.IsControl(ch)
+                    Call(s_charIsControlMethod);
+                    NegateIf(charClass == RegexCharClass.NotControlClass);
                     return;
-            }
 
-            // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
-            // lowercase the input.  If we're using the invariant culture, we may still end up calling ToLower later
-            // on, but we may also be able to avoid it, in particular in the case of our lookup table, where we can
-            // generate the lookup table already factoring in the invariant case sensitivity.  There are multiple
-            // special-code paths between here and the lookup table, but we only take those if invariant is false;
-            // if it were true, they'd need to use CallToLower().
-            bool invariant = false;
-            if (caseInsensitive)
-            {
-                invariant = UseToLowerInvariant;
-                if (!invariant)
-                {
-                    CallToLower();
-                }
+                case RegexCharClass.LetterClass:
+                case RegexCharClass.NotLetterClass:
+                    // char.IsLetter(ch)
+                    Call(s_charIsLetterMethod);
+                    NegateIf(charClass == RegexCharClass.NotLetterClass);
+                    return;
+
+                case RegexCharClass.LetterOrDigitClass:
+                case RegexCharClass.NotLetterOrDigitClass:
+                    // char.IsLetterOrDigit(ch)
+                    Call(s_charIsLetterOrDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotLetterOrDigitClass);
+                    return;
+
+                case RegexCharClass.LowerClass:
+                case RegexCharClass.NotLowerClass:
+                    // char.IsLower(ch)
+                    Call(s_charIsLowerMethod);
+                    NegateIf(charClass == RegexCharClass.NotLowerClass);
+                    return;
+
+                case RegexCharClass.UpperClass:
+                case RegexCharClass.NotUpperClass:
+                    // char.IsUpper(ch)
+                    Call(s_charIsUpperMethod);
+                    NegateIf(charClass == RegexCharClass.NotUpperClass);
+                    return;
+
+                case RegexCharClass.NumberClass:
+                case RegexCharClass.NotNumberClass:
+                    // char.IsNumber(ch)
+                    Call(s_charIsNumberMethod);
+                    NegateIf(charClass == RegexCharClass.NotNumberClass);
+                    return;
+
+                case RegexCharClass.PunctuationClass:
+                case RegexCharClass.NotPunctuationClass:
+                    // char.IsPunctuation(ch)
+                    Call(s_charIsPunctuationMethod);
+                    NegateIf(charClass == RegexCharClass.NotPunctuationClass);
+                    return;
+
+                case RegexCharClass.SeparatorClass:
+                case RegexCharClass.NotSeparatorClass:
+                    // char.IsSeparator(ch)
+                    Call(s_charIsSeparatorMethod);
+                    NegateIf(charClass == RegexCharClass.NotSeparatorClass);
+                    return;
+
+                case RegexCharClass.SymbolClass:
+                case RegexCharClass.NotSymbolClass:
+                    // char.IsSymbol(ch)
+                    Call(s_charIsSymbolMethod);
+                    NegateIf(charClass == RegexCharClass.NotSymbolClass);
+                    return;
+
+                case RegexCharClass.AsciiLetterClass:
+                case RegexCharClass.NotAsciiLetterClass:
+                    // char.IsAsciiLetter(ch)
+                    Call(s_charIsAsciiLetterMethod);
+                    NegateIf(charClass == RegexCharClass.NotAsciiLetterClass);
+                    return;
+
+                case RegexCharClass.AsciiLetterOrDigitClass:
+                case RegexCharClass.NotAsciiLetterOrDigitClass:
+                    // char.IsAsciiLetterOrDigit(ch)
+                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotAsciiLetterOrDigitClass);
+                    return;
+
+                case RegexCharClass.HexDigitClass:
+                case RegexCharClass.NotHexDigitClass:
+                    // char.IsAsciiHexDigit(ch)
+                    Call(s_charIsAsciiHexDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitClass);
+                    return;
+
+                case RegexCharClass.HexDigitLowerClass:
+                case RegexCharClass.NotHexDigitLowerClass:
+                    // char.IsAsciiHexDigitLower(ch)
+                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitLowerClass);
+                    return;
+
+                case RegexCharClass.HexDigitUpperClass:
+                case RegexCharClass.NotHexDigitUpperClass:
+                    // char.IsAsciiHexDigitUpper(ch)
+                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitUpperClass);
+                    return;
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
-            if (!invariant && RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
+            if (RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
                 if (lowInclusive == highInclusive)
                 {
@@ -4075,93 +5252,218 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Negate the answer if the negation flag was set
-                if (RegexCharClass.IsNegated(charClass))
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(RegexCharClass.IsNegated(charClass));
 
                 return;
             }
 
-            // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
+            // Next, if the character class contains nothing but Unicode categories, we can call char.GetUnicodeCategory and
             // compare against it.  It has a fast-lookup path for ASCII, so is as good or better than any lookup we'd generate (plus
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
-            if (!invariant && RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
+            // Unlike the source generator, however, we only handle the case of a single UnicodeCategory: the source generator is able
+            // to rely on C# compiler optimizations to handle dealing with multiple values efficiently.
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[1]; // handle the case of one and only one category
+            if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
                 // char.GetUnicodeCategory(ch) == category
                 Call(s_charGetUnicodeInfo);
-                Ldc((int)category);
+                Ldc((int)categories[0]);
                 Ceq();
-                if (negated)
-                {
-                    Ldc(0);
-                    Ceq();
-                }
-
+                NegateIf(negated);
                 return;
             }
 
-            // All checks after this point require reading the input character multiple times,
+            // Checks after this point require reading the input character multiple times,
             // so we store it into a temporary local.
             using RentedLocalBuilder tempLocal = RentInt32Local();
             Stloc(tempLocal);
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
-            if (!invariant && !RegexCharClass.IsNegated(charClass))
+            Span<char> setChars = stackalloc char[3];
+            int numChars = RegexCharClass.GetSetChars(charClass, setChars);
+            if (numChars is 2 or 3)
             {
-                Span<char> setChars = stackalloc char[3];
-                int numChars = RegexCharClass.GetSetChars(charClass, setChars);
-                if (numChars is 2 or 3)
+                if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out int mask)) // special-case common case of an upper and lowercase ASCII letter combination
                 {
-                    if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out int mask)) // special-case common case of an upper and lowercase ASCII letter combination
-                    {
-                        // ((ch | mask) == setChars[1])
-                        Ldloc(tempLocal);
-                        Ldc(mask);
-                        Or();
-                        Ldc(setChars[1] | mask);
-                        Ceq();
-                    }
-                    else
-                    {
-                        // (ch == setChars[0]) | (ch == setChars[1])
-                        Ldloc(tempLocal);
-                        Ldc(setChars[0]);
-                        Ceq();
-                        Ldloc(tempLocal);
-                        Ldc(setChars[1]);
-                        Ceq();
-                        Or();
-                    }
-
-                    // | (ch == setChars[2])
-                    if (numChars == 3)
-                    {
-                        Ldloc(tempLocal);
-                        Ldc(setChars[2]);
-                        Ceq();
-                        Or();
-                    }
-
-                    return;
+                    // ((ch | mask) == setChars[1])
+                    Ldloc(tempLocal);
+                    Ldc(mask);
+                    Or();
+                    Ldc(setChars[1] | mask);
+                    Ceq();
                 }
+                else
+                {
+                    // (ch == setChars[0]) | (ch == setChars[1])
+                    Ldloc(tempLocal);
+                    Ldc(setChars[0]);
+                    Ceq();
+                    Ldloc(tempLocal);
+                    Ldc(setChars[1]);
+                    Ceq();
+                    Or();
+                }
+
+                // | (ch == setChars[2])
+                if (numChars == 3)
+                {
+                    Ldloc(tempLocal);
+                    Ldc(setChars[2]);
+                    Ceq();
+                    Or();
+                }
+
+                NegateIf(RegexCharClass.IsNegated(charClass));
+                return;
             }
 
-            using RentedLocalBuilder resultLocal = RentInt32Local();
+            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [B-Db-d].
+            // This can be implemented as if it were a single range, with an additional bitwise operation.
+            if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
+                RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
+                RegexCharClass.IsAsciiLetter(rangeUpper.HighInclusive) &&
+                (rangeLower.LowInclusive | 0x20) == rangeUpper.LowInclusive &&
+                (rangeLower.HighInclusive | 0x20) == rangeUpper.HighInclusive)
+            {
+                Debug.Assert(rangeLower.LowInclusive != rangeUpper.LowInclusive);
+                bool negate = RegexCharClass.IsNegated(charClass);
+
+                // (uint)((ch | 0x20) - lowInclusive) < highInclusive - lowInclusive + 1
+                Ldloc(tempLocal);
+                Ldc(0x20);
+                Or();
+                Ldc(rangeUpper.LowInclusive);
+                Sub();
+                Ldc(rangeUpper.HighInclusive - rangeUpper.LowInclusive + 1);
+                CltUn();
+                NegateIf(negate);
+                return;
+            }
 
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
 
-            // Helper method that emits a call to RegexRunner.CharInClass(ch{.ToLowerInvariant()}, charClass)
+            // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
+            // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
+            // lookup we use later).  This nicely handles sets made up of a subset of ASCII letters, for example.
+            // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
+            // when compared to the subsequent fallbacks.
+            if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
+            {
+                // Create the 64-bit value with 1s at indices corresponding to every character in the set,
+                // where the bit is computed to be the char value minus the lower bound starting from
+                // most significant bit downwards.
+                ulong bitmap = 0;
+                bool negatedClass = RegexCharClass.IsNegated(charClass);
+                for (int i = analysis.LowerBoundInclusiveIfOnlyRanges; i < analysis.UpperBoundExclusiveIfOnlyRanges; i++)
+                {
+                    if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
+                    {
+                        bitmap |= (1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges)));
+                    }
+                }
+
+                // To determine whether a character is in the set, we subtract the lowest char (casting to
+                // uint to account for any smaller values); this subtraction happens before the result is
+                // zero-extended to ulong, meaning that `charMinusLow` will always have upper 32 bits equal to 0.
+                // We then left shift the constant with this offset, and apply a bitmask that has the highest
+                // bit set (the sign bit) if and only if `chExpr` is in the [low, low + 64) range.
+                // Then we only need to check whether this final result is less than 0: this will only be
+                // the case if both `charMinusLow` was in fact the index of a set bit in the constant, and also
+                // `chExpr` was in the allowed range (this ensures that false positive bit shifts are ignored).
+
+                // ulong charMinusLow = (uint)ch - lowInclusive;
+                LocalBuilder charMinusLow = _ilg!.DeclareLocal(typeof(ulong));
+                Ldloc(tempLocal);
+                Ldc(analysis.LowerBoundInclusiveIfOnlyRanges);
+                Sub();
+                _ilg!.Emit(OpCodes.Conv_U8);
+                Stloc(charMinusLow);
+
+                // ulong shift = bitmap << (int)charMinusLow;
+                LdcI8((long)bitmap);
+                Ldloc(charMinusLow);
+                _ilg!.Emit(OpCodes.Conv_I4);
+                Ldc(63);
+                And();
+                Shl();
+
+                // ulong mask = charMinusLow - 64;
+                Ldloc(charMinusLow);
+                Ldc(64);
+                _ilg!.Emit(OpCodes.Conv_I8);
+                Sub();
+
+                // (long)(shift & mask) < 0 // or >= for a negated character class
+                And();
+                Ldc(0);
+                _ilg!.Emit(OpCodes.Conv_I8);
+                _ilg!.Emit(OpCodes.Clt);
+                NegateIf(negatedClass);
+
+                return;
+            }
+
+            // Next, handle simple sets of two ranges, e.g. [\p{IsGreek}\p{IsGreekExtended}].
+            if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) range0, out (char LowInclusive, char HighInclusive) range1))
+            {
+                bool negate = RegexCharClass.IsNegated(charClass);
+
+                if (range0.LowInclusive == range0.HighInclusive)
+                {
+                    // ch == lowInclusive
+                    Ldloc(tempLocal);
+                    Ldc(range0.LowInclusive);
+                    Ceq();
+                }
+                else
+                {
+                    // (uint)(ch - lowInclusive) < (uint)(highInclusive - lowInclusive + 1)
+                    Ldloc(tempLocal);
+                    Ldc(range0.LowInclusive);
+                    Sub();
+                    Ldc(range0.HighInclusive - range0.LowInclusive + 1);
+                    CltUn();
+                }
+                NegateIf(negate);
+
+                if (range1.LowInclusive == range1.HighInclusive)
+                {
+                    // ch == lowInclusive
+                    Ldloc(tempLocal);
+                    Ldc(range1.LowInclusive);
+                    Ceq();
+                }
+                else
+                {
+                    // (uint)(ch - lowInclusive) < (uint)(highInclusive - lowInclusive + 1)
+                    Ldloc(tempLocal);
+                    Ldc(range1.LowInclusive);
+                    Sub();
+                    Ldc(range1.HighInclusive - range1.LowInclusive + 1);
+                    CltUn();
+                }
+                NegateIf(negate);
+
+                if (negate)
+                {
+                    And();
+                }
+                else
+                {
+                    Or();
+                }
+
+                return;
+            }
+
+            using RentedLocalBuilder resultLocal = RentInt32Local();
+
+            // Helper method that emits a call to RegexRunner.CharInClass(ch, charClass)
             void EmitCharInClass()
             {
                 Ldloc(tempLocal);
-                if (invariant)
-                {
-                    CallToLower();
-                }
                 Ldstr(charClass);
                 Call(s_charInClassMethod);
                 Stloc(resultLocal);
@@ -4170,49 +5472,56 @@ namespace System.Text.RegularExpressions
             Label doneLabel = DefineLabel();
             Label comparisonLabel = DefineLabel();
 
-            if (!invariant) // if we're being asked to do a case insensitive, invariant comparison, use the lookup table
+            void EmitContainsNoAscii()
             {
-                if (analysis.ContainsNoAscii)
-                {
-                    // We determined that the character class contains only non-ASCII,
-                    // for example if the class were [\p{IsGreek}\p{IsGreekExtended}], which is
-                    // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
-                    // extend the analysis to produce a known lower-bound and compare against
-                    // that rather than always using 128 as the pivot point.)
+                // ch >= 128 && RegexRunner.CharInClass(ch, "...")
+                Ldloc(tempLocal);
+                Ldc(128);
+                Blt(comparisonLabel);
+                EmitCharInClass();
+                Br(doneLabel);
+                MarkLabel(comparisonLabel);
+                Ldc(0);
+                Stloc(resultLocal);
+                MarkLabel(doneLabel);
+                Ldloc(resultLocal);
+            }
 
-                    // ch >= 128 && RegexRunner.CharInClass(ch, "...")
-                    Ldloc(tempLocal);
-                    Ldc(128);
-                    Blt(comparisonLabel);
-                    EmitCharInClass();
-                    Br(doneLabel);
-                    MarkLabel(comparisonLabel);
-                    Ldc(0);
-                    Stloc(resultLocal);
-                    MarkLabel(doneLabel);
-                    Ldloc(resultLocal);
-                    return;
-                }
+            void EmitAllAsciiContained()
+            {
+                // ch < 128 || RegexRunner.CharInClass(ch, "...")
+                Ldloc(tempLocal);
+                Ldc(128);
+                Blt(comparisonLabel);
+                EmitCharInClass();
+                Br(doneLabel);
+                MarkLabel(comparisonLabel);
+                Ldc(1);
+                Stloc(resultLocal);
+                MarkLabel(doneLabel);
+                Ldloc(resultLocal);
+            }
 
-                if (analysis.AllAsciiContained)
-                {
-                    // We determined that every ASCII character is in the class, for example
-                    // if the class were the negated example from case 1 above:
-                    // [^\p{IsGreek}\p{IsGreekExtended}].
+            if (analysis.ContainsNoAscii)
+            {
+                // We determined that the character class contains only non-ASCII,
+                // for example if the class were [\u1000-\u2000\u3000-\u4000\u5000-\u6000].
+                // (In the future, we could possibly extend the analysis to produce a known
+                // lower-bound and compare against that rather than always using 128 as the
+                // pivot point.)
 
-                    // ch < 128 || RegexRunner.CharInClass(ch, "...")
-                    Ldloc(tempLocal);
-                    Ldc(128);
-                    Blt(comparisonLabel);
-                    EmitCharInClass();
-                    Br(doneLabel);
-                    MarkLabel(comparisonLabel);
-                    Ldc(1);
-                    Stloc(resultLocal);
-                    MarkLabel(doneLabel);
-                    Ldloc(resultLocal);
-                    return;
-                }
+                EmitContainsNoAscii();
+                return;
+            }
+
+            if (analysis.AllAsciiContained)
+            {
+                // We determined that every ASCII character is in the class, for example
+                // if the class were the negated example from case 1 above:
+                // [^\p{IsGreek}\p{IsGreekExtended}].
+
+                EmitAllAsciiContained();
+                return;
             }
 
             // Now, our big hammer is to generate a lookup table that lets us quickly index by character into a yes/no
@@ -4230,27 +5539,37 @@ namespace System.Text.RegularExpressions
 
             // Generate the lookup table to store 128 answers as bits. We use a const string instead of a byte[] / static
             // data property because it lets IL emit handle all the details for us.
-            string bitVectorString = string.Create(8, (charClass, invariant), static (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
+            string bitVectorString = string.Create(8, charClass, static (dest, charClass) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {
                     char c = (char)i;
-                    bool isSet = state.invariant ?
-                        RegexCharClass.CharInClass(char.ToLowerInvariant(c), state.charClass) :
-                        RegexCharClass.CharInClass(c, state.charClass);
-                    if (isSet)
+                    if (RegexCharClass.CharInClass(c, charClass))
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));
                     }
                 }
             });
 
+            // There's a chance that the class contains either no ASCII characters or all of them,
+            // and the analysis could not find it (for example if the class has a subtraction).
+            // We optimize away the bit vector in these trivial cases.
+            switch (bitVectorString)
+            {
+                case "\0\0\0\0\0\0\0\0":
+                    EmitContainsNoAscii();
+                    return;
+                case "\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffff":
+                    EmitAllAsciiContained();
+                    return;
+            }
+
             // We determined that the character class may contain ASCII, so we
             // output the lookup against the lookup table.
 
             // ch < 128 ? (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0 :
             Ldloc(tempLocal);
-            Ldc(128);
+            Ldc(analysis.ContainsOnlyAscii ? analysis.UpperBoundExclusiveIfOnlyRanges : 128);
             Bge(comparisonLabel);
             Ldstr(bitVectorString);
             Ldloc(tempLocal);
@@ -4298,31 +5617,45 @@ namespace System.Text.RegularExpressions
             Ldloc(resultLocal);
         }
 
-        /// <summary>Emits a timeout check.</summary>
-        private void EmitTimeoutCheck()
+        /// <summary>Emits negation of the value on top of the evaluation stack if <paramref name="condition"/> is true.</summary>
+        private void NegateIf(bool condition)
         {
-            if (!_hasTimeout)
+            if (condition)
             {
-                return;
+                Ldc(0);
+                Ceq();
             }
+        }
 
-            Debug.Assert(_loopTimeoutCounter != null);
-
-            // Increment counter for each loop iteration.
-            Ldloc(_loopTimeoutCounter);
-            Ldc(1);
-            Add();
-            Stloc(_loopTimeoutCounter);
-
-            // Emit code to check the timeout every 2048th iteration.
-            Label label = DefineLabel();
-            Ldloc(_loopTimeoutCounter);
-            Ldc(LoopTimeoutCheckCount);
-            RemUn();
-            Brtrue(label);
-            Ldthis();
-            Call(s_checkTimeoutMethod);
-            MarkLabel(label);
+        /// <summary>Emits a timeout check if one has been set explicitly or implicitly via a default setting.</summary>
+        /// Regex timeouts exist to avoid catastrophic backtracking.  The goal with timeouts isn't to be accurate to the timeout value,
+        /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
+        /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
+        /// associated with it.  This means checks:
+        /// - when restarting the whole match evaluation at a new index. Every match could end up doing O(n) work without a timeout
+        ///   check, and since this could then result in O(n) matches, we need a timeout check on each new position in order to
+        ///   avoid O(n^2) work without a timeout check.
+        /// - when backtracking backwards in a loop. Every backtracking step through the loop could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when backtracking forwards in a lazy loop. Every backtracking step through the loop could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when backtracking to the next branch of an alternation. Every branch of the alternation could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when performing a lookaround.  Each lookaround can result in doing O(n) work, which means m lookarounds can result in
+        ///   O(m*n) work.  Lookarounds can be in loops, so without timeout checks in a lookaround, a pattern like `((?=(?>a*))a)+`
+        ///   could do O(n^2) work without a timeout check.
+        /// Note that some other constructs have code that needs to deal with backtracking, e.g. conditionals needing to ensure
+        /// that if any of their children have backtracking that code which backtracks back into the conditional is appropriately
+        /// routed to the correct child, but such constructs aren't actually introducing backtracking and thus don't need to be
+        /// instrumented for timeouts.
+        private void EmitTimeoutCheckIfNeeded()
+        {
+            if (_hasTimeout)
+            {
+                // base.CheckTimeout();
+                Ldthis();
+                Call(s_checkTimeoutMethod);
+            }
         }
     }
 }

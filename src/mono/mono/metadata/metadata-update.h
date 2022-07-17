@@ -70,7 +70,27 @@ mono_metadata_update_get_field_idx (MonoClassField *field);
 MonoClassField *
 mono_metadata_update_get_field (MonoClass *klass, uint32_t fielddef_token);
 
+gboolean
+mono_metadata_update_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
+
+gboolean
+metadata_update_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count);
+
+gboolean
+metadata_update_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count);
+
 gpointer
 mono_metadata_update_get_static_field_addr (MonoClassField *field);
 
+MonoMethod *
+mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter);
+
+MonoClassField *
+mono_metadata_update_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
+
+uint32_t
+mono_metadata_update_get_num_fields_added (MonoClass *klass);
+
+uint32_t
+mono_metadata_update_get_num_methods_added (MonoClass *klass);
 #endif /*__MONO_METADATA_UPDATE_H__*/

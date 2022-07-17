@@ -1,7 +1,6 @@
 add_subdirectory(daccess)
 add_subdirectory(ee)
 add_subdirectory(di)
-add_subdirectory(shim)
 if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(createdump)
 endif(CLR_CMAKE_HOST_WIN32)

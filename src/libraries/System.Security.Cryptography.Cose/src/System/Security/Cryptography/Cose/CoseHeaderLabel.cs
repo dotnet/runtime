@@ -10,25 +10,24 @@ namespace System.Security.Cryptography.Cose
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct CoseHeaderLabel : IEquatable<CoseHeaderLabel>
     {
-        internal string LabelName => LabelAsString ?? LabelAsInt32.ToString();
+        internal string LabelName => LabelAsString != null ? $"\"{LabelAsString}\"" : LabelAsInt32.ToString();
         private string DebuggerDisplay => $"Label = {LabelName}, Type = {(LabelAsString != null ? typeof(string) : typeof(int))}";
 
         // https://www.iana.org/assignments/cose/cose.xhtml#header-parameters
         public static CoseHeaderLabel Algorithm => new CoseHeaderLabel(KnownHeaders.Alg);
-        public static CoseHeaderLabel Critical => new CoseHeaderLabel(KnownHeaders.Crit);
+        public static CoseHeaderLabel CriticalHeaders => new CoseHeaderLabel(KnownHeaders.Crit);
         public static CoseHeaderLabel ContentType => new CoseHeaderLabel(KnownHeaders.ContentType);
         public static CoseHeaderLabel KeyIdentifier => new CoseHeaderLabel(KnownHeaders.Kid);
-        public static CoseHeaderLabel IV => new CoseHeaderLabel(KnownHeaders.IV);
-        public static CoseHeaderLabel PartialIV => new CoseHeaderLabel(KnownHeaders.PartialIV);
-        public static CoseHeaderLabel CounterSignature => new CoseHeaderLabel(KnownHeaders.CounterSignature);
 
         internal int LabelAsInt32 { get; }
         internal string? LabelAsString { get; }
+        internal int EncodedSize { get; }
 
         public CoseHeaderLabel(int label)
         {
             this = default;
             LabelAsInt32 = label;
+            EncodedSize = CoseHelpers.GetIntegerEncodedSize(label);
         }
 
         public CoseHeaderLabel(string label)
@@ -40,6 +39,7 @@ namespace System.Security.Cryptography.Cose
 
             this = default;
             LabelAsString = label;
+            EncodedSize = CoseHelpers.GetTextStringEncodedSize(label);
         }
 
         public bool Equals(CoseHeaderLabel other)
@@ -51,12 +51,16 @@ namespace System.Security.Cryptography.Cose
 
         public override int GetHashCode()
         {
+            // Since this type is used as a key in a dictionary (see CoseHeaderMap)
+            // and since the label is potentially adversary-provided, we'll need
+            // to randomize the hash code.
+
             if (LabelAsString != null)
             {
-                return LabelAsString.GetHashCode();
+                return LabelAsString.GetRandomizedOrdinalHashCode();
             }
 
-            return LabelAsInt32.GetHashCode();
+            return LabelAsInt32.GetRandomizedHashCode();
         }
 
         public static bool operator ==(CoseHeaderLabel left, CoseHeaderLabel right) => left.Equals(right);

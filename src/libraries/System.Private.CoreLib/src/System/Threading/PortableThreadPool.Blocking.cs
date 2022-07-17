@@ -180,7 +180,7 @@ namespace System.Threading
 
                 do
                 {
-                    if (newNumThreadsGoal <= counts.NumExistingThreads)
+                    if (newNumThreadsGoal <= counts.NumExistingThreads || BlockingConfig.IgnoreMemoryUsage)
                     {
                         break;
                     }
@@ -260,6 +260,8 @@ namespace System.Threading
         {
             public static readonly bool IsCooperativeBlockingEnabled =
                 AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.Blocking.CooperativeBlocking", true);
+            public static readonly bool IgnoreMemoryUsage =
+                AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.Blocking.IgnoreMemoryUsage", false);
 
             public static readonly short ThreadsToAddWithoutDelay;
             public static readonly short ThreadsPerDelayStep;

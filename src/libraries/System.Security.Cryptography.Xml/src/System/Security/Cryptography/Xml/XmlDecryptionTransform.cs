@@ -26,15 +26,7 @@ namespace System.Security.Cryptography.Xml
             Algorithm = SignedXml.XmlDecryptionTransformUrl;
         }
 
-        private ArrayList ExceptUris
-        {
-            get
-            {
-                if (_arrayListUri == null)
-                    _arrayListUri = new ArrayList();
-                return _arrayListUri;
-            }
-        }
+        private ArrayList ExceptUris => _arrayListUri ??= new ArrayList();
 
         protected virtual bool IsTargetElement(XmlElement inputElement, string idValue)
         {
@@ -76,8 +68,13 @@ namespace System.Security.Cryptography.Xml
             get { return _outputTypes; }
         }
 
-        public void AddExceptUri(string uri!!)
+        public void AddExceptUri(string uri)
         {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
             ExceptUris.Add(uri);
         }
 
@@ -155,8 +152,13 @@ namespace System.Security.Cryptography.Xml
             _encryptedDataList = document.SelectNodes("//enc:EncryptedData", _nsm);
         }
 
-        private void LoadXmlDocumentInput(XmlDocument document!!)
+        private void LoadXmlDocumentInput(XmlDocument document)
         {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
             _containingDocument = document;
             _nsm = new XmlNamespaceManager(document.NameTable);
             _nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);

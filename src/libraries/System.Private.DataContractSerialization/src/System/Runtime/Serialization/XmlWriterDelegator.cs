@@ -14,8 +14,10 @@ namespace System.Runtime.Serialization
         internal int depth;
         private int _prefixes;
 
-        public XmlWriterDelegator(XmlWriter writer!!)
+        public XmlWriterDelegator(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             this.writer = writer;
             this.dictionaryWriter = writer as XmlDictionaryWriter;
         }
@@ -115,8 +117,8 @@ namespace System.Runtime.Serialization
                 dictionaryWriter.WriteStartAttribute(prefix, localName, namespaceUri);
             else
                 writer.WriteStartAttribute(prefix,
-                    (localName == null ? null : localName.Value)!,
-                    (namespaceUri == null ? null : namespaceUri.Value));
+                    localName?.Value!,
+                    namespaceUri?.Value);
         }
 
         internal void WriteAttributeString(string? prefix, string localName, string? ns, string value)
@@ -228,7 +230,7 @@ namespace System.Runtime.Serialization
             if (dictionaryWriter != null)
                 dictionaryWriter.WriteStartElement(prefix, localName, namespaceUri);
             else
-                writer.WriteStartElement(prefix, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(prefix, localName?.Value!, namespaceUri?.Value);
             depth++;
             _prefixes = 1;
         }
@@ -238,7 +240,7 @@ namespace System.Runtime.Serialization
             if (dictionaryWriter != null)
                 dictionaryWriter.WriteStartElement(null, localName, namespaceUri);
             else
-                writer.WriteStartElement(null, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(null, localName?.Value!, namespaceUri?.Value);
         }
 
         internal void WriteEndElementPrimitive()
@@ -266,7 +268,7 @@ namespace System.Runtime.Serialization
             WriteXmlnsAttribute(ns);
         }
 
-        private Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static Exception CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType_Serialization, DataContract.GetClrTypeFullName(type)));
         }

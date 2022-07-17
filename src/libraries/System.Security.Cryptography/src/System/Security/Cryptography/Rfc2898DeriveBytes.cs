@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -11,12 +12,11 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public partial class Rfc2898DeriveBytes : DeriveBytes
     {
         private byte[] _salt;
         private uint _iterations;
-        private HMAC _hmac;
+        private IncrementalHash _hmac;
         private readonly int _blockSize;
 
         private byte[] _buffer;
@@ -29,6 +29,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)
             : this(password, salt, iterations, HashAlgorithmName.SHA1)
         {
@@ -39,26 +40,35 @@ namespace System.Security.Cryptography
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, byte[] salt)
              : this(password, salt, 1000)
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations)
             : this(password, salt, iterations, HashAlgorithmName.SHA1)
         {
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true)
+            : this(
+                Encoding.UTF8.GetBytes(password ?? throw new ArgumentNullException(nameof(password))),
+                salt,
+                iterations,
+                hashAlgorithm,
+                clearPassword: true)
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, int saltSize)
             : this(password, saltSize, 1000)
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations)
             : this(password, saltSize, iterations, HashAlgorithmName.SHA1)
         {
@@ -79,32 +89,36 @@ namespace System.Security.Cryptography
             HashAlgorithm = hashAlgorithm;
             _hmac = OpenHmac(passwordBytes);
             CryptographicOperations.ZeroMemory(passwordBytes);
-            // _blockSize is in bytes, HashSize is in bits.
-            _blockSize = _hmac.HashSize >> 3;
+            _blockSize = _hmac.HashLengthInBytes;
 
             Initialize();
         }
 
-        internal Rfc2898DeriveBytes(byte[] password, byte[] salt!!, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
+        internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword) :
+            this(
+                new ReadOnlySpan<byte>(password ?? throw new ArgumentNullException(nameof(password))),
+                new ReadOnlySpan<byte>(salt ?? throw new ArgumentNullException(nameof(salt))),
+                iterations,
+                hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (password is null)
-                throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
-
-            _salt = new byte[salt.Length + sizeof(uint)];
-            salt.AsSpan().CopyTo(_salt);
-            _iterations = (uint)iterations;
-            HashAlgorithm = hashAlgorithm;
-            _hmac = OpenHmac(password);
-
             if (clearPassword)
             {
                 CryptographicOperations.ZeroMemory(password);
             }
+        }
 
-            // _blockSize is in bytes, HashSize is in bits.
-            _blockSize = _hmac.HashSize >> 3;
+        internal Rfc2898DeriveBytes(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, int iterations, HashAlgorithmName hashAlgorithm)
+        {
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+
+            _salt = new byte[salt.Length + sizeof(uint)];
+            salt.CopyTo(_salt);
+            _iterations = (uint)iterations;
+            HashAlgorithm = hashAlgorithm;
+            _hmac = OpenHmac(password);
+
+            _blockSize = _hmac.HashLengthInBytes;
             Initialize();
         }
 
@@ -160,27 +174,35 @@ namespace System.Security.Cryptography
 
         public override byte[] GetBytes(int cb)
         {
-            Debug.Assert(_blockSize > 0);
-
             if (cb <= 0)
                 throw new ArgumentOutOfRangeException(nameof(cb), SR.ArgumentOutOfRange_NeedPosNum);
-            byte[] password = new byte[cb];
 
+            byte[] ret = new byte[cb];
+            GetBytes(ret);
+            return ret;
+        }
+
+        internal void GetBytes(Span<byte> destination)
+        {
+            Debug.Assert(_blockSize > 0);
+            int cb = destination.Length;
             int offset = 0;
             int size = _endIndex - _startIndex;
+            ReadOnlySpan<byte> bufferSpan = _buffer;
+
             if (size > 0)
             {
                 if (cb >= size)
                 {
-                    Buffer.BlockCopy(_buffer, _startIndex, password, 0, size);
+                    bufferSpan.Slice(_startIndex, size).CopyTo(destination);
                     _startIndex = _endIndex = 0;
                     offset += size;
                 }
                 else
                 {
-                    Buffer.BlockCopy(_buffer, _startIndex, password, 0, cb);
+                    bufferSpan.Slice(_startIndex, cb).CopyTo(destination);
                     _startIndex += cb;
-                    return password;
+                    return;
                 }
             }
 
@@ -192,18 +214,17 @@ namespace System.Security.Cryptography
                 int remainder = cb - offset;
                 if (remainder >= _blockSize)
                 {
-                    Buffer.BlockCopy(_buffer, 0, password, offset, _blockSize);
+                    bufferSpan.Slice(0, _blockSize).CopyTo(destination.Slice(offset));
                     offset += _blockSize;
                 }
                 else
                 {
-                    Buffer.BlockCopy(_buffer, 0, password, offset, remainder);
+                    bufferSpan.Slice(0, remainder).CopyTo(destination.Slice(offset));
                     _startIndex = remainder;
                     _endIndex = _buffer.Length;
-                    return password;
+                    return;
                 }
             }
-            return password;
         }
 
         [Obsolete(Obsoletions.Rfc2898CryptDeriveKeyMessage, DiagnosticId = Obsoletions.Rfc2898CryptDeriveKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -223,26 +244,25 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/runtime/issues/17618)")]
-        private HMAC OpenHmac(byte[] password)
+        private IncrementalHash OpenHmac(ReadOnlySpan<byte> password)
         {
-            Debug.Assert(password != null);
-
             HashAlgorithmName hashAlgorithm = HashAlgorithm;
 
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            {
                 throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+            }
 
-            if (hashAlgorithm == HashAlgorithmName.SHA1)
-                return new HMACSHA1(password);
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
-                return new HMACSHA256(password);
-            if (hashAlgorithm == HashAlgorithmName.SHA384)
-                return new HMACSHA384(password);
-            if (hashAlgorithm == HashAlgorithmName.SHA512)
-                return new HMACSHA512(password);
+            // Restrict the HashAlgorithmName to known hashes, particularly excluding MD5.
+            if (hashAlgorithm != HashAlgorithmName.SHA1 &&
+                hashAlgorithm != HashAlgorithmName.SHA256 &&
+                hashAlgorithm != HashAlgorithmName.SHA384 &&
+                hashAlgorithm != HashAlgorithmName.SHA512)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
 
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            return IncrementalHash.CreateHMAC(hashAlgorithm, password);
         }
 
         [MemberNotNull(nameof(_buffer))]
@@ -274,20 +294,17 @@ namespace System.Security.Cryptography
             //
             Span<byte> uiSpan = stackalloc byte[64];
             uiSpan = uiSpan.Slice(0, _blockSize);
-
-            if (!_hmac.TryComputeHash(_salt, uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
-            {
-                throw new CryptographicException();
-            }
+            _hmac.AppendData(_salt);
+            int bytesWritten = _hmac.GetHashAndReset(uiSpan);
+            Debug.Assert(bytesWritten == _blockSize);
 
             uiSpan.CopyTo(_buffer);
 
             for (int i = 2; i <= _iterations; i++)
             {
-                if (!_hmac.TryComputeHash(uiSpan, uiSpan, out bytesWritten) || bytesWritten != _blockSize)
-                {
-                    throw new CryptographicException();
-                }
+                _hmac.AppendData(uiSpan);
+                bytesWritten = _hmac.GetHashAndReset(uiSpan);
+                Debug.Assert(bytesWritten == _blockSize);
 
                 for (int j = _buffer.Length - 1; j >= 0; j--)
                 {

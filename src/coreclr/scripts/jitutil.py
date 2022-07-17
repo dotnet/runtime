@@ -37,18 +37,21 @@ class TempDir:
         directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None, skip_cleanup=False):
+    def __init__(self, path=None, skip_cleanup=False, change_dir=True):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self.change_dir = change_dir
         self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
-        os.chdir(self.mydir)
+        if self.change_dir:
+            os.chdir(self.mydir)
         return self.mydir
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
+        if self.change_dir:
+            os.chdir(self.cwd)
         if not self._skip_cleanup:
             try:
                 shutil.rmtree(self.mydir)
@@ -123,7 +126,7 @@ def decode_and_print(str_to_decode):
     finally:
         return output
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None):
     """ Runs the command.
 
     Args:
@@ -131,6 +134,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
         _output_file (): 
+        _env: environment for sub-process, passed to subprocess.Popen()
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
         Otherwise stdout, stderr are empty.
@@ -138,10 +142,16 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
+
+    if _env:
+        print("  with environment:")
+        for name, value in _env.items():
+            print("    {0}={1}".format(name,value))
+
     return_code = 1
 
     output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
+    with subprocess.Popen(command_to_run, env=_env, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
 
         # For long running command, continuously print the output
         if _output_file:
@@ -598,7 +608,7 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
             if try_num == num_tries - 1:
                 raise ex
 
-            if ex is urllib.error.HTTPError and ex == 404:
+            if isinstance(ex, urllib.error.HTTPError) and ex.code == 404:
                 if fail_if_not_found:
                     logging.error("HTTP 404 error")
                     raise ex

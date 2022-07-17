@@ -418,8 +418,8 @@ namespace System.Tests
             // Loopback - File
             yield return new object[] { "file://loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
 
-            // RFC incompatability
-            // We allow any non-unreserved, percent encoding or sub-delimeter in the userinfo
+            // RFC incompatibility
+            // We allow any non-unreserved, percent encoding or sub-delimiter in the userinfo
             yield return new object[] { "http://abc\u1234\u2345\u3456@host/", "http", "abc%E1%88%B4%E2%8D%85%E3%91%96", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234abc\u2345\u3456@host/", "http", "%E1%88%B4abc%E2%8D%85%E3%91%96", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234\u2345\u3456abc@host/", "http", "%E1%88%B4%E2%8D%85%E3%91%96abc", "host", UriHostNameType.Dns, 80, true, false };
@@ -553,14 +553,14 @@ namespace System.Tests
                 yield return new object[] { @"file:///path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
                 yield return new object[] { @"file:///path1\path2/path3%5Cpath4\", "/path1/path2/path3/path4/", "", "" };
                 yield return new object[] { @"file://localhost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-                yield return new object[] { @"file://localhost/path1%5Cpath2", "/path1/path2", "", ""};
+                yield return new object[] { @"file://localhost/path1%5Cpath2", "/path1/path2", "", "" };
             }
             else // Unix paths preserve backslash
             {
                 yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
-                yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
+                yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", "" };
                 yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
-                yield return new object[] { @"file://localhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
+                yield return new object[] { @"file://localhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", "" };
             }
             // Implicit file with empty path
             yield return new object[] { "C:/", "C:/", "", "" };
@@ -758,7 +758,7 @@ namespace System.Tests
             yield return new object[] { "http://host/%68%65%6c%6c%6f", "/hello", "", "" };
             yield return new object[] { "http://host/?%68%65%6c%6c%6f", "/", "?hello", "" };
             yield return new object[] { "http://host/#%68%65%6c%6c%6f", "/", "", "#hello" };
-            // Encoded generic delimeters should not be expanded
+            // Encoded generic delimiters should not be expanded
             yield return new object[] { "http://host/%3A?%3A#%3A", "/%3A", "?%3A", "#%3A" };
             yield return new object[] { "http://host/%2F?%2F#%2F", "/%2F", "?%2F", "#%2F" };
             yield return new object[] { "http://host/%3F?%3F#%3F", "/%3F", "?%3F", "#%3F" };
@@ -766,7 +766,7 @@ namespace System.Tests
             yield return new object[] { "http://host/%5B?%5B#%5B", "/%5B", "?%5B", "#%5B" };
             yield return new object[] { "http://host/%5D?%5D#%5D", "/%5D", "?%5D", "#%5D" };
             yield return new object[] { "http://host/%40?%40#%40", "/%40", "?%40", "#%40" };
-            // Encoded sub delimeters should not be expanded
+            // Encoded sub delimiters should not be expanded
             yield return new object[] { "http://host/%21?%21#%21", "/%21", "?%21", "#%21" };
             yield return new object[] { "http://host/%24?%24#%24", "/%24", "?%24", "#%24" };
             yield return new object[] { "http://host/%26?%26#%26", "/%26", "?%26", "#%26" };

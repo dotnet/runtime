@@ -14,17 +14,7 @@ namespace System.Net
         private readonly List<string> _serviceNames;
         private ServiceNameCollection? _serviceNameCollection;
 
-        public ServiceNameCollection ServiceNames
-        {
-            get
-            {
-                if (_serviceNameCollection == null)
-                {
-                    _serviceNameCollection = new ServiceNameCollection(_serviceNames);
-                }
-                return _serviceNameCollection;
-            }
-        }
+        public ServiceNameCollection ServiceNames => _serviceNameCollection ??= new ServiceNameCollection(_serviceNames);
 
         public ServiceNameStore()
         {
@@ -225,7 +215,7 @@ namespace System.Net
             _serviceNameCollection = null; //invalidate (readonly) ServiceNameCollection
         }
 
-        private string? ExtractHostname(string uriPrefix, bool allowInvalidUriStrings)
+        private static string? ExtractHostname(string uriPrefix, bool allowInvalidUriStrings)
         {
             if (Uri.IsWellFormedUriString(uriPrefix, UriKind.Absolute))
             {
@@ -262,7 +252,7 @@ namespace System.Net
             return null;
         }
 
-        public string? BuildSimpleServiceName(string uriPrefix)
+        public static string? BuildSimpleServiceName(string uriPrefix)
         {
             string? hostname = ExtractHostname(uriPrefix, false);
 
@@ -276,7 +266,7 @@ namespace System.Net
             }
         }
 
-        public string[] BuildServiceNames(string uriPrefix)
+        public static string[] BuildServiceNames(string uriPrefix)
         {
             string hostname = ExtractHostname(uriPrefix, true)!;
 

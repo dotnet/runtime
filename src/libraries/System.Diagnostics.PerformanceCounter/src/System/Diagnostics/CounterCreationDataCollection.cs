@@ -39,16 +39,20 @@ namespace System.Diagnostics
             return List.Add(value);
         }
 
-        public void AddRange(CounterCreationData[] value!!)
+        public void AddRange(CounterCreationData[] value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CounterCreationDataCollection value!!)
+        public void AddRange(CounterCreationDataCollection value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {
@@ -81,8 +85,10 @@ namespace System.Diagnostics
             List.Remove(value);
         }
 
-        protected override void OnValidate(object value!!)
+        protected override void OnValidate(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is CounterCreationData))
                 throw new ArgumentException(SR.MustAddCounterCreationData);
         }

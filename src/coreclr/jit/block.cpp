@@ -438,9 +438,9 @@ void BasicBlock::dspFlags()
     {
         printf("idxlen ");
     }
-    if (bbFlags & BBF_HAS_NEWARRAY)
+    if (bbFlags & BBF_HAS_MD_IDX_LEN)
     {
-        printf("new[] ");
+        printf("mdidxlen ");
     }
     if (bbFlags & BBF_HAS_NEWOBJ)
     {
@@ -463,6 +463,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_BACKWARD_JUMP_TARGET)
     {
         printf("bwd-target ");
+    }
+    if (bbFlags & BBF_BACKWARD_JUMP_SOURCE)
+    {
+        printf("bwd-src ");
     }
     if (bbFlags & BBF_PATCHPOINT)
     {
@@ -507,6 +511,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_LOOP_ALIGN)
     {
         printf("align ");
+    }
+    if (bbFlags & BBF_HAS_MDARRAYREF)
+    {
+        printf("mdarr ");
     }
 }
 

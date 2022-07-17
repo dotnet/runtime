@@ -9,16 +9,6 @@ extern "C" {
 #endif
 
 PALIMPORT
-int
-PALAPI
-MessageBoxA(
-        IN LPVOID hWnd,  // NOTE: diff from winuser.h
-        IN LPCSTR lpText,
-        IN LPCSTR lpCaption,
-        IN UINT uType);
-
-
-PALIMPORT
 HANDLE
 PALAPI
 CreateFileA(

@@ -156,8 +156,8 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentException">The <see cref="MemberBinding.Member"/> property of an element of <paramref name="bindings"/> does not represent a member of the type that <paramref name="newExpression"/>.Type represents.</exception>
         public static MemberInitExpression MemberInit(NewExpression newExpression, IEnumerable<MemberBinding> bindings)
         {
-            ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
-            ContractUtils.RequiresNotNull(bindings, nameof(bindings));
+            ArgumentNullException.ThrowIfNull(newExpression);
+            ArgumentNullException.ThrowIfNull(bindings);
             ReadOnlyCollection<MemberBinding> roBindings = bindings.ToReadOnly();
             ValidateMemberInitArgs(newExpression.Type, roBindings);
             return new MemberInitExpression(newExpression, roBindings);

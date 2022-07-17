@@ -91,7 +91,7 @@ namespace ILCompiler
         {
             if (Logger.IsVerbose)
             {
-                Logger.Writer.WriteLine($"Scanning {methodsToCompile.Count} methods...");
+                Logger.LogMessage($"Scanning {methodsToCompile.Count} methods...");
             }
 
             Parallel.ForEach(
@@ -106,7 +106,7 @@ namespace ILCompiler
             {
                 if (Logger.IsVerbose)
                 {
-                    Logger.Writer.WriteLine($"Compiling {methodCodeNodeNeedingCode.Method}...");
+                    Logger.LogMessage($"Scanning {methodCodeNodeNeedingCode.Method}...");
                 }
 
                 CompileSingleMethod(methodCodeNodeNeedingCode);
@@ -364,9 +364,9 @@ namespace ILCompiler
 
         private class ScannedDevirtualizationManager : DevirtualizationManager
         {
-            private HashSet<TypeDesc> _constructedTypes = new();
-            private HashSet<TypeDesc> _unsealedTypes = new();
-            private HashSet<TypeDesc> _abstractButNonabstractlyOverridenTypes = new();
+            private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _abstractButNonabstractlyOverriddenTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
@@ -418,7 +418,7 @@ namespace ILCompiler
 
                                 bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
                                 if (currentTypeIsAbstract && hasNonAbstractTypeInHierarchy)
-                                    added |= _abstractButNonabstractlyOverridenTypes.Add(baseType);
+                                    added |= _abstractButNonabstractlyOverriddenTypes.Add(baseType);
                                 hasNonAbstractTypeInHierarchy |= !currentTypeIsAbstract;
 
                                 baseType = baseType.BaseType;
@@ -477,7 +477,7 @@ namespace ILCompiler
                     // This lets us optimize out some unused virtual method implementations.
                     // Allowing this to devirtualize would cause trouble because we didn't scan the method
                     // and expected it would be optimized out.
-                    if (!_abstractButNonabstractlyOverridenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                    if (!_abstractButNonabstractlyOverriddenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                     {
                         // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
                         devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;

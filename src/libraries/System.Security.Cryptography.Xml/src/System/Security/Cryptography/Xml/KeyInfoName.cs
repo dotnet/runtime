@@ -48,8 +48,13 @@ namespace System.Security.Cryptography.Xml
             return nameElement;
         }
 
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             XmlElement nameElement = value;
             _keyName = nameElement.InnerText.Trim();
         }

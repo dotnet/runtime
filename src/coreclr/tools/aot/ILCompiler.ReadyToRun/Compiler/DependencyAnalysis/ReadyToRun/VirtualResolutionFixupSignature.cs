@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, _declMethod.Token.Module, factory.SignatureContext);
-                dataBuilder.EmitUInt((uint)(_implMethod != null ? ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverriden : ReadyToRunVirtualFunctionOverrideFlags.None));
+                dataBuilder.EmitUInt((uint)(_implMethod != null ? ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverridden : ReadyToRunVirtualFunctionOverrideFlags.None));
                 dataBuilder.EmitMethodSignature(_declMethod, enforceDefEncoding: false, enforceOwningType: false, innerContext, isInstantiatingStub: false);
                 dataBuilder.EmitTypeSignature(_implType, innerContext);
                 if (_implMethod != null)

@@ -114,10 +114,6 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var method in allSlots)
             {
-                // Static virtual methods don't go in vtables
-                if (method.Signature.IsStatic)
-                    continue;
-
                 // GVMs are not emitted in the type's vtable.
                 if (method.HasInstantiation)
                     continue;

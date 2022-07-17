@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.Extensions
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.Extensions.Tests", "tests\System.Resources.Extensions.Tests.csproj", "{F4A98D66-BA15-4C42-94A9-4732965A969A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{A9D883BE-71BF-4D71-9E46-F40930A6AA27}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{1C4E0357-1AA5-4DD4-B38F-2A2D10DE7872}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{E6F1606F-5731-44BA-B9F9-8FE32E2A4D84}"
 EndProject
@@ -69,10 +69,10 @@ Global
 		{F4A98D66-BA15-4C42-94A9-4732965A969A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F4A98D66-BA15-4C42-94A9-4732965A969A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F4A98D66-BA15-4C42-94A9-4732965A969A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9D883BE-71BF-4D71-9E46-F40930A6AA27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A9D883BE-71BF-4D71-9E46-F40930A6AA27}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A9D883BE-71BF-4D71-9E46-F40930A6AA27}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A9D883BE-71BF-4D71-9E46-F40930A6AA27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C4E0357-1AA5-4DD4-B38F-2A2D10DE7872}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C4E0357-1AA5-4DD4-B38F-2A2D10DE7872}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C4E0357-1AA5-4DD4-B38F-2A2D10DE7872}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C4E0357-1AA5-4DD4-B38F-2A2D10DE7872}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E6F1606F-5731-44BA-B9F9-8FE32E2A4D84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E6F1606F-5731-44BA-B9F9-8FE32E2A4D84}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6F1606F-5731-44BA-B9F9-8FE32E2A4D84}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -100,7 +100,7 @@ Global
 		{2B34DE46-1915-46F7-BD5C-2C8A3B8D1113} = {CF5D1CDD-1A13-475D-BD12-13202A620D8A}
 		{F826EEA7-C53C-4C46-8715-D3E9FACB9ED5} = {CF5D1CDD-1A13-475D-BD12-13202A620D8A}
 		{0174A61A-7E2B-47FC-9CB7-E9EABB898820} = {CF5D1CDD-1A13-475D-BD12-13202A620D8A}
-		{A9D883BE-71BF-4D71-9E46-F40930A6AA27} = {6DCAB55C-A3EE-46AB-94C0-57DBE27E2A22}
+		{1C4E0357-1AA5-4DD4-B38F-2A2D10DE7872} = {6DCAB55C-A3EE-46AB-94C0-57DBE27E2A22}
 		{E6F1606F-5731-44BA-B9F9-8FE32E2A4D84} = {6DCAB55C-A3EE-46AB-94C0-57DBE27E2A22}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

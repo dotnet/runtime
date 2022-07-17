@@ -33,7 +33,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
-#if defined(HAVE_STATFS)
+#if HAVE_STATFS
     struct statfs* mounts = NULL;
 #else
     struct statvfs* mounts = NULL;

@@ -31,7 +31,7 @@ namespace System.Data.Common
         internal readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
         [Conditional("DEBUG")]
-        private void AssertReaderHandleFieldCount(DataReaderContainer readerHandler)
+        private static void AssertReaderHandleFieldCount(DataReaderContainer readerHandler)
         {
 #if DEBUG
             Debug.Assert(readerHandler.FieldCount > 0, "Scenario expects non-empty results but no fields reported by reader");

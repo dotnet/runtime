@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Tests
             //
             // If either of them changes, this test will need to be kept in sync.
 
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(static () =>
                 {
                     var options = new JsonSerializerOptions();
 
@@ -255,9 +255,9 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66232", TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(GetJsonSerializerOptions))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void JsonSerializerOptions_ReuseConverterCaches()
         {
             // This test uses reflection to:
@@ -286,10 +286,12 @@ namespace System.Text.Json.Serialization.Tests
                     for (int i = 0; i < 5; i++)
                     {
                         var options2 = new JsonSerializerOptions(options);
+                        Assert.Null(getCacheOptions(options2));
+
+                        JsonSerializer.Serialize(42, options2);
+
                         Assert.True(equalityComparer.Equals(options2, originalCacheOptions));
                         Assert.Equal(equalityComparer.GetHashCode(options2), equalityComparer.GetHashCode(originalCacheOptions));
-                        Assert.Null(getCacheOptions(options2));
-                        JsonSerializer.Serialize(42, options2);
                         Assert.Same(originalCacheOptions, getCacheOptions(options2));
                     }
                 }
@@ -318,7 +320,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void JsonSerializerOptions_EqualityComparer_ChangingAnySettingShouldReturnFalse()
         {
             // This test uses reflection to:
@@ -370,6 +371,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.UnknownTypeHandling)), JsonUnknownTypeHandling.JsonNode);
                 yield return (GetProp(nameof(JsonSerializerOptions.WriteIndented)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
+                yield return (GetProp(nameof(JsonSerializerOptions.TypeInfoResolver)), new DefaultJsonTypeInfoResolver());
 
                 static PropertyInfo GetProp(string name)
                 {
@@ -386,7 +388,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void JsonSerializerOptions_EqualityComparer_ApplyingJsonSerializerContextShouldReturnFalse()
         {
             // This test uses reflection to:

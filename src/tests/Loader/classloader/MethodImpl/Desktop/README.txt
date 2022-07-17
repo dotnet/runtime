@@ -18,10 +18,10 @@ the same class actually invokes the .override method.  That is because
 there's only one slot for the method in the method table, and by using
 .override, we have determined that the .override method gets that
 slot.  So it won't matter whether the method is called virtually or
-non-virtually, the result is the same.  
+non-virtually, the result is the same.
 
 Another consequence of this is that if the original declaration that
-is being overriden has a body itself and then is .overriden in the
+is being overridden has a body itself and then is .overridden in the
 same class, it will be impossible to invoke that original method,
 regardless of whether calls are virtual or non-virtual.
 

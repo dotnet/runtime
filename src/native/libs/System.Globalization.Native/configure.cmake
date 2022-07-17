@@ -20,6 +20,11 @@ else()
             "unicode/ucol.h"
             HAVE_SET_MAX_VARIABLE)
 
+        check_symbol_exists(
+            ucol_clone
+            "unicode/ucol.h"
+            HAVE_UCOL_CLONE)
+
         unset(CMAKE_REQUIRED_LIBRARIES)
         unset(CMAKE_REQUIRED_INCLUDES)
     endif()

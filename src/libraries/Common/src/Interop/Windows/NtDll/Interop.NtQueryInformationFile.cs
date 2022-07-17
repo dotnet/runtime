@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        [GeneratedDllImport(Libraries.NtDll)]
+        [LibraryImport(Libraries.NtDll)]
         internal static unsafe partial int NtQueryInformationFile(
             SafeFileHandle FileHandle,
             out IO_STATUS_BLOCK IoStatusBlock,

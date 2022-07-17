@@ -529,10 +529,7 @@ namespace System.Linq.Expressions.Compiler
                     WriteBack? wb = EmitAddressWriteBack(argument, type);
                     if (wb != null)
                     {
-                        if (writeBacks == null)
-                        {
-                            writeBacks = new List<WriteBack>();
-                        }
+                        writeBacks ??= new List<WriteBack>();
 
                         writeBacks.Add(wb);
                     }
@@ -927,11 +924,6 @@ namespace System.Linq.Expressions.Compiler
                 }
                 _ilg.EmitArray(node.Type);
             }
-        }
-
-        private void EmitDebugInfoExpression(Expression expr)
-        {
-            return;
         }
 
         #region ListInit, MemberInit

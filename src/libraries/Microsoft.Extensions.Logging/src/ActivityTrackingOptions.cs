@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging
     public enum ActivityTrackingOptions
     {
         /// <summary>
-        /// None of the trace context part wil be included in the logging.
+        /// None of the trace context part will be included in the logging.
         /// </summary>
         None        = 0x0000,
 

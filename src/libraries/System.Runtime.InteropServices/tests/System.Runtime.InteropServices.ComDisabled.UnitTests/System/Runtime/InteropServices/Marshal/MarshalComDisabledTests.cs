@@ -6,6 +6,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("COM Interop not supported on Mono")]
     public partial class MarshalComDisabledTests
     {
         [Fact]

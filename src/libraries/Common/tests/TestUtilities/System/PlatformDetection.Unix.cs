@@ -32,6 +32,7 @@ namespace System
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
+        public static bool IsLinuxBionic => IsBionic();
 
         // OSX family
         public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -51,7 +52,9 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : Libc.geteuid() == 0;
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
+
+        public static bool IsUnixAndSuperUser => !IsWindows && IsSuperUser;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
@@ -77,7 +80,7 @@ namespace System
 
                 try
                 {
-                    return Marshal.PtrToStringAnsi(Libc.gnu_get_libc_release());
+                    return Marshal.PtrToStringAnsi(libc.gnu_get_libc_release());
                 }
                 catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
                 {
@@ -101,7 +104,7 @@ namespace System
 
                 try
                 {
-                    return Marshal.PtrToStringAnsi(Libc.gnu_get_libc_version());
+                    return Marshal.PtrToStringAnsi(libc.gnu_get_libc_version());
                 }
                 catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
                 {
@@ -169,6 +172,21 @@ namespace System
             {
                 throw new FormatException($"Failed to parse version string: '{versionString}'", exc);
             }
+        }
+
+        /// <summary>
+        /// Assume that Android environment variables but Linux OS mean Android libc
+        /// </summary>
+        private static bool IsBionic()
+        {
+            if (IsLinux)
+            {
+                if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDROID_STORAGE")))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static DistroInfo GetDistroInfo()
@@ -324,15 +342,15 @@ namespace System
             public Version VersionId { get; set; }
         }
 
-        private static partial class Libc
+        private static partial class @libc
         {
-            [GeneratedDllImport("libc", SetLastError = true)]
+            [LibraryImport("libc", SetLastError = true)]
             public static unsafe partial uint geteuid();
 
-            [GeneratedDllImport("libc")]
+            [LibraryImport("libc")]
             public static partial IntPtr gnu_get_libc_release();
 
-            [GeneratedDllImport("libc")]
+            [LibraryImport("libc")]
             public static partial IntPtr gnu_get_libc_version();
         }
     }

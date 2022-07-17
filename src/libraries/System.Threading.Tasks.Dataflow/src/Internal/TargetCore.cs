@@ -194,7 +194,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // We can directly accept the message if:
                 //      1) we are not bounding, OR
-                //      2) we are bounding AND there is room available AND there are no postponed messages AND no messages are currently being transfered to the input queue.
+                //      2) we are bounding AND there is room available AND there are no postponed messages AND no messages are currently being transferred to the input queue.
                 // (If there were any postponed messages, we would need to postpone so that ordering would be maintained.)
                 // (Unlike all other blocks, TargetCore can accept messages while processing, because
                 // input message IDs are properly assigned and the correct order is preserved.)
@@ -847,7 +847,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Gets any postponed messages.</summary>
             internal QueuedMap<ISourceBlock<TInput>, DataflowMessageHeader>? PostponedMessages
             {
-                get { return _target._boundingState != null ? _target._boundingState.PostponedMessages : null; }
+                get { return _target._boundingState?.PostponedMessages; }
             }
 
             /// <summary>Gets the current number of outstanding input processing operations.</summary>

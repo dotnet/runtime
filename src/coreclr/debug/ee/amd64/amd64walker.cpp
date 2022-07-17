@@ -33,7 +33,7 @@ void NativeWalker::Decode()
 
     BYTE rex = NULL;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%x\n", m_ip));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%p\n", m_ip));
 
     BYTE prefix = *ip;
     if (prefix == 0xcc)
@@ -103,7 +103,7 @@ void NativeWalker::Decode()
     // Read the opcode
     m_opcode = *ip++;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%x, m_opcode:%0.2x\n", ip, m_opcode));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%p, m_opcode:%0.2x\n", ip, m_opcode));
 
     // Don't remove this, when we did the check above for the prefix we didn't modify the codestream
     // and since m_opcode was just taken directly from the code stream it will be patched if we
@@ -486,9 +486,9 @@ static bool IsWrite(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bo
     return isWrite;
 }
 
-static int opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static uint8_t opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
 {
-    int opSize = 0;
+    uint8_t opSize = 0;
     bool P = !((pp == 1) || fPrefix66);
     switch (form)
     {

@@ -212,9 +212,11 @@ namespace System.Runtime.InteropServices
         /// <param name="index">The location in the output array to begin writing to.</param>
         /// <param name="count">The number of value types to read from the input array and to write to the output array.</param>
         [CLSCompliant(false)]
-        public void ReadArray<T>(ulong byteOffset, T[] array!!, int index, int count)
+        public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -299,9 +301,11 @@ namespace System.Runtime.InteropServices
         /// <param name="index">The offset in the array to start reading from.</param>
         /// <param name="count">The number of value types to write.</param>
         [CLSCompliant(false)]
-        public void WriteArray<T>(ulong byteOffset, T[] array!!, int index, int count)
+        public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)

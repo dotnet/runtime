@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Wkscli
     {
-        [GeneratedDllImport(Libraries.Wkscli, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Wkscli, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
     }
 }

@@ -56,30 +56,26 @@ namespace System.Threading
 
         public static bool IsEntered(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             return IsEnteredNative(obj);
         }
 
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             return ObjWait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             ObjPulse(obj);
         }
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             ObjPulseAll(obj);
         }
 
@@ -126,8 +122,7 @@ namespace System.Threading
 
         private static void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (timeout < 0 && timeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(timeout));

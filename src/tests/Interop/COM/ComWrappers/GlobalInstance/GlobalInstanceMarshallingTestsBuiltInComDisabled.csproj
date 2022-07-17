@@ -16,8 +16,8 @@
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
-    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <CMakeProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
+    <CMakeProjectReference Include="../../NativeServer/CMakeLists.txt" />
     <ProjectReference Include="../../NETServer/NETServer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

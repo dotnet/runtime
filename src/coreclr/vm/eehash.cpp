@@ -32,17 +32,9 @@ EEHashEntry_t * EEUtf8HashTableHelper::AllocateEntry(LPCUTF8 pKey, BOOL bDeepCop
 
     if (bDeepCopy)
     {
-        DWORD StringLen = (DWORD)strlen(pKey);
-        DWORD BufLen = 0;
-// Review conversion of size_t to DWORD.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
-        if (!ClrSafeInt<DWORD>::addition(StringLen, SIZEOF_EEHASH_ENTRY + sizeof(LPUTF8) + 1, BufLen))
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+        SIZE_T StringLen = strlen(pKey);
+        SIZE_T BufLen = 0;
+        if (!ClrSafeInt<SIZE_T>::addition(StringLen, SIZEOF_EEHASH_ENTRY + sizeof(LPUTF8) + 1, BufLen))
             return NULL;
         pEntry = (EEHashEntry_t *) new (nothrow) BYTE[BufLen];
         if (!pEntry)
@@ -404,7 +396,7 @@ BOOL EEClassFactoryInfoHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Class
     if (((ClassFactoryInfo*)pEntry->Key)->m_clsid != pKey->m_clsid)
         return FALSE;
 
-    // Next do a trivial comparition on the server name pointer values.
+    // Next do a trivial comparison on the server name pointer values.
     if (((ClassFactoryInfo*)pEntry->Key)->m_strServerName == pKey->m_strServerName)
         return TRUE;
 
@@ -412,7 +404,7 @@ BOOL EEClassFactoryInfoHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Class
     if (!((ClassFactoryInfo*)pEntry->Key)->m_strServerName || !pKey->m_strServerName)
         return FALSE;
 
-    // Finally do a string comparition of the server names.
+    // Finally do a string comparison of the server names.
     return wcscmp(((ClassFactoryInfo*)pEntry->Key)->m_strServerName, pKey->m_strServerName) == 0;
 }
 

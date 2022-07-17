@@ -17,7 +17,9 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Wrap a CNG key
         /// </summary>
+#pragma warning disable SYSLIB0043 // byte[] constructor on ECDiffieHellmanPublicKey is obsolete
         internal ECDiffieHellmanCngPublicKey(byte[] keyBlob, string? curveName, CngKeyBlobFormat format) : base(keyBlob)
+#pragma warning restore SYSLIB0043
         {
             _format = format;
             // Can be null for P256, P384, P521, or an explicit blob
@@ -34,11 +36,13 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override string ToXmlString()
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ECDiffieHellmanCngPublicKey FromXmlString(string xml)
         {
             throw new PlatformNotSupportedException();
@@ -59,8 +63,11 @@ namespace System.Security.Cryptography
         /// Hydrate a public key from a blob
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob!!, CngKeyBlobFormat format!!)
+        public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, CngKeyBlobFormat format)
         {
+            ArgumentNullException.ThrowIfNull(publicKeyBlob);
+            ArgumentNullException.ThrowIfNull(format);
+
             // Verify that the key can import successfully, because we did in the past.
             using (CngKey imported = CngKey.Import(publicKeyBlob, format))
             {
@@ -87,12 +94,11 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         public CngKey Import()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanCngPublicKey));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
+#pragma warning disable SYSLIB0043 // ToByteArray is obsolete.
             return CngKey.Import(ToByteArray(), _curveName, BlobFormat);
+#pragma warning restore SYSLIB0043
         }
 
         /// <summary>

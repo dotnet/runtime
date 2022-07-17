@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         internal const int MMIO_FINDRIFF = 0x00000020;
 
-        [GeneratedDllImport(Libraries.WinMM)]
+        [LibraryImport(Libraries.WinMM)]
         internal static unsafe partial int mmioDescend(
             IntPtr hMIO,
             MMCKINFO* lpck,

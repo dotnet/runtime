@@ -243,21 +243,12 @@ namespace System
             return sb;
         }
 
-        internal string DisplayFullName
-        {
-            get
-            {
-                if (display_fullname == null)
-                    display_fullname = GetDisplayFullName(DisplayNameFormat.Default);
-                return display_fullname;
-            }
-        }
+        internal string DisplayFullName => display_fullname ??= GetDisplayFullName(DisplayNameFormat.Default);
 
         internal static TypeSpec Parse(string typeName)
         {
             int pos = 0;
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
             if (pos < typeName.Length)
@@ -305,83 +296,6 @@ namespace System
             return res.ToString();
         }
 
-        internal Type? Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
-        {
-            Assembly? asm = null;
-            if (assemblyResolver == null && typeResolver == null)
-                return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, ref stackMark);
-
-            if (assembly_name != null)
-            {
-                if (assemblyResolver != null)
-                    asm = assemblyResolver(new AssemblyName(assembly_name));
-                else
-                    asm = Assembly.Load(assembly_name);
-
-                if (asm == null)
-                {
-                    if (throwOnError)
-                        throw new FileNotFoundException("Could not resolve assembly '" + assembly_name + "'");
-                    return null;
-                }
-            }
-
-            Type? type;
-            if (typeResolver != null)
-                type = typeResolver(asm!, name!.DisplayName, ignoreCase);
-            else
-                type = asm!.GetType(name!.DisplayName, false, ignoreCase);
-            if (type == null)
-            {
-                if (throwOnError)
-                    throw new TypeLoadException("Could not resolve type '" + name + "'");
-                return null;
-            }
-
-            if (nested != null)
-            {
-                foreach (ITypeIdentifier? n in nested)
-                {
-                    Type? tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
-                    if (tmp == null)
-                    {
-                        if (throwOnError)
-                            throw new TypeLoadException("Could not resolve type '" + n + "'");
-                        return null;
-                    }
-                    type = tmp;
-                }
-            }
-
-            if (generic_params != null)
-            {
-                Type[] args = new Type[generic_params.Count];
-                for (int i = 0; i < args.Length; ++i)
-                {
-                    Type? tmp = generic_params[i].Resolve(assemblyResolver!, typeResolver!, throwOnError, ignoreCase, ref stackMark);
-                    if (tmp == null)
-                    {
-                        if (throwOnError)
-                            throw new TypeLoadException("Could not resolve type '" + generic_params[i].name + "'");
-                        return null;
-                    }
-                    args[i] = tmp;
-                }
-                type = type.MakeGenericType(args);
-            }
-
-            if (modifier_spec != null)
-            {
-                foreach (IModifierSpec? md in modifier_spec)
-                    type = md.Resolve(type);
-            }
-
-            if (is_byref)
-                type = type.MakeByRefType();
-
-            return type;
-        }
-
         private void AddName(string type_name)
         {
             if (name == null)
@@ -390,18 +304,12 @@ namespace System
             }
             else
             {
-                if (nested == null)
-                    nested = new List<ITypeIdentifier>();
+                nested ??= new List<ITypeIdentifier>();
                 nested.Add(ParsedTypeIdentifier(type_name));
             }
         }
 
-        private void AddModifier(IModifierSpec md)
-        {
-            if (modifier_spec == null)
-                modifier_spec = new List<IModifierSpec>();
-            modifier_spec.Add(md);
-        }
+        private void AddModifier(IModifierSpec md) => modifier_spec ??= new List<IModifierSpec>();
 
         private static void SkipSpace(string name, ref int pos)
         {

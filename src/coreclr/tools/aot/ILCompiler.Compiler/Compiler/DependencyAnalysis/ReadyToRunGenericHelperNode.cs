@@ -81,6 +81,11 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.DefaultCtorLookupResult((TypeDesc)target);
                 case ReadyToRunHelperId.ObjectAllocator:
                     return factory.GenericLookup.ObjectAllocator((TypeDesc)target);
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return factory.GenericLookup.ConstrainedMethodUse(
+                        ((ConstrainedCallInfo)target).Method,
+                        ((ConstrainedCallInfo)target).ConstrainedType,
+                        directCall: !((ConstrainedCallInfo)target).Method.HasInstantiation);
                 default:
                     throw new NotImplementedException();
             }
@@ -210,6 +215,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                MethodDesc targetMethod = ((DelegateCreationInfo)_target).PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+            }
+
             return dependencies;
         }
 
@@ -293,6 +304,8 @@ namespace ILCompiler.DependencyAnalysis
                     return comparer.Compare((FieldDesc)_target, (FieldDesc)((ReadyToRunGenericHelperNode)other)._target);
                 case ReadyToRunHelperId.DelegateCtor:
                     return ((DelegateCreationInfo)_target).CompareTo((DelegateCreationInfo)((ReadyToRunGenericHelperNode)other)._target, comparer);
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return ((ConstrainedCallInfo)_target).CompareTo((ConstrainedCallInfo)((ReadyToRunGenericHelperNode)other)._target, comparer);
                 default:
                     throw new NotImplementedException();
             }

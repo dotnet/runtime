@@ -55,11 +55,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private void BuildMethodToIdMap(NodeFactory factory)
         {
+            // Get a sorted list of generated stubs
             List<MethodDesc> methods = new List<MethodDesc>(factory.MetadataManager.GetDynamicInvokeTemplateMethods());
-
-            // Sort the stubs
-            var typeSystemComparer = new TypeSystemComparer();
-            methods.Sort((first, second) => typeSystemComparer.Compare(first, second));
 
             // Assign each stub an ID
             var methodToTemplateIndex = new Dictionary<MethodDesc, int>();

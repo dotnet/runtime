@@ -64,7 +64,7 @@ public:
         Use& operator=(const Use& other);
         Use& operator=(Use&& other);
 
-        static Use GetDummyUse(Range& range, GenTree* node);
+        static void MakeDummyUse(Range& range, GenTree* node, Use* dummyUse);
 
         GenTree* Def() const;
         GenTree* User() const;

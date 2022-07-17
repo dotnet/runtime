@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: VirtualCallStub.h
-//
-
-
-
 //
 // See code:VirtualCallStubManager for details
 //
@@ -13,7 +10,6 @@
 
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
-
 
 #define CHAIN_LOOKUP
 
@@ -984,7 +980,7 @@ because a stub/entry is not present in a table, e.g. has been removed, that does
 it is not in use.  It also implies that internal table structures, such as discarded hash table buckets,
 cannot be freely recycled since another concurrent thread may still be walking thru it.
 
-4. Occassionaly it is necessary to pick up the pieces that have been dropped on the floor
+4. Occassionally it is necessary to pick up the pieces that have been dropped on the floor
 so to speak, e.g. actually recycle hash buckets that aren't in use.  Since we have a natural
 sync point already in the GC, we use that to provide cleanup points.  We need to make sure that code that
 is walking our structures is not a GC safe point.  Hence if the GC calls back into us inside the GC
@@ -1078,7 +1074,7 @@ public:
         stub = (LookupStub*) s;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     LookupEntry() {LIMITED_METHOD_CONTRACT; stub = NULL;}
 
     //implementations of abstract class Entry
@@ -1115,7 +1111,7 @@ public:
         stub = (VTableCallStub*)s;
     }
 
-    //default contructor to allow stack and inline allocation of vtable call entries
+    //default constructor to allow stack and inline allocation of vtable call entries
     VTableCallEntry() { LIMITED_METHOD_CONTRACT; stub = NULL; }
 
     //implementations of abstract class Entry
@@ -1156,7 +1152,7 @@ public:
         pElem = (ResolveCacheElem*) elem;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     ResolveCacheEntry() { LIMITED_METHOD_CONTRACT; pElem = NULL; }
 
     //access and compare the keys of the entry
@@ -1201,7 +1197,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)s));
         stub = (ResolveStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     ResolveEntry()  { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1239,7 +1235,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)s));
         stub = (DispatchStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     DispatchEntry()                       { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1449,7 +1445,7 @@ a power of 2, so we force stride to be odd.
 
 Note -- it must be assumed that multiple probers are walking the same tables and buckets at the same time.
 Additionally, the counts may not be accurate, and there may be duplicates in the tables.  Since the tables
-do not allow concurrrent deletion, some of the concurrency issues are ameliorated.
+do not allow concurrent deletion, some of the concurrency issues are ameliorated.
 */
 class Prober
 {
@@ -1567,8 +1563,7 @@ private:
         while (size < numberOfEntries) {size = size<<1;}
 //        if (size == CALL_STUB_MIN_ENTRIES)
 //            size += 3;
-        size_t* bucket = new size_t[(sizeof(FastTable)/sizeof(size_t))+size+CALL_STUB_FIRST_INDEX];
-        FastTable* table = new (bucket) FastTable();
+        FastTable* table = new (NumCallStubs, size) FastTable();
         table->InitializeContents(size);
         return table;
     }
@@ -1592,6 +1587,15 @@ private:
     //we have an unused cell to use as a temp at bucket[CALL_STUB_DEAD_LINK==2],
     //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
     size_t contents[0];
+
+    void* operator new(size_t) = delete;
+
+    static struct NumCallStubs_t {} NumCallStubs;
+
+    void* operator new(size_t baseSize, NumCallStubs_t, size_t numCallStubs)
+    {
+        return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
+    }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -1679,19 +1683,12 @@ private:
         CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
         return VolatileLoad(&buckets[index]);
     }
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for the compiler
-#endif
     inline void Write(size_t index, size_t value)
     {
         LIMITED_METHOD_CONTRACT;
         CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
         VolatileStore(&buckets[index], value);
     }
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
 
     // We store (#buckets-1) in    bucket[CALL_STUB_MASK_INDEX  ==0]
     // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]

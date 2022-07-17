@@ -340,7 +340,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
         // Atomically create a handle
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        FastInterlockCompareExchangePointer(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
@@ -532,14 +532,6 @@ void DomainAssembly::EagerFixups()
     {
         GetModule()->RunEagerFixups();
 
-        PEImageLayout * pLayout = GetModule()->GetReadyToRunInfo()->GetImage();
-
-        TADDR base = dac_cast<TADDR>(pLayout->GetBase());
-
-        ExecutionManager::AddCodeRange(base, base + (TADDR)pLayout->GetVirtualSize(),
-                                        ExecutionManager::GetReadyToRunJitManager(),
-                                         RangeSection::RANGE_SECTION_READYTORUN,
-                                         GetModule() /* (void *)pLayout */);
     }
 #endif // FEATURE_READYTORUN
 }
@@ -611,6 +603,13 @@ void DomainAssembly::Activate()
     }
 #endif //_DEBUG
 
+#ifdef FEATURE_READYTORUN
+    if (m_pModule->IsReadyToRun())
+    {
+        m_pModule->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
+    }
+#endif
+
     RETURN;
 }
 
@@ -658,7 +657,7 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        FastInterlockCompareExchangePointer(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)

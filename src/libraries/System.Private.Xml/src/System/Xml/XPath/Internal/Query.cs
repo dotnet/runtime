@@ -27,7 +27,7 @@ namespace MS.Internal.Xml.XPath
     // Turn off DebuggerDisplayAttribute. in subclasses of Query.
     // Calls to Current in the XPathNavigator.DebuggerDisplayProxy may change state or throw
     [DebuggerDisplay("{ToString()}")]
-    internal abstract class Query : ResetableIterator
+    internal abstract class Query : ResettableIterator
     {
         public Query() { }
         protected Query(Query other) : base(other) { }
@@ -182,7 +182,7 @@ namespace MS.Internal.Xml.XPath
         // On my best knowledge this happens only in XsltContext.ResolveFunction() / IXsltContextFunction.ReturnType
 
 
-        protected XPathResultType GetXPathType(object value)
+        protected static XPathResultType GetXPathType(object value)
         {
             if (value is XPathNodeIterator) return XPathResultType.NodeSet;
             if (value is string) return XPathResultType.String;

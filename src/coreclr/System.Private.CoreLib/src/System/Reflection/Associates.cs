@@ -36,7 +36,7 @@ namespace System.Reflection
             Justification = "Module.ResolveMethod is marked as RequiresUnreferencedCode because it relies on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static RuntimeMethodInfo? AssignAssociates(
             int tkMethod,
             RuntimeType declaredType,
@@ -50,20 +50,20 @@ namespace System.Reflection
 
             bool isInherited = declaredType != reflectedType;
 
-            IntPtr[]? genericArgumentHandles = null;
-            int genericArgumentCount = 0;
+            scoped Span<IntPtr> genericArgumentHandles = default;
             RuntimeType[] genericArguments = declaredType.TypeHandle.GetInstantiationInternal();
             if (genericArguments != null)
             {
-                genericArgumentCount = genericArguments.Length;
-                genericArgumentHandles = new IntPtr[genericArguments.Length];
+                genericArgumentHandles = genericArguments.Length <= 16 ? // arbitrary stackalloc limit
+                    stackalloc IntPtr[genericArguments.Length] :
+                    new IntPtr[genericArguments.Length];
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     genericArgumentHandles[i] = genericArguments[i].TypeHandle.Value;
                 }
             }
 
-            RuntimeMethodHandleInternal associateMethodHandle = ModuleHandle.ResolveMethodHandleInternal(RuntimeTypeHandle.GetModule(declaredType), tkMethod, genericArgumentHandles, genericArgumentCount, null, 0);
+            RuntimeMethodHandleInternal associateMethodHandle = ModuleHandle.ResolveMethodHandleInternal(RuntimeTypeHandle.GetModule(declaredType), tkMethod, genericArgumentHandles, default);
             Debug.Assert(!associateMethodHandle.IsNullHandle(), "Failed to resolve associateRecord methodDef token");
 
             if (isInherited)
@@ -81,7 +81,7 @@ namespace System.Reflection
 
                 // Note this is the first time the property was encountered walking from the most derived class
                 // towards the base class. It would seem to follow that any associated methods would not
-                // be overriden -- but this is not necessarily true. A more derived class may have overriden a
+                // be overridden -- but this is not necessarily true. A more derived class may have overridden a
                 // virtual method associated with a property in a base class without associating the override with
                 // the same or any property in the derived class.
                 if ((methAttr & MethodAttributes.Virtual) != 0)

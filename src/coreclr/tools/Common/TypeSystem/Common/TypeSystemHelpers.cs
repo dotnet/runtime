@@ -193,7 +193,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="type"/>'
-        /// that implements the the method.
+        /// that implements the method.
         /// </summary>
         public static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
         {
@@ -203,6 +203,16 @@ namespace Internal.TypeSystem
         public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
+        }
+
+        public static MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
+        }
+
+        public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
         }
 
         public static DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)

@@ -198,7 +198,7 @@ On `BasicBlock` boundaries:
         This is handled in `LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)`.
 
     -   If a variable doesn't have an open `VariableLiveRange` and is in `bbLiveIn`, we open one.
-        This is done in `genUpdateLife` immediately after the the previous method is called.
+        This is done in `genUpdateLife` immediately after the previous method is called.
 
     -   If a variable has an open `VariableLiveRange` and is not in `bbLiveIn`, we close it.
         This is handled in `genUpdateLife` too.
@@ -241,7 +241,7 @@ The death of a variable is handled at the end of the last `BasicBlock` as variab
 
 ### Reporting Information
 
-We just iterate throught all the `VariableLiveRange`s of all the variables that are tracked in `CodeGen::genSetScopeInfoUsingVariableRanges()`.
+We just iterate through all the `VariableLiveRange`s of all the variables that are tracked in `CodeGen::genSetScopeInfoUsingVariableRanges()`.
 
 Turning On Debug Info
 --------

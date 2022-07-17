@@ -287,6 +287,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+        case GT_CNS_VEC:
+        {
+            unreached();
+        }
+
         default:
             unreached();
     }
@@ -1073,8 +1078,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // case is handled separately.
     if (actualData->IsMultiRegNode())
     {
-        regCount = actualData->IsMultiRegLclVar() ? actualData->AsLclVar()->GetFieldCount(compiler)
-                                                  : actualData->GetMultiRegCount();
+        regCount = actualData->GetMultiRegCount(compiler);
         if (regCount > 1)
         {
             genMultiRegStoreToLocal(tree);
@@ -1330,7 +1334,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     assert(!varTypeIsFloating(type) || (type == data->TypeGet()));
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -1988,8 +1992,11 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
     }
     else
     {
-        // R12 doesn't hold arguments or return values, so can be used as temp.
-        regNumber tmpReg = REG_R12;
+        // We always save LR for return address hijacking and it will be
+        // restored after this point, so it is available for use here. The
+        // other possibility is r12 but it is not available as it can be used
+        // for the target address for fast tailcalls.
+        regNumber tmpReg = REG_LR;
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
@@ -2267,7 +2274,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *      |Pre-spill regs space   |   // This is only necessary to keep the PSP slot at the same offset
  *      |                       |   // in function and funclet
  *      |-----------------------|
- *      |        PSP slot       |   // Omitted in CoreRT ABI
+ *      |        PSP slot       |   // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      ~  possible 4 byte pad  ~
  *      ~     for alignment     ~
@@ -2339,7 +2346,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done.
+    // If there is no PSPSym (NativeAOT ABI), we are done.
     if (compiler->lvaPSPSym == BAD_VAR_NUM)
     {
         return;
@@ -2452,12 +2459,16 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
-        unsigned  saveRegsCount  = genCountBits(rsMaskSaveRegs);
-        unsigned  saveRegsSize   = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
+        regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
+        unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
+        unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
+        unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
+        if (compiler->lvaMonAcquired != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
         assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
-        unsigned funcletFrameSize =
-            preSpillRegArgSize + saveRegsSize + REGSIZE_BYTES /* PSP slot */ + compiler->lvaOutgoingArgSpaceSize;
+        unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + compiler->lvaOutgoingArgSpaceSize;
 
         unsigned funcletFrameSizeAligned  = roundUp(funcletFrameSize, STACK_ALIGN);
         unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;

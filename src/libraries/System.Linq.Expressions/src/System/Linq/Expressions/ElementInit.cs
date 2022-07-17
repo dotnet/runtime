@@ -88,8 +88,8 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="Expressions.ElementInit" /> expression.</returns>
         public static ElementInit ElementInit(MethodInfo addMethod, IEnumerable<Expression> arguments)
         {
-            ContractUtils.RequiresNotNull(addMethod, nameof(addMethod));
-            ContractUtils.RequiresNotNull(arguments, nameof(arguments));
+            ArgumentNullException.ThrowIfNull(addMethod);
+            ArgumentNullException.ThrowIfNull(arguments);
 
             ReadOnlyCollection<Expression> argumentsRO = arguments.ToReadOnly();
 

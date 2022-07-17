@@ -397,7 +397,7 @@ mono_md5_get_digest_from_file (const gchar *filename, guchar digest[16])
 		return;
 	}
 
-	while ((nb_bytes_read = fread (tmp_buf, sizeof (guchar), 1024, fp)) > 0)
+	while ((nb_bytes_read = (gint)fread (tmp_buf, sizeof (guchar), 1024, fp)) > 0)
 		mono_md5_update (&ctx, tmp_buf, nb_bytes_read);
 
 	if (ferror(fp)) {

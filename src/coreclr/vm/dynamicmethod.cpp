@@ -88,7 +88,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     if (*ppLocation) RETURN;
 
-    if (FastInterlockCompareExchangePointer(ppLocation, pDynMT, NULL) != NULL)
+    if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
         RETURN;
@@ -180,8 +180,9 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetMemberDef(0);
         pNewMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
         pNewMD->SetStatic();
-
-        pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+        pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                        | DynamicMethodDesc::FlagStatic
+                        | DynamicMethodDesc::FlagIsLCGMethod);
 
         LCGMethodResolver* pResolver = new (pResolvers) LCGMethodResolver();
         pResolver->m_pDynamicMethod = pNewMD;
@@ -272,8 +273,9 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->SetStoredMethodSig((PCCOR_SIGNATURE)psig, sigSize);
     // the dynamic part of the method desc
     pNewMD->m_pszMethodName = name;
-
-    pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+    pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                    | DynamicMethodDesc::FlagStatic
+                    | DynamicMethodDesc::FlagIsLCGMethod);
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -435,7 +437,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     if (pTracker == NULL)
@@ -503,10 +505,10 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 // found a block
                 LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%X\n", this, pCurrent->size));
 
-                ExecutableWriterHolder<TrackAllocation> previousWriterHolder;
+                ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
                 if (pPrevious)
                 {
-                    previousWriterHolder = ExecutableWriterHolder<TrackAllocation>(pPrevious, sizeof(TrackAllocation));
+                    previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
                 }
 
                 ExecutableWriterHolder<TrackAllocation> currentWriterHolder(pCurrent, sizeof(TrackAllocation));
@@ -530,7 +532,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 {
                     // create a new TrackAllocation after the memory we just allocated and insert it into the free list
                     TrackAllocation *pNewCurrent = (TrackAllocation*)((BYTE*)pCurrent + realSize);
-                    
+
                     ExecutableWriterHolder<TrackAllocation> newCurrentWriterHolder(pNewCurrent, sizeof(TrackAllocation));
                     newCurrentWriterHolder.GetRW()->pNext = pCurrent->pNext;
                     newCurrentWriterHolder.GetRW()->size = pCurrent->size - realSize;
@@ -585,11 +587,11 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
             {
                 // found the point of insertion
                 pBlockToInsertRW->pNext = pCurrent;
-                ExecutableWriterHolder<TrackAllocation> previousWriterHolder;
+                ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
 
                 if (pPrevious)
                 {
-                    previousWriterHolder = ExecutableWriterHolder<TrackAllocation>(pPrevious, sizeof(TrackAllocation));
+                    previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
                     previousWriterHolder.GetRW()->pNext = pBlockToInsert;
                     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] -> [%p, 0x%X] -> [%p, 0x%X]\n", this,
                                                                         pPrevious, pPrevious->size,
@@ -1008,13 +1010,6 @@ void LCGMethodResolver::Destroy()
         }
     }
 
-    // Note that we need to do this before m_jitTempData is deleted
-    RecycleIndCells();
-
-    m_jitMetaHeap.Delete();
-    m_jitTempData.Delete();
-
-
     if (m_recordCodePointer)
     {
 #if defined(TARGET_AMD64)
@@ -1047,6 +1042,12 @@ void LCGMethodResolver::Destroy()
         delete m_pJumpStubCache;
         m_pJumpStubCache = NULL;
     }
+
+    // Note that we need to do this before m_jitTempData is deleted
+    RecycleIndCells();
+
+    m_jitMetaHeap.Delete();
+    m_jitTempData.Delete();
 
     if (m_managedResolver)
     {
@@ -1228,26 +1229,11 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     return GetStringLiteral(metaTok) != NULL;
 }
 
-int
-LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    STRINGREF str = GetStringLiteral(metaTok);
-    if (str != NULL)
-    {
-        return str->GetStringLength();
-    }
-    return -1;
-}
-
 //---------------------------------------------------------------------------------------
 //
 STRINGREF
 LCGMethodResolver::GetStringLiteral(
-    mdToken token)
+    mdToken metaTok)
 {
     CONTRACTL {
         THROWS;
@@ -1262,7 +1248,7 @@ LCGMethodResolver::GetStringLiteral(
 
     ARG_SLOT args[] = {
         ObjToArgSlot(resolver),
-        token,
+        metaTok,
     };
     return getStringLiteral.Call_RetSTRINGREF(args);
 }

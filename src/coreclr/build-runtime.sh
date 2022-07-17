@@ -30,42 +30,6 @@ setup_dirs_local()
 
     mkdir -p "$__LogsDir"
     mkdir -p "$__MsbuildDebugLogsDir"
-
-    if [[ "$__CrossBuild" == 1 ]]; then
-        mkdir -p "$__CrossComponentBinDir"
-    fi
-}
-
-build_cross_architecture_components()
-{
-    local intermediatesForBuild="$__IntermediatesDir/Host$__CrossArch/crossgen"
-    local crossArchBinDir="$__BinDir/$__CrossArch"
-
-    mkdir -p "$intermediatesForBuild"
-    mkdir -p "$crossArchBinDir"
-
-    __SkipCrossArchBuild=1
-    # check supported cross-architecture components host(__HostArch)/target(__BuildArch) pair
-    if [[ ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") && ("$__CrossArch" == "x86" || "$__CrossArch" == "x64") ]]; then
-        __SkipCrossArchBuild=0
-    elif [[ "$__BuildArch" == "arm64" && "$__CrossArch" == "x64" ]]; then
-        __SkipCrossArchBuild=0
-    elif [[ "$__BuildArch" == "loongarch64" && "$__CrossArch" == "x64" ]]; then
-        __SkipCrossArchBuild=0
-    else
-        # not supported
-        return
-    fi
-
-    __CMakeBinDir="$crossArchBinDir"
-    CROSSCOMPILE=0
-    export __CMakeBinDir CROSSCOMPILE
-
-    __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "crosscomponents" "$__CMakeArgs" "cross-architecture components"
-
-    CROSSCOMPILE=1
-    export CROSSCOMPILE
 }
 
 handle_arguments_local() {
@@ -79,10 +43,6 @@ handle_arguments_local() {
 
         pgoinstrument|-pgoinstrument)
             __PgoInstrument=1
-            ;;
-
-        skipcrossarchnative|-skipcrossarchnative)
-            __SkipCrossArchNative=1
             ;;
 
         staticanalyzer|-staticanalyzer)
@@ -112,7 +72,7 @@ echo "Commencing CoreCLR Repo build"
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
 
-__BuildArch=
+__TargetArch=
 __BuildType=Debug
 __CodeCoverage=0
 
@@ -130,9 +90,6 @@ __ProjectDir="$__ProjectRoot"
 __RootBinDir="$__RepoRootDir/artifacts"
 __SignTypeArg=""
 __SkipConfigure=0
-__SkipNative=0
-__SkipCrossArchNative=0
-__SkipManaged=0
 __SkipRestore=""
 __SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
@@ -149,18 +106,17 @@ source "$__ProjectRoot"/_build-commons.sh
 # Set the remaining variables based upon the determined build configuration
 __LogsDir="$__RootBinDir/log/$__BuildType"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
-__ConfigTriplet="$__TargetOS.$__BuildArch.$__BuildType"
+__ConfigTriplet="$__TargetOS.$__TargetArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
 __ArtifactsObjDir="$__RepoRootDir/artifacts/obj"
 __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
 __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
-__CrossComponentBinDir="$__BinDir"
 
-__CrossArch="$__HostArch"
-if [[ "$__CrossBuild" == 1 ]]; then
-    __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
+if [[ "$__TargetArch" != "$__HostArch" ]]; then
+    __IntermediatesDir="$__IntermediatesDir/$__HostArch"
+    __BinDir="$__BinDir/$__HostArch"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
@@ -205,20 +161,13 @@ if [[ -z "$__CMakeTarget" ]]; then
     __CMakeTarget="install"
 fi
 
-if [[ "$__SkipNative" == 1 ]]; then
-    echo "Skipping CoreCLR component build."
-else
-    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
-
-    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
-
-    # Build cross-architecture components
-    if [[ "$__SkipCrossArchNative" != 1 ]]; then
-        if [[ "$__CrossBuild" == 1 ]]; then
-            build_cross_architecture_components
-        fi
-    fi
+if [[ "$__TargetArch" != "$__HostArch" ]]; then
+    __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch $__CMakeArgs"
 fi
+
+eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+
+build_native "$__TargetOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
 # Build complete
 

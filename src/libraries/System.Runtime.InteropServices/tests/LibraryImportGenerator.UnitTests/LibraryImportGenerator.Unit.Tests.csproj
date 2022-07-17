@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
+             Link="Common\SourceGenerators\LiveReferencePack.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <ProjectReference Include="..\..\gen\LibraryImportGenerator\LibraryImportGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Reference the actual NetAnalyzers project to ensure we're testing our diagnostic suppressors against the actual analyzers they'll run with, not fake shims we have to maintain -->
+  <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
+    <PackageReference Update="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RunAnalyzers)' == 'false'">
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" ExcludeAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <Target Name="AddNetAnalyzersAssemblyAsReference" BeforeTargets="ResolveAssemblyReferences" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <Reference Include="$(PkgMicrosoft_CodeAnalysis_NetAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.NetAnalyzers.dll" />
+    </ItemGroup>
+  </Target>
+</Project>

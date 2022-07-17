@@ -95,7 +95,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Fact]
         public static void PostNullDelegate()
         {
-            // the xUnit SynchronizationContext - AysncTestSyncContext interferes with the current SynchronizationContext
+            // the xUnit SynchronizationContext - AsyncTestSyncContext interferes with the current SynchronizationContext
             // used by AsyncOperation when there is exception thrown -> the SC.OperationCompleted() is not called.
             // use  new SC here to avoid this issue
             var orignal = SynchronizationContext.Current;

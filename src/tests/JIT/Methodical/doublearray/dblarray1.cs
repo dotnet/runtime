@@ -14,7 +14,8 @@
 
 using System.Runtime.InteropServices;
 using System;
-internal class DblArray1
+using Xunit;
+public class DblArray1
 {
     private static int s_LOH_GEN = 0;
     public static void f0()
@@ -90,7 +91,8 @@ internal class DblArray1
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {

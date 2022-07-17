@@ -4,21 +4,39 @@
 
 "use strict";
 
+#if USE_PTHREADS
+const usePThreads = `true`;
+const isPThread = `ENVIRONMENT_IS_PTHREAD`;
+#else
+const usePThreads = `false`;
+const isPThread = `false`;
+#endif
+
 const DotnetSupportLib = {
     $DOTNET: {},
     // these lines will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
     // we replace implementation of readAsync and fetch
     // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
+if (${usePThreads}) {
+    __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
+    __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
+}
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)}, 
-    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_exports: EXPORTS, marshaled_imports: IMPORTS  },
     __dotnet_replacements);
+updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
+if (${usePThreads}) {
+    PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
+    PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTS;
+}
 `,
 };
 
@@ -38,36 +56,44 @@ const linked_functions = [
     "schedule_background_exec",
 
     // driver.c
-    "mono_wasm_invoke_js",
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
+    "mono_wasm_set_entrypoint_breakpoint",
 
     // corebindings.c
-    "mono_wasm_invoke_js_with_args",
-    "mono_wasm_get_object_property",
-    "mono_wasm_set_object_property",
-    "mono_wasm_get_by_index",
-    "mono_wasm_set_by_index",
-    "mono_wasm_get_global_object",
-    "mono_wasm_create_cs_owned_object",
+    "mono_wasm_invoke_js_with_args_ref",
+    "mono_wasm_get_object_property_ref",
+    "mono_wasm_set_object_property_ref",
+    "mono_wasm_get_by_index_ref",
+    "mono_wasm_set_by_index_ref",
+    "mono_wasm_get_global_object_ref",
+    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array",
-    "mono_wasm_typed_array_copy_to",
-    "mono_wasm_typed_array_from",
-    "mono_wasm_typed_array_copy_from",
-    "mono_wasm_add_event_listener",
-    "mono_wasm_remove_event_listener",
-    "mono_wasm_cancel_promise",
-    "mono_wasm_web_socket_open",
-    "mono_wasm_web_socket_send",
-    "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close",
-    "mono_wasm_web_socket_abort",
-    "mono_wasm_compile_function",
+    "mono_wasm_typed_array_to_array_ref",
+    "mono_wasm_typed_array_copy_to_ref",
+    "mono_wasm_typed_array_from_ref",
+    "mono_wasm_typed_array_copy_from_ref",
+    "mono_wasm_compile_function_ref",
+    "mono_wasm_bind_js_function",
+    "mono_wasm_invoke_bound_function",
+    "mono_wasm_bind_cs_function",
+    "mono_wasm_marshal_promise",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
+
+    // pal_crypto_webworker.c
+    "dotnet_browser_can_use_subtle_crypto_impl",
+    "dotnet_browser_simple_digest_hash",
+    "dotnet_browser_sign",
+    "dotnet_browser_encrypt_decrypt",
+    "dotnet_browser_derive_bits",
+
+    /// mono-threads-wasm.c
+    #if USE_PTHREADS
+    "mono_wasm_pthread_on_pthread_attached",
+    #endif
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

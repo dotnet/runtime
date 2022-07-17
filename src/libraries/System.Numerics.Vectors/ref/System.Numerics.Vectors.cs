@@ -128,8 +128,8 @@ namespace System.Numerics
     }
     public partial struct Plane : System.IEquatable<System.Numerics.Plane>
     {
-        public float D;
         public System.Numerics.Vector3 Normal;
+        public float D;
         public Plane(System.Numerics.Vector3 normal, float d) { throw null; }
         public Plane(System.Numerics.Vector4 value) { throw null; }
         public Plane(float x, float y, float z, float d) { throw null; }
@@ -149,10 +149,10 @@ namespace System.Numerics
     }
     public partial struct Quaternion : System.IEquatable<System.Numerics.Quaternion>
     {
-        public float W;
         public float X;
         public float Y;
         public float Z;
+        public float W;
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Quaternion Zero { get { throw null; } }
@@ -393,8 +393,8 @@ namespace System.Numerics
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix3x2 matrix) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
@@ -456,18 +456,18 @@ namespace System.Numerics
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector3 TransformNormal(System.Numerics.Vector3 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
     }
     public partial struct Vector4 : System.IEquatable<System.Numerics.Vector4>, System.IFormattable
     {
-        public float W;
         public float X;
         public float Y;
         public float Z;
+        public float W;
         public Vector4(System.Numerics.Vector2 value, float z, float w) { throw null; }
         public Vector4(System.Numerics.Vector3 value, float w) { throw null; }
         public Vector4(float value) { throw null; }
@@ -518,8 +518,8 @@ namespace System.Numerics
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
@@ -537,6 +537,7 @@ namespace System.Numerics
         public Vector(T[] values) { throw null; }
         public Vector(T[] values, int index) { throw null; }
         public static int Count { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }
         public static System.Numerics.Vector<T> Zero { get { throw null; } }
@@ -578,8 +579,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> operator -(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator -(System.Numerics.Vector<T> value) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public bool TryCopyTo(System.Span<byte> destination) { throw null; }
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
     }

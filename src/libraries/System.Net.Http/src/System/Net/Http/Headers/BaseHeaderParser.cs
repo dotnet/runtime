@@ -24,7 +24,7 @@ namespace System.Net.Http.Headers
         protected abstract int GetParsedValueLength(string value, int startIndex, object? storeValue,
             out object? parsedValue);
 
-#pragma warning disable CS8765 // Doesn't match overriden member nullable attribute on out parameter
+#pragma warning disable CS8765 // Doesn't match overridden member nullable attribute on out parameter
         public sealed override bool TryParseValue(string? value, object? storeValue, ref int index,
             out object? parsedValue)
 #pragma warning restore CS8765
@@ -66,7 +66,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            current = current + length;
+            current += length;
             current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(value, current, SupportsMultipleValues,
                 out separatorFound);
 

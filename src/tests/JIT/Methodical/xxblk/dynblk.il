@@ -14,41 +14,43 @@
 .assembly dynblk {}
 .assembly extern xunit.core {}
 
+.namespace Test_dynblk_il
+{
 .class public sequential ansi sealed beforefieldinit S8
        extends [mscorlib]System.ValueType
 {
   .field public uint64 val
-} // end of class S8
+} // end of class Test_dynblk_il.S8
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  GetSize3() cil managed noinlining
   {
           ldc.i4     3
           ret
-  } // end of method Program::Init
+  } // end of method Test_dynblk_il.Program::Init
 
   .method public hidebysig static int32  GetSize5() cil managed noinlining
   {
           ldc.i4     5
           ret
-  } // end of method Program::Init
+  } // end of method Test_dynblk_il.Program::Init
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
     .entrypoint
-    .locals init (valuetype S8 S, int32 retVal, int32 size)
+    .locals init (valuetype Test_dynblk_il.S8 S, int32 retVal, int32 size)
               ldloca.s   S
               ldc.i4     0
               ldc.i4     8
               initblk
 
-              call       int32 Program::GetSize5()
+              call       int32 Test_dynblk_il.Program::GetSize5()
               stloc.s    size
 
               ldloca.s   S
@@ -56,7 +58,7 @@
               ldloc.s    size
               initblk
 
-              call       int32 Program::GetSize3()
+              call       int32 Test_dynblk_il.Program::GetSize3()
               stloc.s    size
 
               ldloca.s   S
@@ -65,7 +67,7 @@
               initblk
 
               ldloca.s   S
-              ldfld      uint64 S8::val
+              ldfld      uint64 Test_dynblk_il.S8::val
               ldc.i8     0x5555333333
               ceq
               brtrue.s  L1
@@ -85,7 +87,7 @@
 
     L2:       ldloc.s    retVal
               ret
-  } // end of method Program::Main
+  } // end of method Test_dynblk_il.Program::Main
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -96,7 +98,8 @@
               call       instance void [mscorlib]System.Object::.ctor()
               nop
               ret
-  } // end of method Program::.ctor
+  } // end of method Test_dynblk_il.Program::.ctor
 
-} // end of class Program
+} // end of class Test_dynblk_il.Program
 
+}

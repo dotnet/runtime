@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
     <LocalFrameworkOverrideName>Microsoft.NETCore.App</LocalFrameworkOverrideName>
   </PropertyGroup>
   <ItemGroup>
@@ -28,11 +27,6 @@
           AfterTargets="ResolveFrameworkReferences"
           Condition="'$(WasmNativeWorkload)' == 'true'">
     <ItemGroup>
-      <ResolvedTargetingPack Path="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                             PackageDirectory="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == 'Microsoft.NETCore.App' and
-                                        Exists('$(_MicrosoftNetCoreAppRefDir)data\FrameworkList.xml')" />
       <ResolvedRuntimePack
                             Update="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
                             FrameworkName="Microsoft.NETCore.App"
@@ -42,7 +36,6 @@
                             RuntimeIdentifier="browser-wasm" />
 
        <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
-                                   TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
                                    RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
                                    RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
                                    RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
@@ -62,7 +55,7 @@
 
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitAssemblyReferences)' != 'true' and '$(WasmNativeWorkload)' == 'true'"
+          Condition="'$(WasmNativeWorkload)' == 'true'"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>

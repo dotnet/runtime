@@ -9,39 +9,39 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class InvalidTypeTests_Span : InvalidTypeTests
     {
-        public InvalidTypeTests_Span() : base(JsonSerializerWrapperForString.SpanSerializer) { }
+        public InvalidTypeTests_Span() : base(JsonSerializerWrapper.SpanSerializer) { }
     }
 
     public class InvalidTypeTests_String : InvalidTypeTests
     {
-        public InvalidTypeTests_String() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public InvalidTypeTests_String() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 
     public class InvalidTypeTests_AsyncStream : InvalidTypeTests
     {
-        public InvalidTypeTests_AsyncStream() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
+        public InvalidTypeTests_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
     public class InvalidTypeTests_AsyncStreamWithSmallBuffer : InvalidTypeTests
     {
-        public InvalidTypeTests_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapperForString.AsyncStreamSerializerWithSmallBuffer) { }
+        public InvalidTypeTests_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
     }
 
     public class InvalidTypeTests_SyncStream : InvalidTypeTests
     {
-        public InvalidTypeTests_SyncStream() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
+        public InvalidTypeTests_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class InvalidTypeTests_Writer : InvalidTypeTests
     {
-        public InvalidTypeTests_Writer() : base(JsonSerializerWrapperForString.ReaderWriterSerializer) { }
+        public InvalidTypeTests_Writer() : base(JsonSerializerWrapper.ReaderWriterSerializer) { }
     }
 
     public abstract class InvalidTypeTests
     {
-        private JsonSerializerWrapperForString Serializer { get; }
+        private JsonSerializerWrapper Serializer { get; }
 
-        public InvalidTypeTests(JsonSerializerWrapperForString serializer)
+        public InvalidTypeTests(JsonSerializerWrapper serializer)
         {
             Serializer = serializer;
         }
@@ -58,6 +58,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TypesWithInvalidMembers_WithMembers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task TypeWithInvalidMember(Type classType, Type invalidMemberType, string invalidMemberName)
         {
             static void ValidateException(InvalidOperationException ex, Type classType, Type invalidMemberType, string invalidMemberName)

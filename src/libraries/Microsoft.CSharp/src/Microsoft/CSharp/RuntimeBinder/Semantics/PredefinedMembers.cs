@@ -306,14 +306,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static PropertySymbol GetProperty(PREDEFPROP property)
         {
             Debug.Assert(property >= 0 && property < PREDEFPROP.PP_COUNT);
-            return _properties[(int)property] ?? (_properties[(int)property] = LoadProperty(property));
+            return _properties[(int)property] ??= LoadProperty(property);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static MethodSymbol GetMethod(PREDEFMETH method)
         {
             Debug.Assert(method >= 0 && method < PREDEFMETH.PM_COUNT);
-            return _methods[(int)method] ?? (_methods[(int)method] = LoadMethod(method));
+            return _methods[(int)method] ??= LoadMethod(method);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]

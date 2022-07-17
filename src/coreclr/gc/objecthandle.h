@@ -101,7 +101,7 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext);
 void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, ScanContext* sc);
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
 void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 #endif
 

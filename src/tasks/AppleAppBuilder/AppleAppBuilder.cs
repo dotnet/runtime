@@ -27,7 +27,7 @@ public class AppleAppBuilderTask : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 

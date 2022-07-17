@@ -11,7 +11,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class AesCipherTests
     {
         [Fact]
@@ -35,6 +34,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void RandomKeyRoundtrip_192()
         {
             using (Aes aes = AesFactory.Create())
@@ -79,6 +79,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void DecryptKnownCFB128_256()
         {
             byte[] encryptedBytes = new byte[]
@@ -101,6 +102,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void DecryptKnownECB192()
         {
             byte[] encryptedBytes = new byte[]
@@ -123,6 +125,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void DecryptKnownCFB128_192()
         {
             byte[] encryptedBytes = new byte[]
@@ -145,6 +148,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void DecryptKnownCFB128_128()
         {
             byte[] encryptedBytes = new byte[]
@@ -272,6 +276,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void VerifyKnownTransform_ECB128_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -284,6 +289,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void VerifyKnownTransform_ECB256_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -296,6 +302,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void VerifyKnownTransform_ECB128_NoPadding_2()
         {
             TestAesTransformDirectKey(
@@ -308,6 +315,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void VerifyKnownTransform_ECB128_NoPadding_3()
         {
             TestAesTransformDirectKey(
@@ -320,6 +328,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void VerifyKnownTransform_ECB192_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -332,6 +341,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void VerifyKnownTransform_ECB192_NoPadding_2()
         {
             TestAesTransformDirectKey(
@@ -344,6 +354,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_8_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -357,6 +368,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "PaddingMode.None is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -394,6 +406,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_256_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -407,6 +420,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_256_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -432,6 +446,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_NoPadding_2()
         {
             TestAesTransformDirectKey(
@@ -457,6 +472,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_NoPadding_3()
         {
             TestAesTransformDirectKey(
@@ -470,6 +486,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void VerifyKnownTransform_CBC192_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -482,6 +499,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_192_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -495,6 +513,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_192_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -508,6 +527,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void VerifyKnownTransform_CBC192_NoPadding_2()
         {
             TestAesTransformDirectKey(
@@ -520,6 +540,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_192_NoPadding_2()
         {
             TestAesTransformDirectKey(
@@ -533,6 +554,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void WrongKeyFailDecrypt()
         {
             // The test:
@@ -567,7 +589,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Assert.Throws<CryptographicException>(() =>
                 {
                     using (MemoryStream input = new MemoryStream(encryptedBytes))
-                    using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                    using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                    using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                     using (MemoryStream output = new MemoryStream())
                     {
                         cryptoStream.CopyTo(output);
@@ -578,6 +601,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void WrongKeyFailDecrypt_2()
         {
             // The test:
@@ -616,7 +640,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Assert.Throws<CryptographicException>(() =>
                 {
                     using (MemoryStream input = new MemoryStream(encryptedBytes))
-                    using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                    using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                    using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                     using (MemoryStream output = new MemoryStream())
                     {
                         cryptoStream.CopyTo(output);
@@ -627,6 +652,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_128_NoPadding_4()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=4
@@ -642,6 +668,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_NoPadding_4_Fails()
         {
             Assert.Throws<CryptographicException>(() =>
@@ -657,6 +684,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_PKCS7_4()
         {
             TestAesTransformDirectKey(
@@ -670,6 +698,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_128_PKCS7_4()
         {
             TestAesTransformDirectKey(
@@ -685,6 +714,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_128_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=0
@@ -703,6 +733,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_128_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=9
@@ -721,6 +752,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_192_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT192.rsp, [ENCRYPT] COUNT=0
@@ -739,6 +771,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_192_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT192.rsp, [ENCRYPT] COUNT=9
@@ -757,6 +790,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_256_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT256.rsp, [ENCRYPT] COUNT=0
@@ -775,6 +809,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB8_256_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT256.rsp, [ENCRYPT] COUNT=9
@@ -791,6 +826,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_NoPadding_0()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT128.rsp, [ENCRYPT] COUNT=0
@@ -805,6 +841,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_128_NoPadding_1_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT128.rsp, [ENCRYPT] COUNT=1
@@ -819,6 +856,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_192_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT192.rsp, [ENCRYPT] COUNT=0
@@ -833,6 +871,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_192_NoPadding_1_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT192.rsp, [ENCRYPT] COUNT=1
@@ -846,11 +885,23 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 128);
         }
 
+        public static IEnumerable<object[]> EncryptorReuse_LeadsToSameResultsData
+        {
+            get
+            {
+                yield return new object[] { CipherMode.CBC, 0 };
+
+                if (PlatformDetection.IsNotBrowser)
+                {
+                    yield return new object[] { CipherMode.CFB, 128 };
+                    yield return new object[] { CipherMode.CFB, 8 };
+                    yield return new object[] { CipherMode.ECB, 0 };
+                }
+            }
+        }
+        
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [InlineData(CipherMode.CBC, 0)]
-        [InlineData(CipherMode.CFB, 128)]
-        [InlineData(CipherMode.CFB, 8)]
-        [InlineData(CipherMode.ECB, 0)]
+        [MemberData(nameof(EncryptorReuse_LeadsToSameResultsData))]
         public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
@@ -877,10 +928,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [InlineData(CipherMode.CBC, 0)]
-        [InlineData(CipherMode.CFB, 128)]
-        [InlineData(CipherMode.CFB, 8)]
-        [InlineData(CipherMode.ECB, 0)]
+        [MemberData(nameof(EncryptorReuse_LeadsToSameResultsData))]
         public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
@@ -912,6 +960,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_256_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT256.rsp, [ENCRYPT] COUNT=0
@@ -926,6 +975,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void VerifyKnownTransform_CFB128_256_NoPadding_1_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT256.rsp, [ENCRYPT] COUNT=1
@@ -939,17 +989,24 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 128);
         }
 
+        public static IEnumerable<object[]> AesZeroPadData
+        {
+            get
+            {
+                yield return new object[] { CipherMode.CBC };
+
+                if (PlatformDetection.IsNotBrowser && !PlatformDetection.IsWindows7)
+                {
+                    // Browser and Windows 7 do not support CFB128.
+                    yield return new object[] { CipherMode.CFB };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(CipherMode.CBC)]
-        [InlineData(CipherMode.CFB)]
+        [MemberData(nameof(AesZeroPadData))]
         public static void AesZeroPad(CipherMode cipherMode)
         {
-            if (cipherMode == CipherMode.CFB && PlatformDetection.IsWindows7)
-            {
-                // Windows 7 does not support CFB128.
-                return;
-            }
-
             byte[] decryptedBytes;
             byte[] expectedAnswer;
 
@@ -971,7 +1028,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 byte[] encryptedBytes;
 
                 using (MemoryStream input = new MemoryStream(s_multiBlockBytes))
-                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateEncryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                using (CryptoStream cryptoStream = new CryptoStream(input, encryptor, CryptoStreamMode.Read))
                 using (MemoryStream output = new MemoryStream())
                 {
                     cryptoStream.CopyTo(output);
@@ -979,7 +1037,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 }
 
                 using (MemoryStream input = new MemoryStream(encryptedBytes))
-                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                 using (MemoryStream output = new MemoryStream())
                 {
                     cryptoStream.CopyTo(output);
@@ -1037,7 +1096,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] encryptedBytes;
 
             using (MemoryStream input = new MemoryStream(s_multiBlockBytes))
-            using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateEncryptor(), CryptoStreamMode.Read))
+            using (ICryptoTransform encryptor = aes.CreateEncryptor())
+            using (CryptoStream cryptoStream = new CryptoStream(input, encryptor, CryptoStreamMode.Read))
             using (MemoryStream output = new MemoryStream())
             {
                 cryptoStream.CopyTo(output);
@@ -1047,7 +1107,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             Assert.NotEqual(s_multiBlockBytes, encryptedBytes);
 
             using (MemoryStream input = new MemoryStream(encryptedBytes))
-            using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+            using (ICryptoTransform decryptor = aes.CreateDecryptor())
+            using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
             using (MemoryStream output = new MemoryStream())
             {
                 cryptoStream.CopyTo(output);
@@ -1084,7 +1145,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 }
 
                 using (MemoryStream input = new MemoryStream(encryptedBytes))
-                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                 using (MemoryStream output = new MemoryStream())
                 {
                     cryptoStream.CopyTo(output);
@@ -1168,7 +1230,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform encryptor = aes.CreateEncryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(plainBytes, 0, plainBytes.Length);
                 cryptoStream.FlushFinalBlock();
@@ -1180,7 +1243,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         private static byte[] AesDecryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] cipherBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateDecryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform decryptor = aes.CreateDecryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, decryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
                 cryptoStream.FlushFinalBlock();

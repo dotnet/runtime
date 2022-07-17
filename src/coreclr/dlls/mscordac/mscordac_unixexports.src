@@ -32,6 +32,7 @@ nativeStringResourceTable_mscorrc
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
 #PAL_GetNumaProcessorNode
+#PAL_GetUnwindInfoSize
 #PAL_get_stdout
 #PAL_get_stderr
 #PAL_GetApplicationGroupId
@@ -165,8 +166,6 @@ nativeStringResourceTable_mscorrc
 #Sleep
 #SleepEx
 #SwitchToThread
-#SysAllocStringLen
-#SysFreeString
 #TerminateProcess
 #VirtualAlloc
 #VirtualAllocExNuma

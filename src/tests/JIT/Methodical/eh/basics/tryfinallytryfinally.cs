@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace hello
+namespace hello_tryfinallytryfinally_basics_cs
 {
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -24,7 +25,8 @@ namespace hello
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             //Start recording
             testLog.StartRecording();

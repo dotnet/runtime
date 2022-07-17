@@ -31,6 +31,7 @@
 #define MONO_ARCH_EMULATE_FCONV_TO_U4 1
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS 1
+#define MONO_ARCH_FLOAT32_SUPPORTED 1
 
 //mini-codegen stubs - this doesn't do anything
 #define MONO_ARCH_CALLEE_REGS (1 << 0)
@@ -102,6 +103,8 @@ G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 void mono_wasm_set_timeout (int timeout);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
+const unsigned char *mono_wasm_get_assembly_bytes (const char *name, unsigned int *size);
+
 void mono_wasm_print_stack_trace (void);
 
 gboolean

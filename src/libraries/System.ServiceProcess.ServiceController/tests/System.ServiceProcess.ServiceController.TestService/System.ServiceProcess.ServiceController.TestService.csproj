@@ -3,8 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>annotations</Nullable>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />
@@ -19,7 +18,7 @@
              Link="Common\DisableRuntimeMarshalling.cs"
              Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+            Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ServiceProcessOptions.cs"
              Link="Common\Interop\Windows\Interop.ServiceProcessOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CloseServiceHandle.cs"
@@ -34,8 +33,6 @@
              Link="Common\Interop\Windows\Interop.SERVICE_DESCRIPTION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ChangeServiceConfig2.cs"
              Link="Common\Interop\Windows\Interop.ChangeServiceConfig2.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_DELAYED_AUTOSTART_INFO.cs"
-             Link="Common\Interop\Windows\Interop.SERVICE_DELAYED_AUTOSTART_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeleteService.cs"
              Link="Common\Interop\Windows\Interop.DeleteService.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <RootNamespace>System.Drawing</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -18,18 +17,14 @@
     <Compile Include="System\Drawing\Size.cs" />
     <Compile Include="System\Drawing\SizeF.cs" />
     <Compile Include="System\Drawing\Color.cs" />
+    <Compile Include="System\Drawing\ColorTranslator.cs" />
+    <Compile Include="System\Drawing\KnownColor.cs" />
+    <Compile Include="System\Drawing\KnownColorTable.cs" />
+    <Compile Include="System\Drawing\SystemColors.cs" />
     <Compile Include="$(CommonPath)System\Drawing\ColorConverterCommon.cs"
              Link="System\Drawing\ColorConverterCommon.cs" />
     <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs"
              Link="System\Drawing\ColorTable.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\ColorTranslator.cs"
-             Link="System\Drawing\ColorTranslator.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\KnownColor.cs"
-             Link="System\Drawing\KnownColor.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\KnownColorTable.cs"
-             Link="System\Drawing\KnownColorTable.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\SystemColors.cs"
-             Link="System\Drawing\SystemColors.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -45,8 +40,6 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

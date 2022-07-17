@@ -125,17 +125,17 @@ namespace System.Net.Mime
             }
         }
 
-        protected bool IsSurrogatePair(string value, int i)
+        protected static bool IsSurrogatePair(string value, int i)
         {
             return char.IsSurrogate(value[i]) && i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]);
         }
 
-        protected bool IsCRLF(byte[] bytes, int count)
+        protected static bool IsCRLF(byte[] bytes, int count)
         {
             return count == 2 && IsCRLF(bytes, 0, count);
         }
 
-        private bool IsCRLF(byte[] buffer, int i, int bufferSize)
+        private static bool IsCRLF(byte[] buffer, int i, int bufferSize)
         {
             return buffer[i] == '\r' && i + 1 < bufferSize && buffer[i + 1] == '\n';
         }

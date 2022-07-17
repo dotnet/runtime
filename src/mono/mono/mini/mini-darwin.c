@@ -44,7 +44,6 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/dtrace.h>

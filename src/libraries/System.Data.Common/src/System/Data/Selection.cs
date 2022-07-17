@@ -51,7 +51,7 @@ namespace System.Data
             protected override int CompareNode(int record1, int record2) =>
                 _index.CompareRecords(record1, record2);
 
-            protected override int CompareSateliteTreeNode(int record1, int record2) =>
+            protected override int CompareSatelliteTreeNode(int record1, int record2) =>
                 _index.CompareDuplicateRecords(record1, record2);
         }
 
@@ -168,7 +168,7 @@ namespace System.Data
 
         public DataViewRowState RecordStates => _recordStates;
 
-        public IFilter? RowFilter => (IFilter?)((null != _rowFilter) ? _rowFilter.Target : null);
+        public IFilter? RowFilter => (IFilter?)(_rowFilter?.Target);
 
         public int GetRecord(int recordIndex)
         {
@@ -642,8 +642,8 @@ namespace System.Data
 
         private Range GetRangeFromNode(int nodeId)
         {
-            // fill range with the min and max indexes of matching record (i.e min and max of satelite tree)
-            // min index is the index of the node in main tree, and max is the min + size of satelite tree-1
+            // fill range with the min and max indexes of matching record (i.e min and max of satellite tree)
+            // min index is the index of the node in main tree, and max is the min + size of satellite tree-1
 
             if (IndexTree.NIL == nodeId)
             {

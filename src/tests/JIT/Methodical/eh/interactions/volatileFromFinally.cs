@@ -16,8 +16,11 @@ Process is terminated due to StackOverflowException.
 
 using System;
 using System.IO;
+using Xunit;
 
-internal class Test
+namespace Test_volatileFromFinally
+{
+public class Test
 {
     private static volatile bool s_someField = false;
 
@@ -37,7 +40,8 @@ internal class Test
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Console.WriteLine("64 bit = {0}", Environment.Is64BitProcess);
 
@@ -48,3 +52,4 @@ internal class Test
     }
 }
 
+}

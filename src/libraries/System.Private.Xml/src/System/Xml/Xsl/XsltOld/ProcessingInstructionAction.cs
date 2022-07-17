@@ -1,26 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-
-    internal class ProcessingInstructionAction : ContainerAction
+    internal sealed class ProcessingInstructionAction : ContainerAction
     {
         private const int NameReady = 3;
 
         private Avt? _nameAvt;
         // Compile time precalculated AVT
         private string? _name;
-
-        private const char CharX = 'X';
-        private const char Charx = 'x';
-        private const char CharM = 'M';
-        private const char Charm = 'm';
-        private const char CharL = 'L';
-        private const char Charl = 'l';
 
         internal ProcessingInstructionAction() { }
 
@@ -156,11 +149,7 @@ namespace System.Xml.Xsl.XsltOld
                 return false;
             }
 
-            if (nameLength == 3 &&
-                (name[0] == CharX || name[0] == Charx) &&
-                (name[1] == CharM || name[1] == Charm) &&
-                (name[2] == CharL || name[2] == Charl)
-            )
+            if (nameLength == 3 && name.StartsWith("xml", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

@@ -49,13 +49,18 @@ private:
 #ifdef FEATURE_READYTORUN
                            CORINFO_CONST_LOOKUP entryPoint,
 #endif
-                           GenTreeCall::Use* args);
+                           GenTree* arg1 = nullptr,
+                           GenTree* arg2 = nullptr);
 
     void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
 
     // Other transformations
     void RewriteAssignment(LIR::Use& use);
     void RewriteAddress(LIR::Use& use);
+
+#ifdef TARGET_ARM64
+    void RewriteSubLshDiv(GenTree** use);
+#endif
 
     // Root visitor
     Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);

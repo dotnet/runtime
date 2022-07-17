@@ -319,7 +319,7 @@ retry_state_change:
 /*
 
 [1] It's questionable on what to do if we hit the beginning of a self suspend.
-The expected behavior is that the target should poll its state very soon so the the suspend latency should be minimal.
+The expected behavior is that the target should poll its state very soon so the suspend latency should be minimal.
 
 STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in progress and it must finish, it should not be possible to witness this.
 */
@@ -433,7 +433,7 @@ STATE_BLOCKING_SELF_SUSPENDED: Poll is a local state transition. No VM activitie
 Try to resume a suspended thread.
 
 Returns one of the following values:
-- Sucess: The thread was resumed.
+- Success: The thread was resumed.
 - Error: The thread was not suspended in the first place. [2]
 - InitSelfResume: The thread is blocked on self suspend and should be resumed
 - InitAsyncResume: The thread is blocked on async suspend and should be resumed
@@ -716,7 +716,7 @@ That state only works as long as the only managed state touched is blitable and 
 
 It returns the action the caller must perform:
 
-- Continue: Entered blocking state sucessfully;
+- Continue: Entered blocking state successfully;
 - PollAndRetry: Async suspend raced and won, try to suspend and then retry;
 
 */

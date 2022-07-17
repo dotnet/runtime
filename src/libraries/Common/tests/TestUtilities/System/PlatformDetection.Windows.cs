@@ -61,7 +61,7 @@ namespace System
 
         // Windows Server 2022
         public static bool IsWindows10Version20348OrGreater => IsWindowsVersionOrLater(10, 0, 20348);
-
+        public static bool IsWindows10Version20348OrLower => IsWindowsVersionOrEarlier(10, 0, 20348);
 
         // Windows 11 aka 21H2
         public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);
@@ -145,7 +145,8 @@ namespace System
         private const int PRODUCT_HOME_PREMIUM = 0x00000003;
         private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
-        [GeneratedDllImport("kernel32.dll", SetLastError = false)]
+        [LibraryImport("kernel32.dll", SetLastError = false)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetProductInfo(
             int dwOSMajorVersion,
             int dwOSMinorVersion,
@@ -154,7 +155,7 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [GeneratedDllImport("kernel32.dll")]
+        [LibraryImport("kernel32.dll")]
         private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;
@@ -176,6 +177,11 @@ namespace System
         internal static bool IsWindowsVersionOrLater(int major, int minor, int build = -1)
         {
             return IsWindows && GetWindowsVersionObject() >= (build != -1 ? new Version(major, minor, build) : new Version(major, minor));
+        }
+
+        internal static bool IsWindowsVersionOrEarlier(int major, int minor, int build = -1)
+        {
+            return IsWindows && GetWindowsVersionObject() <= (build != -1 ? new Version(major, minor, build) : new Version(major, minor));
         }
 
         private static int s_isInAppContainer = -1;

@@ -55,8 +55,13 @@ namespace System.Reflection.PortableExecutable
         /// <param name="stamp">Entry stamp.</param>
         /// <param name="data">Data passed to <paramref name="dataSerializer"/>.</param>
         /// <param name="dataSerializer">Serializes data to a <see cref="BlobBuilder"/>.</param>
-        public void AddEntry<TData>(DebugDirectoryEntryType type, uint version, uint stamp, TData data, Action<BlobBuilder, TData> dataSerializer!!)
+        public void AddEntry<TData>(DebugDirectoryEntryType type, uint version, uint stamp, TData data, Action<BlobBuilder, TData> dataSerializer)
         {
+            if (dataSerializer is null)
+            {
+                Throw.ArgumentNull(nameof(dataSerializer));
+            }
+
             int start = _dataBuilder.Count;
             dataSerializer(_dataBuilder, data);
             int dataSize = _dataBuilder.Count - start;
@@ -93,11 +98,16 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="age"/> is less than 1.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="portablePdbVersion"/> is smaller than 0x0100.</exception>
         public void AddCodeViewEntry(
-            string pdbPath!!,
+            string pdbPath,
             BlobContentId pdbContentId,
             ushort portablePdbVersion,
             int age)
         {
+            if (pdbPath is null)
+            {
+                Throw.ArgumentNull(nameof(pdbPath));
+            }
+
             if (age < 1)
             {
                 Throw.ArgumentOutOfRange(nameof(age));
@@ -158,8 +168,13 @@ namespace System.Reflection.PortableExecutable
         /// <param name="checksum">Checksum.</param>
         /// <exception cref="ArgumentNullException"><paramref name="algorithmName"/> or <paramref name="checksum"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="algorithmName"/> or <paramref name="checksum"/> is empty.</exception>
-        public void AddPdbChecksumEntry(string algorithmName!!, ImmutableArray<byte> checksum)
+        public void AddPdbChecksumEntry(string algorithmName, ImmutableArray<byte> checksum)
         {
+            if (algorithmName is null)
+            {
+                Throw.ArgumentNull(nameof(algorithmName));
+            }
+
             if (algorithmName.Length == 0)
             {
                 Throw.ArgumentEmptyString(nameof(algorithmName));

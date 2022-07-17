@@ -41,7 +41,9 @@ namespace System.Buffers
 
             if (handle == null || handle.IsInvalid)
             {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                int lastError = Marshal.GetHRForLastWin32Error();
+                handle?.Dispose();
+                Marshal.ThrowExceptionForHR(lastError);
                 throw new InvalidOperationException("VirtualAlloc failed unexpectedly.");
             }
 
@@ -292,7 +294,7 @@ namespace System.Buffers
             private const string KERNEL32_LIB = "kernel32.dll";
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366887(v=vs.85).aspx
-            [GeneratedDllImport(KERNEL32_LIB, SetLastError = true)]
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
             public static partial VirtualAllocHandle VirtualAlloc(
                 IntPtr lpAddress,
                 IntPtr dwSize,
@@ -300,7 +302,7 @@ namespace System.Buffers
                 VirtualAllocProtection flProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366892(v=vs.85).aspx
-            [GeneratedDllImport(KERNEL32_LIB, SetLastError = true)]
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static partial bool VirtualFree(
                 IntPtr lpAddress,
@@ -308,7 +310,7 @@ namespace System.Buffers
                 VirtualAllocAllocationType dwFreeType);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366898(v=vs.85).aspx
-            [GeneratedDllImport(KERNEL32_LIB, SetLastError = true)]
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static partial bool VirtualProtect(
                 IntPtr lpAddress,
@@ -317,7 +319,7 @@ namespace System.Buffers
                 out VirtualAllocProtection lpflOldProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366902(v=vs.85).aspx
-            [GeneratedDllImport(KERNEL32_LIB, SetLastError = true)]
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
             public static partial IntPtr VirtualQuery(
                 IntPtr lpAddress,
                 out MEMORY_BASIC_INFORMATION lpBuffer,

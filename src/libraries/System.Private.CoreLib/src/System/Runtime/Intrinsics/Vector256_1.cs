@@ -61,7 +61,9 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal static bool IsTypeSupported
+        /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
+        /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
+        public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -94,7 +96,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                if (IsTypeSupported)
+                if (IsSupported)
                 {
                     return ToString();
                 }
@@ -321,45 +323,33 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector256<T> other)
         {
-            if (Avx.IsSupported)
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(float))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    Vector256<float> result = Avx.Compare(this.AsSingle(), other.AsSingle(), FloatComparisonMode.OrderedEqualNonSignaling);
-                    return Avx.MoveMask(result) == 0b1111_1111; // We have one bit per element
+                    Vector256<T> result = Vector256.Equals(this, other) | ~(Vector256.Equals(this, this) | Vector256.Equals(other, other));
+                    return result.AsInt32() == Vector256<int>.AllBitsSet;
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
-                    Vector256<double> result = Avx.Compare(this.AsDouble(), other.AsDouble(), FloatComparisonMode.OrderedEqualNonSignaling);
-                    return Avx.MoveMask(result) == 0b1111; // We have one bit per element
+                    return this == other;
                 }
-            }
-
-            if (Avx2.IsSupported)
-            {
-                // Unlike float/double, there are no special values to consider
-                // for integral types and we can just do a comparison that all
-                // bytes are exactly the same.
-
-                Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-
-                Vector256<byte> xored = Avx2.Xor(this.AsByte(), other.AsByte());
-                return Avx.TestZ(xored, xored);
             }
 
             return SoftwareFallback(in this, other);
 
-            static bool SoftwareFallback(in Vector256<T> vector, Vector256<T> other)
+            static bool SoftwareFallback(in Vector256<T> self, Vector256<T> other)
             {
-                for (int i = 0; i < Count; i++)
+                for (int index = 0; index < Count; index++)
                 {
-                    if (!((IEquatable<T>)(vector.GetElement(i))).Equals(other.GetElement(i)))
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
                     {
                         return false;
                     }
                 }
-
                 return true;
             }
         }
@@ -386,7 +376,7 @@ namespace System.Runtime.Intrinsics
         public override string ToString()
             => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString(string? format, IFormatProvider? formatProvider)
+        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 

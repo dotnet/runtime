@@ -37,7 +37,9 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!Interop.Crypto.EcKeyUpRef(handle))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                safeHandle.Dispose();
+                throw e;
             }
 
             safeHandle.SetHandle(handle);

@@ -24,14 +24,6 @@
 
 G_BEGIN_DECLS
 
-/*
- * If this is set, the memory belonging to appdomains is not freed when a domain is
- * unloaded, and assemblies loaded by the appdomain are not unloaded either. This
- * allows us to use typed gc in non-default appdomains too, leading to increased
- * performance.
- */
-extern gboolean mono_dont_free_domains;
-
 struct _MonoAppContext {
 	MonoObject obj;
 	gint32 domain_id;
@@ -65,26 +57,16 @@ typedef struct  {
 	guint16 major, minor, build, revision;
 } AssemblyVersionSet;
 
-/* MonoRuntimeInfo: Contains information about versions supported by this runtime */
-typedef struct  {
-	char runtime_version [12];
-	char framework_version [4];
-	AssemblyVersionSet version_sets [5];
-} MonoRuntimeInfo;
-
-typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
+typedef MonoDomain* (*MonoLoadFunc) (const char *root_domain_name);
 
 void
 mono_install_runtime_load  (MonoLoadFunc func);
 
 MonoDomain*
-mono_runtime_load (const char *filename, const char *runtime_version);
+mono_runtime_load (const char *root_domain_name);
 
 MONO_COMPONENT_API void
 mono_runtime_quit_internal (void);
-
-void
-mono_close_exe_image (void);
 
 void
 mono_domain_unset (void);
@@ -93,10 +75,7 @@ void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception);
 
 MonoAssembly *
-mono_assembly_load_corlib (MonoImageOpenStatus *status);
-
-const MonoRuntimeInfo*
-mono_get_runtime_info (void);
+mono_assembly_load_corlib (void);
 
 void
 mono_runtime_set_no_exec (gboolean val);

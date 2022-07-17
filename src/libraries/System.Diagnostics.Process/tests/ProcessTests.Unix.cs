@@ -20,6 +20,8 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
+
         [Fact]
         private void TestWindowApisUnix()
         {
@@ -165,7 +167,7 @@ namespace System.Diagnostics.Tests
             string scriptName = GetTestFileName();
             string filename = Path.Combine(TestDirectory, scriptName);
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-            ChMod(filename, "744"); // set x-bit
+            File.SetUnixFileMode(filename, ExecutablePermissions);
 
             using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
             {
@@ -233,7 +235,7 @@ namespace System.Diagnostics.Tests
             // Create a file that has the x-bit set, but which isn't a valid script.
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 0);
             File.WriteAllText(filename, $"not a script");
-            ChMod(filename, "744"); // set x-bit
+            File.SetUnixFileMode(filename, ExecutablePermissions);
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["PATH"] = path;
@@ -453,8 +455,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
         public void TestPriorityClassUnix()
         {
             CreateDefaultProcess();
@@ -480,8 +481,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
         public void TestBasePriorityOnUnix()
         {
             CreateDefaultProcess();
@@ -508,7 +508,7 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            ChMod(path, "644");
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -520,7 +520,7 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            ChMod(path, "744"); // set x-bit
+            File.SetUnixFileMode(path, ExecutablePermissions);
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -571,6 +571,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal users/groups")]
         public void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
@@ -594,9 +595,8 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
         [OuterLoop("Needs sudo access")]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
@@ -937,14 +937,6 @@ namespace System.Diagnostics.Tests
         }
 
         [DllImport("libc")]
-        private static extern int chmod(string path, int mode);
-
-        private static void ChMod(string filename, string mode)
-        {
-            Assert.Equal(0, chmod(filename, Convert.ToInt32(mode, 8)));
-        }
-
-        [DllImport("libc")]
         private static extern uint geteuid();
         [DllImport("libc")]
         private static extern uint getuid();
@@ -1001,7 +993,7 @@ namespace System.Diagnostics.Tests
         {
             string filename = Path.Combine(directory, name);
             File.WriteAllText(filename, $"#!/bin/sh\nexit {returnValue}\n");
-            ChMod(filename, "744"); // set x-bit
+            File.SetUnixFileMode(filename, ExecutablePermissions);
             return filename;
         }
 

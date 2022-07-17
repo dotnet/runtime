@@ -18,17 +18,25 @@ namespace System.Globalization.Tests
         public static void IcuShouldBeUsedByDefault()
         {
             Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
-            if (globalizationMode != null)
-            {
-                MethodInfo methodInfo = globalizationMode.GetProperty("UseNls", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
-                if (methodInfo != null)
-                {
-                    Assert.False((bool)methodInfo.Invoke(null, null));
-                    return;
-                }
-            }
+            MethodInfo methodInfo = globalizationMode?.GetProperty("UseNls", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
 
-            throw new XunitException("Couldn't get System.Globalization.GlobalizationMode.UseIcu property.");
+            if (methodInfo != null)
+            {
+                // When GlobalizationMode is present
+                Assert.False((bool)methodInfo.Invoke(null, null));
+            }
+            else
+            {
+                // When GlobalizationMode is trimmed
+                Type cultureDataType = Type.GetType("System.Globalization.CultureData");
+                Assert.NotNull(cultureDataType);
+
+                methodInfo = cultureDataType.GetMethod("NlsGetCultureDataFromRegionName", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.Null(methodInfo);
+
+                methodInfo = cultureDataType.GetMethod("InitIcuCultureDataCore", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+                Assert.NotNull(methodInfo);
+            }
         }
 
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]

@@ -276,33 +276,6 @@ ptrarray_sort_compare_with_data (gconstpointer a, gconstpointer b, gpointer user
 }
 
 static RESULT
-ptrarray_sort_with_data (void)
-{
-	GPtrArray *array = g_ptr_array_new();
-	guint i;
-	static gchar * const letters [] = { (char*)"A", (char*)"B", (char*)"C", (char*)"D", (char*)"E" };
-
-	g_ptr_array_add(array, letters[4]);
-	g_ptr_array_add(array, letters[1]);
-	g_ptr_array_add(array, letters[2]);
-	g_ptr_array_add(array, letters[0]);
-	g_ptr_array_add(array, letters[3]);
-
-	g_ptr_array_sort_with_data(array, ptrarray_sort_compare_with_data, (char*)"this is the data for qsort");
-
-	for (i = 0; i < array->len; i++) {
-		if (array->pdata[i] != letters[i]) {
-			return FAILED("Array out of order, expected %s got %s at position %d",
-				letters [i], (gchar *) array->pdata [i], i);
-		}
-	}
-
-	g_ptr_array_free(array, TRUE);
-
-	return OK;
-}
-
-static RESULT
 ptrarray_remove_fast (void)
 {
 	GPtrArray *array = g_ptr_array_new();
@@ -328,7 +301,7 @@ ptrarray_remove_fast (void)
 		return FAILED ("First element wasn't replaced with last upon removal");
 
 	if (g_ptr_array_remove_fast (array, letters[0]))
-		return FAILED ("Succedeed removing a non-existing element");
+		return FAILED ("Succeeded removing a non-existing element");
 
 	if (!g_ptr_array_remove_fast (array, letters[3]) || array->len != 3)
 		return FAILED ("Failed removing \"D\"");
@@ -353,7 +326,6 @@ static Test ptrarray_tests [] = {
 	{"remove", ptrarray_remove},
 	{"sort", ptrarray_sort},
 	{"remove_fast", ptrarray_remove_fast},
-	{"sort_with_data", ptrarray_sort_with_data},
 	{NULL, NULL}
 };
 

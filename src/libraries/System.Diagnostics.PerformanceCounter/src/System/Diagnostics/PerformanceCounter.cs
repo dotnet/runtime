@@ -35,7 +35,7 @@ namespace System.Diagnostics
         // Cached IP Shared Performanco counter
         private SharedPerformanceCounter _sharedCounter;
 
-        [ObsoleteAttribute("PerformanceCounter.DefaultFileMappingSize has been deprecated and is not used. Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping instead.")]
+        [Obsolete("PerformanceCounter.DefaultFileMappingSize has been deprecated and is not used. Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping instead.")]
         public static int DefaultFileMappingSize = 524288;
 
         private object _instanceLockObject;
@@ -166,8 +166,7 @@ namespace System.Diagnostics
 
                 Initialize();
 
-                if (_helpMsg == null)
-                    _helpMsg = PerformanceCounterLib.GetCounterHelp(currentMachineName, currentCategoryName, _counterName);
+                _helpMsg ??= PerformanceCounterLib.GetCounterHelp(currentMachineName, currentCategoryName, _counterName);
 
                 return _helpMsg;
             }
@@ -432,7 +431,7 @@ namespace System.Diagnostics
             return _sharedCounter.Increment();
         }
 
-        private void ThrowReadOnly()
+        private static void ThrowReadOnly()
         {
             throw new InvalidOperationException(SR.ReadOnlyCounter);
         }
@@ -455,7 +454,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        ///     Intializes required resources
+        ///     Initializes required resources
         /// </summary>
         private void InitializeImpl()
         {

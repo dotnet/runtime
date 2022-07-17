@@ -112,9 +112,29 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Path to Dotnet PGO binary (dotnet-pgo)
+    /// </summary>
+    public string? PgoBinaryPath { get; set; }
+
+    /// <summary>
+    /// NetTrace file to use when invoking dotnet-pgo for
+    /// </summary>
+    public string? NetTracePath { get; set; }
+
+    /// <summary>
+    /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
+    /// </summary>
+    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
+
+    /// <summary>
+    /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
+    /// </summary>
+    public string[] MibcProfilePath { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// List of profilers to use.
@@ -266,6 +286,31 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
 
+        if (!string.IsNullOrEmpty(NetTracePath))
+        {
+            if (!File.Exists(NetTracePath))
+            {
+                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
+                return false;
+            }
+            if (!File.Exists(PgoBinaryPath))
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
+                return false;
+            }
+            if (ReferenceAssemblyPathsForPGO.Length == 0)
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
+                return false;
+            }
+            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
+            {
+                string? fullPath = refAsmItem.GetMetadata("FullPath");
+                if (!File.Exists(fullPath))
+                    throw new LogAsErrorException($"ReferenceAssembly '{fullPath}' doesn't exist");
+            }
+        }
+
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -275,6 +320,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     Log.LogError($"AotProfilePath '{path}' doesn't exist.");
                     return false;
                 }
+            }
+        }
+
+        foreach (var path in MibcProfilePath)
+        {
+            if (!File.Exists(path))
+            {
+                Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
+                return false;
             }
         }
 
@@ -383,6 +437,48 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
+    private bool ProcessNettrace(string netTraceFile)
+    {
+        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
+
+        if (_cache!.Enabled)
+        {
+            string hash = Utils.ComputeHash(netTraceFile);
+            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
+                return true;
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
+            }
+        }
+
+        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
+        pgoArgsStr.Append($"create-mibc");
+        pgoArgsStr.Append($" --trace {netTraceFile} ");
+        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
+        {
+            string? fullPath = refAsmItem.GetMetadata("FullPath");
+            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
+        }
+        pgoArgsStr.Append($" --output {outputMibcPath} ");
+        (int exitCode, string output) = Utils.TryRunProcess(Log,
+                                                            PgoBinaryPath!,
+                                                            pgoArgsStr.ToString());
+
+        if (exitCode != 0)
+        {
+            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
+            return false;
+        }
+
+        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
+        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
+        return true;
+    }
+
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
@@ -399,6 +495,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
+
+        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
+            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -419,10 +518,36 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
+            /*
+                From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
+
+                Stephen Toub:
+                "As such, by default ForEach works on a scheme whereby each
+                thread takes one item each time it goes back to the enumerator,
+                and then after a few times of this upgrades to taking two items
+                each time it goes back to the enumerator, and then four, and
+                then eight, and so on. This ammortizes the cost of taking and
+                releasing the lock across multiple items, while still enabling
+                parallelization for enumerables containing just a few items. It
+                does, however, mean that if you've got a case where the body
+                takes a really long time and the work for every item is
+                heterogeneous, you can end up with an imbalance."
+
+                The time taken by individual compile jobs here can vary a
+                lot, depending on various factors like file size. This can
+                create an imbalance, like mentioned above, and we can end up
+                in a situation where one of the partitions has a job that
+                takes very long to execute, by which time other partitions
+                have completed, so some cores are idle.  But the idle
+                ones won't get any of the remaining jobs, because they are
+                all assigned to that one partition.
+
+                Instead, we want to use work-stealing so jobs can be run by any partition.
+            */
             ParallelLoopResult result = Parallel.ForEach(
-                                            argsList,
+                                            Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                            (args, state) => PrecompileLibraryParallel(args, state));
+                                            PrecompileLibraryParallel);
 
             if (result.IsCompleted)
             {
@@ -440,7 +565,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
+    private static bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
     {
         foreach (var args in argsList)
         {
@@ -713,6 +838,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        if (MibcProfilePath.Length > 0)
+        {
+            aotArgs.Add("profile-only");
+            foreach (var path in MibcProfilePath)
+            {
+                aotArgs.Add($"mibc-profile={path}");
+            }
+        }
+
         if (!string.IsNullOrEmpty(AotArguments))
         {
             aotArgs.Add(AotArguments);
@@ -781,12 +915,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private bool PrecompileLibrary(PrecompileArguments args)
     {
         string assembly = args.AOTAssembly.GetMetadata("FullPath");
+        string output;
         try
         {
             string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
             // run the AOT compiler
-            (int exitCode, string output) = Utils.TryRunProcess(Log,
+            (int exitCode, output) = Utils.TryRunProcess(Log,
                                                                 CompilerBinaryPath,
                                                                 $"--response=\"{args.ResponseFilePath}\"",
                                                                 args.EnvironmentVariables,
@@ -1040,8 +1175,20 @@ internal sealed class FileCache
         _newCache = new(_oldCache.FileHashes);
     }
 
+    public bool UpdateAndCheckHasFileChanged(string filePath, string newHash)
+    {
+        if (!Enabled)
+            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
+
+        _newCache!.FileHashes[filePath] = newHash;
+        return !_oldCache!.FileHashes.TryGetValue(filePath, out string? oldHash) || oldHash != newHash;
+    }
+
     public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
     {
+        if (!Enabled)
+            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
+
         cause = null;
 
         string newHash = Utils.ComputeHash(proxyFile.TempFile);
@@ -1097,6 +1244,9 @@ internal sealed class ProxyFile
         if (!_cache.Enabled)
             return true;
 
+        if (!File.Exists(TempFile))
+            throw new LogAsErrorException($"Could not find the temporary file {TempFile} for target file {TargetFile}. Look for any errors/warnings generated earlier in the build.");
+
         try
         {
             if (!_cache.ShouldCopy(this, out string? cause))
@@ -1115,6 +1265,7 @@ internal sealed class ProxyFile
         }
         finally
         {
+            _cache.Log.LogMessage(MessageImportance.Low, $"Deleting temp file {TempFile}");
             File.Delete(TempFile);
         }
     }

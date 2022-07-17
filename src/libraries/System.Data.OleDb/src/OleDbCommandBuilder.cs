@@ -364,7 +364,7 @@ namespace System.Data.OleDb
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
-            if (ADP.IsEmpty(quotePrefix) == true)
+            if (ADP.IsEmpty(quotePrefix))
             {
                 if (connection == null)
                 {
@@ -379,10 +379,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.QuoteIdentifier, out quotePrefix, out quoteSuffix);
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
-                {
-                    quoteSuffix = quotePrefix;
-                }
+                quoteSuffix ??= quotePrefix;
             }
 
             return ADP.BuildQuotedString(quotePrefix, quoteSuffix, unquotedIdentifier);
@@ -414,7 +411,7 @@ namespace System.Data.OleDb
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
-            if (ADP.IsEmpty(quotePrefix) == true)
+            if (ADP.IsEmpty(quotePrefix))
             {
                 if (connection == null)
                 {
@@ -429,10 +426,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.UnquoteIdentifier, out quotePrefix, out quoteSuffix);
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
-                {
-                    quoteSuffix = quotePrefix;
-                }
+                quoteSuffix ??= quotePrefix;
             }
 
             string? unquotedIdentifier;

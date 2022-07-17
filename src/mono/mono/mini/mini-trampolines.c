@@ -194,7 +194,7 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 	MonoMethod *impl = NULL, *generic_virtual = NULL;
 	gboolean lookup_aot, variance_used = FALSE, need_rgctx_tramp = FALSE;
 	guint8 *aot_addr = NULL;
-	int displacement = vtable_slot - ((gpointer*)vt);
+	int displacement = GPTRDIFF_TO_INT (vtable_slot - ((gpointer*)vt));
 	int interface_offset;
 	int imt_slot = MONO_IMT_SIZE + displacement;
 
@@ -428,7 +428,6 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	gboolean generic_shared = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
-	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL, *variant_iface = NULL;
 	int context_used;
 	gboolean imt_call, virtual_;
@@ -469,29 +468,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			vtable_slot = mini_resolve_imt_method (vt, vtable_slot, imt_method, &impl_method, &addr, &need_rgctx_tramp, &variant_iface, error);
 			return_val_if_nok (error, NULL);
 
-			if (mono_class_has_dim_conflicts (vt->klass)) {
-				GSList *conflicts = mono_class_get_dim_conflicts (vt->klass);
-				GSList *l;
-				MonoMethod *decl = imt_method;
-
-				if (decl->is_inflated)
-					decl = mono_method_get_declaring_generic_method (decl);
-
-				gboolean in_conflict = FALSE;
-				for (l = conflicts; l; l = l->next) {
-					if (decl == l->data) {
-						in_conflict = TRUE;
-						break;
-					}
-				}
-				if (in_conflict) {
-					char *class_name = mono_class_full_name (vt->klass);
-					char *method_name = mono_method_full_name (decl, TRUE);
-					mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
-					g_free (class_name);
-					g_free (method_name);
-					return NULL;
-				}
+			if (mono_class_has_dim_conflicts (vt->klass) && mono_class_is_method_ambiguous (vt->klass, imt_method)) {
+				char *class_name = mono_class_full_name (vt->klass);
+				char *method_name = mono_method_full_name (imt_method, TRUE);
+				mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
+				g_free (class_name);
+				g_free (method_name);
+				return NULL;
 			}
 
 			/* We must handle magic interfaces on rank 1 arrays of ref types as if they were variant */
@@ -513,13 +496,14 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		}
 	}
 
+	MonoMethod *declaring = NULL;
+
 	/*
 	 * The virtual check is needed because is_generic_method_definition (m) could
 	 * return TRUE for methods used in IMT calls too.
 	 */
 	if (virtual_ && is_generic_method_definition (m)) {
 		MonoGenericContext context = { NULL, NULL };
-		MonoMethod *declaring;
 
 		if (m->is_inflated)
 			declaring = mono_method_get_declaring_generic_method (m);
@@ -543,7 +527,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	} else if ((context_used = mono_method_check_context_used (m))) {
 		MonoClass *klass = NULL;
 		MonoMethod *actual_method = NULL;
-		MonoVTable *vt = NULL;
+		MonoVTable *actual_vt  = NULL;
 		MonoGenericInst *method_inst = NULL;
 
 		vtable_slot = NULL;
@@ -558,13 +542,19 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			klass = mrgctx->class_vtable->klass;
 			method_inst = mrgctx->method_inst;
 		} else if ((m->flags & METHOD_ATTRIBUTE_STATIC) || m_class_is_valuetype (m->klass)) {
+			MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext*)mono_arch_find_static_call_vtable (regs, code);
+
+			klass = mrgctx->class_vtable->klass;
+			method_inst = mrgctx->method_inst;
+			/*
 			MonoVTable *vtable = mono_arch_find_static_call_vtable (regs, code);
 
 			klass = vtable->klass;
+			*/
 		} else {
 			MonoObject *this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
-			vt = this_argument->vtable;
+			actual_vt  = this_argument->vtable;
 			vtable_slot = orig_vtable_slot;
 
 			g_assert (m_class_is_inited (this_argument->vtable->klass));
@@ -578,13 +568,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		g_assert (vtable_slot || klass);
 
 		if (vtable_slot) {
-			int displacement = vtable_slot - ((gpointer*)vt);
+			int displacement = GPTRDIFF_TO_INT (vtable_slot - ((gpointer*)actual_vt));
 
 			g_assert_not_reached ();
 
 			g_assert (displacement > 0);
 
-			actual_method = m_class_get_vtable (vt->klass) [displacement];
+			actual_method = m_class_get_vtable (actual_vt ->klass) [displacement];
 		}
 
 		if (method_inst || m->wrapper_type) {

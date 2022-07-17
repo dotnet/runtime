@@ -33,7 +33,7 @@ namespace System.Diagnostics
 
         protected override void OnValueChanged()
         {
-            SwitchSetting = (int)Enum.Parse(typeof(SourceLevels), Value, true);
+            SwitchSetting = (int)Enum.Parse<SourceLevels>(Value, true);
         }
     }
 }

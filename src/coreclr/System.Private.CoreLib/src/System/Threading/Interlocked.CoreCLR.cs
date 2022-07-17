@@ -150,7 +150,7 @@ namespace System.Threading
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
         // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
-        // the body of the following method with the the following IL:
+        // the body of the following method with the following IL:
         //     ldarg.0
         //     ldarg.1
         //     ldarg.2
@@ -225,7 +225,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ReadMemoryBarrier();
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
         private static partial void _MemoryBarrierProcessWide();
 
         /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>

@@ -98,4 +98,11 @@ mono_log_close_syslog()
 	closelog();
 #endif
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_log_posix);
+
 #endif

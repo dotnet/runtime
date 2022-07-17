@@ -1213,6 +1213,7 @@ namespace System.Runtime.CompilerServices
         public T[] ToArray() { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection() { throw null; }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class RuleCache<T> where T : class
     {
         internal RuleCache() { }

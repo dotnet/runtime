@@ -274,26 +274,18 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [MemberData(nameof(InteroperableSignatureConfigurations))]
         public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
-            byte[] data = Encoding.UTF8.GetBytes("something to repeat and sign");
-
             // large enough to make hashing work though multiple iterations and not a multiple of 4KB it uses.
             byte[] dataArray = new byte[33333];
 
             byte[] dataArray2 = new byte[dataArray.Length + 2];
             dataArray.CopyTo(dataArray2, 1);
 
-            HashAlgorithm halg;
-            if (hashAlgorithm == HashAlgorithmName.MD5)
-                halg = MD5.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-                halg = SHA1.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA256)
-                halg = SHA256.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-                halg = SHA384.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-                halg = SHA512.Create();
-            else
+            using HashAlgorithm halg =
+                hashAlgorithm == HashAlgorithmName.MD5 ? MD5.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.Create() :
                 throw new Exception("Hash algorithm not supported.");
 
             List<byte[]> signatures = new List<byte[]>(6);

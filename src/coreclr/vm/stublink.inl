@@ -18,7 +18,7 @@
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 
 inline //static
-SIZE_T StubUnwindInfoHeader::ComputeSize(UINT nUnwindInfoSize)
+SIZE_T StubUnwindInfoHeader::ComputeAlignedSize(UINT nUnwindInfoSize)
 {
     LIMITED_METHOD_CONTRACT;
 

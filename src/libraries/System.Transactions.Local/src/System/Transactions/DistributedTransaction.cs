@@ -9,22 +9,22 @@ namespace System.Transactions.Distributed
     {
         internal object? NodeName { get; set; }
 
-        internal IPromotedEnlistment ReenlistTransaction(Guid resourceManagerIdentifier, byte[] resourceManagerRecoveryInformation, RecoveringInternalEnlistment internalEnlistment)
+        internal static IPromotedEnlistment ReenlistTransaction(Guid resourceManagerIdentifier, byte[] resourceManagerRecoveryInformation, RecoveringInternalEnlistment internalEnlistment)
         {
             throw DistributedTransaction.NotSupported();
         }
 
-        internal DistributedCommittableTransaction CreateTransaction(TransactionOptions options)
+        internal static DistributedCommittableTransaction CreateTransaction(TransactionOptions options)
         {
             throw DistributedTransaction.NotSupported();
         }
 
-        internal void ResourceManagerRecoveryComplete(Guid resourceManagerIdentifier)
+        internal static void ResourceManagerRecoveryComplete(Guid resourceManagerIdentifier)
         {
             throw DistributedTransaction.NotSupported();
         }
 
-        internal byte[] GetWhereabouts()
+        internal static byte[] GetWhereabouts()
         {
             throw DistributedTransaction.NotSupported();
         }
@@ -80,36 +80,32 @@ namespace System.Transactions.Distributed
         internal IsolationLevel IsolationLevel { get; set; }
         internal Transaction? SavedLtmPromotedTransaction { get; set; }
 
-        internal void Dispose()
-        {
-        }
-
-        internal IPromotedEnlistment EnlistVolatile(InternalEnlistment internalEnlistment, EnlistmentOptions enlistmentOptions)
+        internal static IPromotedEnlistment EnlistVolatile(InternalEnlistment internalEnlistment, EnlistmentOptions enlistmentOptions)
         {
             throw NotSupported();
         }
 
-        internal IPromotedEnlistment EnlistDurable(Guid resourceManagerIdentifier, DurableInternalEnlistment internalEnlistment, bool v, EnlistmentOptions enlistmentOptions)
+        internal static IPromotedEnlistment EnlistDurable(Guid resourceManagerIdentifier, DurableInternalEnlistment internalEnlistment, bool v, EnlistmentOptions enlistmentOptions)
         {
             throw NotSupported();
         }
 
-        internal void Rollback()
+        internal static void Rollback()
         {
             throw NotSupported();
         }
 
-        internal DistributedDependentTransaction DependentClone(bool v)
+        internal static DistributedDependentTransaction DependentClone(bool v)
         {
             throw NotSupported();
         }
 
-        internal IPromotedEnlistment EnlistVolatile(VolatileDemultiplexer volatileDemux, EnlistmentOptions enlistmentOptions)
+        internal static IPromotedEnlistment EnlistVolatile(VolatileDemultiplexer volatileDemux, EnlistmentOptions enlistmentOptions)
         {
             throw NotSupported();
         }
 
-        internal byte[] GetExportCookie(byte[] whereaboutsCopy)
+        internal static byte[] GetExportCookie(byte[] whereaboutsCopy)
         {
             throw NotSupported();
         }
@@ -119,12 +115,12 @@ namespace System.Transactions.Distributed
             throw NotSupported();
         }
 
-        internal byte[] GetTransmitterPropagationToken()
+        internal static byte[] GetTransmitterPropagationToken()
         {
             throw NotSupported();
         }
 
-        internal IDtcTransaction GetDtcTransaction()
+        internal static IDtcTransaction GetDtcTransaction()
         {
             throw NotSupported();
         }
@@ -154,7 +150,7 @@ namespace System.Transactions.Distributed
 
     internal sealed class DistributedDependentTransaction : DistributedTransaction
     {
-        internal void Complete()
+        internal static void Complete()
         {
             throw NotSupported();
         }
@@ -162,7 +158,7 @@ namespace System.Transactions.Distributed
 
     internal sealed class DistributedCommittableTransaction : DistributedTransaction
     {
-        internal void BeginCommit(InternalTransaction tx)
+        internal static void BeginCommit(InternalTransaction tx)
         {
             throw NotSupported();
         }

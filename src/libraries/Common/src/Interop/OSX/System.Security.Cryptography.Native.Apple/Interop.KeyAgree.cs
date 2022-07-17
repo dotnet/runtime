@@ -12,7 +12,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_EcdhKeyAgree(
             SafeSecKeyRefHandle privateKey,
             SafeSecKeyRefHandle publicKey,

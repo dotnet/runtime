@@ -5,6 +5,7 @@ T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
+T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
 T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute
 T:System.Diagnostics.DebuggerBrowsableAttribute
@@ -52,7 +53,3 @@ T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Runtime.CompilerServices.AsyncMethodBuilderAttribute
 T:System.Reflection.DefaultMemberAttribute
 T:System.Timers.TimersDescriptionAttribute
-
-// These do not need to be persisted in the implementation
-T:System.ComponentModel.EditorBrowsableAttribute
-T:System.ObsoleteAttribute

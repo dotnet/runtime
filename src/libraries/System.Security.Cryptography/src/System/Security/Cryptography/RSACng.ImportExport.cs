@@ -20,14 +20,29 @@ namespace System.Security.Cryptography
             CngKeyBlobFormat blobFormat = includePrivate ? s_rsaPrivateBlob : s_rsaPublicBlob;
 
             CngKey newKey = CngKey.Import(rsaBlob, blobFormat);
-            newKey.ExportPolicy |= CngExportPolicies.AllowPlaintextExport;
-
-            Key = newKey;
+            try
+            {
+                newKey.ExportPolicy |= CngExportPolicies.AllowPlaintextExport;
+                Key = newKey;
+            }
+            catch
+            {
+                newKey.Dispose();
+                throw;
+            }
         }
 
         private void AcceptImport(CngPkcs8.Pkcs8Response response)
         {
-            Key = response.Key;
+            try
+            {
+                Key = response.Key;
+            }
+            catch
+            {
+                response.FreeKey();
+                throw;
+            }
         }
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)

@@ -47,7 +47,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object to the
         /// given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             if (destinationType == typeof(Enum[]) || destinationType == typeof(InstanceDescriptor))
             {
@@ -115,8 +115,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (destinationType == typeof(string) && value != null)
             {
                 // Raise an argument exception if the value isn't defined and if

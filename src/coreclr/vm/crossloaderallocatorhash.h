@@ -4,7 +4,9 @@
 #ifndef CROSSLOADERALLOCATORHASH_H
 #define CROSSLOADERALLOCATORHASH_H
 
-#include "gcheaphashtable.h"
+#define DISABLE_COPY(T) \
+    T(const T &) = delete; \
+    T &operator =(const T &) = delete
 
 class LoaderAllocator;
 
@@ -14,53 +16,66 @@ class NoRemoveDefaultCrossLoaderAllocatorHashTraits
 public:
     typedef TKey_ TKey;
     typedef TValue_ TValue;
+    typedef COUNT_T TCount;
 
-    static bool IsNull(const TValue &value) { return value == NULL; }
+    static const bool s_supports_remove = false;
+
+    // CrossLoaderAllocatorHash requires that a particular null value exist, which represents an empty value slot
+    static bool IsNullValue(const TValue &value) { return value == NULL; }
     static TValue NullValue() { return NULL; }
-
-#ifndef DACCESS_COMPILE
-    static void SetUsedEntries(TValue* pStartOfValuesData, DWORD entriesInArrayTotal, DWORD usedEntries);
-    static bool AddToValuesInHeapMemory(OBJECTREF *pKeyValueStore, const TKey& key, const TValue& value);
-#endif //!DACCESS_COMPILE
-    static DWORD ComputeUsedEntries(OBJECTREF *pKeyValueStore, DWORD *pEntriesInArrayTotal);
-    template <class Visitor>
-    static bool VisitKeyValueStore(OBJECTREF *pLoaderAllocatorRef, OBJECTREF *pKeyValueStore, Visitor &visitor);
-    static TKey ReadKeyFromKeyValueStore(OBJECTREF *pKeyValueStore);
+    
+    static BOOL KeyEquals(const TKey &k1, const TKey &k2) { return k1 == k2; }
+    static BOOL ValueEquals(const TValue &v1, const TValue &v2) { return v1 == v2; }
+    static TCount Hash(const TKey &k) { return (TCount)(size_t)k; }
+    
+    static LoaderAllocator *GetLoaderAllocator(const TKey &k) { return k->GetLoaderAllocator(); }
 };
 
 template <class TKey_, class TValue_>
 class DefaultCrossLoaderAllocatorHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<TKey_, TValue_>
 {
 public:
-    typedef TKey_ TKey;
-    typedef TValue_ TValue;
-
-#ifndef DACCESS_COMPILE
-    static void DeleteValueInHeapMemory(OBJECTREF keyValueStore, const TValue& value);
-#endif //!DACCESS_COMPILE
+    static const bool s_supports_remove = true;
 };
 
-struct GCHeapHashDependentHashTrackerHashTraits : public DefaultGCHeapHashTraits<true>
+// Base class for a native object that depends on a LoaderAllocator's lifetime
+class LADependentNativeObject
 {
-    typedef LoaderAllocator* PtrTypeKey;
+protected:
+    LADependentNativeObject() = default;
 
-    static INT32 Hash(PtrTypeKey *pValue);
-    static INT32 Hash(PTRARRAYREF arr, INT32 index);
-    static bool DoesEntryMatchKey(PTRARRAYREF arr, INT32 index, PtrTypeKey *pKey);
-    static bool IsDeleted(PTRARRAYREF arr, INT32 index, GCHEAPHASHOBJECTREF gcHeap);
+public:
+    virtual ~LADependentNativeObject() = default;
+
+    DISABLE_COPY(LADependentNativeObject);
 };
 
-typedef GCHeapHash<GCHeapHashDependentHashTrackerHashTraits> GCHeapHashDependentHashTrackerHash;
-
-template<class TRAITS>
-struct KeyToValuesGCHeapHashTraits : public DefaultGCHeapHashTraits<true>
+// A handle to an LADependentNativeObject that is registered with the LoaderAllocator. The handle would be cleared when the
+// LoaderAllocator is collected. Appropriate locking must be used with this class and in the LoaderAllocator's code that clears
+// handles.
+class LADependentHandleToNativeObject
 {
-    template <class TKey>
-    static INT32 Hash(TKey *pValue);
-    static INT32 Hash(PTRARRAYREF arr, INT32 index);
+private:
+    LADependentNativeObject *m_dependentObject;
 
-    template<class TKey>
-    static bool DoesEntryMatchKey(PTRARRAYREF arr, INT32 index, TKey *pKey);
+public:
+    LADependentHandleToNativeObject(LADependentNativeObject *dependentObject) : m_dependentObject(dependentObject) {}
+    ~LADependentHandleToNativeObject() { delete m_dependentObject; }
+
+    // See notes about synchronization in Clear()
+    LADependentNativeObject *GetDependentObject() const { return m_dependentObject; }
+
+    void Clear()
+    {
+        _ASSERTE(m_dependentObject != nullptr);
+
+        // The callers of GetDependentObject() and Clear() must ensure that they cannot run concurrently, and that a
+        // GetDependentObject() following a Clear() sees a null dependent object in a thread-safe manner
+        delete m_dependentObject;
+        m_dependentObject = nullptr;
+    }
+
+    DISABLE_COPY(LADependentHandleToNativeObject);
 };
 
 // Hashtable of key to a list of values where the key may live in a different loader allocator
@@ -86,7 +101,16 @@ struct KeyToValuesGCHeapHashTraits : public DefaultGCHeapHashTraits<true>
 //
 // VisitValuesOfKey will visit all values that have the same key.
 //
+// IMPORTANT NOTE ABOUT SYNCHRONIZATION
+//
+// Any lock used to synchronize access to an instance of this data structure must also be
+// acquired in AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects() to ensure that
+// while visiting values, the LoaderAllocator of the value remains alive inside the lock.
+// Visited values must not be used outside the lock, as the LoaderAllocator of the value may
+// may not be alive outside the lock.
+//
 // IMPLEMENTATION DESIGN
+//
 // This data structure is a series of hashtables and lists.
 //
 // In general, this data structure builds a set of values associated with a key per
@@ -127,10 +151,246 @@ struct KeyToValuesGCHeapHashTraits : public DefaultGCHeapHashTraits<true>
 template <class TRAITS>
 class CrossLoaderAllocatorHash
 {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Types used by CrossLoaderAllocatorHash
+
 private:
     typedef typename TRAITS::TKey TKey;
     typedef typename TRAITS::TValue TValue;
-    typedef GCHeapHash<KeyToValuesGCHeapHashTraits<TRAITS>> KeyToValuesGCHeapHash;
+    typedef typename TRAITS::TCount TCount;
+
+    class KeyValueStoreOrLAHashKeyToTrackers
+    {
+    protected:
+        KeyValueStoreOrLAHashKeyToTrackers() = default;
+
+    public:
+        virtual ~KeyValueStoreOrLAHashKeyToTrackers() = default;
+
+        virtual bool IsLAHashKeyToTrackers() const { return false; }
+    };
+
+    class LAHashDependentHashTrackerOrTrackerSet
+    {
+    private:
+        const bool _isTrackerSet;
+
+    protected:
+        LAHashDependentHashTrackerOrTrackerSet(bool isTrackerSet) : _isTrackerSet(isTrackerSet) {}
+
+    public:
+        bool IsTrackerSet() const { return _isTrackerSet; }
+    };
+
+    class KeyValueStore : public KeyValueStoreOrLAHashKeyToTrackers
+    {
+    private:
+        const TCount _capacity;
+        const TKey _key;
+        TValue _values[0];
+
+    private:
+        KeyValueStore(TCount capacity, const TKey &key) : _capacity(capacity), _key(key) {}
+
+    public:
+        static KeyValueStore *Create(TCount capacity, const TKey &key);
+
+        TCount GetCapacity() const { return _capacity; }
+        TKey GetKey() const { return _key; }
+        TValue *GetValues() { return _values; }
+    };
+
+    class LAHashKeyToTrackers : public KeyValueStoreOrLAHashKeyToTrackers
+    {
+    public:
+        LAHashDependentHashTrackerOrTrackerSet *_trackerOrTrackerSet;
+
+        // _laLocalKeyValueStore holds an object that represents a Key value (which must always be valid for the lifetime of the
+        // CrossLoaderAllocatorHeapHash, and the values which must also be valid for that entire lifetime. When a value might
+        // have a shorter lifetime it is accessed through the _trackerOrTrackerSet variable, which allows access to hashtables which
+        // are associated with that remote loaderallocator through a dependent handle, so that lifetime can be managed.
+        KeyValueStore *_laLocalKeyValueStore;
+
+        LAHashKeyToTrackers(KeyValueStore *laLocalKeyValueStore)
+            : _trackerOrTrackerSet(NULL), _laLocalKeyValueStore(laLocalKeyValueStore)
+        {}
+
+        virtual ~LAHashKeyToTrackers() override;
+
+        virtual bool IsLAHashKeyToTrackers() const override { return true; }
+    };
+
+    class EMPTY_BASES_DECL KeyToValuesHashTraits : public DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *>
+    {
+    private:
+        typedef DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *> Base;
+
+    public:
+        typedef TCount count_t;
+        typedef TKey key_t;
+
+        static const bool s_supports_remove = TRAITS::s_supports_remove;
+        static const bool s_RemovePerEntryCleanupAction = true;
+
+        static KeyValueStoreOrLAHashKeyToTrackers *Deleted()
+        {
+            if (s_supports_remove)
+            {
+                return Base::Deleted();
+            }
+
+            UNREACHABLE();
+        }
+
+        static bool IsDeleted(KeyValueStoreOrLAHashKeyToTrackers *e) { return s_supports_remove && Base::IsDeleted(e); }
+        static void OnRemovePerEntryCleanupAction(KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry) { delete hashKeyEntry; }
+        static TKey GetKey(KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry);
+        static BOOL Equals(const TKey &k1, const TKey &k2) { return TRAITS::KeyEquals(k1, k2); }
+        static TCount Hash(const TKey &k) { return TRAITS::Hash(k); }
+
+    #ifndef DACCESS_COMPILE
+        static void SetUsedEntries(KeyValueStore *keyValueStore, TCount entriesInArrayTotal, TCount usedEntries);
+        static bool AddToValuesInHeapMemory(
+            KeyValueStore **pKeyValueStore,
+            NewHolder<KeyValueStore> &keyValueStoreHolder,
+            const TKey& key,
+            const TValue& value);
+    #endif // !DACCESS_COMPILE
+        static TCount ComputeUsedEntries(KeyValueStore *keyValueStore, TCount *pEntriesInArrayTotal);
+        template <class Visitor>
+        static bool VisitKeyValueStore(LoaderAllocator *loaderAllocator, KeyValueStore *keyValueStore, Visitor &visitor);
+    #ifndef DACCESS_COMPILE
+        static void DeleteValueInHeapMemory(KeyValueStore *keyValueStore, const TValue& value);
+    #endif // !DACCESS_COMPILE
+    };
+
+    typedef SHash<KeyToValuesHashTraits> KeyToValuesHash;
+
+    class LADependentKeyToValuesHash : public LADependentNativeObject
+    {
+    private:
+        KeyToValuesHash _keyToValuesHash;
+
+    public:
+        virtual ~LADependentKeyToValuesHash() override = default;
+
+        KeyToValuesHash *GetKeyToValuesHash() { return &_keyToValuesHash; }
+    };
+
+    class LAHashDependentHashTracker : public LAHashDependentHashTrackerOrTrackerSet
+    {
+    private:
+        LoaderAllocator *const _loaderAllocator;
+        LADependentHandleToNativeObject *const _dependentHandle;
+        UINT64 _refCount;
+
+    public:
+        LAHashDependentHashTracker(LoaderAllocator *loaderAllocator, LADependentKeyToValuesHash *dependentKeyValueStoreHash)
+            : LAHashDependentHashTrackerOrTrackerSet(false /* isTrackerSet */),
+            _loaderAllocator(loaderAllocator),
+            _dependentHandle(CreateDependentHandle(loaderAllocator, dependentKeyValueStoreHash)),
+            _refCount(1)
+        {}
+
+    private:
+        static LADependentHandleToNativeObject *CreateDependentHandle(
+            LoaderAllocator *loaderAllocator,
+            LADependentKeyToValuesHash *dependentKeyValueStoreHash);
+        ~LAHashDependentHashTracker(); // only accessible via DecRefCount()
+
+    public:
+        bool IsLoaderAllocatorLive() const { return _dependentHandle->GetDependentObject() != NULL; }
+
+        bool IsTrackerFor(LoaderAllocator *loaderAllocator) const
+        {
+            return loaderAllocator == _loaderAllocator && IsLoaderAllocatorLive();
+        }
+
+        KeyToValuesHash *GetDependentKeyToValuesHash() const;
+
+        // Be careful with this. This isn't safe to use unless something is keeping the LoaderAllocator live, or there is no
+        // intention to dereference this pointer.
+        LoaderAllocator *GetLoaderAllocatorUnsafe() const { return _loaderAllocator; }
+
+    #ifndef DACCESS_COMPILE
+        void IncRefCount()
+        {
+            _ASSERTE(_refCount != 0);
+            ++_refCount;
+        }
+
+        void DecRefCount()
+        {
+            _ASSERTE(_refCount != 0);
+            if (--_refCount == 0)
+            {
+                delete this;
+            }
+        }
+
+        static void StaticDecRefCount(LAHashDependentHashTracker *dependentTracker)
+        {
+            if (dependentTracker != NULL)
+            {
+                dependentTracker->DecRefCount();
+            }
+        }
+
+        using NewTrackerHolder = SpecializedWrapper<LAHashDependentHashTracker, StaticDecRefCount>;
+    #endif // !DACCESS_COMPILE
+    };
+
+    class EMPTY_BASES_DECL LAHashDependentHashTrackerHashTraits : public DefaultSHashTraits<LAHashDependentHashTracker *>
+    {
+    public:
+        typedef TCount count_t;
+        typedef LoaderAllocator *key_t;
+
+        static const bool s_supports_autoremove = true;
+        static const bool s_RemovePerEntryCleanupAction = true;
+
+        static bool ShouldDelete(LAHashDependentHashTracker *dependentTracker)
+        {
+        #ifndef DACCESS_COMPILE
+            // This is a tricky bit of logic used which detects freed loader allocators lazily
+            // and deletes them from the hash table while looking up or otherwise walking the hashtable
+            // for any purpose. OnRemovePerEntryCleanupAction() is invoked for removed elements to
+            // handle cleanup of the actual data.
+            return !dependentTracker->IsLoaderAllocatorLive();
+        #else
+            return false;
+        #endif
+        }
+
+        static void OnRemovePerEntryCleanupAction(LAHashDependentHashTracker *dependentTracker)
+        {
+        #ifndef DACCESS_COMPILE
+            // Dependent trackers may be stored in multiple hash tables and are ref-counted when added/removed from a hash
+            // table. The ref count decrement may also delete the tracker.
+            dependentTracker->DecRefCount();
+        #endif
+        }
+
+        static LoaderAllocator *GetKey(LAHashDependentHashTracker *tracker) { return tracker->GetLoaderAllocatorUnsafe(); }
+        static BOOL Equals(LoaderAllocator *la1, LoaderAllocator *la2) { return la1 == la2; }
+        static TCount Hash(LoaderAllocator *la) { return (TCount)(size_t)la; }
+    };
+
+    typedef SHash<LAHashDependentHashTrackerHashTraits> LAHashDependentHashTrackerHash;
+
+    class LAHashDependentHashTrackerSetWrapper : public LAHashDependentHashTrackerOrTrackerSet
+    {
+    private:
+        LAHashDependentHashTrackerHash _trackerSet;
+
+    public:
+        LAHashDependentHashTrackerSetWrapper() : LAHashDependentHashTrackerOrTrackerSet(true /* isTrackerSet */) {}
+
+        LAHashDependentHashTrackerHash *GetTrackerSet() { return &_trackerSet; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // CrossLoaderAllocatorHash members
 
 public:
 
@@ -164,32 +424,28 @@ public:
 
 private:
 #ifndef DACCESS_COMPILE
-    void EnsureManagedObjectsInitted();
-    LAHASHDEPENDENTHASHTRACKERREF GetDependentTrackerForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
-    GCHEAPHASHOBJECTREF GetKeyToValueCrossLAHashForHashkeyToTrackers(LAHASHKEYTOTRACKERSREF hashKeyToTrackersUnsafe, LoaderAllocator* pValueLoaderAllocator);
+    LAHashDependentHashTracker *GetDependentTrackerForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
+    KeyToValuesHash *GetKeyToValueCrossLAHashForHashkeyToTrackers(
+        LAHashKeyToTrackers *hashKeyToTrackers,
+        LoaderAllocator *pValueLoaderAllocator);
 #endif // !DACCESS_COMPILE
 
     template <class Visitor>
-    static bool VisitKeyValueStore(OBJECTREF *pLoaderAllocatorRef, OBJECTREF *pKeyValueStore, Visitor &visitor);
+    static bool VisitKeyValueStore(LoaderAllocator *loaderAllocator, KeyValueStore *keyValueStore, Visitor &visitor);
     template <class Visitor>
-    static bool VisitTracker(TKey key, LAHASHDEPENDENTHASHTRACKERREF trackerUnsafe, Visitor &visitor);
+    static bool VisitTracker(TKey key, LAHashDependentHashTracker *tracker, Visitor &visitor);
     template <class Visitor>
-    static bool VisitTrackerAllEntries(LAHASHDEPENDENTHASHTRACKERREF trackerUnsafe, Visitor &visitor);
+    static bool VisitTrackerAllEntries(LAHashDependentHashTracker *tracker, Visitor &visitor);
     template <class Visitor>
-    static bool VisitKeyToTrackerAllEntries(OBJECTREF hashKeyEntryUnsafe, Visitor &visitor);
-    static void DeleteEntryTracker(TKey key, LAHASHDEPENDENTHASHTRACKERREF trackerUnsafe);
+    static bool VisitKeyToTrackerAllLALocalEntries(KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry, Visitor &visitor);
+    static void DeleteEntryTracker(TKey key, LAHashDependentHashTracker *tracker);
 
 private:
     LoaderAllocator *m_pLoaderAllocator = 0;
-    OBJECTHANDLE m_loaderAllocatorToDependentTrackerHash = 0;
-    OBJECTHANDLE m_keyToDependentTrackersHash = 0;
-    OBJECTHANDLE m_globalDependentTrackerRootHandle = 0;
+    LAHashDependentHashTrackerHash m_loaderAllocatorToDependentTrackerHash;
+    KeyToValuesHash m_keyToDependentTrackersHash;
 };
 
-class CrossLoaderAllocatorHashSetup
-{
-public:
-    inline static void EnsureTypesLoaded();
-};
+#undef DISABLE_COPY
 
 #endif // CROSSLOADERALLOCATORHASH_H

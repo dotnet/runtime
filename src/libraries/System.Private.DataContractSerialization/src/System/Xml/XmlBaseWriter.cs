@@ -97,10 +97,7 @@ namespace System.Xml
                 _attributeValue = null;
                 _attributeLocalName = null;
                 _nodeWriter.Close();
-                if (_signingWriter != null)
-                {
-                    _signingWriter.Close();
-                }
+                _signingWriter?.Close();
             }
         }
 
@@ -110,20 +107,12 @@ namespace System.Xml
         }
 
         [DoesNotReturn]
-        protected void ThrowClosed()
+        protected static void ThrowClosed()
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlWriterClosed));
         }
 
-        private static BinHexEncoding BinHexEncoding
-        {
-            get
-            {
-                if (_binhexEncoding == null)
-                    _binhexEncoding = new BinHexEncoding();
-                return _binhexEncoding;
-            }
-        }
+        private static BinHexEncoding BinHexEncoding => _binhexEncoding ??= new BinHexEncoding();
 
         public override string? XmlLang
         {
@@ -300,7 +289,7 @@ namespace System.Xml
 
         public override void WriteStartAttribute(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartAttribute(ref prefix, (localName != null ? localName.Value : null)!, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartAttribute(ref prefix, localName?.Value!, namespaceUri?.Value, namespaceUri);
             if (!_isXmlnsAttribute)
             {
                 _writer.WriteStartAttribute(prefix, localName!);
@@ -442,7 +431,7 @@ namespace System.Xml
             {
                 text = string.Empty;
             }
-            else if (text.IndexOf("--", StringComparison.Ordinal) != -1 || (text.Length > 0 && text[text.Length - 1] == '-'))
+            else if (text.Contains("--") || text.StartsWith('-'))
             {
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlInvalidCommentChars, nameof(text)));
             }
@@ -476,8 +465,7 @@ namespace System.Xml
             if (_writeState == WriteState.Attribute)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteCData", WriteState.ToString())));
 
-            if (text == null)
-                text = string.Empty;
+            text ??= string.Empty;
 
             if (text.Length > 0)
             {
@@ -511,8 +499,7 @@ namespace System.Xml
             Element element = EnterScope();
             if (ns == null)
             {
-                if (prefix == null)
-                    prefix = string.Empty;
+                prefix ??= string.Empty;
 
                 ns = _nsMgr.LookupNamespace(prefix);
 
@@ -562,8 +549,7 @@ namespace System.Xml
             Element element = EnterScope();
             if (ns == null)
             {
-                if (prefix == null)
-                    prefix = string.Empty;
+                prefix ??= string.Empty;
 
                 ns = _nsMgr.LookupNamespace(prefix);
 
@@ -604,7 +590,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartElement(ref prefix, localName.Value, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartElement(ref prefix, localName.Value, namespaceUri?.Value, namespaceUri);
             _writer.WriteStartElement(prefix, localName);
         }
 
@@ -717,7 +703,7 @@ namespace System.Xml
             FlushElement();
         }
 
-        protected void EndComment()
+        protected static void EndComment()
         {
         }
 
@@ -756,32 +742,32 @@ namespace System.Xml
                 VerifyWhitespace(chars, offset, count);
         }
 
-        private void VerifyWhitespace(char ch)
+        private static void VerifyWhitespace(char ch)
         {
             if (!IsWhitespace(ch))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
-        private void VerifyWhitespace(string s)
+        private static void VerifyWhitespace(string s)
         {
             for (int i = 0; i < s.Length; i++)
                 if (!IsWhitespace(s[i]))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
-        private void VerifyWhitespace(char[] chars, int offset, int count)
+        private static void VerifyWhitespace(char[] chars, int offset, int count)
         {
             for (int i = 0; i < count; i++)
                 if (!IsWhitespace(chars[offset + i]))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
-        private bool IsWhitespace(char ch)
+        private static bool IsWhitespace(char ch)
         {
             return (ch == ' ' || ch == '\n' || ch == '\r' || ch == 't');
         }
 
-        protected void EndContent()
+        protected static void EndContent()
         {
         }
 
@@ -815,8 +801,10 @@ namespace System.Xml
             return _writer.WriteEndStartElementAsync(false);
         }
 
-        public override string? LookupPrefix(string ns!!)
+        public override string? LookupPrefix(string ns)
         {
+            ArgumentNullException.ThrowIfNull(ns);
+
             if (IsClosed)
                 ThrowClosed();
 
@@ -841,8 +829,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
             ArgumentException.ThrowIfNullOrEmpty(localName);
-            if (namespaceUri == null)
-                namespaceUri = string.Empty;
+            namespaceUri ??= string.Empty;
             string prefix = GetQualifiedNamePrefix(namespaceUri, null);
             if (prefix.Length != 0)
             {
@@ -859,8 +846,7 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(localName);
             if (localName.Value.Length == 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.InvalidLocalNameEmpty, nameof(localName)));
-            if (namespaceUri == null)
-                namespaceUri = XmlDictionaryString.Empty;
+            namespaceUri ??= XmlDictionaryString.Empty;
             string prefix = GetQualifiedNamePrefix(namespaceUri.Value, namespaceUri);
 
             FlushBase64();
@@ -965,14 +951,9 @@ namespace System.Xml
 
             ArgumentNullException.ThrowIfNull(whitespace);
 
-            for (int i = 0; i < whitespace.Length; ++i)
+            if (whitespace.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
             {
-                char c = whitespace[i];
-                if (c != ' ' &&
-                    c != '\t' &&
-                    c != '\n' &&
-                    c != '\r')
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace)));
             }
 
             WriteString(whitespace);
@@ -983,8 +964,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
 
-            if (value == null)
-                value = string.Empty;
+            value ??= string.Empty;
 
             if (value.Length > 0 || _inList)
             {
@@ -1062,8 +1042,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
 
-            if (value == null)
-                value = string.Empty;
+            value ??= string.Empty;
 
             if (value.Length > 0)
             {
@@ -1485,10 +1464,7 @@ namespace System.Xml
                 int totalByteCount = _trailByteCount + count;
                 int actualByteCount = totalByteCount - (totalByteCount % 3);
 
-                if (_trailBytes == null)
-                {
-                    _trailBytes = new byte[3];
-                }
+                _trailBytes ??= new byte[3];
 
                 if (actualByteCount >= 3)
                 {
@@ -1554,10 +1530,7 @@ namespace System.Xml
                 int totalByteCount = _trailByteCount + count;
                 int actualByteCount = totalByteCount - (totalByteCount % 3);
 
-                if (_trailBytes == null)
-                {
-                    _trailBytes = new byte[3];
-                }
+                _trailBytes ??= new byte[3];
 
                 if (actualByteCount >= 3)
                 {
@@ -1612,8 +1585,7 @@ namespace System.Xml
             if (Signing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlCanonicalizationStarted));
             FlushElement();
-            if (_signingWriter == null)
-                _signingWriter = CreateSigningNodeWriter();
+            _signingWriter ??= CreateSigningNodeWriter();
             _signingWriter.SetOutput(_writer, stream, includeComments, inclusivePrefixes);
             _writer = _signingWriter;
             SignScope(_signingWriter.CanonicalWriter);
@@ -1724,10 +1696,6 @@ namespace System.Xml
             if (_writeState == WriteState.Attribute)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteStartElement", WriteState.ToString())));
             AutoComplete(WriteState.Content);
-        }
-
-        protected void EndArray()
-        {
         }
 
         private string GeneratePrefix(string ns, XmlDictionaryString? xNs)

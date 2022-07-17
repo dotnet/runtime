@@ -3,8 +3,11 @@
 
 using System;
 using UnsafeCSharp;
+using Xunit;
 
-internal class TestApp
+namespace Test_unsafe_3
+{
+public class TestApp
 {
     private static unsafe long test_3(B* pb)
     {
@@ -279,7 +282,8 @@ internal class TestApp
         if (pb + 1 > pb) return 100;
         throw new Exception();
     }
-    private static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);
         AA.init_all(0);
@@ -684,4 +688,5 @@ internal class TestApp
         Console.WriteLine("All tests passed.");
         return 100;
     }
+}
 }

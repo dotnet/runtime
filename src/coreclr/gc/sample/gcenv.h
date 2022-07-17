@@ -9,7 +9,7 @@
 #undef BUILD_AS_STANDALONE
 #endif // BUILD_AS_STANDALONE
 
-#define FEATURE_REDHAWK
+#define FEATURE_NATIVEAOT
 
 #if defined(_DEBUG)
 #ifndef _DEBUG_IMPL

@@ -40,7 +40,7 @@ namespace System.Drawing {
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object to the given destination type using the context.</para>
         /// </devdoc>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) {
+        public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type? destinationType) {
             if (destinationType == typeof(InstanceDescriptor)) {
                 return true;
             }
@@ -66,9 +66,7 @@ namespace System.Drawing {
 
                     // Parse 4 integer values.
                     //
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
@@ -109,9 +107,7 @@ namespace System.Drawing {
                 if (destinationType == typeof(string)) {
                     Rectangle rect = (Rectangle)value;
 
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                     string[] args = new string[4];

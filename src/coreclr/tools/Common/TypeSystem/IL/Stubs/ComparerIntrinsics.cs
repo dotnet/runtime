@@ -113,11 +113,9 @@ namespace Internal.IL.Stubs
                     // We can't tell at compile time either.
                     return null;
                 }
-                else if (ImplementsInterfaceOfSelf(nullableType, interfaceName))
-                {
-                    return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
-                        .MakeInstantiatedType(nullableType);
-                }
+
+                return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                    .MakeInstantiatedType(nullableType);
             }
             else if (type.IsEnum)
             {

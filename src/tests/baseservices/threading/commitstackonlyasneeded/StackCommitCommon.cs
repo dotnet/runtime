@@ -236,7 +236,7 @@ namespace StackCommitTest
 
         public static void Run(Action action)
         {
-            //We need to allocate the object inside of a seperate method to ensure that
+            //We need to allocate the object inside of a separate method to ensure that
             //the reference will be eliminated before GC.Collect is called. Technically
             //even across methods we probably don't make any formal guarantees but this
             //is sufficient for current runtime implementations.

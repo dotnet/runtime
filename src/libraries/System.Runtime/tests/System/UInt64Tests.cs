@@ -89,7 +89,7 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "", "R" })
                 {
                     yield return new object[] { (ulong)0, defaultSpecifier, defaultFormat, "0" };
                     yield return new object[] { (ulong)4567, defaultSpecifier, defaultFormat, "4567" };
@@ -145,7 +145,7 @@ namespace System.Tests
             string lowerExpected = expected.ToLowerInvariant();
 
             bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() is "G" or "R")
             {
                 if (isDefaultProvider)
                 {
@@ -169,10 +169,6 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             ulong i = 123;
-            Assert.Throws<FormatException>(() => i.ToString("r")); // Invalid format
-            Assert.Throws<FormatException>(() => i.ToString("r", null)); // Invalid format
-            Assert.Throws<FormatException>(() => i.ToString("R")); // Invalid format
-            Assert.Throws<FormatException>(() => i.ToString("R", null)); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y", null)); // Invalid format
         }

@@ -22,11 +22,6 @@ namespace System.Runtime.InteropServices
     [ReflectionBlocked]
     public static class InteropExtensions
     {
-        public static int GetElementSize(this Array array)
-        {
-            return array.EETypePtr.ComponentSize;
-        }
-
         internal static bool MightBeBlittable(this EETypePtr eeType)
         {
             //
@@ -43,7 +38,7 @@ namespace System.Runtime.InteropServices
 
         public static bool IsBlittable(this object obj)
         {
-            return obj.EETypePtr.MightBeBlittable();
+            return obj.GetEETypePtr().MightBeBlittable();
         }
 
         public static bool IsGenericType(this RuntimeTypeHandle handle)
@@ -100,7 +95,7 @@ namespace System.Runtime.InteropServices
 
         public static RuntimeTypeHandle GetTypeHandle(this object target)
         {
-            return new RuntimeTypeHandle(target.EETypePtr);
+            return new RuntimeTypeHandle(target.GetEETypePtr());
         }
     }
 }

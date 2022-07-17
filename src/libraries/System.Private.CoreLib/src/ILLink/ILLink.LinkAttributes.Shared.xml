@@ -130,7 +130,7 @@
       <!--
         Note that removing this attribute can change runtime behavior. For example,
         System.Xml.Serialization will behave differently if a ctor is Obsolete.
-        This is low enough risk on when 'System.AggressiveAttributeTrimming' is enabled to justify 
+        This is low enough risk on when 'System.AggressiveAttributeTrimming' is enabled to justify
         removing the attribute for size savings. The app developer can override this setting
         to keep all ObsoleteAttributes.
         -->
@@ -210,6 +210,9 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.Versioning.ObsoletedInOSPlatformAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -265,7 +268,13 @@
     <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.InteropServices.GeneratedDllImportAttribute">
+    <type fullname="System.Runtime.InteropServices.LibraryImportAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.CodeDom.Compiler.GeneratedCodeAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
 

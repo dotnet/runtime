@@ -8,6 +8,9 @@ else(CLR_CMAKE_HOST_WIN32)
     include(configure.cmake)
 endif(CLR_CMAKE_HOST_WIN32)
 
+#Required to expose symbols for global symbol discovery.
+set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
+
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
@@ -25,6 +28,8 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 else(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun ${CMAKE_DL_LIBS})
+    # Required to expose symbols for global symbol discovery
+    target_link_libraries(corerun -rdynamic)
 
     # Android implements pthread natively
     if(NOT CLR_CMAKE_TARGET_ANDROID)

@@ -57,7 +57,7 @@ namespace Microsoft.Win32
 {
     public sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
-        private void ClosePerfDataKey()
+        private static void ClosePerfDataKey()
         {
             // System keys should never be closed.  However, we want to call RegCloseKey
             // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources
@@ -111,7 +111,10 @@ namespace Microsoft.Win32
                 }
                 return key;
             }
-            else if (ret != 0) // syscall failed, ret is an error code.
+
+            result.Dispose();
+
+            if (ret != 0) // syscall failed, ret is an error code.
             {
                 Win32Error(ret, _keyName + "\\" + subkey);  // Access denied?
             }
@@ -219,27 +222,29 @@ namespace Microsoft.Win32
             // connect to the specified remote registry
             int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out SafeRegistryHandle foreignHKey);
 
-            if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
+            if (ret == 0 && !foreignHKey.IsInvalid)
             {
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Arg_DllInitFailure);
+                RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
+                key._checkMode = RegistryKeyPermissionCheck.Default;
+                key._keyName = s_hkeyNames[index];
+                return key;
             }
+
+            foreignHKey.Dispose();
 
             if (ret != 0)
             {
+                if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
+                {
+                    // return value indicates an error occurred
+                    throw new ArgumentException(SR.Arg_DllInitFailure);
+                }
+
                 Win32ErrorStatic(ret, null);
             }
 
-            if (foreignHKey.IsInvalid)
-            {
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
-            }
-
-            RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
-            key._checkMode = RegistryKeyPermissionCheck.Default;
-            key._keyName = s_hkeyNames[index];
-            return key;
+            // return value indicates an error occurred
+            throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
         }
 
         private RegistryKey? InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
@@ -252,6 +257,8 @@ namespace Microsoft.Win32
                 key._checkMode = permissionCheck;
                 return key;
             }
+
+            result.Dispose();
 
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
             {
@@ -275,6 +282,8 @@ namespace Microsoft.Win32
                 return key;
             }
 
+            result.Dispose();
+
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
             {
                 // We need to throw SecurityException here for compatibility reasons,
@@ -295,6 +304,8 @@ namespace Microsoft.Win32
                 key._keyName = _keyName + "\\" + name;
                 return key;
             }
+
+            result.Dispose();
 
             return null;
         }
@@ -339,15 +350,13 @@ namespace Microsoft.Win32
                     GetRegistryKeyAccess(IsWritable()) | (int)_regView,
                     out SafeRegistryHandle result);
 
-                if (ret == 0 && !result.IsInvalid)
+                if (ret != 0 || result.IsInvalid)
                 {
-                    return result;
-                }
-                else
-                {
+                    result.Dispose();
                     Win32Error(ret, null);
-                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
                 }
+
+                return result;
             }
         }
 

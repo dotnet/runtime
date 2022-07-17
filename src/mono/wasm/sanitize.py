@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import json
 import os
 import shutil
@@ -21,7 +22,7 @@ def remove(*paths):
 
 
 def rewrite_package_json(path):
-    package = open(path, "rb+")
+    package = open(path, "r+")
     settings = json.load(package)
     settings["devDependencies"] = {}
     package.seek(0)
@@ -38,7 +39,7 @@ upgrade = True
 
 # Add the local node bin directory to the path so that
 # npm can find it when doing the updating or pruning
-os.environ["PATH"] += os.pathsep + os.path.join(node_paths[0], "bin")
+os.environ["PATH"] = os.path.join(node_paths[0], "bin") + os.pathsep + os.environ["PATH"]
 
 def update_npm(path):
     try:
@@ -64,9 +65,19 @@ def prune():
         print(error)
 
 
-os.chdir(emscripten_path)
-rewrite_package_json("package.json")
+if upgrade:
+    for path in node_paths:
+        update_npm(path)
 
+
+os.chdir(emscripten_path)
+try:
+    os.system("npm audit fix")
+except OSError as error:
+    print("npm audit fix failed")
+    print(error)
+
+rewrite_package_json("package.json")
 
 remove(
     "tests",
@@ -84,8 +95,6 @@ remove(
 
 prune()
 
-for path in node_paths:
-    if upgrade:
-        update_npm(path)
-    else:
+if not upgrade:
+    for path in node_paths:
         remove_npm(path)

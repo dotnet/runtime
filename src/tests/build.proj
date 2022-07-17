@@ -107,10 +107,11 @@
     <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
   </PropertyGroup>
 
-
   <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
-      <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
+      <AllTestScripts Condition="'@(TestDirectories)' != ''" Include="%(TestDirectories.Identity)\**\*.sh" />
+      <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.RootDir)%(MergedRunnableTestPaths.Directory)*.dll" />
+      <AllTestScripts Condition="'@(OutOfProcessTestPaths)' != ''" Include="%(OutOfProcessTestPaths.RootDir)%(OutOfProcessTestPaths.Directory)*.sh" />
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
 
@@ -122,8 +123,8 @@
       <Output TaskParameter="Filtered" ItemName="TestDirs" />
     </RemoveDuplicates>
     <ItemGroup>
-      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
-      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
+      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
+      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/System.Net.Quic.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
     </ItemGroup>
@@ -391,9 +392,14 @@
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
-      <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
+      <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
+      <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
-      <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
+      <NoMonoAotMarkerPaths Include="$(XunitTestBinBase)\**\*.NoMonoAot" />
+      <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" Condition="'@(NoMonoAotMarkerPaths)' != ''" />
     </ItemGroup>
     <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
@@ -502,7 +508,13 @@
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
       AfterTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
+
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="EmitTestExclusionList"
+      Properties="XunitTestBinBase=$(XunitTestBinBase)" />
+  </Target>
 
   <Target Name="BuildTestWrappers"
       DependsOnTargets="CreateAllWrappers"
@@ -583,5 +595,17 @@
     <MSBuild Projects="$(CoreCLRBuildIntegrationDir)/BuildFrameworkNativeObjects.proj"
       Targets="CreateLib"
       Properties="@(CreateLibProperty)" />
+  </Target>
+
+  <Target Name="EmitTestExclusionList" DependsOnTargets="GetFilteredExcludeList">
+    <PropertyGroup>
+      <TestExclusionListPath>$(CORE_ROOT)\TestExclusionList.txt</TestExclusionListPath>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+        File="$(TestExclusionListPath)"
+        Lines="@(FilteredExcludeList)"
+        Overwrite="true"
+        Encoding="Unicode" />
   </Target>
 </Project>

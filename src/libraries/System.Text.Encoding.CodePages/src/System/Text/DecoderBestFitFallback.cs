@@ -72,8 +72,7 @@ namespace System.Text
                 lock (InternalSyncObject)
                 {
                     // Double check before we do it again.
-                    if (_oFallback.arrayBestFit == null)
-                        _oFallback.arrayBestFit = fallback.encoding.GetBestFitBytesToUnicodeData();
+                    _oFallback.arrayBestFit ??= fallback.encoding.GetBestFitBytesToUnicodeData();
                 }
             }
         }
@@ -142,7 +141,7 @@ namespace System.Text
         }
 
         // This version just counts the fallback and doesn't actually copy anything.
-        internal unsafe int InternalFallback(byte[] bytes, byte* pBytes)
+        internal static unsafe int InternalFallback(byte[] bytes, byte* pBytes)
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
         {

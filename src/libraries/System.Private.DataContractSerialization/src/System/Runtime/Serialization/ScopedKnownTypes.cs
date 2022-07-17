@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Xml;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-
     internal struct ScopedKnownTypes
     {
         internal DataContractDictionary[] dataContractDictionaries;
@@ -14,9 +14,14 @@ namespace System.Runtime.Serialization
         internal void Push(DataContractDictionary dataContractDictionary)
         {
             if (dataContractDictionaries == null)
+            {
                 dataContractDictionaries = new DataContractDictionary[4];
+            }
             else if (_count == dataContractDictionaries.Length)
+            {
                 Array.Resize<DataContractDictionary>(ref dataContractDictionaries, dataContractDictionaries.Length * 2);
+            }
+
             dataContractDictionaries[_count++] = dataContractDictionary;
         }
 

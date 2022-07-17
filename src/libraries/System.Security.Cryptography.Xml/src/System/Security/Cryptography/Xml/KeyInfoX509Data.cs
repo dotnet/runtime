@@ -39,8 +39,13 @@ namespace System.Security.Cryptography.Xml
             AddCertificate(cert);
         }
 
-        public KeyInfoX509Data(X509Certificate cert!!, X509IncludeOption includeOption)
+        public KeyInfoX509Data(X509Certificate cert, X509IncludeOption includeOption)
         {
+            if (cert is null)
+            {
+                throw new ArgumentNullException(nameof(cert));
+            }
+
             X509Certificate2 certificate = new X509Certificate2(cert);
             X509ChainElementCollection elements;
             X509Chain chain;
@@ -97,10 +102,14 @@ namespace System.Security.Cryptography.Xml
             get { return _certificates; }
         }
 
-        public void AddCertificate(X509Certificate certificate!!)
+        public void AddCertificate(X509Certificate certificate)
         {
-            if (_certificates == null)
-                _certificates = new ArrayList();
+            if (certificate is null)
+            {
+                throw new ArgumentNullException(nameof(certificate));
+            }
+
+            _certificates ??= new ArrayList();
 
             X509Certificate2 x509 = new X509Certificate2(certificate);
             _certificates.Add(x509);
@@ -113,15 +122,13 @@ namespace System.Security.Cryptography.Xml
 
         public void AddSubjectKeyId(byte[] subjectKeyId)
         {
-            if (_subjectKeyIds == null)
-                _subjectKeyIds = new ArrayList();
+            _subjectKeyIds ??= new ArrayList();
             _subjectKeyIds.Add(subjectKeyId);
         }
 
         public void AddSubjectKeyId(string subjectKeyId)
         {
-            if (_subjectKeyIds == null)
-                _subjectKeyIds = new ArrayList();
+            _subjectKeyIds ??= new ArrayList();
             _subjectKeyIds.Add(Utils.DecodeHexString(subjectKeyId));
         }
 
@@ -132,8 +139,7 @@ namespace System.Security.Cryptography.Xml
 
         public void AddSubjectName(string subjectName)
         {
-            if (_subjectNames == null)
-                _subjectNames = new ArrayList();
+            _subjectNames ??= new ArrayList();
             _subjectNames.Add(subjectName);
         }
 
@@ -154,16 +160,14 @@ namespace System.Security.Cryptography.Xml
             if (!BigInteger.TryParse(serialNumber, NumberStyles.AllowHexSpecifier, NumberFormatInfo.CurrentInfo, out h))
                 throw new ArgumentException(SR.Cryptography_Xml_InvalidX509IssuerSerialNumber, nameof(serialNumber));
 
-            if (_issuerSerials == null)
-                _issuerSerials = new ArrayList();
+            _issuerSerials ??= new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, h.ToString()));
         }
 
         // When we load an X509Data from Xml, we know the serial number is in decimal representation.
         internal void InternalAddIssuerSerial(string issuerName, string serialNumber)
         {
-            if (_issuerSerials == null)
-                _issuerSerials = new ArrayList();
+            _issuerSerials ??= new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, serialNumber));
         }
 
@@ -180,10 +184,10 @@ namespace System.Security.Cryptography.Xml
         private void Clear()
         {
             _CRL = null;
-            if (_subjectKeyIds != null) _subjectKeyIds.Clear();
-            if (_subjectNames != null) _subjectNames.Clear();
-            if (_issuerSerials != null) _issuerSerials.Clear();
-            if (_certificates != null) _certificates.Clear();
+            _subjectKeyIds?.Clear();
+            _subjectNames?.Clear();
+            _issuerSerials?.Clear();
+            _certificates?.Clear();
         }
 
         //
@@ -256,8 +260,13 @@ namespace System.Security.Cryptography.Xml
             return x509DataElement;
         }
 
-        public override void LoadXml(XmlElement element!!)
+        public override void LoadXml(XmlElement element)
         {
+            if (element is null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 

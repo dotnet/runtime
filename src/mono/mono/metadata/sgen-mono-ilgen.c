@@ -32,7 +32,6 @@
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
-#include "metadata/w32handle.h"
 #include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -180,7 +179,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 #ifdef MANAGED_ALLOCATION
 	int p_var, size_var, real_size_var, thread_var G_GNUC_UNUSED;
 	int tlab_next_addr_var, new_next_var;
-	guint32 fastpath_branch, max_size_branch, no_oom_branch;
+	guint32 fastpath_branch, max_size_branch = 0, no_oom_branch;
 
 	if (slowpath) {
 		switch (atype) {
@@ -225,7 +224,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, m_class_offsetof_instance_size ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_instance_size ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
 		mono_mb_emit_no_nullcheck (mb);
@@ -264,7 +263,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, m_class_offsetof_sizes ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_sizes ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
@@ -464,11 +463,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_ldloc (mb, p_var);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, max_length));
 		mono_mb_emit_ldarg (mb, 1);
-#ifdef MONO_BIG_ARRAYS
-		mono_mb_emit_byte (mb, CEE_STIND_I);
-#else
 		mono_mb_emit_byte (mb, CEE_STIND_I4);
-#endif
 	} else 	if (atype == ATYPE_STRING) {
 		/* need to set length and clear the last char */
 		/* s->length = len; */

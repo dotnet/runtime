@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #else
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
@@ -340,10 +340,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedSet<T> WithComparer(IComparer<T>? comparer)
         {
-            if (comparer == null)
-            {
-                comparer = Comparer<T>.Default;
-            }
+            comparer ??= Comparer<T>.Default;
 
             if (comparer == _comparer)
             {

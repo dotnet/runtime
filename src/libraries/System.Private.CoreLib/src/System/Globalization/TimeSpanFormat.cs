@@ -39,7 +39,9 @@ namespace System.Globalization
                 throw new FormatException(SR.Format_InvalidString);
             }
 
-            return StringBuilderCache.GetStringAndRelease(FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider), result: null));
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider), ref vsb);
+            return vsb.ToString();
         }
 
         /// <summary>Main method called from TimeSpan.TryFormat.</summary>
@@ -67,19 +69,9 @@ namespace System.Globalization
                 }
             }
 
-            StringBuilder sb = FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider), result: null);
-
-            if (sb.Length <= destination.Length)
-            {
-                sb.CopyTo(0, destination, sb.Length);
-                charsWritten = sb.Length;
-                StringBuilderCache.Release(sb);
-                return true;
-            }
-
-            charsWritten = 0;
-            StringBuilderCache.Release(sb);
-            return false;
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider), ref vsb);
+            return vsb.TryCopyTo(destination, out charsWritten);
         }
 
         internal static string FormatC(TimeSpan value)
@@ -308,16 +300,9 @@ namespace System.Globalization
         }
 
         /// <summary>Format the TimeSpan instance using the specified format.</summary>
-        private static StringBuilder FormatCustomized(TimeSpan value, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, StringBuilder? result = null)
+        private static void FormatCustomized(TimeSpan value, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, ref ValueStringBuilder result)
         {
             Debug.Assert(dtfi != null);
-
-            bool resultBuilderIsPooled = false;
-            if (result == null)
-            {
-                result = StringBuilderCache.Acquire();
-                resultBuilderIsPooled = true;
-            }
 
             int day = (int)(value.Ticks / TimeSpan.TicksPerDay);
             long time = value.Ticks % TimeSpan.TicksPerDay;
@@ -348,7 +333,7 @@ namespace System.Globalization
                         {
                             goto default; // to release the builder and throw
                         }
-                        DateTimeFormat.FormatDigits(result, hours, tokenLen);
+                        DateTimeFormat.FormatDigits(ref result, hours, tokenLen);
                         break;
                     case 'm':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
@@ -356,7 +341,7 @@ namespace System.Globalization
                         {
                             goto default; // to release the builder and throw
                         }
-                        DateTimeFormat.FormatDigits(result, minutes, tokenLen);
+                        DateTimeFormat.FormatDigits(ref result, minutes, tokenLen);
                         break;
                     case 's':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
@@ -364,7 +349,7 @@ namespace System.Globalization
                         {
                             goto default; // to release the builder and throw
                         }
-                        DateTimeFormat.FormatDigits(result, seconds, tokenLen);
+                        DateTimeFormat.FormatDigits(ref result, seconds, tokenLen);
                         break;
                     case 'f':
                         //
@@ -421,11 +406,11 @@ namespace System.Globalization
                             goto default; // to release the builder and throw
                         }
 
-                        DateTimeFormat.FormatDigits(result, day, tokenLen, true);
+                        DateTimeFormat.FormatDigits(ref result, day, tokenLen, true);
                         break;
                     case '\'':
                     case '\"':
-                        tokenLen = DateTimeFormat.ParseQuoteString(format, i, result);
+                        tokenLen = DateTimeFormat.ParseQuoteString(format, i, ref result);
                         break;
                     case '%':
                         // Optional format character.
@@ -437,8 +422,7 @@ namespace System.Globalization
                         if (nextChar >= 0 && nextChar != (int)'%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(value, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, result);
-                            Debug.Assert(ReferenceEquals(origStringBuilder, result));
+                            FormatCustomized(value, new ReadOnlySpan<char>(in nextCharChar), dtfi, ref result);
                             tokenLen = 2;
                         }
                         else
@@ -470,15 +454,10 @@ namespace System.Globalization
                         break;
                     default:
                         // Invalid format string
-                        if (resultBuilderIsPooled)
-                        {
-                            StringBuilderCache.Release(result);
-                        }
                         throw new FormatException(SR.Format_InvalidString);
                 }
                 i += tokenLen;
             }
-            return result;
         }
 
         internal struct FormatLiterals
@@ -532,7 +511,7 @@ namespace System.Globalization
                     _literals[i] = string.Empty;
                 }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
+                var sb = new ValueStringBuilder(stackalloc char[256]);
                 bool inQuote = false;
                 char quote = '\'';
                 int field = 0;
@@ -546,17 +525,10 @@ namespace System.Globalization
                             if (inQuote && (quote == format[i]))
                             {
                                 /* we were in a quote and found a matching exit quote, so we are outside a quote now */
-                                if (field >= 0 && field <= 5)
-                                {
-                                    _literals[field] = sb.ToString();
-                                    sb.Length = 0;
-                                    inQuote = false;
-                                }
-                                else
-                                {
-                                    Debug.Fail($"Unexpected field value: {field}");
-                                    return; // how did we get here?
-                                }
+                                Debug.Assert(field >= 0 && field <= 5);
+                                _literals[field] = sb.AsSpan().ToString();
+                                sb.Length = 0;
+                                inQuote = false;
                             }
                             else if (!inQuote)
                             {
@@ -626,6 +598,8 @@ namespace System.Globalization
                     }
                 }
 
+                sb.Dispose();
+
                 Debug.Assert(field == 5);
                 AppCompatLiteral = MinuteSecondSep + SecondFractionSep;
 
@@ -651,7 +625,6 @@ namespace System.Globalization
                     if (ss < 1 || ss > 2) ss = 2;
                     if (ff < 1 || ff > 7) ff = 7;
                 }
-                StringBuilderCache.Release(sb);
             }
         }
     }

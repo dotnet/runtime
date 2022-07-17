@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates
                     rdnReaders.Add(x500NameSequenceReader.ReadSetOf(skipSortOrderValidation: true));
                 }
 
-                // We need to allocate a StringBuilder to hold the data as we're building it, and there's the usual
+                // We need to use a ValueStringBuilder to hold the data as we're building it, and there's the usual
                 // arbitrary process of choosing a number that's "big enough" to minimize reallocations without wasting
                 // too much space in the average case.
                 //
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // Throw in some "maybe-I-need-to-quote-this" quotes, and a couple of extra/extra-long O/OU values
                 // and round that up to the next programmer number, and you get that 512 should avoid reallocations
                 // in all but the most dire of cases.
-                StringBuilder decodedName = new StringBuilder(512);
+                ValueStringBuilder decodedName = new ValueStringBuilder(stackalloc char[512]);
                 int entryCount = rdnReaders.Count;
                 bool printSpacing = false;
 
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (printOid)
                         {
-                            AppendOid(decodedName, oid);
+                            AppendOid(ref decodedName, oid);
                         }
 
                         bool quote = quoteIfNeeded && NeedsQuoting(attributeValue);
@@ -135,7 +135,9 @@ namespace System.Security.Cryptography.X509Certificates
                     decodedName.Append(dnSeparator);
                 }
 
-                return decodedName.ToString();
+                string name = decodedName.ToString();
+                decodedName.Dispose();
+                return name;
             }
             catch (AsnContentException e)
             {

@@ -21,10 +21,7 @@ namespace System.Text.Json.Nodes
         /// </param>
         public void Add(JsonNode? item)
         {
-            if (item != null)
-            {
-                item.AssignParent(this);
-            }
+            item?.AssignParent(this);
 
             List.Add(item);
         }
@@ -153,7 +150,7 @@ namespace System.Text.Json.Nodes
 
         #endregion
 
-        private void DetachParent(JsonNode? item)
+        private static void DetachParent(JsonNode? item)
         {
             if (item != null)
             {

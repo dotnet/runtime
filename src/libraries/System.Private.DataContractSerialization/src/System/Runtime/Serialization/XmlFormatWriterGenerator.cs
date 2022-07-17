@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
             private int _childElementIndex;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
+            private static XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
             {
                 return new ReflectionXmlFormatWriter().ReflectionWriteClass;
             }
@@ -98,9 +98,9 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private XmlFormatCollectionWriterDelegate CreateReflectionXmlFormatCollectionWriterDelegate()
+            private static XmlFormatCollectionWriterDelegate CreateReflectionXmlFormatCollectionWriterDelegate()
             {
-                return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
+                return ReflectionXmlFormatWriter.ReflectionWriteCollection;
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -302,8 +302,8 @@ namespace System.Runtime.Serialization
                             _ilg.LoadArrayElement(_childElementNamespacesLocal!, i + _childElementIndex);
                             _ilg.Call(methodInfo: XmlFormatGeneratorStatics.WriteNamespaceDeclMethod);
                         }
-                        if (memberValue == null)
-                            memberValue = LoadMemberValue(member);
+
+                        memberValue ??= LoadMemberValue(member);
                         WriteValue(memberValue, writeXsiType);
                         WriteEndElement();
                     }
@@ -431,10 +431,8 @@ namespace System.Runtime.Serialization
                     {
                         if (enumeratorType.IsInterface)
                         {
-                            if (moveNextMethod == null)
-                                moveNextMethod = XmlFormatGeneratorStatics.MoveNextMethod;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = XmlFormatGeneratorStatics.GetCurrentMethod;
+                            moveNextMethod ??= XmlFormatGeneratorStatics.MoveNextMethod;
+                            getCurrentMethod ??= XmlFormatGeneratorStatics.GetCurrentMethod;
                         }
                         else
                         {
@@ -454,10 +452,9 @@ namespace System.Runtime.Serialization
                                     }
                                 }
                             }
-                            if (moveNextMethod == null)
-                                moveNextMethod = CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
+
+                            moveNextMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
+                            getCurrentMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
                         }
                     }
                     Type elementType = getCurrentMethod.ReturnType;
@@ -713,7 +710,7 @@ namespace System.Runtime.Serialization
                 return memberValue;
             }
 
-            private bool NeedsPrefix(Type type, XmlDictionaryString ns)
+            private static bool NeedsPrefix(Type type, XmlDictionaryString ns)
             {
                 return type == Globals.TypeOfXmlQualifiedName && (ns != null && ns.Value != null && ns.Value.Length > 0);
             }
@@ -743,7 +740,7 @@ namespace System.Runtime.Serialization
                 _ilg.Call(_xmlWriterArg, XmlFormatGeneratorStatics.WriteEndElementMethod);
             }
 
-            private bool CheckIfMemberHasConflict(DataMember member, ClassDataContract classContract, ClassDataContract derivedMostClassContract)
+            private static bool CheckIfMemberHasConflict(DataMember member, ClassDataContract classContract, ClassDataContract derivedMostClassContract)
             {
                 // Check for conflict with base type members
                 if (CheckIfConflictingMembersHaveDifferentTypes(member))
@@ -770,7 +767,7 @@ namespace System.Runtime.Serialization
                 return false;
             }
 
-            private bool CheckIfConflictingMembersHaveDifferentTypes(DataMember member)
+            private static bool CheckIfConflictingMembersHaveDifferentTypes(DataMember member)
             {
                 while (member.ConflictingMember != null)
                 {

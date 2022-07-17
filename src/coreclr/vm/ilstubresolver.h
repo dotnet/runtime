@@ -32,14 +32,13 @@ public:
 
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
-    int GetStringLiteralLength(mdToken metaTok);
+    STRINGREF GetStringLiteral(mdToken metaTok);
     void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
     void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
 
     static LPCUTF8 GetStubClassName(MethodDesc* pMD);
-    LPCUTF8 GetStubMethodName();
 
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pStubMD; }
 
@@ -68,34 +67,11 @@ public:
     void SetJitFlags(CORJIT_FLAGS jitFlags);
     CORJIT_FLAGS GetJitFlags();
 
+    // This is only set for StructMarshal interop stubs.
+    // See callsites for more details.
     void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
 
     static void StubGenFailed(ILStubResolver* pResolver);
-
-    enum ILStubType
-    {
-        Unassigned = 0,
-        CLRToNativeInteropStub,
-        CLRToCOMInteropStub,
-        NativeToCLRInteropStub,
-        COMToCLRInteropStub,
-        StructMarshalInteropStub,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-        ArrayOpStub,
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
-        MulticastDelegateStub,
-#endif
-        WrapperDelegateStub,
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-        UnboxingILStub,
-        InstantiatingStub,
-#endif
-        TailCallStoreArgsStub,
-        TailCallCallTargetStub,
-    };
-
-    ILStubType GetStubType();
 
 protected:
 
@@ -106,7 +82,6 @@ protected:
     };
 
     void ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState);
-    void SetStubType(ILStubType stubType);
     bool UseLoaderHeap();
 
     //
@@ -125,7 +100,6 @@ protected:
 
     PTR_MethodDesc          m_pStubMD;
     PTR_MethodDesc          m_pStubTargetMD;
-    ILStubType              m_type;
     CORJIT_FLAGS            m_jitFlags;
     PTR_LoaderHeap          m_loaderHeap;
 };

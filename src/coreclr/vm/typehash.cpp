@@ -16,11 +16,6 @@
 #include "typekey.h"
 #include "dacenumerablehash.inl"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #ifndef DACCESS_COMPILE
 
 // ============================================================================
@@ -168,7 +163,7 @@ static DWORD HashPossiblyInstantiatedType(mdTypeDef token, Instantiation inst)
         }
     }
 
-    return dwHash;
+    return (DWORD)dwHash;
 }
 
 // Calculate hash value for a function pointer type
@@ -187,7 +182,7 @@ static DWORD HashFnPtrType(BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTy
         dwHash = ((dwHash << 5) + dwHash) ^ retAndArgTypes[i].AsTAddr();
     }
 
-    return dwHash;
+    return (DWORD)dwHash;
 }
 
 // Calculate hash value for an array/pointer/byref type
@@ -199,7 +194,7 @@ static DWORD HashParamType(CorElementType kind, TypeHandle typeParam)
     dwHash = ((dwHash << 5) + dwHash) ^ kind;
     dwHash = ((dwHash << 5) + dwHash) ^ typeParam.AsTAddr();
 
-    return dwHash;
+    return (DWORD)dwHash;
 }
 
 // Calculate hash value from type handle
@@ -211,7 +206,6 @@ static DWORD HashTypeHandle(TypeHandle t)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(t));
-        PRECONDITION(!t.IsEncodedFixup());
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -234,10 +228,12 @@ static DWORD HashTypeHandle(TypeHandle t)
     else if (t.IsGenericVariable())
     {
         _ASSERTE(!"Generic variables are unexpected here.");
-        retVal = t.AsTAddr();
+        retVal = 0;
     }
     else
+    {
         retVal = HashPossiblyInstantiatedType(t.GetCl(), Instantiation());
+    }
 
     return retVal;
 }
@@ -497,12 +493,10 @@ TypeHandle EETypeHashTable::GetValue(TypeKey *pKey)
 
     if (pItem)
     {
-        TypeHandle th = pItem->GetTypeHandle();
-        g_IBCLogger.LogTypeHashTableAccess(&th);
         return pItem->GetTypeHandle();
     }
-    else
-        return TypeHandle();
+
+    return TypeHandle();
 }
 
 #ifndef DACCESS_COMPILE
@@ -533,7 +527,6 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsUnsealed());          // If we are sealed then we should not be adding to this hashtable
         PRECONDITION(CheckPointer(data));
-        PRECONDITION(!data.IsEncodedFixup());
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
         PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
@@ -578,7 +571,3 @@ void EETypeHashEntry::SetTypeHandle(TypeHandle handle)
     m_data = handle.AsPtr();
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244

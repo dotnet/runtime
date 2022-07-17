@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -50,26 +51,25 @@ namespace System.Linq
         private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size)
         {
             using IEnumerator<TSource> e = source.GetEnumerator();
-            while (e.MoveNext())
+
+            if (e.MoveNext())
             {
-                TSource[] chunk = new TSource[size];
-                chunk[0] = e.Current;
+                List<TSource> chunkBuilder = new();
+                while (true)
+                {
+                    do
+                    {
+                        chunkBuilder.Add(e.Current);
+                    }
+                    while (chunkBuilder.Count < size && e.MoveNext());
 
-                int i = 1;
-                for (; i < chunk.Length && e.MoveNext(); i++)
-                {
-                    chunk[i] = e.Current;
-                }
+                    yield return chunkBuilder.ToArray();
 
-                if (i == chunk.Length)
-                {
-                    yield return chunk;
-                }
-                else
-                {
-                    Array.Resize(ref chunk, i);
-                    yield return chunk;
-                    yield break;
+                    if (chunkBuilder.Count < size || !e.MoveNext())
+                    {
+                        yield break;
+                    }
+                    chunkBuilder.Clear();
                 }
             }
         }

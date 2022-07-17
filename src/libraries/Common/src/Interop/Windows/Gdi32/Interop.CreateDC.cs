@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [GeneratedDllImport(Libraries.Gdi32, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Gdi32, StringMarshalling = StringMarshalling.Utf16)]
         public static partial IntPtr CreateDCW(string pwszDriver, string pwszDevice, string? pszPort, IntPtr pdm);
     }
 }

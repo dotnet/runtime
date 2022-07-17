@@ -121,9 +121,6 @@ public:
 
     static FCDECL1(ReflectClassBaseObject*, GetRuntimeType, void *th);
 
-    static FCDECL1_V(ReflectClassBaseObject*, GetTypeFromHandle, FCALLRuntimeTypeHandle th);
-    static FCDECL1_V(EnregisteredTypeHandle, GetValueInternal, FCALLRuntimeTypeHandle RTH);
-
     static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
 
     static FCDECL1(AssemblyBaseObject*, GetAssembly, ReflectClassBaseObject *pType);
@@ -176,8 +173,7 @@ public:
     static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 
-    static
-    FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
+    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
 
     // Helper methods not called by managed code
 
@@ -222,7 +218,10 @@ class RuntimeMethodHandle {
 public:
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
-    static FCDECL5(Object*, InvokeMethod, Object *target, Span<OBJECTREF>* objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
+    static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, CLR_BOOL fConstructor);
+
+    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
+    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
@@ -322,6 +321,7 @@ public:
     static FCDECL1(INT32, GetToken, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
+    static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
 };
 
 class ModuleHandle {

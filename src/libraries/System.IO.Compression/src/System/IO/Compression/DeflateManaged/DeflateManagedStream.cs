@@ -20,8 +20,10 @@ namespace System.IO.Compression
         private int _asyncOperations;
 
         // A specific constructor to allow decompression of Deflate64
-        internal DeflateManagedStream(Stream stream!!, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize = -1)
+        internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize = -1)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
@@ -141,7 +143,7 @@ namespace System.IO.Compression
         public override int ReadByte()
         {
             byte b = default;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         private void EnsureNotDisposed()

@@ -77,7 +77,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Ctor_LargeSkipFrames_GetFramesReturnsEmtpy()
+        public void Ctor_LargeSkipFrames_GetFramesReturnsEmpty()
         {
             var stackTrace = new StackTrace(int.MaxValue);
             Assert.Equal(0, stackTrace.FrameCount);
@@ -340,7 +340,7 @@ namespace System.Diagnostics.Tests
                 catch (Exception e)
                 {
                     Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                    Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
@@ -357,7 +357,7 @@ namespace System.Diagnostics.Tests
                 catch (Exception e)
                 {
                     Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                    Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
@@ -381,7 +381,7 @@ namespace System.Diagnostics.Tests
                 catch (Exception e)
                 {
                     Assert.Contains("RefEmit_InMemoryManifestModule", e.InnerException.StackTrace);
-                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                    Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, regPattern).Dispose();
         }

@@ -4,11 +4,11 @@ Reflection-free mode is a mode of the NativeAOT compiler and runtime that greatl
 
 * Greatly reduced size of self contained deployments - a fully self-contained "Hello world" style app compiles to a 1 MB file (on x64) with _no dependencies_.
 * Reduced working set and better code locality - parts of the program are more tightly packed together.
-* Less metadata for people to reverese engineer - apps compiled in reflection-free mode are as hard to reverse engineer as apps written in e.g. C++.
+* Less metadata for people to reverse engineer - apps compiled in reflection-free mode are as hard to reverse engineer as apps written in e.g. C++.
 
-Of course the benefits come with a drawback: not all .NET code can work in such environment. In fact, most of the existing code probably won't. Use this mode with caution.
+Of course the benefits come with a drawback: not all .NET code can work in such environment. In fact, most of the existing code probably won't. Use this mode with caution. https://github.com/dotnet/runtime/issues/67193 tracks potential improvements of this mode.
 
-To enable reflection-free mode in a project that is already using CoreRT, add the following property to a `PropertyGroup` in your project file:
+To enable reflection-free mode in a project that is already using NativeAOT, add the following property to a `PropertyGroup` in your project file:
 
 ```xml
 <PropertyGroup>
@@ -34,7 +34,7 @@ Think of:
 Reflection-free mode **supports a limited set of reflection APIs** that keep their expected semantics.
 
 * `typeof(SomeType)` will return a `System.Type` that can be compared with results of other `typeof` expressions or results of `Object.GetType()` calls. The patterns commonly used in perf optimizations of generic code (e.g. `typeof(T) == typeof(byte)`) will work fine, and so will `obj.GetType() == typeof(SomeType)`.
-* Following APIs on `System.Type` work: `TypeHandle`, `UnderlyingSystemType`, `BaseType`, `IsByRefLike`, `IsValueType`, `GetTypeCode`, `GetHashCode`, `GetElementType`, `GetInterfaces`, `HasElementType`, `IsArray`, `IsByRef`, `IsPointer`, `IsPrimitive`.
+* Following APIs on `System.Type` work: `TypeHandle`, `UnderlyingSystemType`, `BaseType`, `IsByRefLike`, `IsValueType`, `GetTypeCode`, `GetHashCode`, `GetElementType`, `GetInterfaces`, `HasElementType`, `IsArray`, `IsByRef`, `IsPointer`, `IsPrimitive`, `IsAssignableFrom`, `IsAssignableTo`, `IsInstanceOfType`.
 * `Activator.CreateInstance<T>()` will work. The compiler statically analyzes and expands this to efficient code at compile time. No reflection is involved at runtime.
 * `Assembly.GetExecutingAssembly()` will return a `System.Reflection.Assembly` that can be compared with other runtime `Assembly` instances. This is mostly to make it possible to use the `NativeLibrary.SetDllImportResolver` API.
 

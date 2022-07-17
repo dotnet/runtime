@@ -6,6 +6,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 namespace InlineBool
 {
     public class Program
@@ -157,7 +158,8 @@ namespace InlineBool
         static bool Id99(bool x) { return Id04(x != false) ? true : false; }
 
         [MethodImpl(MethodImplOptions.NoOptimization)]
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool result = true;
 

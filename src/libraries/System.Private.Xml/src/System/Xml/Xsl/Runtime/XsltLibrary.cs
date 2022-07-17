@@ -163,15 +163,12 @@ namespace System.Xml.Xsl.Runtime
 
         public int RegisterDecimalFormat(XmlQualifiedName name, string infinitySymbol, string nanSymbol, string characters)
         {
-            if (_decimalFormats == null)
-            {
-                _decimalFormats = new Dictionary<XmlQualifiedName, DecimalFormat>();
-            }
+            _decimalFormats ??= new Dictionary<XmlQualifiedName, DecimalFormat>();
             _decimalFormats.Add(name, CreateDecimalFormat(infinitySymbol, nanSymbol, characters));
             return 0;   // have to return something
         }
 
-        private DecimalFormat CreateDecimalFormat(string infinitySymbol, string nanSymbol, string characters)
+        private static DecimalFormat CreateDecimalFormat(string infinitySymbol, string nanSymbol, string characters)
         {
             // BUGBUG: Fallback to the old XSLT implementation
             NumberFormatInfo info = new NumberFormatInfo();
@@ -189,10 +186,7 @@ namespace System.Xml.Xsl.Runtime
 
         public double RegisterDecimalFormatter(string formatPicture, string infinitySymbol, string nanSymbol, string characters)
         {
-            if (_decimalFormatters == null)
-            {
-                _decimalFormatters = new List<DecimalFormatter>();
-            }
+            _decimalFormatters ??= new List<DecimalFormatter>();
             _decimalFormatters.Add(new DecimalFormatter(formatPicture, CreateDecimalFormat(infinitySymbol, nanSymbol, characters)));
             return _decimalFormatters.Count - 1;
         }

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
     public class TraceSourceLoggerProvider : ILoggerProvider
     {
         private readonly SourceSwitch _rootSourceSwitch;
-        private readonly TraceListener _rootTraceListener;
+        private readonly TraceListener? _rootTraceListener;
 
         private readonly ConcurrentDictionary<string, DiagnosticsTraceSource> _sources = new ConcurrentDictionary<string, DiagnosticsTraceSource>(StringComparer.OrdinalIgnoreCase);
 
@@ -35,8 +35,10 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// </summary>
         /// <param name="rootSourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
         /// <param name="rootTraceListener">The <see cref="TraceListener"/> to use.</param>
-        public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch!!, TraceListener rootTraceListener)
+        public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch, TraceListener? rootTraceListener)
         {
+            ThrowHelper.ThrowIfNull(rootSourceSwitch);
+
             _rootSourceSwitch = rootSourceSwitch;
             _rootTraceListener = rootTraceListener;
         }
@@ -51,15 +53,14 @@ namespace Microsoft.Extensions.Logging.TraceSource
             return new TraceSourceLogger(GetOrAddTraceSource(name));
         }
 
-        private DiagnosticsTraceSource GetOrAddTraceSource(string name)
-        {
-            return _sources.GetOrAdd(name, InitializeTraceSource);
-        }
+        private DiagnosticsTraceSource GetOrAddTraceSource(string name) =>
+            _sources.TryGetValue(name, out DiagnosticsTraceSource? source) ? source :
+            _sources.GetOrAdd(name, InitializeTraceSource(name));
 
         private DiagnosticsTraceSource InitializeTraceSource(string traceSourceName)
         {
             var traceSource = new DiagnosticsTraceSource(traceSourceName);
-            string parentSourceName = ParentSourceName(traceSourceName);
+            string? parentSourceName = ParentSourceName(traceSourceName);
 
             if (string.IsNullOrEmpty(parentSourceName))
             {
@@ -92,7 +93,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
             return traceSource;
         }
 
-        private static string ParentSourceName(string traceSourceName)
+        private static string? ParentSourceName(string traceSourceName)
         {
             int indexOfLastDot = traceSourceName.LastIndexOf('.');
             return indexOfLastDot == -1 ? null : traceSourceName.Substring(0, indexOfLastDot);

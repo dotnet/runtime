@@ -523,7 +523,7 @@ namespace Internal.TypeSystem
         /// Attempts to write a value into the table. Should never fail as the sentinel should be the only
         /// entry that can be in the table at this point
         /// </summary>
-        private void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
+        private static void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
@@ -535,7 +535,7 @@ namespace Internal.TypeSystem
         /// Attempts to abort write a value into the table. Should never fail as the sentinel should be the only
         /// entry that can be in the table at this point
         /// </summary>
-        private void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
+        private static void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all

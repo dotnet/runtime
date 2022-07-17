@@ -121,11 +121,12 @@ namespace System.Security.Cryptography
                 DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256, null, null);
 
             public override byte[] DeriveKeyFromHash(
-                ECDiffieHellmanPublicKey otherPartyPublicKey!!,
+                ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
@@ -135,16 +136,17 @@ namespace System.Security.Cryptography
                     hashAlgorithm,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyFromHmac(
-                ECDiffieHellmanPublicKey otherPartyPublicKey!!,
+                ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
                 byte[]? hmacKey,
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
@@ -155,18 +157,22 @@ namespace System.Security.Cryptography
                     hmacKey,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
-            public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey!!, byte[] prfLabel!!, byte[] prfSeed!!)
+            public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
             {
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentNullException.ThrowIfNull(prfLabel);
+                ArgumentNullException.ThrowIfNull(prfSeed);
+
                 ThrowIfDisposed();
 
                 return ECDiffieHellmanDerivation.DeriveKeyTls(
                     otherPartyPublicKey,
                     prfLabel,
                     prfSeed,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
@@ -251,7 +257,9 @@ namespace System.Security.Cryptography
                     _ecc.ImportParameters(ecParameters);
                 }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
                 public override string ToXmlString()
+#pragma warning restore 0672
                 {
                     throw new PlatformNotSupportedException();
                 }
@@ -260,7 +268,9 @@ namespace System.Security.Cryptography
                 /// There is no key blob format for OpenSSL ECDH like there is for Cng ECDH. Instead of allowing
                 /// this to return a potentially confusing empty byte array, we opt to throw instead.
                 /// </summary>
+#pragma warning disable 0672 // Member overrides an obsolete member.
                 public override byte[] ToByteArray()
+#pragma warning restore 0672
                 {
                     throw new PlatformNotSupportedException();
                 }

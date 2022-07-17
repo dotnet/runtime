@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -128,23 +129,6 @@ namespace System.IO.Tests
             var token = cts.Token;
 
             var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sw.ReadToEndAsync(token));
-            Assert.Equal(token, ex.CancellationToken);
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        public async Task ReadToEndAsync_WithCancellation()
-        {
-            string path = GetTestFilePath();
-            
-            // create large (~100MB) file
-            File.WriteAllLines(path, Enumerable.Repeat("A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.", 1_000_000));
-
-            using StreamReader reader = File.OpenText(path);
-            using CancellationTokenSource cts = new (TimeSpan.FromMilliseconds(50));
-            var token = cts.Token;
-
-            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(token));
             Assert.Equal(token, ex.CancellationToken);
         }
 
@@ -566,12 +550,12 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0, false)]
         [InlineData(0, true)]
         [InlineData(1, false)]
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {

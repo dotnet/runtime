@@ -209,10 +209,18 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return mono_component_event_pipe()->get_session_info (session_id, (EventPipeSessionInfo *)session_info) ? TRUE : FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
-	return (intptr_t) mono_component_event_pipe()->get_wait_handle ((EventPipeSessionID)session_id);
+	return mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id) ? TRUE : FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	return mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout) ? TRUE : FALSE;
 }
 
 void
@@ -378,6 +386,22 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 }
 
 void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_min_max_threads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
+		clr_instance_id);
+}
+
+void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
 	double throughput,
 	uint16_t clr_instance_id)
@@ -462,6 +486,18 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorki
 {
 	mono_component_event_pipe ()->write_event_threadpool_working_thread_count (
 		count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_pack (
+		native_overlapped,
+		overlapped,
 		clr_instance_id);
 }
 
@@ -565,13 +601,24 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
 	ERROR_DECL (error);
-	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetWaitHandle");
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.SignalSession");
 	mono_error_set_pending_exception (error);
-	return 0;
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.WaitForSessionSignal");
+	mono_error_set_pending_exception (error);
+	return FALSE;
 }
 
 void
@@ -626,6 +673,19 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadWait");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolMinMaxThreads");
 	mono_error_set_pending_exception (error);
 }
 
@@ -700,6 +760,17 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorki
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkingThreadCount");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIOPack");
 	mono_error_set_pending_exception (error);
 }
 

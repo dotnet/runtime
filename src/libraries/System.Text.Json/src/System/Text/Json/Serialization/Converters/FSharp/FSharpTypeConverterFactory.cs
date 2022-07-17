@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -8,23 +8,22 @@ using FSharpKind = System.Text.Json.Serialization.Metadata.FSharpCoreReflectionP
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
     internal sealed class FSharpTypeConverterFactory : JsonConverterFactory
     {
-        // Temporary solution to account for not implemented support for type-level attributes
-        // TODO remove once addressed https://github.com/mono/linker/issues/1742#issuecomment-875036480
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpTypeConverterFactory() { }
 
         private ObjectConverterFactory? _recordConverterFactory;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked with RequiresUnreferencedCode.")]
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override bool CanConvert(Type typeToConvert) =>
             FSharpCoreReflectionProxy.IsFSharpType(typeToConvert) &&
                 FSharpCoreReflectionProxy.Instance.DetectFSharpKind(typeToConvert) is not FSharpKind.Unrecognized;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked with RequiresUnreferencedCode.")]
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));

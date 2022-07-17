@@ -6,6 +6,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Byte.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
@@ -54,11 +57,13 @@
     <Compile Include="Span\AsSpan.cs" />
     <Compile Include="Span\Fill.cs" />
     <Compile Include="Span\Clear.cs" />
+    <Compile Include="Span\CommonPrefixLength.T.cs" />
     <Compile Include="Span\Contains.T.cs" />
     <Compile Include="Span\CopyTo.cs" />
     <Compile Include="Span\CtorArray.cs" />
     <Compile Include="Span\CtorArrayIntInt.cs" />
     <Compile Include="Span\CtorPointerInt.cs" />
+    <Compile Include="Span\CtorRef.cs" />
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\EndsWith.byte.cs" />
     <Compile Include="Span\EndsWith.char.cs" />
@@ -80,6 +85,7 @@
     <Compile Include="Span\IndexOfAny.byte.cs" />
     <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
+    <Compile Include="Span\IndexOfAnyExcept.T.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />
@@ -135,6 +141,7 @@
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
+    <Compile Include="ReadOnlySpan\CtorRef.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.long.cs" />

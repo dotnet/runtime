@@ -10,10 +10,12 @@ internal static partial class Interop
         internal const uint CRYPTPROTECTMEMORY_BLOCK_SIZE = 16;
         internal const uint CRYPTPROTECTMEMORY_SAME_PROCESS = 0;
 
-        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptProtectMemory(SafeBuffer pData, uint cbData, uint dwFlags);
 
-        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptUnprotectMemory(SafeBuffer pData, uint cbData, uint dwFlags);
     }
 }

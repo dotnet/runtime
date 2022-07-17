@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected set; }
 
-        public bool IgnoreDefaultValuesOnRead { get; private set; }
+        public bool IgnoreNullTokensOnRead { get; private set; }
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
         public JsonSerializerOptions? Options { get; set; } // initialized in Init method
@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(Options != null);
                 Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetOrAddJsonTypeInfo(PropertyType);
+                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
             }
             set
             {
@@ -61,9 +61,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyType = matchingProperty.PropertyType;
             NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-            ConverterBase = matchingProperty.ConverterBase;
-            IgnoreDefaultValuesOnRead = matchingProperty.IgnoreDefaultValuesOnRead;
-            NumberHandling = matchingProperty.NumberHandling;
+            ConverterBase = matchingProperty.EffectiveConverter;
+            IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
+            NumberHandling = matchingProperty.EffectiveNumberHandling;
             MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
         }
 
@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Type parameterType = parameterInfo.ParameterType;
 
                 DefaultValueHolder holder;
-                if (matchingProperty.Options.TryGetJsonTypeInfo(parameterType, out JsonTypeInfo? typeInfo))
+                if (matchingProperty.Options.TryGetTypeInfoCached(parameterType, out JsonTypeInfo? typeInfo))
                 {
                     holder = typeInfo.DefaultValueHolder;
                 }

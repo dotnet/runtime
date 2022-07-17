@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class DSAImplementation
     {
-        public sealed partial class DSASecurityTransforms : DSA
+        public sealed partial class DSASecurityTransforms : DSA, IRuntimeAlgorithm
         {
             private SecKeyPair? _keys;
             private bool _disposed;
@@ -66,8 +66,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] CreateSignature(byte[] rgbHash!!)
+            public override byte[] CreateSignature(byte[] rgbHash)
             {
+                ArgumentNullException.ThrowIfNull(rgbHash);
+
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -90,8 +92,11 @@ namespace System.Security.Cryptography
                 return ieeeFormatSignature;
             }
 
-            public override bool VerifySignature(byte[] hash!!, byte[] signature!!)
+            public override bool VerifySignature(byte[] hash, byte[] signature)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifySignature((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -117,12 +122,6 @@ namespace System.Security.Cryptography
 
                 return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {
@@ -164,7 +163,7 @@ namespace System.Security.Cryptography
                     return current;
                 }
 
-                // macOS 10.11 and macOS 10.12 declare DSA invalid for key generation.
+                // macOS declares DSA invalid for key generation.
                 // Rather than write code which might or might not work, returning
                 // (OSStatus)-4 (errSecUnimplemented), just make the exception occur here.
                 //

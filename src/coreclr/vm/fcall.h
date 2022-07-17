@@ -240,16 +240,9 @@
 //
 #include <setjmp.h>
 
-//
-// Use of setjmp is temporary, we will eventually have compiler intrinsics to
-// disable the optimizations.  Besides, we don't actually execute setjmp in
-// these macros (or anywhere else in the VM on AMD64).
-//
-#pragma warning(disable:4611) // interaction between '_setjmp' and C++ object destruction is non-portable
-
 #ifdef _DEBUG
 //
-// Linked list of unmanaged methods preceeding a HelperMethodFrame push.  This
+// Linked list of unmanaged methods preceding a HelperMethodFrame push.  This
 // is linked onto the current Thread.  Each list entry is stack-allocated so it
 // can be associated with an unmanaged frame.  Each unmanaged frame needs to be
 // associated with at least one list entry.
@@ -315,6 +308,21 @@ private:
 #endif // _DEBUG
 };
 
+// These macros are used to narrowly suppress
+// warning 4611 - interaction between 'function' and C++ object destruction is non-portable
+// See usage of setjmp() and inclusion of setjmp.h for reasoning behind usage.
+#ifdef _MSC_VER
+#define DISABLE_4611()          \
+    _Pragma("warning(push)")    \
+    _Pragma("warning(disable:4611)")
+
+#define RESET_4611()    \
+    _Pragma("warning(pop)")
+#else
+#define DISABLE_4611()
+#define RESET_4611()
+#endif // _MSC_VER
+
 #define PERMIT_HELPER_METHOD_FRAME_BEGIN()                                  \
         if (1)                                                              \
         {                                                                   \
@@ -325,7 +333,9 @@ private:
         else                                \
         {                                   \
             jmp_buf ___jmpbuf;              \
+            DISABLE_4611()                  \
             setjmp(___jmpbuf);              \
+            RESET_4611()                    \
             __assume(0);                    \
         }
 

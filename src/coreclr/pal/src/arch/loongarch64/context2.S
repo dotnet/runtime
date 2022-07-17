@@ -97,7 +97,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
     ld.d  $t6, $a0, CONTEXT_T6
     ld.d  $t7, $a0, CONTEXT_T7
     ld.d  $t8, $a0, CONTEXT_T8
-    //ld.d  $r21,$a0, CONTEXT_X0
+
     ld.d  $s0, $a0, CONTEXT_S0
     ld.d  $s1, $a0, CONTEXT_S1
     ld.d  $s2, $a0, CONTEXT_S2
@@ -106,10 +106,8 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
     ld.d  $s5, $a0, CONTEXT_S5
     ld.d  $s6, $a0, CONTEXT_S6
     ld.d  $s7, $a0, CONTEXT_S7
-#ifndef CONTEXT_S8
-#error "----------------nodefine8"
-#endif
     ld.d  $s8, $a0, CONTEXT_S8
+
     ld.d  $a0, $a0, CONTEXT_A0
 
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
@@ -127,7 +125,8 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
 
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
-   jirl  $r0, $ra, 0
+    ld.d  $t4, $t4, CONTEXT_T4
+    jirl  $r0, $ra, 0
 LEAF_END RtlRestoreContext, _TEXT
 
 // Incoming:

@@ -7,6 +7,7 @@ parameters:
   platforms: []
   runSmokeOnlyArg: ''
   scenarios: ['normal']
+  shouldContinueOnError: false
 
 jobs:
 
@@ -20,6 +21,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -35,7 +37,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
-      timeoutInMinutes: 180
+      timeoutInMinutes: 240
       # always run for runtime-wasm builds (triggered manually)
       # Always run for rolling builds
       # Else run on path changes

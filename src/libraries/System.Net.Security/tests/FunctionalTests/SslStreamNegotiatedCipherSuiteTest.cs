@@ -20,10 +20,12 @@ namespace System.Net.Security.Tests
     public class NegotiatedCipherSuiteTest
     {
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         public const SslProtocols AllProtocols =
             SslProtocols.Ssl2 | SslProtocols.Ssl3 |
             SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #pragma warning restore CS0618
+#pragma warning restore SYSLIB0039
 
         public const SslProtocols NonTls13Protocols = AllProtocols & (~SslProtocols.Tls13);
 
@@ -41,8 +43,10 @@ namespace System.Net.Security.Tests
         private static Dictionary<SslProtocols, HashSet<TlsCipherSuite>> s_protocolCipherSuiteLookup = new Dictionary<SslProtocols, HashSet<TlsCipherSuite>>()
         {
             { SslProtocols.Tls12, s_tls12CipherSuiteLookup },
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             { SslProtocols.Tls11, s_tls10And11CipherSuiteLookup },
             { SslProtocols.Tls, s_tls10And11CipherSuiteLookup },
+#pragma warning restore SYSLIB0039
         };
 
         private static Lazy<bool> s_cipherSuitePolicySupported = new Lazy<bool>(() =>
@@ -65,6 +69,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(Tls13Supported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsTls13_ShouldBeTls13()
         {
             var p = new ConnectionParams()
@@ -81,9 +86,12 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11)]
+#pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.Tls12)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsLowerThanTls13_ShouldMatchTheProtocol(SslProtocols protocol)
         {
             var p = new ConnectionParams()
@@ -123,7 +131,9 @@ namespace System.Net.Security.Tests
             {
                 CipherSuitesPolicy = BuildPolicy(TlsCipherSuite.TLS_AES_128_GCM_SHA256,
                                                  SupportedNonTls13CipherSuites[0]),
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 EncryptionPolicy = EncryptionPolicy.NoEncryption,
+#pragma warning restore SYSLIB0040
             };
 
             NegotiatedParams ret = ConnectAndGetNegotiatedParams(p, p);
@@ -146,6 +156,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void CipherSuitesPolicy_AllowOneOnOneSideTls13_Success()
         {
             bool hasSucceededAtLeastOnce = false;
@@ -685,11 +696,12 @@ namespace System.Net.Security.Tests
 
             using (clientStream)
             using (serverStream)
+            using (X509Certificate2 serverCert = Configuration.Certificates.GetSelfSignedServerCertificate())
             using (SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false),
                              client = new SslStream(clientStream, leaveInnerStreamOpen: false))
             {
                 var serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificate = Configuration.Certificates.GetSelfSignedServerCertificate();
+                serverOptions.ServerCertificate = serverCert;
                 serverOptions.EncryptionPolicy = serverParams.EncryptionPolicy;
                 serverOptions.EnabledSslProtocols = serverParams.SslProtocols;
                 serverOptions.CipherSuitesPolicy = serverParams.CipherSuitesPolicy;
@@ -701,7 +713,7 @@ namespace System.Net.Security.Tests
                 clientOptions.TargetHost = "test";
                 clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
+                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {

@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-unsafe class testout1
+using Xunit;
+namespace Test_10w5d
+{
+public unsafe class testout1
 {
 
     public struct VT_0_6_6_6_2
@@ -36315,7 +36318,8 @@ unsafe class testout1
         return retval_0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
 
@@ -36328,4 +36332,5 @@ unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

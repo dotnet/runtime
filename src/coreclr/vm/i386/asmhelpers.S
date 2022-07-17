@@ -534,26 +534,6 @@ LEAF_ENTRY NDirectImportThunk, _TEXT
     jmp     eax     // Jump to DLL target
 LEAF_END NDirectImportThunk, _TEXT
 
-// ==========================================================================
-// The call in fixup precode initally points to this function.
-// The pupose of this function is to load the MethodDesc and forward the call the prestub.
-LEAF_ENTRY PrecodeFixupThunk, _TEXT
-    // Pop the return address. It points right after the call instruction in the precode.
-    pop     eax
-    push    esi
-    push    edi
-
-    // Inline computation done by FixupPrecode::GetMethodDesc()
-    movzx   esi, BYTE PTR [eax + 2]    // m_PrecodeChunkIndex
-    movzx   edi, BYTE PTR [eax + 1]    // m_MethodDescChunkIndex
-    mov     eax, DWORD PTR [eax + esi*8 +3]
-    lea     eax, [eax + edi*4]
-
-    pop     edi
-    pop     esi
-    jmp     C_FUNC(ThePreStub)
-LEAF_END PrecodeFixupThunk, _TEXT
-
 //
 // Used to get the current instruction pointer value
 //
@@ -1217,13 +1197,7 @@ NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 #ifdef FEATURE_TIERED_COMPILATION
 
-LEAF_ENTRY OnCallCountThresholdReachedStub, _TEXT
-    // Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-    pop     eax
-    jmp     C_FUNC(OnCallCountThresholdReachedStub2)
-LEAF_END OnCallCountThresholdReachedStub, _TEXT
-
-NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
+NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     STUB_PROLOG
 
     mov     esi, esp
@@ -1246,6 +1220,6 @@ NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
     // This will never be executed. It is just to help out stack-walking logic
     // which disassembles the epilog to unwind the stack.
     ret
-NESTED_END OnCallCountThresholdReachedStub2, _TEXT
+NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

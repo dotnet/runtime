@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.ComponentModel;
-using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
@@ -124,27 +125,27 @@ namespace System.Net
             {
                 ContentLength64 = responseEntity.Length;
             }
+
             EnsureResponseStream();
-            Debug.Assert(_responseStream != null);
             if (willBlock)
             {
                 try
                 {
-                    _responseStream!.Write(responseEntity, 0, responseEntity.Length);
+                    _responseStream.Write(responseEntity, 0, responseEntity.Length);
                 }
                 catch (Win32Exception)
                 {
                 }
                 finally
                 {
-                    _responseStream!.Close();
+                    _responseStream.Close();
                     _responseState = ResponseState.Closed;
                     HttpListenerContext!.Close();
                 }
             }
             else
             {
-                _responseStream!.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
+                _responseStream.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
             }
         }
 
@@ -154,8 +155,9 @@ namespace System.Net
             {
                 return;
             }
+
             EnsureResponseStream();
-            _responseStream!.Close();
+            _responseStream.Close();
             _responseState = ResponseState.Closed;
 
             HttpListenerContext!.Close();
@@ -163,12 +165,10 @@ namespace System.Net
 
         internal BoundaryType BoundaryType => _boundaryType;
 
+        [MemberNotNull(nameof(_responseStream))]
         private void EnsureResponseStream()
         {
-            if (_responseStream == null)
-            {
-                _responseStream = new HttpResponseStream(HttpListenerContext!);
-            }
+            _responseStream ??= new HttpResponseStream(HttpListenerContext!);
         }
 
         private void NonBlockingCloseCallback(IAsyncResult asyncResult)
@@ -572,7 +572,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             return pinnedHeaders;
         }
 
-        private void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
+        private static void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
         {
             if (pinnedHeaders != null)
             {

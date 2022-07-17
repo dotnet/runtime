@@ -63,7 +63,7 @@ the first time they are jitted:
   * Methods marked with the `AggressiveOptimization` attribute
   * Dynamic methods and methods from collectible assemblies
   * By default in .NET 3.0, 5.0, 6.0: methods with loops.
-This policy is controlled by `DOTNET_COMPlus_TC_QuickJitForLoops`;
+This policy is controlled by `DOTNET_TC_QuickJitForLoops`;
  see next section.
 
 ### Dynamic and Full PGO
@@ -107,7 +107,7 @@ and also cannot examine readonly static fields; (b) Dynamic PGO can
 only operate on methods that pass through Tier0.
 
 One can change the default behavior by setting QJFL to 1; some
-startup-sensitive applications (eg `Powershell`) do this.
+startup-sensitive applications (e.g., `Powershell`) do this.
 
 ### Rationale for Enabling OSR
 
@@ -130,11 +130,11 @@ OSR is enabled by setting
 `DOTNET_TC_OnStackReplacement=1` (aka `OSR=1`)
 
 and is influenced by
-`DOTNET_TieredPGO=1` (`BBINSTR=1` at TIER0)
+`DOTNET_TieredPGO=1` (`BBINSTR=1` at Tier0)
 
 ### Choosing which methods are "OSR Eligible"
 
-The runtime makes a JIT request at TIER0, and passes the current
+The runtime makes a JIT request at Tier0, and passes the current
 values of QJFL, OSR, and BBINSTR.
 
 The JIT does an initial IL scan for the method; during this scan it
@@ -182,7 +182,7 @@ the address of the counter.
 The remainder of compilation proceeds normally, but when the method is
 finished, the JIT creates a patchpoint descriptor to note the method's
 frame size, virtual offset of all IL locals, and the offset of some
-other key frame information (generics context, etc). This descriptor
+other key frame information (generics context, etc.). This descriptor
 is passed back to the runtime, where it is stored alongside the
 method's debug info.
 
@@ -245,8 +245,8 @@ a few twists:
 * Importation starts at the specified IL offset and pulls in all the
 code reachable from that point. Typically (but not always) the method entry (IL offset 0) is unreachable
 and so the OSR method only imports a subset of the full method.
-* Control normally branches from the first block (`fgFirstBB`) to the block at the OSR IL offset (the "osr entry").
-Special care is needed when the osr entry is in the middle of a try or in a nested try.
+* Control normally branches from the first block (`fgFirstBB`) to the block at the OSR IL offset (the "OSR entry").
+Special care is needed when the OSR entry is in the middle of a try or in a nested try.
 * If dynamic PGO is enabled the OSR method will read the PGO data captured by the Tier0
 method, but we also instrument the OSR method to ensure any Tier1 version we produce
 later on sees all the PGO data it would have seen if we'd forcibly kept the method at Tier0.
@@ -267,7 +267,7 @@ One of these is that an OSR method will never need to zero init any locals or se
 
 #### Frame Layout
 
-For and OSR method, the OSR frame logically "incorporates" the Tier0 method frame. Because the OSR method has different register saves and different temporaries, there is an OSR specific portion of the frame that extends beyond the Tier0 frame.
+For an OSR method, the OSR frame logically "incorporates" the Tier0 method frame. Because the OSR method has different register saves and different temporaries, there is an OSR specific portion of the frame that extends beyond the Tier0 frame.
 
 On x64, Tier0 frames are always RBP frames. On Arm64, Tier0 frames can be any of the 5 frame types the jit can create.
 
@@ -293,11 +293,13 @@ The OSR epilog does the following:
 * undoes the OSR contribution to the frame (SP add)
 * restores the callee-saved registers saved by the OSR prolog
 * undoes the Tier0 frame (SP add)
-* restores any Tier0 callees saves needed (x64 only, restores RPB)
+* restores any Tier0 callees saves needed (x64 only, restores RBP)
 * returns to the Tier0/OSR method's caller
 
 This epilog has a non-standard format because of the two SP adjustments.
 This is currently breaking x64 epilog unwind.
+
+(NOTE: this was fixed as described [here](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md))
 
 On Arm64 we have epilog unwind codes and the second SP adjust does not appear to cause problems.
 
@@ -305,7 +307,7 @@ On Arm64 we have epilog unwind codes and the second SP adjust does not appear to
 
 OSR funclets are more or less normal funclets.
 
-On Arm64, to satisfy PSPSYm reporting constraints, the funclet frame must be padded to include the Tier0 frame size. This is conceptually similar to the way the funclet frames also pad for homed varargs arguments -- in both cases the padded space is never used, it is just there to ensure the PSPSym ends up at the same caller-SP relative offset for the main function and any funclet.
+On Arm64, to satisfy PSPSym reporting constraints, the funclet frame must be padded to include the Tier0 frame size. This is conceptually similar to the way the funclet frames also pad for homed varargs arguments -- in both cases the padded space is never used, it is just there to ensure the PSPSym ends up at the same caller-SP relative offset for the main function and any funclet.
 
 #### OSR Unwind Info
 
@@ -319,7 +321,7 @@ When an OSR method is active, stack frames will show just that method and not th
 
 #### OSR GC Info
 
-OSR GC info is standard. The only unusual aspect is that some special offsets (generics context, etc) may refer to slots in the Tier0 frame.
+OSR GC info is standard. The only unusual aspect is that some special offsets (generics context, etc.) may refer to slots in the Tier0 frame.
 
 ### Execution of an OSR Method
 
@@ -363,11 +365,11 @@ Also note that an OSR method will always be invoked immediately after it is jitt
 Binary searching using the `Enable` controls has proven to be a reliable
 way to track down issues in OSR codegen.
 
-On the same example as above, now run with `COMPlus_JitEnableOsrRange=00000000-7FFFFFFF` there were 249 OSR methods created. Methods with hashes outside this range that would have been handled by OSR were instead immediately optimized and bypassed tiering. So you can systematically reduce the set of OSR methods created to try and find the method or methods that are causing a test failure.
+On the same example as above, now run with `DOTNET_JitEnableOsrRange=00000000-7FFFFFFF` there were 249 OSR methods created. Methods with hashes outside this range that would have been handled by OSR were instead immediately optimized and bypassed tiering. So you can systematically reduce the set of OSR methods created to try and find the method or methods that are causing a test failure.
 
-If you are not familiar with range syntax, ranges values are in hex, and entries can be intervals (as above), singletons, or unions of intervals and singletons, eg
+If you are not familiar with range syntax, ranges values are in hex, and entries can be intervals (as above), singletons, or unions of intervals and singletons, e.g.,
 ```
-COMPlus_JitEnableOsrRange=00000000-3FFFFFFF,067a3f68,F0000000-FFFFFFFF
+DOTNET_JitEnableOsrRange=00000000-3FFFFFFF,067a3f68,F0000000-FFFFFFFF
 ```
 I find I rarely need to use anything other than a single range.
 
@@ -411,7 +413,7 @@ TID 4bdc2: Jit_Patchpoint: patchpoint [18] (0x0000FFFF1E5F6BE0) TRIGGER at count
 TID 4bdc2: JitPatchpointWorker: creating OSR version of Method=0x0000FFFF1EB03B58M (Xunit.JsonBoolean::.ctor) at offset 0
 TID 4bdc2: Jit_Patchpoint: patchpoint [18] (0x0000FFFF1E5F6BE0) TRANSITION to ip 0x0000FFFF1E5F6D00
 ```
-Here the number in brackets `[17]` is the number of distinct patchpoints that have called the runtime helper; from the runtime side this serve as a sort of patchpoint ID.
+Here the number in brackets `[17]` is the number of distinct patchpoints that have called the runtime helper; from the runtime side this serves as a sort of patchpoint ID.
 
 A `hit` is just a call from an Tier0 method to the helper. A `TRIGGER` is a hit that now has reached the `DOTNET_OSR_HitCount` limit, and at this point an OSR method is created. A `TRANSITION` is the transition of control from the Tier0 method to the OSR method.
 
@@ -427,7 +429,7 @@ So you can also use this to control which OSR methods are created by the runtime
 
 * `DOTNET_JitOffsetOnStackReplacement=offset` -- only place patchpoints at given IL offset (and if stack empty)
 * `DOTNET_JitRandomOnStackReplacement=val` -- in addition to normal OSR patchpoints, place patchpoints randomly
- at stack empty points at the starts of non-handler blocks (value is likelihood, in hex, so 0 will not add any extra, 0x64 will
+ at stack empty points at the starts of non-handler blocks (value is likelihood (percentage), in hex, so 0 will not add any extra, 0x64 (== 100 decimal), will
 add as many extra as possible)
 
 The latter is used by OSR stress (in conjunction with low values for
@@ -470,7 +472,7 @@ a Tier0 method that's transitioned to an OSR method.
 ## OSR and Performance
 
 As noted above, the combination of `QJFL=1` and `OSR=1` will typically provide better startup and comparable of better steady-state. But it's also possible
-to spend considerable time in OSR methods (eg the all-in-`Main` benchmark).
+to spend considerable time in OSR methods (e.g., the all-in-`Main` benchmark).
 
 Generally speaking the performance of an OSR method should be comparable to the equivalent Tier1 method. In practice we see variations of +/- 20% or so. There are a number or reasons for this:
 * OSR methods are often a subset of the full Tier1 method, and in many cases just comprise one loop. The JIT can often generate much better code for a single loop in isolation than a single loop in a more complex method.

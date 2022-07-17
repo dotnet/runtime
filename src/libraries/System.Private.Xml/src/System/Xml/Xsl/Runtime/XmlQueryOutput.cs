@@ -173,8 +173,7 @@ namespace System.Xml.Xsl.Runtime
             WriteNamespaceDeclarationUnchecked(prefix, ns);
 
             // Cache attributes in order to detect duplicates
-            if (_attrCache == null)
-                _attrCache = new XmlAttributeCache();
+            _attrCache ??= new XmlAttributeCache();
 
             _attrCache.Init(Writer);
             Writer = _attrCache;
@@ -446,7 +445,7 @@ namespace System.Xml.Xsl.Runtime
         public void WriteStartElementUnchecked(string prefix, string localName, string ns)
         {
             Debug.Assert(_xstate == XmlState.WithinContent, $"WriteStartElement cannot be called in the {_xstate} state.");
-            if (_nsmgr != null) _nsmgr.PushScope();
+            _nsmgr?.PushScope();
             Writer.WriteStartElement(prefix, localName, ns);
             //reset when enter element
             _usedPrefixes.Clear();
@@ -487,7 +486,7 @@ namespace System.Xml.Xsl.Runtime
             Writer.WriteEndElement(prefix, localName, ns);
             _xstate = XmlState.WithinContent;
             _depth--;
-            if (_nsmgr != null) _nsmgr.PopScope();
+            _nsmgr?.PopScope();
         }
 
         /// <summary>
@@ -1328,7 +1327,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the type of node that is under construction given the specified XmlState.
         /// </summary>
-        private XPathNodeType XmlStateToNodeType(XmlState xstate)
+        private static XPathNodeType XmlStateToNodeType(XmlState xstate)
         {
             switch (xstate)
             {
@@ -1400,8 +1399,7 @@ namespace System.Xml.Xsl.Runtime
             string genPrefix;
             Debug.Assert(prefix != null && ns != null && ns.Length != 0);
 
-            if (_conflictPrefixes == null)
-                _conflictPrefixes = new Dictionary<string, string>(16);
+            _conflictPrefixes ??= new Dictionary<string, string>(16);
 
             if (_nsmgr == null)
             {
@@ -1542,8 +1540,7 @@ namespace System.Xml.Xsl.Runtime
         private void PushElementNames(string prefix, string localName, string ns)
         {
             // Push the name parts onto a stack
-            if (_stkNames == null)
-                _stkNames = new Stack<string>(15);
+            _stkNames ??= new Stack<string>(15);
 
             _stkNames.Push(prefix);
             _stkNames.Push(localName);

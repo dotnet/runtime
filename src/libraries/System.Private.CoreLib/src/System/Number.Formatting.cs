@@ -242,8 +242,6 @@ namespace System
     internal static partial class Number
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
-        internal const string PreviewFeatureMessage = "Generic Math is in preview.";
-        internal const string PreviewFeatureUrl = "https://aka.ms/dotnet-warnings/generic-math-preview";
 
         // SinglePrecision and DoublePrecision represent the maximum number of digits required
         // to guarantee that any given Single or Double can roundtrip. Some numbers may require
@@ -355,7 +353,7 @@ namespace System
         {
             byte* buffer = number.GetDigitsPointer();
             number.DigitsCount = DecimalPrecision;
-            number.IsNegative = d.IsNegative;
+            number.IsNegative = decimal.IsNegative(d);
 
             byte* p = buffer + DecimalPrecision;
             while ((d.Mid | d.High) != 0)
@@ -1173,7 +1171,215 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // called from only one location
+        public static string FormatInt128(Int128 value, string? format, IFormatProvider? provider)
+        {
+            // Fast path for default format
+            if (string.IsNullOrEmpty(format))
+            {
+                return Int128.IsPositive(value)
+                     ? UInt128ToDecStr((UInt128)value, digits: -1)
+                     : NegativeInt128ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign);
+            }
+
+            return FormatInt128Slow(value, format, provider);
+
+            static unsafe string FormatInt128Slow(Int128 value, string? format, IFormatProvider? provider)
+            {
+                ReadOnlySpan<char> formatSpan = format;
+
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
+                {
+                    return Int128.IsPositive(value)
+                        ? UInt128ToDecStr((UInt128)value, digits)
+                        : NegativeInt128ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return Int128ToHexStr(value, GetHexBase(fmt), digits);
+                }
+                else
+                {
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[Int128NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int128NumberBufferLength);
+
+                    Int128ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                    }
+
+                    return sb.ToString();
+                }
+            }
+        }
+
+        public static bool TryFormatInt128(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        {
+            // Fast path for default format
+            if (format.Length == 0)
+            {
+                return Int128.IsPositive(value)
+                     ? TryUInt128ToDecStr((UInt128)value, digits: -1, destination, out charsWritten)
+                     : TryNegativeInt128ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+            }
+
+            return TryFormatInt128Slow(value, format, provider, destination, out charsWritten);
+
+            static unsafe bool TryFormatInt128Slow(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            {
+                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
+                {
+                    return Int128.IsPositive(value)
+                        ? TryUInt128ToDecStr((UInt128)value, digits, destination, out charsWritten)
+                        : TryNegativeInt128ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return TryInt128ToHexStr(value, GetHexBase(fmt), digits, destination, out charsWritten);
+                }
+                else
+                {
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[Int128NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int128NumberBufferLength);
+
+                    Int128ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, format, info);
+                    }
+
+                    return sb.TryCopyTo(destination, out charsWritten);
+                }
+            }
+        }
+
+        public static string FormatUInt128(UInt128 value, string? format, IFormatProvider? provider)
+        {
+            // Fast path for default format
+            if (string.IsNullOrEmpty(format))
+            {
+                return UInt128ToDecStr(value, digits: -1);
+            }
+
+            return FormatUInt128Slow(value, format, provider);
+
+            static unsafe string FormatUInt128Slow(UInt128 value, string? format, IFormatProvider? provider)
+            {
+                ReadOnlySpan<char> formatSpan = format;
+
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
+                {
+                    return UInt128ToDecStr(value, digits);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return Int128ToHexStr((Int128)value, GetHexBase(fmt), digits);
+                }
+                else
+                {
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[UInt128NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt128NumberBufferLength);
+
+                    UInt128ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                    }
+
+                    return sb.ToString();
+                }
+            }
+        }
+
+        public static bool TryFormatUInt128(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        {
+            // Fast path for default format
+            if (format.Length == 0)
+            {
+                return TryUInt128ToDecStr(value, digits: -1, destination, out charsWritten);
+            }
+
+            return TryFormatUInt128Slow(value, format, provider, destination, out charsWritten);
+
+            static unsafe bool TryFormatUInt128Slow(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            {
+                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
+                {
+                    return TryUInt128ToDecStr(value, digits, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return TryInt128ToHexStr((Int128)value, GetHexBase(fmt), digits, destination, out charsWritten);
+                }
+                else
+                {
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[UInt128NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt128NumberBufferLength);
+
+                    UInt128ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, format, info);
+                    }
+
+                    return sb.TryCopyTo(destination, out charsWritten);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void Int32ToNumber(int value, ref NumberBuffer number)
         {
             number.DigitsCount = Int32Precision;
@@ -1299,6 +1505,7 @@ namespace System
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe char* Int32ToHexChars(char* buffer, uint value, int hexBase, int digits)
         {
             while (--digits >= 0 || value != 0)
@@ -1310,7 +1517,7 @@ namespace System
             return buffer;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // called from only one location
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void UInt32ToNumber(uint value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt32Precision;
@@ -1332,6 +1539,21 @@ namespace System
             number.CheckConsistency();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe byte* UInt32ToDecChars(byte* bufferEnd, uint value)
+        {
+            do
+            {
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = (byte)(remainder + '0');
+            }
+            while (value != 0);
+
+            return bufferEnd;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe byte* UInt32ToDecChars(byte* bufferEnd, uint value, int digits)
         {
             while (--digits >= 0 || value != 0)
@@ -1343,6 +1565,21 @@ namespace System
             return bufferEnd;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe char* UInt32ToDecChars(char* bufferEnd, uint value)
+        {
+            do
+            {
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = (char)(remainder + '0');
+            }
+            while (value != 0);
+
+            return bufferEnd;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe char* UInt32ToDecChars(char* bufferEnd, uint value, int digits)
         {
             while (--digits >= 0 || value != 0)
@@ -1369,13 +1606,7 @@ namespace System
             fixed (char* buffer = result)
             {
                 char* p = buffer + bufferLength;
-                do
-                {
-                    uint remainder;
-                    (value, remainder) = Math.DivRem(value, 10);
-                    *(--p) = (char)(remainder + '0');
-                }
-                while (value != 0);
+                p = UInt32ToDecChars(p, value);
                 Debug.Assert(p == buffer);
             }
             return result;
@@ -1412,13 +1643,7 @@ namespace System
                 char* p = buffer + bufferLength;
                 if (digits <= 1)
                 {
-                    do
-                    {
-                        uint remainder;
-                        (value, remainder) = Math.DivRem(value, 10);
-                        *(--p) = (char)(remainder + '0');
-                    }
-                    while (value != 0);
+                    p = UInt32ToDecChars(p, value);
                 }
                 else
                 {
@@ -1429,21 +1654,23 @@ namespace System
             return true;
         }
 
-        private static unsafe void Int64ToNumber(long input, ref NumberBuffer number)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void Int64ToNumber(long value, ref NumberBuffer number)
         {
-            ulong value = (ulong)input;
-            number.IsNegative = input < 0;
             number.DigitsCount = Int64Precision;
-            if (number.IsNegative)
+
+            if (value >= 0)
             {
-                value = (ulong)(-input);
+                number.IsNegative = false;
+            }
+            else
+            {
+                number.IsNegative = true;
+                value = -value;
             }
 
             byte* buffer = number.GetDigitsPointer();
-            byte* p = buffer + Int64Precision;
-            while (High32(value) != 0)
-                p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-            p = UInt32ToDecChars(p, Low32(value), 0);
+            byte* p = UInt64ToDecChars(buffer + Int64Precision, (ulong)value, 0);
 
             int i = (int)(buffer + Int64Precision - p);
 
@@ -1461,32 +1688,22 @@ namespace System
         public static string Int64ToDecStr(long value)
         {
             return value >= 0 ?
-                UInt64ToDecStr((ulong)value, -1) :
+                UInt64ToDecStr((ulong)value) :
                 NegativeInt64ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
         }
 
-        private static unsafe string NegativeInt64ToDecStr(long input, int digits, string sNegative)
+        private static unsafe string NegativeInt64ToDecStr(long value, int digits, string sNegative)
         {
-            Debug.Assert(input < 0);
+            Debug.Assert(value < 0);
 
             if (digits < 1)
-            {
                 digits = 1;
-            }
 
-            ulong value = (ulong)(-input);
-
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value)) + sNegative.Length;
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((ulong)(-value))) + sNegative.Length;
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
             {
-                char* p = buffer + bufferLength;
-                while (High32(value) != 0)
-                {
-                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                    digits -= 9;
-                }
-                p = UInt32ToDecChars(p, Low32(value), digits);
+                char* p = UInt64ToDecChars(buffer + bufferLength, (ulong)(-value), digits);
                 Debug.Assert(p == buffer + sNegative.Length);
 
                 for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1498,18 +1715,14 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt64ToDecStr(long input, int digits, string sNegative, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryNegativeInt64ToDecStr(long value, int digits, string sNegative, Span<char> destination, out int charsWritten)
         {
-            Debug.Assert(input < 0);
+            Debug.Assert(value < 0);
 
             if (digits < 1)
-            {
                 digits = 1;
-            }
 
-            ulong value = (ulong)(-input);
-
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((ulong)(-input))) + sNegative.Length;
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((ulong)(-value))) + sNegative.Length;
             if (bufferLength > destination.Length)
             {
                 charsWritten = 0;
@@ -1519,13 +1732,7 @@ namespace System
             charsWritten = bufferLength;
             fixed (char* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = buffer + bufferLength;
-                while (High32(value) != 0)
-                {
-                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                    digits -= 9;
-                }
-                p = UInt32ToDecChars(p, Low32(value), digits);
+                char* p = UInt64ToDecChars(buffer + bufferLength, (ulong)(-value), digits);
                 Debug.Assert(p == buffer + sNegative.Length);
 
                 for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1539,20 +1746,14 @@ namespace System
 
         private static unsafe string Int64ToHexStr(long value, char hexBase, int digits)
         {
+            if (digits < 1)
+                digits = 1;
+
             int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((ulong)value));
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
             {
-                char* p = buffer + bufferLength;
-                if (High32((ulong)value) != 0)
-                {
-                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, 8);
-                    p = Int32ToHexChars(p, High32((ulong)value), hexBase, digits - 8);
-                }
-                else
-                {
-                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, Math.Max(digits, 1));
-                }
+                char* p = Int64ToHexChars(buffer + bufferLength, (ulong)value, hexBase, digits);
                 Debug.Assert(p == buffer);
             }
             return result;
@@ -1560,6 +1761,9 @@ namespace System
 
         private static unsafe bool TryInt64ToHexStr(long value, char hexBase, int digits, Span<char> destination, out int charsWritten)
         {
+            if (digits < 1)
+                digits = 1;
+
             int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((ulong)value));
             if (bufferLength > destination.Length)
             {
@@ -1570,32 +1774,49 @@ namespace System
             charsWritten = bufferLength;
             fixed (char* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = buffer + bufferLength;
-                if (High32((ulong)value) != 0)
-                {
-                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, 8);
-                    p = Int32ToHexChars(p, High32((ulong)value), hexBase, digits - 8);
-                }
-                else
-                {
-                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, Math.Max(digits, 1));
-                }
+                char* p = Int64ToHexChars(buffer + bufferLength, (ulong)value, hexBase, digits);
                 Debug.Assert(p == buffer);
             }
             return true;
         }
 
+#if TARGET_64BIT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        private static unsafe char* Int64ToHexChars(char* buffer, ulong value, int hexBase, int digits)
+        {
+#if TARGET_32BIT
+            uint lower = (uint)value;
+            uint upper = (uint)(value >> 32);
+
+            if (upper != 0)
+            {
+                buffer = Int32ToHexChars(buffer, lower, hexBase, 8);
+                return Int32ToHexChars(buffer, upper, hexBase, digits - 8);
+            }
+            else
+            {
+                return Int32ToHexChars(buffer, lower, hexBase, Math.Max(digits, 1));
+            }
+#else
+            while (--digits >= 0 || value != 0)
+            {
+                byte digit = (byte)(value & 0xF);
+                *(--buffer) = (char)(digit + (digit < 10 ? (byte)'0' : hexBase));
+                value >>= 4;
+            }
+            return buffer;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt64Precision;
             number.IsNegative = false;
 
             byte* buffer = number.GetDigitsPointer();
-            byte* p = buffer + UInt64Precision;
-
-            while (High32(value) != 0)
-                p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-            p = UInt32ToDecChars(p, Low32(value), 0);
+            byte* p = UInt64ToDecChars(buffer + UInt64Precision, value, 0);
 
             int i = (int)(buffer + UInt64Precision - p);
 
@@ -1610,12 +1831,112 @@ namespace System
             number.CheckConsistency();
         }
 
-        internal static unsafe string UInt64ToDecStr(ulong value, int digits)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint Int64DivMod1E9(ref ulong value)
         {
-            if (digits < 1)
-                digits = 1;
+            uint rem = (uint)(value % 1_000_000_000);
+            value /= 1_000_000_000;
+            return rem;
+        }
 
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+#if TARGET_64BIT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        internal static unsafe byte* UInt64ToDecChars(byte* bufferEnd, ulong value)
+        {
+#if TARGET_32BIT
+            while ((uint)(value >> 32) != 0)
+            {
+                bufferEnd = UInt32ToDecChars(bufferEnd, Int64DivMod1E9(ref value), 9);
+            }
+            return UInt32ToDecChars(bufferEnd, (uint)value);
+#else
+            do
+            {
+                ulong remainder;
+                (value, remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = (byte)(remainder + '0');
+            }
+            while (value != 0);
+
+            return bufferEnd;
+#endif
+        }
+
+#if TARGET_64BIT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        internal static unsafe byte* UInt64ToDecChars(byte* bufferEnd, ulong value, int digits)
+        {
+#if TARGET_32BIT
+            while ((uint)(value >> 32) != 0)
+            {
+                bufferEnd = UInt32ToDecChars(bufferEnd, Int64DivMod1E9(ref value), 9);
+                digits -= 9;
+            }
+            return UInt32ToDecChars(bufferEnd, (uint)value, digits);
+#else
+            while (--digits >= 0 || value != 0)
+            {
+                ulong remainder;
+                (value, remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = (byte)(remainder + '0');
+            }
+            return bufferEnd;
+#endif
+        }
+
+#if TARGET_64BIT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        internal static unsafe char* UInt64ToDecChars(char* bufferEnd, ulong value)
+        {
+#if TARGET_32BIT
+            while ((uint)(value >> 32) != 0)
+            {
+                bufferEnd = UInt32ToDecChars(bufferEnd, Int64DivMod1E9(ref value), 9);
+            }
+            return UInt32ToDecChars(bufferEnd, (uint)value);
+#else
+            do
+            {
+                ulong remainder;
+                (value, remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = (char)(remainder + '0');
+            }
+            while (value != 0);
+
+            return bufferEnd;
+#endif
+        }
+
+#if TARGET_64BIT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        internal static unsafe char* UInt64ToDecChars(char* bufferEnd, ulong value, int digits)
+        {
+#if TARGET_32BIT
+            while ((uint)(value >> 32) != 0)
+            {
+                bufferEnd = UInt32ToDecChars(bufferEnd, Int64DivMod1E9(ref value), 9);
+                digits -= 9;
+            }
+            return UInt32ToDecChars(bufferEnd, (uint)value, digits);
+#else
+            while (--digits >= 0 || value != 0)
+            {
+                ulong remainder;
+                (value, remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = (char)(remainder + '0');
+            }
+            return bufferEnd;
+#endif
+        }
+
+        internal static unsafe string UInt64ToDecStr(ulong value)
+        {
+            // Intrinsified in mono interpreter
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
             if (bufferLength == 1)
@@ -1627,12 +1948,23 @@ namespace System
             fixed (char* buffer = result)
             {
                 char* p = buffer + bufferLength;
-                while (High32(value) != 0)
-                {
-                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                    digits -= 9;
-                }
-                p = UInt32ToDecChars(p, Low32(value), digits);
+                p = UInt64ToDecChars(p, value);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        internal static unsafe string UInt64ToDecStr(ulong value, int digits)
+        {
+            if (digits <= 1)
+                return UInt64ToDecStr(value);
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = buffer + bufferLength;
+                p = UInt64ToDecChars(p, value, digits);
                 Debug.Assert(p == buffer);
             }
             return result;
@@ -1640,9 +1972,6 @@ namespace System
 
         private static unsafe bool TryUInt64ToDecStr(ulong value, int digits, Span<char> destination, out int charsWritten)
         {
-            if (digits < 1)
-                digits = 1;
-
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
             if (bufferLength > destination.Length)
             {
@@ -1654,12 +1983,298 @@ namespace System
             fixed (char* buffer = &MemoryMarshal.GetReference(destination))
             {
                 char* p = buffer + bufferLength;
-                while (High32(value) != 0)
+                if (digits <= 1)
                 {
-                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                    digits -= 9;
+                    p = UInt64ToDecChars(p, value);
                 }
-                p = UInt32ToDecChars(p, Low32(value), digits);
+                else
+                {
+                    p = UInt64ToDecChars(p, value, digits);
+                }
+                Debug.Assert(p == buffer);
+            }
+            return true;
+        }
+
+        private static unsafe void Int128ToNumber(Int128 value, ref NumberBuffer number)
+        {
+            number.DigitsCount = Int128Precision;
+
+            if (Int128.IsPositive(value))
+            {
+                number.IsNegative = false;
+            }
+            else
+            {
+                number.IsNegative = true;
+                value = -value;
+            }
+
+            byte* buffer = number.GetDigitsPointer();
+            byte* p = UInt128ToDecChars(buffer + Int128Precision, (UInt128)value, 0);
+
+            int i = (int)(buffer + Int128Precision - p);
+
+            number.DigitsCount = i;
+            number.Scale = i;
+
+            byte* dst = number.GetDigitsPointer();
+            while (--i >= 0)
+                *dst++ = *p++;
+            *dst = (byte)('\0');
+
+            number.CheckConsistency();
+        }
+
+        public static string Int128ToDecStr(Int128 value)
+        {
+            return Int128.IsPositive(value)
+                 ? UInt128ToDecStr((UInt128)value, -1)
+                 : NegativeInt128ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
+        }
+
+        private static unsafe string NegativeInt128ToDecStr(Int128 value, int digits, string sNegative)
+        {
+            Debug.Assert(Int128.IsNegative(value));
+
+            if (digits < 1)
+                digits = 1;
+
+            UInt128 absValue = (UInt128)(-value);
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(absValue)) + sNegative.Length;
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = UInt128ToDecChars(buffer + bufferLength, absValue, digits);
+                Debug.Assert(p == buffer + sNegative.Length);
+
+                for (int i = sNegative.Length - 1; i >= 0; i--)
+                {
+                    *(--p) = sNegative[i];
+                }
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe bool TryNegativeInt128ToDecStr(Int128 value, int digits, string sNegative, Span<char> destination, out int charsWritten)
+        {
+            Debug.Assert(Int128.IsNegative(value));
+
+            if (digits < 1)
+                digits = 1;
+
+            UInt128 absValue = (UInt128)(-value);
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(absValue)) + sNegative.Length;
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = UInt128ToDecChars(buffer + bufferLength, absValue, digits);
+                Debug.Assert(p == buffer + sNegative.Length);
+
+                for (int i = sNegative.Length - 1; i >= 0; i--)
+                {
+                    *(--p) = sNegative[i];
+                }
+                Debug.Assert(p == buffer);
+            }
+            return true;
+        }
+
+        private static unsafe string Int128ToHexStr(Int128 value, char hexBase, int digits)
+        {
+            if (digits < 1)
+                digits = 1;
+
+            UInt128 uValue = (UInt128)value;
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits(uValue));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = Int128ToHexChars(buffer + bufferLength, uValue, hexBase, digits);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe bool TryInt128ToHexStr(Int128 value, char hexBase, int digits, Span<char> destination, out int charsWritten)
+        {
+            if (digits < 1)
+                digits = 1;
+
+            UInt128 uValue = (UInt128)value;
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits(uValue));
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = Int128ToHexChars(buffer + bufferLength, uValue, hexBase, digits);
+                Debug.Assert(p == buffer);
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe char* Int128ToHexChars(char* buffer, UInt128 value, int hexBase, int digits)
+        {
+            ulong lower = value.Lower;
+            ulong upper = value.Upper;
+
+            if (upper != 0)
+            {
+                buffer = Int64ToHexChars(buffer, lower, hexBase, 16);
+                return Int64ToHexChars(buffer, upper, hexBase, digits - 16);
+            }
+            else
+            {
+                return Int64ToHexChars(buffer, lower, hexBase, Math.Max(digits, 1));
+            }
+        }
+
+        private static unsafe void UInt128ToNumber(UInt128 value, ref NumberBuffer number)
+        {
+            number.DigitsCount = UInt128Precision;
+            number.IsNegative = false;
+
+            byte* buffer = number.GetDigitsPointer();
+            byte* p = UInt128ToDecChars(buffer + UInt128Precision, value, 0);
+
+            int i = (int)(buffer + UInt128Precision - p);
+
+            number.DigitsCount = i;
+            number.Scale = i;
+
+            byte* dst = number.GetDigitsPointer();
+            while (--i >= 0)
+                *dst++ = *p++;
+            *dst = (byte)('\0');
+
+            number.CheckConsistency();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong Int128DivMod1E19(ref UInt128 value)
+        {
+            UInt128 divisor = new UInt128(0, 10_000_000_000_000_000_000);
+            (value, UInt128 remainder) = UInt128.DivRem(value, divisor);
+            return remainder.Lower;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe byte* UInt128ToDecChars(byte* bufferEnd, UInt128 value)
+        {
+            while (value.Upper != 0)
+            {
+                bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
+            }
+            return UInt64ToDecChars(bufferEnd, value.Lower);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe byte* UInt128ToDecChars(byte* bufferEnd, UInt128 value, int digits)
+        {
+            while (value.Upper != 0)
+            {
+                bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
+                digits -= 19;
+            }
+            return UInt64ToDecChars(bufferEnd, value.Lower, digits);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe char* UInt128ToDecChars(char* bufferEnd, UInt128 value)
+        {
+            while (value.Upper != 0)
+            {
+                bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
+            }
+            return UInt64ToDecChars(bufferEnd, value.Lower);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe char* UInt128ToDecChars(char* bufferEnd, UInt128 value, int digits)
+        {
+            while (value.Upper != 0)
+            {
+                bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
+                digits -= 19;
+            }
+            return UInt64ToDecChars(bufferEnd, value.Lower, digits);
+        }
+
+        internal static unsafe string UInt128ToDecStr(UInt128 value)
+        {
+            // Intrinsified in mono interpreter
+            int bufferLength = FormattingHelpers.CountDigits(value);
+
+            // For single-digit values that are very common, especially 0 and 1, just return cached strings.
+            if (bufferLength == 1)
+            {
+                return s_singleDigitStringCache[value.Lower];
+            }
+
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = buffer + bufferLength;
+                p = UInt128ToDecChars(p, value);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        internal static unsafe string UInt128ToDecStr(UInt128 value, int digits)
+        {
+            if (digits <= 1)
+                return UInt128ToDecStr(value);
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = buffer + bufferLength;
+                p = UInt128ToDecChars(p, value, digits);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe bool TryUInt128ToDecStr(UInt128 value, int digits, Span<char> destination, out int charsWritten)
+        {
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = buffer + bufferLength;
+                if (digits <= 1)
+                {
+                    p = UInt128ToDecChars(p, value);
+                }
+                else
+                {
+                    p = UInt128ToDecChars(p, value, digits);
+                }
                 Debug.Assert(p == buffer);
             }
             return true;
@@ -1673,8 +2288,7 @@ namespace System
                 // If the format begins with a symbol, see if it's a standard format
                 // with or without a specified number of digits.
                 c = format[0];
-                if ((uint)(c - 'A') <= 'Z' - 'A' ||
-                    (uint)(c - 'a') <= 'z' - 'a')
+                if (char.IsAsciiLetter(c))
                 {
                     // Fast path for sole symbol, e.g. "D"
                     if (format.Length == 1)
@@ -1709,7 +2323,7 @@ namespace System
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
-                    while (i < format.Length && (((uint)format[i] - '0') < 10))
+                    while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                     {
                         int temp = ((n * 10) + format[i++] - '0');
                         if (temp < n)
@@ -1721,7 +2335,7 @@ namespace System
 
                     // If we're at the end of the digits rather than having stopped because we hit something
                     // other than a digit or overflowed, return the standard format info.
-                    if (i == format.Length || format[i] == '\0')
+                    if ((uint)i >= (uint)format.Length || format[i] == '\0')
                     {
                         digits = n;
                         return c;
@@ -1856,11 +2470,6 @@ namespace System
                 case 'R':
                 case 'r':
                 {
-                    if (number.Kind != NumberBufferKind.FloatingPoint)
-                    {
-                        goto default;
-                    }
-
                     format = (char)(format - ('R' - 'G'));
                     Debug.Assert((format == 'G') || (format == 'g'));
                     goto case 'G';
@@ -2616,17 +3225,6 @@ namespace System
                     }
                 }
             }
-        }
-
-        private static uint Low32(ulong value) => (uint)value;
-
-        private static uint High32(ulong value) => (uint)((value & 0xFFFFFFFF00000000) >> 32);
-
-        private static uint Int64DivMod1E9(ref ulong value)
-        {
-            uint rem = (uint)(value % 1000000000);
-            value /= 1000000000;
-            return rem;
         }
 
         private static ulong ExtractFractionAndBiasedExponent(double value, out int exponent)

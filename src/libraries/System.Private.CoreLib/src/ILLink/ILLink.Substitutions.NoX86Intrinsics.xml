@@ -105,5 +105,12 @@
     <type fullname="System.Runtime.Intrinsics.X86.X86Base/X64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.X86Serialize">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.X86Serialize/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+
   </assembly>
 </linker>

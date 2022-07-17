@@ -242,7 +242,7 @@ namespace System.IO.Pipes
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
-        internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
+        private protected static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             // Check that this handle is infact a handle to a pipe.
             if (Interop.Kernel32.GetFileType(safePipeHandle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)
@@ -457,7 +457,7 @@ namespace System.IO.Pipes
 
         // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can
         // override this in cases where only one mode is legal (such as anonymous pipes)
-        public unsafe virtual PipeTransmissionMode TransmissionMode
+        public virtual unsafe PipeTransmissionMode TransmissionMode
         {
             get
             {
@@ -488,7 +488,7 @@ namespace System.IO.Pipes
 
         // Gets the buffer size in the inbound direction for the pipe. This checks if pipe has read
         // access. If that passes, call to GetNamedPipeInfo will succeed.
-        public unsafe virtual int InBufferSize
+        public virtual unsafe int InBufferSize
         {
             get
             {
@@ -512,7 +512,7 @@ namespace System.IO.Pipes
         // if it's an outbound only pipe because GetNamedPipeInfo requires read access to the pipe.
         // However, returning cached is good fallback, especially if user specified a value in
         // the ctor.
-        public unsafe virtual int OutBufferSize
+        public virtual unsafe int OutBufferSize
         {
             get
             {

@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, IReadOnlySet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
 #else
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
@@ -418,10 +418,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
-            if (equalityComparer == null)
-            {
-                equalityComparer = EqualityComparer<T>.Default;
-            }
+            equalityComparer ??= EqualityComparer<T>.Default;
 
             if (equalityComparer == _equalityComparer)
             {

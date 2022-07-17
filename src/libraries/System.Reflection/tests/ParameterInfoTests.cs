@@ -212,6 +212,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(s_CustomAttributesTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void CustomAttributesTest(Type attrType)
         {
             ParameterInfo parameterInfo = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithOptionalDefaultOutInMarshalParam", 0);
@@ -243,6 +244,14 @@ namespace System.Reflection.Tests
             MyAttribute myAttribute = prov.GetCustomAttributes(typeof(MyAttribute), true).SingleOrDefault() as MyAttribute;
             Assert.Equal(exists, myAttribute != null);
             Assert.Equal(expectedMyAttributeValue, exists ? myAttribute.Value : expectedMyAttributeValue);
+        }
+
+        [Fact]
+        public static void GetCustomAttributesOnParameterWithNullMetadataTokenReturnsArrayOfCorrectType()
+        {
+            var parameterWithNullMetadataToken = typeof(int[]).GetProperty(nameof(Array.Length)).GetMethod.ReturnParameter;
+            Assert.Equal(typeof(Attribute[]), Attribute.GetCustomAttributes(parameterWithNullMetadataToken).GetType());
+            Assert.Equal(typeof(MyAttribute[]), Attribute.GetCustomAttributes(parameterWithNullMetadataToken, typeof(MyAttribute)).GetType());
         }
 
         [Fact]

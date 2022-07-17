@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
@@ -21,8 +16,6 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
-    IMPORT LinkFrameAndThrow
-    IMPORT FixContextHandler
     IMPORT OnHijackWorker
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
@@ -209,27 +202,6 @@ Done
 
         NESTED_END
 
-; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call to prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; x12 = FixupPrecode *
-        ; On Exit
-        ; x12 = MethodDesc*
-        ; x13, x14 Trashed
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    w13, [x12, #Offset_PrecodeChunkIndex]              ; m_PrecodeChunkIndex
-        ldrb    w14, [x12, #Offset_MethodDescChunkIndex]           ; m_MethodDescChunkIndex
-
-        add     x12,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-        add     x13,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-        ldr     x13, [x13,#SIZEOF__FixupPrecode]
-        add     x12,x13,w14,uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-        b ThePreStub
-
-        NESTED_END
 ; ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub
@@ -1057,27 +1029,6 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 
 ; ------------------------------------------------------------------
-;
-; Helpers for async (NullRef, AccessViolation) exceptions
-;
-
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
-        PROLOG_SAVE_REG_PAIR fp,lr, #-16!
-
-        ; On entry:
-        ;
-        ; X0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
-
-        ; Target should not return.
-        EMIT_BREAKPOINT
-
-        NESTED_END NakedThrowHelper2
-
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
-
-; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
 ; This method will perform a quick chained lookup of the entry if the
@@ -1134,7 +1085,7 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
                                   ; Move this entry to head postion of the chain
@@ -1391,7 +1342,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         PROLOG_WITH_TRANSITION_BLOCK
 
         add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
+        mov     x1, x9 ; stub-identifying token
         bl      OnCallCountThresholdReached
         mov     x9, x0
 

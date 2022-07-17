@@ -832,6 +832,20 @@ namespace System.Numerics.Tests
             Assert.False(Vector<T>.Zero.Equals(Vector<T>.One));
             Assert.False(Vector<T>.Zero.Equals(new Vector<T>(Util.One<T>())));
         }
+
+        [Fact]
+        public void VectorDoubleEqualsNaNTest()
+        {
+            var nan = new Vector<double>(double.NaN);
+            Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void VectorSingleEqualsNaNTest()
+        {
+            var nan = new Vector<float>(float.NaN);
+            Assert.True(nan.Equals(nan));
+        }
         #endregion
 
         #region System.Object Overloads
@@ -1114,26 +1128,36 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarByte() { TestMultiplicationWithScalar<byte>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSByte() { TestMultiplicationWithScalar<sbyte>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt16() { TestMultiplicationWithScalar<ushort>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt16() { TestMultiplicationWithScalar<short>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt32() { TestMultiplicationWithScalar<uint>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt32() { TestMultiplicationWithScalar<int>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt64() { TestMultiplicationWithScalar<ulong>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt64() { TestMultiplicationWithScalar<long>(); }
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSingle() { TestMultiplicationWithScalar<float>(); }
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarDouble() { TestMultiplicationWithScalar<double>(); }
         private void TestMultiplicationWithScalar<T>() where T : struct, INumber<T>
         {
@@ -3220,6 +3244,53 @@ namespace System.Numerics.Tests
             AssertEqual(expected(values), sum, "Sum");
         }
 
+        #endregion
+
+        #region IsSupported Tests
+        [Fact]
+        public void IsSupportedByte() => TestIsSupported<byte>();
+
+        [Fact]
+        public void IsSupportedDouble() => TestIsSupported<double>();
+
+        [Fact]
+        public void IsSupportedInt16() => TestIsSupported<short>();
+
+        [Fact]
+        public void IsSupportedInt32() => TestIsSupported<int>();
+
+        [Fact]
+        public void IsSupportedInt64() => TestIsSupported<long>();
+
+        [Fact]
+        public void IsSupportedIntPtr() => TestIsSupported<nint>();
+
+        [Fact]
+        public void IsSupportedSByte() => TestIsSupported<sbyte>();
+
+        [Fact]
+        public void IsSupportedSingle() => TestIsSupported<float>();
+
+        [Fact]
+        public void IsSupportedUInt16() => TestIsSupported<ushort>();
+
+        [Fact]
+        public void IsSupportedUInt32() => TestIsSupported<uint>();
+
+        [Fact]
+        public void IsSupportedUInt64() => TestIsSupported<ulong>();
+
+        [Fact]
+        public void IsSupportedUIntPtr() => TestIsSupported<nuint>();
+
+        private static void TestIsSupported<T>()
+            where T : struct
+        {
+            Assert.True(Vector<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.True((bool)methodInfo.Invoke(null, null));
+        }
         #endregion
 
         #region Helper Methods

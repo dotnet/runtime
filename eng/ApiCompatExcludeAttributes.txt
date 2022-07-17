@@ -1,5 +1,4 @@
-T:System.CLSCompliantAttribute
 T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
-T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute
 T:System.Diagnostics.DebuggerGuidedStepThroughAttribute
 T:System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute
+T:System.Runtime.CompilerServices.NativeIntegerAttribute

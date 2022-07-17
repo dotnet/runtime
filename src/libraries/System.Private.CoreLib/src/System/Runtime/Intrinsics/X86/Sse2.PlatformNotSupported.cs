@@ -26,61 +26,61 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// __int64 _mm_cvtsd_si64 (__m128d a)
             ///   CVTSD2SI r64, xmm/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64(Vector128<double> value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __int64 _mm_cvtsi128_si64 (__m128i a)
             ///   MOVQ reg/m64, xmm
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __int64 _mm_cvtsi128_si64 (__m128i a)
             ///   MOVQ reg/m64, xmm
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ConvertToUInt64(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128d _mm_cvtsi64_sd (__m128d a, __int64 b)
             ///   CVTSI2SD xmm, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, long value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128i _mm_cvtsi64_si128 (__int64 a)
             ///   MOVQ xmm, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<long> ConvertScalarToVector128Int64(long value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128i _mm_cvtsi64_si128 (__int64 a)
             ///   MOVQ xmm, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __int64 _mm_cvttsd_si64 (__m128d a)
             ///   CVTTSD2SI reg, xmm/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64WithTruncation(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// void _mm_stream_si64(__int64 *p, __int64 a)
             ///   MOVNTI m64, r64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static unsafe void StoreNonTemporal(long* address, long value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// void _mm_stream_si64(__int64 *p, __int64 a)
             ///   MOVNTI m64, r64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static unsafe void StoreNonTemporal(ulong* address, ulong value) { throw new PlatformNotSupportedException(); }
         }

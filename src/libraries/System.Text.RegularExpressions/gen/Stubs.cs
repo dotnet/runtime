@@ -42,6 +42,21 @@ namespace System
             action(span, state);
             return span.ToString();
         }
+
+        public static int CommonPrefixLength(this ReadOnlySpan<char> span, ReadOnlySpan<char> other)
+        {
+            int length = Math.Min(span.Length, other.Length);
+
+            for (int i = 0; i < length; i++)
+            {
+                if (span[i] != other[i])
+                {
+                    return i;
+                }
+            }
+
+            return length;
+        }
     }
 }
 
@@ -77,7 +92,6 @@ namespace System.Text.RegularExpressions
     {
         public RegexReplacement(string rep, RegexNode concat, Hashtable caps) { }
 
-        private const int Specials = 4;
         public const int LeftPortion = -1;
         public const int RightPortion = -2;
         public const int LastGroup = -3;

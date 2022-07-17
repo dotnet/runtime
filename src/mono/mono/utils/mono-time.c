@@ -81,7 +81,7 @@ mono_100ns_ticks (void)
 	QueryPerformanceCounter (&value);
 	cur_time = value.QuadPart;
 	/* we use unsigned numbers and return the difference to avoid overflows */
-	return (cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart;
+	return GDOUBLE_TO_INT64 ((cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart);
 }
 
 /* Returns the number of 100ns ticks since Jan 1, 1601, UTC timezone */
@@ -90,8 +90,10 @@ mono_100ns_datetime (void)
 {
 	ULARGE_INTEGER ft;
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof(ft) != sizeof(FILETIME))
 		g_assert_not_reached ();
+MONO_RESTORE_WARNING
 
 	GetSystemTimeAsFileTime ((FILETIME*) &ft);
 	return ft.QuadPart;
@@ -102,9 +104,6 @@ mono_100ns_datetime (void)
 
 #if defined (HAVE_SYS_PARAM_H)
 #include <sys/param.h>
-#endif
-#if defined(HAVE_SYS_SYSCTL_H)
-#include <sys/sysctl.h>
 #endif
 
 #if defined(HOST_DARWIN)

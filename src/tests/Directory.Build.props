@@ -71,6 +71,7 @@
 
     <TestBuildMode Condition="'$(__TestBuildMode)' != ''">$(__TestBuildMode)</TestBuildMode>
     <RuntimeFlavor Condition="'$(__RuntimeFlavor)' != ''">$(__RuntimeFlavor)</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">coreclr</RuntimeFlavor>
 
     <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
@@ -122,7 +123,7 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
-    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008</NoWarn>
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8981</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
@@ -185,7 +186,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
+    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false /p:Configuration=$(Configuration)</CLRTestMSBuildArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">
@@ -195,4 +196,5 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
+  <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.props" Condition="'$(IsTestsCommonProject)' != 'true'" />
 </Project>

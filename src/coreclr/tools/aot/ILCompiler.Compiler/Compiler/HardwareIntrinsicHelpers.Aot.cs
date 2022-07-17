@@ -23,12 +23,10 @@ namespace ILCompiler
         /// Generates IL for the IsSupported property that reads this information from a field initialized by the runtime
         /// at startup. Only works for intrinsics that the code generator can generate detection code for.
         /// </summary>
-        public static MethodIL EmitIsSupportedIL(MethodDesc method, FieldDesc isSupportedField)
+        public static MethodIL EmitIsSupportedIL(MethodDesc method, FieldDesc isSupportedField, InstructionSet instructionSet)
         {
             Debug.Assert(IsIsSupportedMethod(method));
             Debug.Assert(isSupportedField.IsStatic && isSupportedField.FieldType.IsWellKnownType(WellKnownType.Int32));
-
-            string id = InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType);
 
             int flag = 0;
 
@@ -36,11 +34,11 @@ namespace ILCompiler
             {
                 case TargetArchitecture.X86:
                 case TargetArchitecture.X64:
-                    flag = XArchIntrinsicConstants.FromHardwareIntrinsicId(id);
+                    flag = XArchIntrinsicConstants.FromInstructionSet(instructionSet);
                     break;
 
                 case TargetArchitecture.ARM64:
-                    flag = Arm64IntrinsicConstants.FromHardwareIntrinsicId(id);
+                    flag = Arm64IntrinsicConstants.FromInstructionSet(instructionSet);
                     break;
 
                 default:
@@ -63,19 +61,25 @@ namespace ILCompiler
 
         public static int GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
         {
+            int result = 0;
             switch (instructionSetSupport.Architecture)
             {
                 case TargetArchitecture.X86:
                 case TargetArchitecture.X64:
-                    return XArchIntrinsicConstants.FromInstructionSetFlags(instructionSetSupport.SupportedFlags);
+                    foreach (InstructionSet instructionSet in instructionSetSupport.SupportedFlags)
+                        result |= XArchIntrinsicConstants.FromInstructionSet(instructionSet);
+                    break;
 
                 case TargetArchitecture.ARM64:
-                    return Arm64IntrinsicConstants.FromInstructionSetFlags(instructionSetSupport.SupportedFlags);
+                    foreach (InstructionSet instructionSet in instructionSetSupport.SupportedFlags)
+                        result |= Arm64IntrinsicConstants.FromInstructionSet(instructionSet);
+                    break;
 
                 default:
                     Debug.Fail("Unsupported Architecture");
-                    return 0;
+                    break;
             }
+            return result;
         }
 
         // Keep these enumerations in sync with startup.cpp in the native runtime.
@@ -96,146 +100,99 @@ namespace ILCompiler
             public const int Bmi2 = 0x0800;
             public const int Lzcnt = 0x1000;
             public const int AvxVnni = 0x2000;
+            public const int Movbe = 0x4000;
 
-            public static int FromHardwareIntrinsicId(string id)
+            public static int FromInstructionSet(InstructionSet instructionSet)
             {
-                return id switch
-                {
-                    "Aes" => Aes,
-                    "Pclmulqdq" => Pclmulqdq,
-                    "Sse3" => Sse3,
-                    "Ssse3" => Ssse3,
-                    "Sse41" => Sse41,
-                    "Sse42" => Sse42,
-                    "Popcnt" => Popcnt,
-                    "Avx" => Avx,
-                    "Fma" => Fma,
-                    "Avx2" => Avx2,
-                    "Bmi1" => Bmi1,
-                    "Bmi2" => Bmi2,
-                    "Lzcnt" => Lzcnt,
-                    "AvxVnni" => AvxVnni,
-                    _ => throw new NotSupportedException(),
-                };
-            }
-
-            public static int FromInstructionSetFlags(InstructionSetFlags instructionSets)
-            {
-                int result = 0;
-
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
                 Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
                 Debug.Assert(InstructionSet.X64_LZCNT == InstructionSet.X86_LZCNT);
 
-                foreach (InstructionSet instructionSet in instructionSets)
+                return instructionSet switch
                 {
-                    result |= instructionSet switch
-                    {
-                        InstructionSet.X64_AES => Aes,
-                        InstructionSet.X64_AES_X64 => Aes,
-                        InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
-                        InstructionSet.X64_PCLMULQDQ_X64 => Pclmulqdq,
-                        InstructionSet.X64_SSE3 => Sse3,
-                        InstructionSet.X64_SSE3_X64 => Sse3,
-                        InstructionSet.X64_SSSE3 => Ssse3,
-                        InstructionSet.X64_SSSE3_X64 => Ssse3,
-                        InstructionSet.X64_SSE41 => Sse41,
-                        InstructionSet.X64_SSE41_X64 => Sse41,
-                        InstructionSet.X64_SSE42 => Sse42,
-                        InstructionSet.X64_SSE42_X64 => Sse42,
-                        InstructionSet.X64_POPCNT => Popcnt,
-                        InstructionSet.X64_POPCNT_X64 => Popcnt,
-                        InstructionSet.X64_AVX => Avx,
-                        InstructionSet.X64_AVX_X64 => Avx,
-                        InstructionSet.X64_FMA => Fma,
-                        InstructionSet.X64_FMA_X64 => Fma,
-                        InstructionSet.X64_AVX2 => Avx2,
-                        InstructionSet.X64_AVX2_X64 => Avx2,
-                        InstructionSet.X64_BMI1 => Bmi1,
-                        InstructionSet.X64_BMI1_X64 => Bmi1,
-                        InstructionSet.X64_BMI2 => Bmi2,
-                        InstructionSet.X64_BMI2_X64 => Bmi2,
-                        InstructionSet.X64_LZCNT => Lzcnt,
-                        InstructionSet.X64_LZCNT_X64 => Popcnt,
-                        InstructionSet.X64_AVXVNNI => AvxVnni,
-                        InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
+                    InstructionSet.X64_AES => Aes,
+                    InstructionSet.X64_AES_X64 => Aes,
+                    InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
+                    InstructionSet.X64_PCLMULQDQ_X64 => Pclmulqdq,
+                    InstructionSet.X64_SSE3 => Sse3,
+                    InstructionSet.X64_SSE3_X64 => Sse3,
+                    InstructionSet.X64_SSSE3 => Ssse3,
+                    InstructionSet.X64_SSSE3_X64 => Ssse3,
+                    InstructionSet.X64_SSE41 => Sse41,
+                    InstructionSet.X64_SSE41_X64 => Sse41,
+                    InstructionSet.X64_SSE42 => Sse42,
+                    InstructionSet.X64_SSE42_X64 => Sse42,
+                    InstructionSet.X64_POPCNT => Popcnt,
+                    InstructionSet.X64_POPCNT_X64 => Popcnt,
+                    InstructionSet.X64_AVX => Avx,
+                    InstructionSet.X64_AVX_X64 => Avx,
+                    InstructionSet.X64_FMA => Fma,
+                    InstructionSet.X64_FMA_X64 => Fma,
+                    InstructionSet.X64_AVX2 => Avx2,
+                    InstructionSet.X64_AVX2_X64 => Avx2,
+                    InstructionSet.X64_BMI1 => Bmi1,
+                    InstructionSet.X64_BMI1_X64 => Bmi1,
+                    InstructionSet.X64_BMI2 => Bmi2,
+                    InstructionSet.X64_BMI2_X64 => Bmi2,
+                    InstructionSet.X64_LZCNT => Lzcnt,
+                    InstructionSet.X64_LZCNT_X64 => Lzcnt,
+                    InstructionSet.X64_AVXVNNI => AvxVnni,
+                    InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
+                    InstructionSet.X64_MOVBE => Movbe,
+                    InstructionSet.X64_MOVBE_X64 => Movbe,
 
-                        // SSE and SSE2 are baseline ISAs - they're always available
-                        InstructionSet.X64_SSE => 0,
-                        InstructionSet.X64_SSE_X64 => 0,
-                        InstructionSet.X64_SSE2 => 0,
-                        InstructionSet.X64_SSE2_X64 => 0,
-                        InstructionSet.X64_X86Base => 0,
-                        InstructionSet.X64_X86Base_X64 => 0,
+                    // SSE and SSE2 are baseline ISAs - they're always available
+                    InstructionSet.X64_SSE => 0,
+                    InstructionSet.X64_SSE_X64 => 0,
+                    InstructionSet.X64_SSE2 => 0,
+                    InstructionSet.X64_SSE2_X64 => 0,
 
-                        _ => throw new NotSupportedException(instructionSet.ToString())
-                    };
-                }
+                    InstructionSet.X64_X86Base => 0,
+                    InstructionSet.X64_X86Base_X64 => 0,
 
-                return result;
+                    _ => throw new NotSupportedException(((InstructionSet_X64)instructionSet).ToString())
+                };
             }
         }
 
         private static class Arm64IntrinsicConstants
         {
-            public const int ArmBase = 0x0001;
-            public const int ArmBase_Arm64 = 0x0002;
-            public const int AdvSimd = 0x0004;
-            public const int AdvSimd_Arm64 = 0x0008;
-            public const int Aes = 0x0010;
-            public const int Crc32 = 0x0020;
-            public const int Crc32_Arm64 = 0x0040;
-            public const int Sha1 = 0x0080;
-            public const int Sha256 = 0x0100;
-            public const int Atomics = 0x0200;
-            public const int Vector64 = 0x0400;
-            public const int Vector128 = 0x0800;
+            public const int AdvSimd = 0x0001;
+            public const int Aes = 0x0002;
+            public const int Crc32 = 0x0004;
+            public const int Dp = 0x0008;
+            public const int Rdm = 0x0010;
+            public const int Sha1 = 0x0020;
+            public const int Sha256 = 0x0040;
+            public const int Atomics = 0x0080;
+            public const int Rcpc = 0x0100;
 
-            public static int FromHardwareIntrinsicId(string id)
+            public static int FromInstructionSet(InstructionSet instructionSet)
             {
-                return id switch
+                return instructionSet switch
                 {
-                    "ArmBase" => ArmBase,
-                    "ArmBase_Arm64" => ArmBase_Arm64,
-                    "AdvSimd" => AdvSimd,
-                    "AdvSimd_Arm64" => AdvSimd_Arm64,
-                    "Aes" => Aes,
-                    "Crc32" => Crc32,
-                    "Crc32_Arm64" => Crc32_Arm64,
-                    "Sha1" => Sha1,
-                    "Sha256" => Sha256,
-                    "Atomics" => Atomics,
-                    "Vector64" => Vector64,
-                    "Vector128" => Vector128,
-               _ => throw new NotSupportedException(),
+                    InstructionSet.ARM64_AdvSimd => AdvSimd,
+                    InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd,
+                    InstructionSet.ARM64_Aes => Aes,
+                    InstructionSet.ARM64_Aes_Arm64 => Aes,
+                    InstructionSet.ARM64_Crc32 => Crc32,
+                    InstructionSet.ARM64_Crc32_Arm64 => Crc32,
+                    InstructionSet.ARM64_Dp => Dp,
+                    InstructionSet.ARM64_Dp_Arm64 => Dp,
+                    InstructionSet.ARM64_Rdm => Rdm,
+                    InstructionSet.ARM64_Rdm_Arm64 => Rdm,
+                    InstructionSet.ARM64_Sha1 => Sha1,
+                    InstructionSet.ARM64_Sha1_Arm64 => Sha1,
+                    InstructionSet.ARM64_Sha256 => Sha256,
+                    InstructionSet.ARM64_Sha256_Arm64 => Sha256,
+                    InstructionSet.ARM64_Atomics => Atomics,
+                    InstructionSet.ARM64_Rcpc => Rcpc,
+
+                    InstructionSet.ARM64_ArmBase => 0,
+                    InstructionSet.ARM64_ArmBase_Arm64 => 0,
+
+                    _ => throw new NotSupportedException(((InstructionSet_ARM64)instructionSet).ToString())
                 };
-            }
-
-            public static int FromInstructionSetFlags(InstructionSetFlags instructionSets)
-            {
-                int result = 0;
-
-                foreach (InstructionSet instructionSet in instructionSets)
-                {
-                    result |= instructionSet switch
-                    {
-                        InstructionSet.ARM64_ArmBase => ArmBase,
-                        InstructionSet.ARM64_ArmBase_Arm64 => ArmBase_Arm64,
-                        InstructionSet.ARM64_AdvSimd => AdvSimd,
-                        InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd_Arm64,
-                        InstructionSet.ARM64_Aes => Aes,
-                        InstructionSet.ARM64_Crc32 => Crc32,
-                        InstructionSet.ARM64_Crc32_Arm64 => Crc32_Arm64,
-                        InstructionSet.ARM64_Sha1 => Sha1,
-                        InstructionSet.ARM64_Sha256 => Sha256,
-                        InstructionSet.ARM64_Atomics => Atomics,
-                        InstructionSet.ARM64_Vector64 => Vector64,
-                        InstructionSet.ARM64_Vector128 => Vector128,
-                        _ => throw new NotSupportedException()
-                    };
-                }
-
-                return result;
             }
         }
     }

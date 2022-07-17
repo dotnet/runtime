@@ -82,9 +82,6 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
-        return NULL;
-
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 
     pNewThreadStore.SuppressRelease();
@@ -208,13 +205,9 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
     }
-    m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
-
-    // Set each module's loop hijack flag
-    GetRuntimeInstance()->SetLoopHijackFlags(RhpTrapThreads);
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
@@ -232,8 +225,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
             if (!pTargetThread->CacheTransitionFrameForSuspend())
             {
-                // We drive all threads to preemptive mode by hijacking them with both a
-                // return-address hijack and loop hijacks.
+                // We drive all threads to preemptive mode by hijacking them with return-address hijack.
                 keepWaiting = true;
                 pTargetThread->Hijack();
             }
@@ -265,7 +257,15 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
     } while (keepWaiting);
 
-    m_SuspendCompleteEvent.Set();
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
@@ -276,10 +276,17 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     END_FOREACH_THREAD
 
-    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // Flush the store buffers on all CPUs, to ensure that they all see changes made
+        // by the GC threads. This only matters on weak memory ordered processors as
+        // the strong memory ordered processors wouldn't have reordered the relevant reads.
+        // This is needed to synchronize threads that were running in preemptive mode while
+        // the runtime was suspended and that will return to cooperative mode after the runtime
+        // is restarted.
+        PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 
-    // Reset module's hijackLoops flag
-    GetRuntimeInstance()->SetLoopHijackFlags(0);
+    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
 
     RhpSuspendingThread = NULL;
     if (waitForGCEvent)
@@ -288,13 +295,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     UnlockThreadStore();
 } // ResumeAllThreads
-
-void ThreadStore::WaitForSuspendComplete()
-{
-    uint32_t waitResult = m_SuspendCompleteEvent.Wait(INFINITE, false);
-    if (waitResult == WAIT_FAILED)
-        RhFailFast();
-}
 
 #ifndef DACCESS_COMPILE
 
@@ -380,7 +380,7 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
     TOP_OF_STACK_MARKER,                // m_pTransitionFrame
-    TOP_OF_STACK_MARKER,                // m_pHackPInvokeTunnel
+    TOP_OF_STACK_MARKER,                // m_pDeferredTransitionFrame
     0,                                  // m_pCachedTransitionFrame
     0,                                  // m_pNext
     INVALID_HANDLE_VALUE,               // m_hPalThread

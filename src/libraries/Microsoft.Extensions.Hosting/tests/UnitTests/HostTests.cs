@@ -9,8 +9,10 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +37,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_IncludesContentRootByDefault()
         {
             var expected = Directory.GetCurrentDirectory();
@@ -47,8 +48,37 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(expected, env.ContentRootPath);
         }
 
+        public static bool IsWindowsAndRemotExecutorIsSupported => PlatformDetection.IsWindows && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(HostTests), nameof(IsWindowsAndRemotExecutorIsSupported))]
+        public void CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory()
+        {
+            using var _ = RemoteExecutor.Invoke(() =>
+            {
+                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDirectory))
+                {
+                    // Skip the environments (like Nano Server) where Environment.SpecialFolder.System returns empty - https://github.com/dotnet/runtime/issues/21430
+                    return;
+                }
+
+                // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
+                systemDirectory = systemDirectory.ToUpper() + "\\";
+
+                Environment.CurrentDirectory = systemDirectory;
+
+                IHostBuilder builder = Host.CreateDefaultBuilder();
+                using IHost host = builder.Build();
+
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Null(config[HostDefaults.ContentRootKey]);
+                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+            });
+        }
+
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_IncludesCommandLineArguments()
         {
             var expected = Directory.GetParent(Directory.GetCurrentDirectory()).FullName; // It must exist
@@ -59,7 +89,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_RegistersEventSourceLogger()
         {
             var listener = new TestEventListener();
@@ -76,7 +105,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesActivityTracking()
         {
             var parentActivity = new Activity("ParentActivity");
@@ -115,7 +143,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesScopeValidation()
         {
             using var host = Host.CreateDefaultBuilder()
@@ -130,7 +157,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesValidateOnBuild()
         {
             var hostBuilder = Host.CreateDefaultBuilder()
@@ -187,7 +213,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48696")]
         public async Task CreateDefaultBuilder_ConfigJsonDoesNotReload()
         {
@@ -222,7 +247,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_ConfigJsonDoesReload()
         {
             var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
@@ -274,7 +298,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_SecretsDoesReload()
         {
             var secretId = Assembly.GetExecutingAssembly().GetName().Name;
@@ -318,7 +341,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_RespectShutdownTimeout()
         {
             var notDefaultTimeoutSeconds = 99;

@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        ///  Setter for RuntimeTypeHandle. Seperate from normal property as all uses should be done with great care.
+        ///  Setter for RuntimeTypeHandle. Separate from normal property as all uses should be done with great care.
         ///  Must not be set with partially constructed type handles
         /// </summary>
         public void SetRuntimeTypeHandleUnsafe(RuntimeTypeHandle runtimeTypeHandle)
@@ -84,10 +84,8 @@ namespace Internal.TypeSystem
             if (state != null && state.AttemptedAndFailedToRetrieveTypeHandle)
                 return false;
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 TypeDesc typeDefinition = typeAsDefType.GetTypeDefinition();
                 RuntimeTypeHandle typeDefHandle = typeDefinition.RuntimeTypeHandle;
                 if (typeDefHandle.IsNull())
@@ -155,15 +153,13 @@ namespace Internal.TypeSystem
                     }
                 }
             }
-            else if (type is ParameterizedType)
+            else if (type is ParameterizedType typeAsParameterType)
             {
-                ParameterizedType typeAsParameterType = (ParameterizedType)type;
-
                 if (typeAsParameterType.ParameterType.RetrieveRuntimeTypeHandleIfPossible())
                 {
                     RuntimeTypeHandle rtth;
                     if ((type is ArrayType &&
-                          (TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
+                          (TypeLoaderEnvironment.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
                            TypeLoaderEnvironment.Instance.TryGetArrayTypeHandleForNonDynamicArrayTypeFromTemplateTable(type as ArrayType, out rtth)))
                            ||
                         (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
@@ -232,7 +228,7 @@ namespace Internal.TypeSystem
             return ComputeTemplate(GetOrCreateTypeBuilderState(), templateRequired);
         }
 
-        internal TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
+        internal static TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
         {
             TypeDesc templateType = state.TemplateType;
 

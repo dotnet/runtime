@@ -99,7 +99,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     ulSize = assembly->GetLoadedLayout()->GetSize();
                 }
 
-                // memory are mapped in in GetOsPageSize() size.
+                // memory are mapped in GetOsPageSize() size.
                 // Some memory are mapped in but some are not. You cannot
                 // write all in one block. So iterating through page size
                 //
@@ -181,18 +181,16 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     // global variables. But it won't report the structures that are pointed by
     // global pointers.
     //
-#define DEFINE_DACVAR(id_type, size_type, id, var) \
-    ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
+#define DEFINE_DACVAR(size_type, id, var) \
+    ReportMem(m_dacGlobals.id, sizeof(size_type));
 
-#ifdef TARGET_UNIX
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
     if (FAILED(hr)) {
         return hr;
     }
     // Add the dac table memory in coreclr
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem((TADDR)dacTableAddress, sizeof(g_dacGlobals)); )
-#endif
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem((TADDR)dacTableAddress, sizeof(m_dacGlobals)); )
 
     // Cannot use CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     // around conditional preprocessor directives in a sane fashion.
@@ -207,22 +205,22 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     EX_END_CATCH(RethrowCancelExceptions)
 
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + g_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
     EX_TRY
     {
         // These two static pointers are pointed to static data of byte[]
         // then run constructor in place
         //
-        ReportMem(m_globalBase + g_dacGlobals.SystemDomain__m_pSystemDomain, sizeof(SystemDomain));
+        ReportMem(m_dacGlobals.SystemDomain__m_pSystemDomain, sizeof(SystemDomain));
 
         // We need IGCHeap pointer to make EEVersion work
-        ReportMem(m_globalBase + g_dacGlobals.dac__g_pGCHeap, sizeof(IGCHeap *));
+        ReportMem(m_dacGlobals.dac__g_pGCHeap, sizeof(IGCHeap *));
 
         // see synblk.cpp, the pointer is pointed to a static byte[]
         SyncBlockCache::s_pSyncBlockCache.EnumMem();
 
-        ReportMem(m_globalBase + g_dacGlobals.dac__g_FCDynamicallyAssignedImplementations,
+        ReportMem(m_dacGlobals.dac__g_FCDynamicallyAssignedImplementations,
                   sizeof(TADDR)*ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS);
 
         ReportMem(g_gcDacGlobals.GetAddr(), sizeof(GcDacVars));
@@ -789,7 +787,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
 
                         if (!pThread->IsAddressInStack(currentSP))
                         {
-                            _ASSERTE(!"Target stack has been corrupted, SP must in in the stack range.");
+                            _ASSERTE(!"Target stack has been corrupted, SP must in the stack range.");
                             break;
                         }
                     }
@@ -830,7 +828,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     // MethodTable
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);
                                     ReleaseHolder<IXCLRDataValue> pAssociatedValue(NULL);
-                                    CLRDATA_ADDRESS address;
+                                    CLRDATA_ADDRESS address = 0;
                                     PTR_Object pObjThis = NULL;
 
                                     if (SUCCEEDED(pFrame->GetArgumentByIndex(0, &pDV, 0, NULL, NULL)) &&
@@ -1545,6 +1543,12 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
             strcmp(runtimeExportSignature, RUNTIME_INFO_SIGNATURE) == 0)
         {
             ReportMem(dac_cast<TADDR>(runtimeExport), sizeof(RuntimeInfo), true);
+        }
+
+        runtimeExport = pe.GetExport(DACCESS_TABLE_SYMBOL);
+        if (runtimeExport != NULL)
+        {
+            ReportMem(dac_cast<TADDR>(runtimeExport), sizeof(DacGlobals), true);
         }
     }
     else

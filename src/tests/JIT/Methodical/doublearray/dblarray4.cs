@@ -14,11 +14,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
-internal class DblArray4
+public class DblArray4
 {
     private static int s_LOH_GEN = 0;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {

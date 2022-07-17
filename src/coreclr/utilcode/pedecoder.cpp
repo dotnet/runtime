@@ -1125,9 +1125,6 @@ CHECK PEDecoder::CheckCorHeader() const
             for(namelen=0; (namelen<32)&&(pSS->rcName[namelen]!=0); namelen++);
             CHECK((0 < namelen)&&(namelen < 32));
 
-            // Forbid HOT_MODEL_STREAM
-            CHECK(strcmp(pSS->rcName, HOT_MODEL_STREAM_A) != 0);
-
             pcMD = dac_cast<TADDR>(NextStorageStream(pSS));
             ctMD -= (COUNT_T)(pcMD - dac_cast<TADDR>(pSS));
 
@@ -2163,7 +2160,7 @@ CHECK PEDecoder::CheckILMethod(RVA rva)
     CONTRACT_CHECK_END;
 
     //
-    // Incrementaly validate that the entire IL method body is within the bounds of the image
+    // Incrementally validate that the entire IL method body is within the bounds of the image
     //
 
     // We need to have at least the tiny header
@@ -2210,7 +2207,7 @@ CHECK PEDecoder::CheckILMethod(RVA rva)
     // Optional sections following the code
     //
 
-    for (;;)
+    while (true)
     {
         CHECK(CheckRva(rva, UINT32(pSect - pIL) + sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL)));
 
@@ -2297,7 +2294,7 @@ SIZE_T PEDecoder::ComputeILMethodSize(TADDR pIL)
     // DACized copy of code:COR_ILMETHOD_FAT::GetSect
     TADDR pSect = AlignUp(pIL + codeEnd, 4);
 
-    for (;;)
+    while (true)
     {
         PTR_COR_ILMETHOD_SECT_SMALL pSectSmall = PTR_COR_ILMETHOD_SECT_SMALL(pSect);
 
@@ -2465,11 +2462,11 @@ CHECK PEDecoder::CheckWillCreateGuardPage() const
     if (!IsDll())
     {
         SIZE_T sizeReservedStack = 0;
-        SIZE_T sizeCommitedStack = 0;
+        SIZE_T sizeCommittedStack = 0;
 
-        GetEXEStackSizes(&sizeReservedStack, &sizeCommitedStack);
+        GetEXEStackSizes(&sizeReservedStack, &sizeCommittedStack);
 
-        CHECK(ThreadWillCreateGuardPage(sizeReservedStack, sizeCommitedStack));
+        CHECK(ThreadWillCreateGuardPage(sizeReservedStack, sizeCommittedStack));
 
     }
 

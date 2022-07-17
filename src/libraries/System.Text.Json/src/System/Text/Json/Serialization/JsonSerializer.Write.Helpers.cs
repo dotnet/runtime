@@ -41,7 +41,7 @@ namespace System.Text.Json
 
             if (jsonTypeInfo.HasSerialize &&
                 jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
-                typedInfo.Options._serializerContext?.CanUseSerializationLogic == true)
+                typedInfo.Options.SerializerContext?.CanUseSerializationLogic == true)
             {
                 Debug.Assert(typedInfo.SerializeHandler != null);
                 typedInfo.SerializeHandler(writer, value);
@@ -57,16 +57,13 @@ namespace System.Text.Json
         {
             Debug.Assert(writer != null);
 
-            Debug.Assert(!jsonTypeInfo.HasSerialize ||
-                jsonTypeInfo is not JsonTypeInfo<TValue> ||
-                jsonTypeInfo.Options._serializerContext == null ||
-                !jsonTypeInfo.Options._serializerContext.CanUseSerializationLogic,
-                "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
+            // TODO unify method with WriteUsingGeneratedSerializer
 
             WriteStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: false);
+            jsonTypeInfo.EnsureConfigured();
+            state.Initialize(jsonTypeInfo, supportContinuation: false, supportAsync: false);
 
-            JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            JsonConverter converter = jsonTypeInfo.Converter;
             Debug.Assert(converter != null);
             Debug.Assert(jsonTypeInfo.Options != null);
 
@@ -96,8 +93,13 @@ namespace System.Text.Json
             return type;
         }
 
-        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType!!)
+        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType)
         {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
             if (value is not null)
             {
                 Type runtimeType = value.GetType();

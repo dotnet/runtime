@@ -184,8 +184,10 @@ namespace System.ComponentModel.Composition.Hosting
             return _catalog.GetExports(definition);
         }
 
-        internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition!!)
+        internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             var exports = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
 
             foreach (var exportDefinition in PublicSurface)
@@ -221,11 +223,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
-            if (changedEvent != null)
-            {
-                changedEvent.Invoke(this, e);
-            }
+            Changed?.Invoke(this, e);
         }
 
         /// <summary>
@@ -234,11 +232,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
-            if (changingEvent != null)
-            {
-                changingEvent.Invoke(this, e);
-            }
+            Changing?.Invoke(this, e);
         }
 
         private void OnChangedInternal(object? sender, ComposablePartCatalogChangeEventArgs e)

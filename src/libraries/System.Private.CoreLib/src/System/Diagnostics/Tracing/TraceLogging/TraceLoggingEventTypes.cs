@@ -1,16 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-#endif
 using System.Collections.Generic;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: Used when calling EventSource.WriteMultiMerge.
@@ -48,9 +41,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="types">
         /// The types of the fields in the event. This value must not be null.
         /// </param>
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         internal TraceLoggingEventTypes(
             string name,
             EventTags tags,
@@ -85,14 +76,17 @@ namespace System.Diagnostics.Tracing
         {
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         internal TraceLoggingEventTypes(
-            string name!!,
+            string name,
             EventTags tags,
             System.Reflection.ParameterInfo[] paramInfos)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             this.typeInfos = MakeArray(paramInfos);
 #if FEATURE_PERFTRACING
             this.paramNames = MakeParamNameArray(paramInfos);
@@ -124,9 +118,14 @@ namespace System.Diagnostics.Tracing
 
         private TraceLoggingEventTypes(
             EventTags tags,
-            string defaultName!!,
+            string defaultName,
             TraceLoggingTypeInfo[] typeInfos)
         {
+            if (defaultName is null)
+            {
+                throw new ArgumentNullException(nameof(defaultName));
+            }
+
             this.typeInfos = typeInfos;
             this.name = defaultName;
             this.tags = tags;
@@ -176,11 +175,14 @@ namespace System.Diagnostics.Tracing
             this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags)) ??
                 this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
-        private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos!!)
+        private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {
+            if (paramInfos is null)
+            {
+                throw new ArgumentNullException(nameof(paramInfos));
+            }
+
             var recursionCheck = new List<Type>(paramInfos.Length);
             var result = new TraceLoggingTypeInfo[paramInfos.Length];
             for (int i = 0; i < paramInfos.Length; ++i)
@@ -191,11 +193,14 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
-        private static TraceLoggingTypeInfo[] MakeArray(Type[] types!!)
+        private static TraceLoggingTypeInfo[] MakeArray(Type[] types)
         {
+            if (types is null)
+            {
+                throw new ArgumentNullException(nameof(types));
+            }
+
             var recursionCheck = new List<Type>(types.Length);
             var result = new TraceLoggingTypeInfo[types.Length];
             for (int i = 0; i < types.Length; i++)
@@ -207,8 +212,13 @@ namespace System.Diagnostics.Tracing
         }
 
         private static TraceLoggingTypeInfo[] MakeArray(
-            TraceLoggingTypeInfo[] typeInfos!!)
+            TraceLoggingTypeInfo[] typeInfos)
         {
+            if (typeInfos is null)
+            {
+                throw new ArgumentNullException(nameof(typeInfos));
+            }
+
             return (TraceLoggingTypeInfo[])typeInfos.Clone();
         }
 

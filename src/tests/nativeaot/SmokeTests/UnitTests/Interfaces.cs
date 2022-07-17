@@ -38,9 +38,15 @@ public class Interfaces
         TestDefaultInterfaceMethods.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
-        TestSharedIntefaceMethods.Run();
+        TestSharedInterfaceMethods.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
+        TestStaticInterfaceMethodsAnalysis.Run();
+        TestStaticInterfaceMethods.Run();
+        TestSimpleStaticDefaultInterfaceMethods.Run();
+        TestSimpleDynamicStaticVirtualMethods.Run();
+        TestGenericDynamicStaticVirtualMethods.Run();
+        TestVariantGenericDynamicStaticVirtualMethods.Run();
 
         return Pass;
     }
@@ -493,6 +499,13 @@ public class Interfaces
 
         class Foo<T> : IFoo<T> { }
 
+        class Base : IFoo
+        {
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
         public static void Run()
         {
             Console.WriteLine("Testing default interface methods...");
@@ -504,6 +517,9 @@ public class Interfaces
                 throw new Exception();
 
             if (((IFoo)new Baz()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo)new Derived()).GetNumber() != 100)
                 throw new Exception();
 
             if (((IFoo<object>)new Foo<object>()).GetInterfaceType() != typeof(IFoo<object>))
@@ -539,7 +555,7 @@ public class Interfaces
         }
     }
 
-    class TestSharedIntefaceMethods
+    class TestSharedInterfaceMethods
     {
         interface IInnerValueGrabber
         {
@@ -576,10 +592,10 @@ public class Interfaces
 
             var x = new Derived<Atom1, Atom2>() { InnerValue = "My inner value" };
             string r1 = ((IFace<Atom1>)x).GrabValue(new Atom1());
-            if (r1 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom1' with 'The Atom1'")
+            if (r1 != "'My inner value' over 'Interfaces+TestSharedInterfaceMethods+Atom1' with 'The Atom1'")
                 throw new Exception();
             string r2 = ((IFace<Atom2>)x).GrabValue(new Atom2());
-            if (r2 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom2' with 'The Atom2'")
+            if (r2 != "'My inner value' over 'Interfaces+TestSharedInterfaceMethods+Atom2' with 'The Atom2'")
                 throw new Exception();
 
             IFace<object> o = new Yadda() { InnerValue = "SomeString" };
@@ -621,14 +637,14 @@ public class Interfaces
             public virtual IFoo GetFoo() => throw new NotImplementedException();
         }
 
-        class DerivedWithOverridenUnusedVirtual : BaseWithUnusedVirtual
+        class DerivedWithOverriddenUnusedVirtual : BaseWithUnusedVirtual
         {
-            public override Foo GetFoo() => new Foo("DerivedWithOverridenUnusedVirtual");
+            public override Foo GetFoo() => new Foo("DerivedWithOverriddenUnusedVirtual");
         }
 
-        class SuperDerivedWithOverridenUnusedVirtual : DerivedWithOverridenUnusedVirtual
+        class SuperDerivedWithOverriddenUnusedVirtual : DerivedWithOverriddenUnusedVirtual
         {
-            public override Foo GetFoo() => new Foo("SuperDerivedWithOverridenUnusedVirtual");
+            public override Foo GetFoo() => new Foo("SuperDerivedWithOverriddenUnusedVirtual");
         }
 
         interface IInterfaceWithCovariantReturn
@@ -669,14 +685,14 @@ public class Interfaces
             }
 
             {
-                DerivedWithOverridenUnusedVirtual b = new DerivedWithOverridenUnusedVirtual();
-                if (b.GetFoo().State != "DerivedWithOverridenUnusedVirtual")
+                DerivedWithOverriddenUnusedVirtual b = new DerivedWithOverriddenUnusedVirtual();
+                if (b.GetFoo().State != "DerivedWithOverriddenUnusedVirtual")
                     throw new Exception();
             }
 
             {
-                DerivedWithOverridenUnusedVirtual b = new SuperDerivedWithOverridenUnusedVirtual();
-                if (b.GetFoo().State != "SuperDerivedWithOverridenUnusedVirtual")
+                DerivedWithOverriddenUnusedVirtual b = new SuperDerivedWithOverriddenUnusedVirtual();
+                if (b.GetFoo().State != "SuperDerivedWithOverriddenUnusedVirtual")
                     throw new Exception();
             }
 
@@ -808,4 +824,468 @@ public class Interfaces
             }
         }
     }
+
+    class TestStaticInterfaceMethodsAnalysis
+    {
+        interface IFoo
+        {
+            static abstract object Frob();
+        }
+
+        class Foo<T> : IFoo
+        {
+            static object IFoo.Frob() => new Gen<T>();
+        }
+
+        static object CallFrob<T>() where T : IFoo => T.Frob();
+
+        class Gen<T> { }
+        struct Struct1 { }
+        struct Struct2 { }
+
+        public static void Run()
+        {
+            CallFrob<Foo<object>>();
+            Console.WriteLine(typeof(Foo<string>));
+
+            CallFrob<Foo<Struct1>>();
+            Console.WriteLine(typeof(Foo<Struct2>));
+        }
+    }
+
+    class TestStaticInterfaceMethods
+    {
+        interface ISimple
+        {
+            static abstract string GetCookie();
+            static abstract string GetCookieGeneric<T>();
+        }
+
+        class SimpleClass : ISimple
+        {
+            public static string GetCookie() => "SimpleClass";
+            public static string GetCookieGeneric<T>() => $"SimpleClass.GetCookieGeneric<{typeof(T).Name}>";
+        }
+
+        struct SimpleStruct : ISimple
+        {
+            public static string GetCookie() => "SimpleStruct";
+            public static string GetCookieGeneric<T>() => $"SimpleStruct.GetCookieGeneric<{typeof(T).Name}>";
+        }
+
+        struct SimpleGenericStruct<T> : ISimple
+        {
+            public static string GetCookie() => $"SimpleGenericStruct<{typeof(T).Name}>";
+            public static string GetCookieGeneric<U>() => $"SimpleGenericStruct<{typeof(T).Name}>.GetCookieGeneric<{typeof(U).Name}>";
+        }
+
+        class SimpleGenericClass<T> : ISimple
+        {
+            public static string GetCookie() => $"SimpleGenericClass<{typeof(T).Name}>";
+            public static string GetCookieGeneric<U>() => $"SimpleGenericClass<{typeof(T).Name}>.GetCookieGeneric<{typeof(U).Name}>";
+        }
+
+        interface IVariant<in T>
+        {
+            static abstract string WhichMethod(T param);
+        }
+
+        class SimpleVariant : IVariant<Base>
+        {
+            public static string WhichMethod(Base b) => "SimpleVariant.WhichMethod(Base)";
+        }
+
+        class SimpleVariantTwice : IVariant<Base>, IVariant<Mid>
+        {
+            public static string WhichMethod(Base b) => "SimpleVariantTwice.WhichMethod(Base)";
+            public static string WhichMethod(Mid b) => "SimpleVariantTwice.WhichMethod(Mid)";
+        }
+
+        class VariantWithInheritanceBase : IVariant<Mid>
+        {
+            public static string WhichMethod(Mid b) => "VariantWithInheritanceBase.WhichMethod(Mid)";
+        }
+
+        class VariantWithInheritanceDerived : VariantWithInheritanceBase, IVariant<Base>
+        {
+            public static string WhichMethod(Base b) => "VariantWithInheritanceDerived.WhichMethod(Base)";
+        }
+
+        class GenericVariantWithInheritanceBase<T> : IVariant<T>
+        {
+            public static string WhichMethod(T b) => "GenericVariantWithInheritanceBase.WhichMethod(T)";
+        }
+
+        class GenericVariantWithInheritanceDerived<T> : GenericVariantWithInheritanceBase<T>, IVariant<T>
+        {
+            public static new string WhichMethod(T b) => $"GenericVariantWithInheritanceDerived.WhichMethod({typeof(T).Name})";
+        }
+
+        class GenericVariantWithHiddenBase : IVariant<Mid>
+        {
+            public static string WhichMethod(Mid b) => "GenericVariantWithHiddenBase.WhichMethod(Mid)";
+        }
+
+        class GenericVariantWithHiddenDerived<T> : GenericVariantWithHiddenBase, IVariant<T>
+        {
+            public static string WhichMethod(T b) => $"GenericVariantWithHiddenDerived.WhichMethod({typeof(T).Name})";
+        }
+
+        struct Struct { }
+        class Base { }
+        class Mid : Base { }
+        class Derived : Mid { }
+
+
+        static void TestSimpleInterface<T>(string expected) where T : ISimple
+        {
+            string actual = T.GetCookie();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+
+            Func<string> del = T.GetCookie;
+            actual = del();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+        }
+
+        static void TestSimpleInterfaceWithGenericMethod<T, U>(string expected) where T : ISimple
+        {
+            string actual = T.GetCookieGeneric<U>();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+
+            Func<string> del = T.GetCookieGeneric<U>;
+            actual = del();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+        }
+
+        static void TestVariantInterface<T, U>(string expected) where T : IVariant<U>
+        {
+            string actual = T.WhichMethod(default);
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+
+            Func<U, string> del = T.WhichMethod;
+            actual = del(default);
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+        }
+
+        public static void Run()
+        {
+            TestSimpleInterface<SimpleClass>("SimpleClass");
+            TestSimpleInterface<SimpleStruct>("SimpleStruct");
+
+            TestSimpleInterface<SimpleGenericClass<Base>>("SimpleGenericClass<Base>");
+            TestSimpleInterface<SimpleGenericStruct<Base>>("SimpleGenericStruct<Base>");
+
+            TestSimpleInterfaceWithGenericMethod<SimpleClass, Base>("SimpleClass.GetCookieGeneric<Base>");
+            TestSimpleInterfaceWithGenericMethod<SimpleStruct, Base>("SimpleStruct.GetCookieGeneric<Base>");
+            TestSimpleInterfaceWithGenericMethod<SimpleClass, Struct>("SimpleClass.GetCookieGeneric<Struct>");
+            TestSimpleInterfaceWithGenericMethod<SimpleStruct, Struct>("SimpleStruct.GetCookieGeneric<Struct>");
+
+            TestSimpleInterfaceWithGenericMethod<SimpleGenericClass<Base>, Base>("SimpleGenericClass<Base>.GetCookieGeneric<Base>");
+            TestSimpleInterfaceWithGenericMethod<SimpleGenericStruct<Base>, Base>("SimpleGenericStruct<Base>.GetCookieGeneric<Base>");
+            TestSimpleInterfaceWithGenericMethod<SimpleGenericClass<Base>, Struct>("SimpleGenericClass<Base>.GetCookieGeneric<Struct>");
+            TestSimpleInterfaceWithGenericMethod<SimpleGenericStruct<Base>, Struct>("SimpleGenericStruct<Base>.GetCookieGeneric<Struct>");
+
+            TestVariantInterface<SimpleVariant, Base>("SimpleVariant.WhichMethod(Base)");
+            TestVariantInterface<SimpleVariant, Derived>("SimpleVariant.WhichMethod(Base)");
+
+            TestVariantInterface<SimpleVariantTwice, Base>("SimpleVariantTwice.WhichMethod(Base)");
+            TestVariantInterface<SimpleVariantTwice, Mid>("SimpleVariantTwice.WhichMethod(Mid)");
+            TestVariantInterface<SimpleVariantTwice, Derived>("SimpleVariantTwice.WhichMethod(Base)");
+
+            TestVariantInterface<VariantWithInheritanceDerived, Base>("VariantWithInheritanceDerived.WhichMethod(Base)");
+            TestVariantInterface<VariantWithInheritanceDerived, Mid>("VariantWithInheritanceDerived.WhichMethod(Base)");
+            TestVariantInterface<VariantWithInheritanceDerived, Derived>("VariantWithInheritanceDerived.WhichMethod(Base)");
+
+            TestVariantInterface<GenericVariantWithInheritanceDerived<Base>, Base>("GenericVariantWithInheritanceDerived.WhichMethod(Base)");
+            TestVariantInterface<GenericVariantWithInheritanceDerived<Base>, Mid>("GenericVariantWithInheritanceDerived.WhichMethod(Base)");
+            TestVariantInterface<GenericVariantWithInheritanceDerived<Mid>, Mid>("GenericVariantWithInheritanceDerived.WhichMethod(Mid)");
+
+            TestVariantInterface<GenericVariantWithHiddenDerived<Base>, Base>("GenericVariantWithHiddenDerived.WhichMethod(Base)");
+            TestVariantInterface<GenericVariantWithHiddenDerived<Base>, Mid>("GenericVariantWithHiddenDerived.WhichMethod(Base)");
+            TestVariantInterface<GenericVariantWithHiddenDerived<Mid>, Mid>("GenericVariantWithHiddenDerived.WhichMethod(Mid)");
+            TestVariantInterface<GenericVariantWithHiddenDerived<Derived>, Mid>("GenericVariantWithHiddenBase.WhichMethod(Mid)");
+        }
+    }
+
+    class TestSimpleStaticDefaultInterfaceMethods
+    {
+        interface IFoo
+        {
+            static virtual string GetCookie() => nameof(IFoo);
+        }
+
+        struct StructFooWithDefault : IFoo { }
+
+        struct StructFooWithExplicit : IFoo
+        {
+            public static string GetCookie() => nameof(StructFooWithExplicit);
+        }
+
+        class ClassFooWithDefault : IFoo { }
+
+        class ClassFooWithExplicit : IFoo
+        {
+            public static string GetCookie() => nameof(ClassFooWithExplicit);
+        }
+
+        interface IFoo<T>
+        {
+            static virtual string GetCookie() => $"IFoo<{typeof(T).Name}>";
+        }
+
+        struct StructFooWithDefault<T> : IFoo<T> { }
+
+        struct StructFooWithExplicit<T> : IFoo<T>
+        {
+            public static string GetCookie() => $"StructFooWithExplicit<{typeof(T).Name}>";
+        }
+
+        class ClassFooWithDefault<T> : IFoo<T> { }
+
+        class ClassFooWithExplicit<T> : IFoo<T>
+        {
+            public static string GetCookie() => $"ClassFooWithExplicit<{typeof(T).Name}>";
+        }
+
+        class Atom { }
+
+        static string GetCookie<T>() where T : IFoo => T.GetCookie();
+        static string GetCookie<T, U>() where T : IFoo<U> => T.GetCookie();
+
+        public static void Run()
+        {
+            if (GetCookie<StructFooWithDefault>() != "IFoo")
+                throw new Exception();
+
+            if (GetCookie<StructFooWithExplicit>() != "StructFooWithExplicit")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithDefault>() != "IFoo")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithExplicit>() != "ClassFooWithExplicit")
+                throw new Exception();
+
+            if (GetCookie<StructFooWithDefault<Atom>, Atom>() != "IFoo<Atom>")
+                throw new Exception();
+
+            if (GetCookie<StructFooWithExplicit<Atom>, Atom>() != "StructFooWithExplicit<Atom>")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithDefault<Atom>, Atom>() != "IFoo<Atom>")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithExplicit<Atom>, Atom>() != "ClassFooWithExplicit<Atom>")
+                throw new Exception();
+        }
+    }
+
+    class TestSimpleDynamicStaticVirtualMethods
+    {
+        public interface IFoo
+        {
+            static abstract int CallMeDirect();
+            static abstract int CallMeIndirect();
+            static virtual int DefaultImplemented() => 42;
+        }
+
+        class Foo : IFoo
+        {
+            public static int CallMeDirect() => 2019;
+            public static int CallMeIndirect() => 2022;
+        }
+
+        class FrobCaller<T> where T : IFoo
+        {
+            public static int CallDirect() => T.CallMeDirect();
+            public static int CallIndirect()
+            {
+                Func<int> d = T.CallMeIndirect;
+                return d();
+            }
+            public static int CallDefault() => T.DefaultImplemented();
+        }
+
+        static Type s_fooType = typeof(Foo);
+
+        public static void Run()
+        {
+            Type t = typeof(FrobCaller<>).MakeGenericType(s_fooType);
+
+            {
+                var mi = t.GetMethod("CallDirect");
+                int result = (int)mi.Invoke(null, Array.Empty<object>());
+                if (result != 2019)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallIndirect");
+                int result = (int)mi.Invoke(null, Array.Empty<object>());
+                if (result != 2022)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallDefault");
+                int result = (int)mi.Invoke(null, Array.Empty<object>());
+                if (result != 42)
+                    throw new Exception();
+            }
+        }
+    }
+
+    class TestGenericDynamicStaticVirtualMethods
+    {
+        public interface IFoo<T>
+        {
+            static abstract (int, Type) CallMeDirect();
+            static abstract (int, Type) CallMeIndirect();
+            static virtual (int, Type) DefaultImplemented() => (42, typeof(T[]));
+        }
+
+        class Foo<T> : IFoo<T>
+        {
+            public static (int, Type) CallMeDirect() => (2019, typeof(T[,]));
+            public static (int, Type) CallMeIndirect() => (2022, typeof(T[,,]));
+        }
+
+        class FrobCaller<T, U> where T : IFoo<U>
+        {
+            public static (int, Type) CallDirect() => T.CallMeDirect();
+            public static (int, Type) CallIndirect()
+            {
+                Func<(int, Type)> d = T.CallMeIndirect;
+                return d();
+            }
+            public static (int, Type) CallDefault() => T.DefaultImplemented();
+        }
+
+        class Wrapper<T>
+        {
+            public static (int, Type) CallDirect() => FrobCaller<Foo<T>, T>.CallDirect();
+            public static (int, Type) CallIndirect() => FrobCaller<Foo<T>, T>.CallIndirect();
+            public static (int, Type) CallDefault() => FrobCaller<Foo<T>, T>.CallDefault();
+        }
+
+        class Atom { }
+
+        static Type s_atomType = typeof(Atom);
+
+        public static void Run()
+        {
+            Type t = typeof(Wrapper<>).MakeGenericType(s_atomType);
+
+            {
+                var mi = t.GetMethod("CallDirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2019)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 2 || result.Item2.GetElementType() != s_atomType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallIndirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2022)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 3 || result.Item2.GetElementType() != s_atomType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallDefault");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 42)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 1 || result.Item2.GetElementType() != s_atomType)
+                    throw new Exception();
+            }
+        }
+    }
+
+    class TestVariantGenericDynamicStaticVirtualMethods
+    {
+        public interface IFoo<in T>
+        {
+            static abstract (int, Type) CallMeDirect();
+            static abstract (int, Type) CallMeIndirect();
+            static virtual (int, Type) DefaultImplemented() => (42, typeof(T[]));
+        }
+
+        class AbjectFail<T> : IFoo<T>
+        {
+            public static (int, Type) CallMeDirect() => (2019, typeof(T[,]));
+            public static (int, Type) CallMeIndirect() => (2022, typeof(T[,,]));
+        }
+
+        class FrobCaller<T, U> where T : IFoo<U>
+        {
+            public static (int, Type) CallDirect() => T.CallMeDirect();
+            public static (int, Type) CallIndirect()
+            {
+                Func<(int, Type)> d = T.CallMeIndirect;
+                return d();
+            }
+            public static (int, Type) CallDefault() => T.DefaultImplemented();
+        }
+
+        class AtomBase { }
+        class Atom : AtomBase { }
+
+        static Type s_atomType = typeof(Atom);
+        static Type s_atomBaseType = typeof(AtomBase);
+
+        public static void Run()
+        {
+            Type t = typeof(FrobCaller<,>).MakeGenericType(typeof(AbjectFail<AtomBase>), s_atomType);
+
+            {
+                var mi = t.GetMethod("CallDirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2019)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 2 || result.Item2.GetElementType() != s_atomBaseType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallIndirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2022)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 3 || result.Item2.GetElementType() != s_atomBaseType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallDefault");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 42)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 1 || result.Item2.GetElementType() != s_atomBaseType)
+                    throw new Exception();
+            }
+        }
+    }
+
 }

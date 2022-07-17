@@ -38,12 +38,12 @@ namespace System.ServiceModel.Syndication
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
+            get => _attributeExtensions ??= new Dictionary<XmlQualifiedName, string>();
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get => _elementExtensions ?? (_elementExtensions = new SyndicationElementExtensionCollection());
+            get => _elementExtensions ??= new SyndicationElementExtensionCollection();
         }
 
         private static XmlBuffer CreateXmlBuffer(XmlDictionaryReader unparsedExtensionsReader, int maxExtensionSize)
@@ -63,8 +63,13 @@ namespace System.ServiceModel.Syndication
             return buffer;
         }
 
-        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions!!, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
+            if (readerOverUnparsedExtensions is null)
+            {
+                throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
+            }
+
             if (maxExtensionSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
@@ -80,8 +85,13 @@ namespace System.ServiceModel.Syndication
             _elementExtensions = new SyndicationElementExtensionCollection(buffer);
         }
 
-        internal void WriteAttributeExtensions(XmlWriter writer!!)
+        internal void WriteAttributeExtensions(XmlWriter writer)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
@@ -92,12 +102,14 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteElementExtensions(XmlWriter writer!!, Func<string, string, bool> shouldSkipElement = null)
+        internal void WriteElementExtensions(XmlWriter writer, Func<string, string, bool> shouldSkipElement = null)
         {
-            if (_elementExtensions != null)
+            if (writer is null)
             {
-                _elementExtensions.WriteTo(writer, shouldSkipElement);
+                throw new ArgumentNullException(nameof(writer));
             }
+
+            _elementExtensions?.WriteTo(writer, shouldSkipElement);
         }
 
         public ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);

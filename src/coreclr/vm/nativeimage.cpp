@@ -126,7 +126,6 @@ NativeImage *NativeImage::Open(
         *isNewNativeImage = false;
         if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
         {
-            pExistingImage->AddComponentAssemblyToCache(componentModule->GetAssembly());
             return pExistingImage;
         }
         else
@@ -246,32 +245,17 @@ NativeImage *NativeImage::Open(
         // No pre-existing image, new image has been stored in the map
         *isNewNativeImage = true;
         amTracker.SuppressRelease();
-        image->AddComponentAssemblyToCache(componentModule->GetAssembly());
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     *isNewNativeImage = false;
     if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
     {
-        pExistingImage->AddComponentAssemblyToCache(componentModule->GetAssembly());
         return pExistingImage;
     }
     else
     {
         return nullptr;
-    }
-}
-#endif
-
-#ifndef DACCESS_COMPILE
-void NativeImage::AddComponentAssemblyToCache(Assembly *assembly)
-{
-    STANDARD_VM_CONTRACT;
-    
-    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(assembly->GetSimpleName());
-    if (assemblyNameIndex != nullptr)
-    {
-        VolatileStore(&m_pNativeMetadataAssemblyRefMap[assemblyNameIndex->Index], assembly);
     }
 }
 #endif
@@ -326,6 +310,13 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
     const GUID *componentMvid = (const GUID *)&pImageBase[m_pComponentAssemblyMvids->VirtualAddress] + assemblyNameIndex->Index;
     if (IsEqualGUID(*componentMvid, assemblyMvid))
     {
+        return;
+    }
+
+    GUID emptyGuid  = {0};
+    if (IsEqualGUID(*componentMvid, emptyGuid))
+    {
+        // Empty guid always succeeds, as it isn't used for dependency checks
         return;
     }
 

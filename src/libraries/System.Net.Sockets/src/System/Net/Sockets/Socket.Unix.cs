@@ -165,6 +165,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
+#pragma warning disable CA1822
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
         {
             // AcceptSocket is not supported on Unix.
@@ -176,6 +177,7 @@ namespace System.Net.Sockets
             handle = null;
             return null;
         }
+#pragma warning restore CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {

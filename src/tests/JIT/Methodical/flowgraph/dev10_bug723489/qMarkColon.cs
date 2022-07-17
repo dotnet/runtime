@@ -7,14 +7,18 @@
  */
 
 using System;
-internal class Repro
+using Xunit;
+namespace Test_qMarkColon_cs
+{
+public class Repro
 {
     public static bool MyEquals(object obj1, object obj2)
     {
         return ((obj1 as Version) == (obj2 as Version));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Version ver0 = null;
         Version ver1 = null;
@@ -25,4 +29,5 @@ internal class Repro
         else
             return 101;
     }
+}
 }

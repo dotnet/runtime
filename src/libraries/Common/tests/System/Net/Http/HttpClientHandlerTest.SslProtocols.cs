@@ -36,6 +36,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(SslProtocols.None)]
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls12)]
@@ -50,6 +51,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13)]
 #endif
+#pragma warning restore SYSLIB0039
         public void SetGetProtocols_Roundtrips(SslProtocols protocols)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -99,6 +101,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
             int count = 0;
@@ -119,12 +122,14 @@ namespace System.Net.Http.Functional.Tests
                     // We currently know that some platforms like Debian 10 OpenSSL
                     // will by default block < TLS 1.2
 #pragma warning disable 0618 // SSL2/3 are deprecated
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
 #if !NETFRAMEWORK
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #else
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | (SslProtocols)12288;
 #endif
 #pragma warning restore 0618
+#pragma warning restore SYSLIB0039
                 }
 
                 // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
@@ -162,6 +167,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (PlatformDetection.SupportsTls10)
             {
                 yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
@@ -171,6 +177,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
             }
+#pragma warning restore SYSLIB0039
 
             if (PlatformDetection.SupportsTls12)
             {
@@ -236,6 +243,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -262,16 +270,20 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Ssl2, SslProtocols.Tls12)]
         [InlineData(SslProtocols.Ssl3, SslProtocols.Tls12)]
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls11, SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12, SslProtocols.Tls)] // Skip this on WinHttpHandler.
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls, SslProtocols.Tls12)]
+#pragma warning restore SYSLIB0039
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (IsWinHttpHandler &&
                 allowedClientProtocols == (SslProtocols.Tls11 | SslProtocols.Tls12) &&
                 acceptedServerProtocols == SslProtocols.Tls)
+#pragma warning restore SYSLIB0039
             {
                 // Native WinHTTP sometimes uses multiple TCP connections to try other TLS protocols when
                 // getting TLS protocol failures as part of its TLS fallback algorithm. The loopback server

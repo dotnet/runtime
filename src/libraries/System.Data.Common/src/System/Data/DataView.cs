@@ -153,15 +153,8 @@ namespace System.Data
                 throw ExceptionBuilder.SetRowStateFilter();
             }
 
-            if (Sort == null)
-            {
-                Sort = string.Empty;
-            }
-
-            if (RowFilter == null)
-            {
-                RowFilter = string.Empty;
-            }
+            Sort ??= string.Empty;
+            RowFilter ??= string.Empty;
 
             DataExpression newFilter = new DataExpression(table, RowFilter);
             SetIndex(Sort, RowState, newFilter);
@@ -318,10 +311,7 @@ namespace System.Data
             [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_RowFilter|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -348,8 +338,8 @@ namespace System.Data
         {
             get
             {
-                RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
-                return ((null != filter) ? filter._predicateFilter : null);
+                RowPredicateFilter? filter = GetFilter() as RowPredicateFilter;
+                return filter?._predicateFilter;
             }
             set
             {
@@ -425,7 +415,7 @@ namespace System.Data
             {
                 if (_sort.Length == 0 && _applyDefaultSort && _table != null && _table._primaryIndex.Length > 0)
                 {
-                    return _table.FormatSortString(_table._primaryIndex);
+                    return DataTable.FormatSortString(_table._primaryIndex);
                 }
                 else
                 {
@@ -434,10 +424,7 @@ namespace System.Data
             }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Sort|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -834,7 +821,7 @@ namespace System.Data
         /// </summary>
         public IEnumerator GetEnumerator()
         {
-            // V1.1 compatability: returning List<DataRowView>.GetEnumerator() from RowViewCache
+            // V1.1 compatibility: returning List<DataRowView>.GetEnumerator() from RowViewCache
             // prevents users from changing data without invalidating the enumerator
             // aka don't 'return this.RowViewCache.GetEnumerator()'
             var temp = new DataRowView[Count];
@@ -921,10 +908,7 @@ namespace System.Data
 
         internal Index? GetFindIndex(string column, bool keepIndex)
         {
-            if (_findIndexes == null)
-            {
-                _findIndexes = new Dictionary<string, Index>();
-            }
+            _findIndexes ??= new Dictionary<string, Index>();
 
             Index? findIndex;
             if (_findIndexes.TryGetValue(column, out findIndex))
@@ -1110,19 +1094,13 @@ namespace System.Data
             Sort = sortString.ToString(); // what if we dont have any valid sort criteira? we would reset the sort
         }
 
-        private string CreateSortString(PropertyDescriptor property, ListSortDirection direction)
+        private static string CreateSortString(PropertyDescriptor property, ListSortDirection direction)
         {
             Debug.Assert(property != null, "property is null");
-            StringBuilder resultString = new StringBuilder();
-            resultString.Append('[');
-            resultString.Append(property.Name);
-            resultString.Append(']');
-            if (ListSortDirection.Descending == direction)
-            {
-                resultString.Append(" DESC");
-            }
 
-            return resultString.ToString();
+            return direction == ListSortDirection.Descending ?
+                $"[{property.Name}] DESC" :
+                $"[{property.Name}]";
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -1708,7 +1686,7 @@ namespace System.Data
             DataTable dt = new DataTable();
             dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
-            dt.TableName = ((null != tableName) ? tableName : _table.TableName);
+            dt.TableName = tableName ?? _table.TableName;
             dt.Namespace = _table.Namespace;
             dt.Prefix = _table.Prefix;
 
@@ -1754,7 +1732,7 @@ namespace System.Data
             return dt;
         }
 
-        private bool RowExist(List<object[]> arraylist, object[] objectArray)
+        private static bool RowExist(List<object[]> arraylist, object[] objectArray)
         {
             for (int i = 0; i < arraylist.Count; i++)
             {

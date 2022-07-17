@@ -62,7 +62,7 @@
 #cmakedefine01 HAVE_SEMAPHORE_H
 #cmakedefine01 HAS_SYSV_SEMAPHORES
 #cmakedefine01 HAS_PTHREAD_MUTEXES
-#cmakedefine01 HAVE_TTRACE
+#cmakedefine HAVE_TTRACE
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 #cmakedefine01 HAVE_SCHED_SETAFFINITY

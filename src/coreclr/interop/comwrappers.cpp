@@ -472,7 +472,7 @@ void ManagedObjectWrapper::Destroy(_In_ ManagedObjectWrapper* wrapper)
 
     // The destroy sentinel represents the bit that indicates the wrapper
     // should be destroyed. Since the reference count field (64-bit) holds
-    // two counters we rely on the singular sentinal value - no other bits
+    // two counters we rely on the singular sentinel value - no other bits
     // in the 64-bit counter are set. If there are outstanding bits set it
     // indicates there are still outstanding references.
     if (refCount == DestroySentinel)

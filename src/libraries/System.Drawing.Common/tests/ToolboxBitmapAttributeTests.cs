@@ -44,7 +44,6 @@ namespace System.Drawing.Tests
             yield return new object[] { Helpers.GetTestBitmapPath("invalid.ico"), new Size(0, 0) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_FileName_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -65,7 +64,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(null, -1, -1)]
         [InlineData(typeof(ClassWithNoNamespace), -1, -1)]
@@ -87,7 +85,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(null, null, -1, -1)]
         [InlineData(null, "invalid.ico", -1, -1)]
@@ -134,7 +131,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetImage_NullComponent_ReturnsNull()
         {
@@ -159,7 +155,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetImage_Default_ReturnsExpected()
         {
@@ -176,7 +171,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Logical name with no extension is not supported in .NET Framework")]
         [InlineData(typeof(Icon_toolboxBitmapAttributeTest), 256, 256)]
@@ -205,7 +199,6 @@ namespace System.Drawing.Tests
             yield return new object[] { ToolboxBitmapAttribute.Default, null, false };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Other_ReturnsExpected(ToolboxBitmapAttribute attribute, object other, bool expected)

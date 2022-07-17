@@ -191,6 +191,15 @@ class UnlockedLoaderHeap
     friend class ClrDataAccess;
 #endif
 
+public:
+
+    enum class HeapKind
+    {
+        Data,
+        Executable,
+        Interleaved
+    };
+
 private:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
@@ -208,12 +217,16 @@ private:
     // When we need to commit pages from our reserved list, number of bytes to commit at a time
     DWORD               m_dwCommitBlockSize;
 
+    // For interleaved heap (RX pages interleaved with RW ones), this specifies the allocation granularity,
+    // which is the individual code block size
+    DWORD               m_dwGranularity;
+
     // Range list to record memory ranges in
     RangeList *         m_pRangeList;
 
     size_t              m_dwTotalAlloc;
 
-    DWORD                m_Options;
+    HeapKind            m_kind;
 
     LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
@@ -263,6 +276,7 @@ public:
 
 public:
     BOOL                m_fExplicitControl;  // Am I a LoaderHeap or an ExplicitControlLoaderHeap?
+    void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX);
 
 #ifdef DACCESS_COMPILE
 public:
@@ -283,7 +297,9 @@ protected:
                        const BYTE* dwReservedRegionAddress,
                        SIZE_T dwReservedRegionSize,
                        RangeList *pRangeList = NULL,
-                       BOOL fMakeExecutable = FALSE);
+                       HeapKind kind = HeapKind::Data,
+                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+                       DWORD dwGranularity = 1);
 
     ~UnlockedLoaderHeap();
 #endif
@@ -400,6 +416,9 @@ public:
     }
 
     BOOL IsExecutable();
+    BOOL IsInterleaved();
+
+    size_t AllocMem_TotalSize(size_t dwRequestedSize);
 
 public:
 #ifdef _DEBUG
@@ -443,14 +462,18 @@ public:
     LoaderHeap(DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                RangeList *pRangeList = NULL,
-               BOOL fMakeExecutable = FALSE,
-               BOOL fUnlocked = FALSE
+               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
+               BOOL fUnlocked = FALSE,
+               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+               DWORD dwGranularity = 1
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            NULL, 0,
                            pRangeList,
-                           fMakeExecutable),
+                           kind,
+                           codePageGenerator,
+                           dwGranularity),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
@@ -463,15 +486,18 @@ public:
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
                RangeList *pRangeList = NULL,
-               BOOL fMakeExecutable = FALSE,
-               BOOL fUnlocked = FALSE
+               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
+               BOOL fUnlocked = FALSE,
+               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+               DWORD dwGranularity = 1
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            dwReservedRegionAddress,
                            dwReservedRegionSize,
                            pRangeList,
-                           fMakeExecutable),
+                           kind,
+                           codePageGenerator, dwGranularity),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
@@ -776,7 +802,7 @@ public:
                )
       : UnlockedLoaderHeap(0, 0, NULL, 0,
                            pRangeList,
-                           fMakeExecutable)
+                           fMakeExecutable ? UnlockedLoaderHeap::HeapKind::Executable : UnlockedLoaderHeap::HeapKind::Data)
     {
         WRAPPER_NO_CONTRACT;
         m_fExplicitControl = TRUE;

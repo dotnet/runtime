@@ -16,6 +16,7 @@ namespace System.Net.Tests
     {
         public static bool IsNotWindows7 { get; } = !PlatformDetection.IsWindows7;
         public static bool IsNotWindows7AndIsWindowsImplementation => IsNotWindows7 && Helpers.IsWindowsImplementation;
+        public static bool IsWindows8OrLater { get; } = PlatformDetection.IsWindows8xOrLater;
 
         private HttpListenerFactory Factory { get; }
         private HttpListener Listener { get; }
@@ -361,6 +362,41 @@ namespace System.Net.Tests
 
             context.WebSocket.Dispose();
             Assert.Equal(WebSocketState.Aborted, context.WebSocket.State);
+        }
+
+        [ConditionalFact(nameof(IsWindows8OrLater))]
+        public async Task ReceiveAsync_ReadBuffer_WithWindowsAuthScheme_Success()
+        {
+            HttpListenerFactory factory = new HttpListenerFactory(authenticationSchemes: AuthenticationSchemes.IntegratedWindowsAuthentication);
+            var uriBuilder = new UriBuilder(factory.ListeningUrl) { Scheme = "ws" };
+            Task<HttpListenerContext> serverContextTask = factory.GetListener().GetContextAsync();
+            ClientWebSocket client = new ClientWebSocket();
+            client.Options.Credentials = CredentialCache.DefaultCredentials;
+
+            Task clientConnectTask = client.ConnectAsync(uriBuilder.Uri, CancellationToken.None);
+            if (clientConnectTask == await Task.WhenAny(serverContextTask, clientConnectTask))
+            {
+                await clientConnectTask;
+                Assert.True(false, "Client should not have completed prior to server sending response");
+            }
+
+            HttpListenerContext context = await serverContextTask;
+            HttpListenerWebSocketContext wsContext = await context.AcceptWebSocketAsync(null);
+            await clientConnectTask;
+
+            const string Text = "Hello Web Socket";
+            byte[] sentBytes = Encoding.ASCII.GetBytes(Text);
+
+            await client.SendAsync(new ArraySegment<byte>(sentBytes), WebSocketMessageType.Text, true, new CancellationToken());
+
+            byte[] receivedBytes = new byte[sentBytes.Length];
+            WebSocketReceiveResult result = await ReceiveAllAsync(wsContext.WebSocket, receivedBytes.Length, receivedBytes);
+            Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+            Assert.True(result.EndOfMessage);
+            Assert.Null(result.CloseStatus);
+            Assert.Null(result.CloseStatusDescription);
+
+            Assert.Equal(Text, Encoding.ASCII.GetString(receivedBytes));
         }
 
         private static async Task<WebSocketReceiveResult> ReceiveAllAsync(WebSocket webSocket, int expectedBytes, byte[] buffer)

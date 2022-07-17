@@ -20,12 +20,13 @@ namespace System.IO.MemoryMappedFiles.Tests
             return pageSize;
         });
 
-        [GeneratedDllImport("kernel32.dll")]
+        [LibraryImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetHandleInformation(IntPtr hObject, out uint lpdwFlags);
 
         private const uint HANDLE_FLAG_INHERIT = 0x00000001;
 
-        [GeneratedDllImport("kernel32.dll")]
+        [LibraryImport("kernel32.dll")]
         private static partial void GetSystemInfo(out SYSTEM_INFO input);
 
         [StructLayout(LayoutKind.Sequential)]

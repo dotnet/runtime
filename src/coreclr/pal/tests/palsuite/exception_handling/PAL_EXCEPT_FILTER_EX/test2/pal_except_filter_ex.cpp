@@ -5,10 +5,10 @@
 **
 ** Source:  PAL_EXCEPT_FILTER_EX.c (test 2)
 **
-** Purpose: Tests the PAL implementation of the PAL_EXCEPT_FILTER_EX. 
-**          There is a nested try blocks in this test. The nested 
+** Purpose: Tests the PAL implementation of the PAL_EXCEPT_FILTER_EX.
+**          There is a nested try blocks in this test. The nested
 **          PAL_TRY creates an exception and the FILTER creates another.
-**          This test makes sure that this case does not end in a 
+**          This test makes sure that this case does not end in a
 **          infinite loop.
 **
 **
@@ -26,7 +26,7 @@ const int nValidator = 12321;
 LONG Filter_01(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
 {
     int nTestInt = *(int *)pnTestInt;
-    
+
     /* Signal main() that filter has been executed. */
     bFilter = TRUE;
 
@@ -60,7 +60,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test2_paltest_pal_except_filter_
     BOOL bExcept  = FALSE;
     BOOL bExcept2 = FALSE;
 
-    /* Initalize the PAL.
+    /* Initialize the PAL.
      */
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -69,10 +69,10 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test2_paltest_pal_except_filter_
 
     /* Test a nested PAL_Try block.
      */
-    PAL_TRY 
+    PAL_TRY
     {
         /* Signal entry into first PAL_TRY block.*/
-        bTry = TRUE; 
+        bTry = TRUE;
 
         PAL_TRY
         {
@@ -89,7 +89,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test2_paltest_pal_except_filter_
             *p = 13;
         }
         PAL_ENDTRY
-        
+
     }
     PAL_EXCEPT_FILTER(Filter_01, (LPVOID)&nValidator)
     {
@@ -103,7 +103,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test2_paltest_pal_except_filter_
         Trace("ERROR: The code in the first "
               "PAL_TRY block was not executed.\n");
     }
-    
+
     if (!bTry2)
     {
         Trace("ERROR: The code in the nested "
@@ -135,7 +135,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test2_paltest_pal_except_filter_
 
     /* Terminate the PAL.
      */
-    PAL_Terminate();  
+    PAL_Terminate();
     return PASS;
 
 }

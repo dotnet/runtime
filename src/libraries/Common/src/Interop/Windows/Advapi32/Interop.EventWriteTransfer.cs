@@ -3,11 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if ES_BUILD_STANDALONE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
 
 internal static partial class Interop
 {
@@ -36,7 +32,7 @@ internal static partial class Interop
             return HResult;
         }
 
-        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "EventWriteTransfer")]
+        [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "EventWriteTransfer")]
         private static unsafe partial int EventWriteTransfer_PInvoke(
             long registrationHandle,
             in EventDescriptor eventDescriptor,

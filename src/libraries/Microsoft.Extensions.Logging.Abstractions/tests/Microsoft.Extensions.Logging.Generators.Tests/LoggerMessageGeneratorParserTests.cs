@@ -17,6 +17,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
+        public async Task Valid_AdditionalAttributes()
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Diagnostics.CodeAnalysis;
+                partial class C
+                {{
+                    [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
+                    static partial void M1(ILogger logger);
+                }}
+            "));
+        }
+
+        [Fact]
         public async Task InvalidMethodName()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

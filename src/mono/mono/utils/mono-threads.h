@@ -98,7 +98,7 @@ typedef struct {
 } MonoThreadHandle;
 
 /*
-THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
+THREAD_INFO_TYPE is a way to make the mono-threads module parameteric - or sort of.
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
 data, this avoid a pointer indirection on what is on a lot of hot paths.
 
@@ -539,7 +539,7 @@ mono_thread_info_self_interrupt (void);
 void
 mono_thread_info_clear_self_interrupt (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_info_is_interrupt_state (THREAD_INFO_TYPE *info);
 
 void
@@ -634,6 +634,7 @@ void mono_threads_platform_init (void);
 gboolean mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (gsize exit_code);
+gboolean mono_threads_platform_stw_defer_initial_suspend (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);

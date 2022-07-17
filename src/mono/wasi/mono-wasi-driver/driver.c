@@ -8,6 +8,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define INVARIANT_GLOBALIZATION 1
 
@@ -26,13 +29,17 @@
 
 #include "wasm/runtime/pinvoke.h"
 
+#ifdef GEN_PINVOKE
+#include "wasm_m2n_invoke.g.h"
+#endif
+
 void mono_wasm_enable_debugging (int);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
-void mono_marshal_ilgen_init (void);
+void mono_marshal_lightweight_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
 void mono_icall_table_init (void);
@@ -111,6 +118,45 @@ struct WasmSatelliteAssembly_ {
 static WasmSatelliteAssembly *satellite_assemblies;
 static int satellite_assembly_count;
 
+int32_t time(int32_t x) {
+	// In the current prototype, libSystem.Native.a is built using Emscripten, whereas the WASI-enabled runtime is being built
+	// using WASI SDK. Emscripten says that time() returns int32, whereas WASI SDK says it returns int64.
+	// TODO: Build libSystem.Native.a using WASI SDK.
+	// In the meantime, as a workaround we can define an int32-returning implementation for time() here.
+	struct timeval time;
+	return (gettimeofday(&time, NULL) == 0) ? time.tv_sec : 0;
+}
+
+typedef struct
+{
+    int32_t Flags;     // flags for testing if some members are present (see FileStatusFlags)
+    int32_t Mode;      // file mode (see S_I* constants above for bit values)
+    uint32_t Uid;      // user ID of owner
+    uint32_t Gid;      // group ID of owner
+    int64_t Size;      // total size, in bytes
+    int64_t ATime;     // time of last access
+    int64_t ATimeNsec; //     nanosecond part
+    int64_t MTime;     // time of last modification
+    int64_t MTimeNsec; //     nanosecond part
+    int64_t CTime;     // time of last status change
+    int64_t CTimeNsec; //     nanosecond part
+    int64_t BirthTime; // time the file was created
+    int64_t BirthTimeNsec; // nanosecond part
+    int64_t Dev;       // ID of the device containing the file
+    int64_t Ino;       // inode number of the file
+    uint32_t UserFlags; // user defined flags
+} FileStatus;
+
+char* gai_strerror(int code) {
+    char result[256];
+    sprintf(result, "Error code %i", code);
+    return result;
+}
+
+int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength) {
+    return getentropy (buffer, bufferLength);
+}
+
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
@@ -130,10 +176,13 @@ mono_wasm_setenv (const char *name, const char *value)
 static void *sysglobal_native_handle;
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
 char* SystemNative_GetEnv(char* name);
+char* SystemNative_GetEnviron(char* name);
+void SystemNative_FreeEnviron(char* name);
 intptr_t SystemNative_Dup(intptr_t oldfd);
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 int64_t SystemNative_GetSystemTimeAsTicks();
-int32_t SystemNative_LStat(const char* path, int output);
+int32_t SystemNative_Stat(const char* path, void* output);
+int32_t SystemNative_LStat(const char* path, void* output);
 int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno);
 void* SystemNative_LowLevelMonitor_Create();
 void SystemNative_LowLevelMonitor_Acquire(void* monitor);
@@ -142,19 +191,89 @@ int32_t SystemNative_LowLevelMonitor_TimedWait(void *monitor, int32_t timeoutMil
 void SystemNative_LowLevelMonitor_Wait(void* monitor);
 int SystemNative_GetErrNo();
 void SystemNative_SetErrNo(int value);
+char* SystemNative_GetCwd();
+void SystemNative_GetNonCryptographicallySecureRandomBytes();
+void SystemNative_GetCryptographicallySecureRandomBytes();
+int32_t SystemNative_Open(const char* path, int x, int y);
+void SystemNative_ConvertErrorPalToPlatform();
+void SystemNative_StrErrorR();
+void SystemNative_Close();
+void SystemNative_FStat();
+void SystemNative_LSeek();
+void SystemNative_PRead();
+void SystemNative_CanGetHiddenFlag();
+int32_t SystemNative_Access(const char* path, int32_t mode);
+void SystemNative_Malloc();
+void SystemNative_Free();
+void SystemNative_SysLog();
+
+#define PAL_O_RDONLY 0x0000
+#define PAL_O_WRONLY 0x0001
+#define PAL_O_RDWR 0x0002
+#define PAL_O_ACCESS_MODE_MASK 0x000F
+
+int32_t SystemNative_Open2(const char* path, int flags, int mode) {
+	//printf ("In SystemNative_Open2 for %s\n", path);
+	// The implementation in libSystemNative tries to use PAL_O_CLOEXEC, which isn't supported here, so override it
+	if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDONLY) {
+		flags = O_RDONLY;
+	} else if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDWR) {
+		flags = O_RDWR;
+	} else if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_WRONLY) {
+		flags = O_WRONLY;
+	}
+
+	int result;
+    while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
+	return result;
+}
+
+int32_t SystemNative_Stat2(const char* path, FileStatus* output)
+{
+	// For some reason the libSystemNative SystemNative_Stat doesn't seem to work. Maybe I did something wrong elsewhere,
+	// or maybe it's hardcoded to something specific to browser wasm
+	struct stat stat_result;
+	int ret;
+    while ((ret = stat(path, &stat_result)) < 0 && errno == EINTR);
+
+	output->Size = stat_result.st_size;
+	output->ATime = stat_result.st_atime;
+	output->MTime = stat_result.st_mtime;
+	output->CTime = stat_result.st_ctime;
+	output->Mode = S_ISDIR (stat_result.st_mode)
+		? 0x4000  // Dir
+		: 0x8000; // File
+
+	//printf("SystemNative_Stat2 for %s has ISDIR=%i and will return mode %i; ret=%i\n", path, S_ISDIR (stat_result.st_mode), output->Mode, ret);
+
+	return ret;
+}
 
 int32_t SystemNative_Write2(intptr_t fd, const void* buffer, int32_t bufferSize) {
 	// Not sure why, but am getting fd=-1 when trying to write to stdout (which fails), so here's a workaround
 	return SystemNative_Write((int)fd == -1 ? 1: fd, buffer, bufferSize);
 }
 
+int64_t SystemNative_GetTimestamp2() {
+	// libSystemNative's implementation of SystemNative_GetTimestamp causes the process to exit. It probably
+	// relies on calling into JS.
+	struct timeval time;
+	return (gettimeofday(&time, NULL) == 0)
+		? (int64_t)(time.tv_sec) * 1000000000 + (time.tv_usec * 1000)
+		: 0;
+}
+
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
+	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
+	{"SystemNative_FreeEnviron", SystemNative_FreeEnviron },
 	{"SystemNative_LChflagsCanSetHiddenFlag", SystemNative_LChflagsCanSetHiddenFlag },
 	{"SystemNative_Dup", SystemNative_Dup},
 	{"SystemNative_Write", SystemNative_Write2},
 	{"SystemNative_GetSystemTimeAsTicks", SystemNative_GetSystemTimeAsTicks},
-	{"SystemNative_LStat", SystemNative_LStat},
+	{"SystemNative_LStat", SystemNative_Stat2},
+	{"SystemNative_FStat", SystemNative_FStat},
+	{"SystemNative_LSeek", SystemNative_LSeek},
 	{"SystemNative_ConvertErrorPlatformToPal", SystemNative_ConvertErrorPlatformToPal},
 	{"SystemNative_LowLevelMonitor_Create", SystemNative_LowLevelMonitor_Create},
 	{"SystemNative_LowLevelMonitor_Acquire", SystemNative_LowLevelMonitor_Acquire},
@@ -163,6 +282,21 @@ static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_LowLevelMonitor_Wait", SystemNative_LowLevelMonitor_Wait},
 	{"SystemNative_GetErrNo", SystemNative_GetErrNo},
 	{"SystemNative_SetErrNo", SystemNative_SetErrNo},
+	{"SystemNative_GetCwd", SystemNative_GetCwd},
+	{"SystemNative_GetNonCryptographicallySecureRandomBytes", SystemNative_GetNonCryptographicallySecureRandomBytes},
+	{"SystemNative_GetCryptographicallySecureRandomBytes", SystemNative_GetCryptographicallySecureRandomBytes},
+	{"SystemNative_Stat", SystemNative_Stat2},
+	{"SystemNative_Open", SystemNative_Open2},
+	{"SystemNative_Close", SystemNative_Close},
+	{"SystemNative_ConvertErrorPalToPlatform", SystemNative_ConvertErrorPalToPlatform},
+	{"SystemNative_StrErrorR", SystemNative_StrErrorR},
+	{"SystemNative_PRead", SystemNative_PRead},
+	{"SystemNative_CanGetHiddenFlag", SystemNative_CanGetHiddenFlag},
+	{"SystemNative_GetTimestamp", SystemNative_GetTimestamp2},
+	{"SystemNative_Access", SystemNative_Access},
+	{"SystemNative_Malloc", SystemNative_Malloc},
+	{"SystemNative_Free", SystemNative_Free},
+	{"SystemNative_SysLog", SystemNative_SysLog},
 	{NULL, NULL}
 };
 
@@ -288,7 +422,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	appctx_values [0] = "/";
 	appctx_values [1] = "browser-wasm";
 
-	char *file_name = RUNTIMECONFIG_BIN_FILE;
+	const char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
 	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
@@ -311,6 +445,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
+	
+#ifdef GEN_PINVOKE
+	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
+#endif
 
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
@@ -348,7 +486,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 
-	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
+	root_domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());
 }
 
@@ -366,7 +504,7 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-MonoClass* 
+MonoClass*
 mono_wasm_find_corlib_class (const char *namespace, const char *name)
 {
 	return mono_class_from_name (mono_get_corlib (), namespace, name);
@@ -405,25 +543,37 @@ mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 	return mono_value_box (root_domain, klass, value);
 }
 
+void
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **out_exc, MonoObject **out_result)
+{
+	MonoObject* temp_exc = NULL;
+	if (out_exc)
+		*out_exc = NULL;
+	else
+		out_exc = &temp_exc;
+
+	if (out_result) {
+		*out_result = NULL;
+		*out_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	} else {
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, out_exc);
+	}
+
+	if (*out_exc && out_result) {
+		MonoObject *exc2 = NULL;
+		*out_result = (MonoObject*)mono_object_to_string (*out_exc, &exc2);
+		if (exc2)
+			*out_result = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return;
+	}
+}
+
+// deprecated
 MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
-
-	if (out_exc)
-		*out_exc = NULL;
-	res = mono_runtime_invoke (method, this_arg, params, &exc);
-	if (exc) {
-		if (out_exc)
-			*out_exc = exc;
-
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
-		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
-	}
+	MonoObject* result = NULL;
+	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, &result);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoType *type = mono_signature_get_return_type (sig);
@@ -433,7 +583,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	if (mono_type_get_type (type) == MONO_TYPE_VOID)
 		return NULL;
 
-	return res;
+	return result;
 }
 
 MonoMethod*
@@ -446,7 +596,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
-	
+
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
 
@@ -566,10 +716,10 @@ mono_wasm_string_array_new (int size)
 }
 
 void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+mono_wasm_string_get_data_ref (
+	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
-	if (!string) {
+	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
 		if (outLengthBytes)
@@ -580,12 +730,19 @@ mono_wasm_string_get_data (
 	}
 
 	if (outChars)
-		*outChars = mono_string_chars (string);
+		*outChars = mono_string_chars (*string);
 	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (string) * 2;
+		*outLengthBytes = mono_string_length (*string) * 2;
 	if (outIsInterned)
-		*outIsInterned = mono_string_instance_is_interned (string);
+		*outIsInterned = mono_string_instance_is_interned (*string);
 	return;
+}
+
+void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
 }
 
 void add_assembly(const char* base_dir, const char *name) {

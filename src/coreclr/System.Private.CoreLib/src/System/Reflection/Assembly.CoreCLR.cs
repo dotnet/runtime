@@ -23,8 +23,10 @@ namespace System.Reflection
 
         [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public static Assembly? LoadWithPartialName(string partialName!!)
+        public static Assembly? LoadWithPartialName(string partialName)
         {
+            ArgumentNullException.ThrowIfNull(partialName);
+
             if ((partialName.Length == 0) || (partialName[0] == '\0'))
                 throw new ArgumentException(SR.Format_StringZeroLength, nameof(partialName));
 
@@ -42,13 +44,15 @@ namespace System.Reflection
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public static Assembly Load(AssemblyName assemblyRef!!)
+        public static Assembly Load(AssemblyName assemblyRef)
         {
+            ArgumentNullException.ThrowIfNull(assemblyRef);
+
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
         private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
@@ -76,7 +80,7 @@ namespace System.Reflection
             return GetExecutingAssembly(ref stackMark);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
         private static Assembly? GetEntryAssemblyInternal()
@@ -86,7 +90,7 @@ namespace System.Reflection
             return entryAssembly;
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetAssemblyCount")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetAssemblyCount")]
         [SuppressGCTransition]
         internal static partial uint GetAssemblyCount();
     }

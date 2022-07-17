@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class testout1
+using Xunit;
+namespace Test_5w1d_05
+{
+public unsafe class testout1
 {
     private static float[] s_arr1d_0 = new float[6];
 
@@ -18,7 +21,8 @@ internal unsafe class testout1
         return Convert.ToInt32((2048.0F - ((*a2_0))) + asgop0);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_arr1d_0[0] = -3996.0F;
 
@@ -31,4 +35,5 @@ internal unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

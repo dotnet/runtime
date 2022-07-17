@@ -760,7 +760,7 @@ namespace System.Linq.Expressions
 
         public void CopyTo(Expression[] array, int index)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
             if (index < 0)
             {
                 throw Error.ArgumentOutOfRange(nameof(index));
@@ -900,7 +900,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(params Expression[] expressions)
         {
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
             RequiresCanRead(expressions, nameof(expressions));
 
             return GetOptimizedBlockExpression(expressions);
@@ -924,7 +924,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Type type, params Expression[] expressions)
         {
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
             return Block(type, (IEnumerable<Expression>)expressions);
         }
 
@@ -970,7 +970,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
             ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0)
@@ -998,8 +998,8 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Type type, IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(expressions);
 
             ReadOnlyCollection<Expression> expressionList = expressions.ToReadOnly();
             RequiresCanRead(expressionList, nameof(expressions));

@@ -2,19 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Security;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Security;
-    using System.Xml;
-
     internal delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[]? memberNames);
     internal delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
 
@@ -115,7 +112,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
 
-            private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
+            private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
                 MethodInfo signature = GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
@@ -277,8 +274,8 @@ namespace System.Runtime.Serialization.Json
                         {
                             WriteStartElement(nameLocal: null, nameIndex: i + _childElementIndex);
                         }
-                        if (memberValue == null)
-                            memberValue = LoadMemberValue(member);
+
+                        memberValue ??= LoadMemberValue(member);
                         WriteValue(memberValue);
                         WriteEndElement();
                     }
@@ -317,7 +314,6 @@ namespace System.Runtime.Serialization.Json
             private void WriteCollection(CollectionDataContract collectionContract)
             {
                 LocalBuilder itemName = _ilg.DeclareLocal(typeof(XmlDictionaryString), "itemName");
-                _ilg.Load(_contextArg);
                 _ilg.LoadMember(JsonFormatGeneratorStatics.CollectionItemNameProperty);
                 _ilg.Store(itemName);
 
@@ -394,10 +390,8 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (enumeratorType.IsInterface)
                         {
-                            if (moveNextMethod == null)
-                                moveNextMethod = JsonFormatGeneratorStatics.MoveNextMethod;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = JsonFormatGeneratorStatics.GetCurrentMethod;
+                            moveNextMethod ??= JsonFormatGeneratorStatics.MoveNextMethod;
+                            getCurrentMethod ??= JsonFormatGeneratorStatics.GetCurrentMethod;
                         }
                         else
                         {
@@ -417,10 +411,9 @@ namespace System.Runtime.Serialization.Json
                                     }
                                 }
                             }
-                            if (moveNextMethod == null)
-                                moveNextMethod = CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
+
+                            moveNextMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
+                            getCurrentMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
                         }
                     }
                     Type elementType = getCurrentMethod.ReturnType;
@@ -728,6 +721,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(methodInfo);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder UnwrapNullableObject(LocalBuilder memberValue)// Leaves !HasValue on stack
             {
                 Type memberType = memberValue.LocalType;

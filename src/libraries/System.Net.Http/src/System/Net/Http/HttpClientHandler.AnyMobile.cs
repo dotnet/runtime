@@ -617,6 +617,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public IWebProxy? Proxy
         {
             get

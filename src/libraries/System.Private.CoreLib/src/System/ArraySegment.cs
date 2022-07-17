@@ -81,7 +81,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
 
                 return _array![_offset + index];
@@ -90,7 +90,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
 
                 _array![_offset + index] = value;
@@ -139,7 +139,7 @@ namespace System
 
             if ((uint)index > (uint)_count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new ArraySegment<T>(_array!, _offset + index, _count - index);
@@ -151,7 +151,7 @@ namespace System
 
             if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new ArraySegment<T>(_array!, _offset + index, count);
@@ -184,7 +184,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
                 return _array![_offset + index];
             }
@@ -193,7 +193,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
                 _array![_offset + index] = value;
             }
@@ -223,7 +223,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
                 return _array![_offset + index];
             }

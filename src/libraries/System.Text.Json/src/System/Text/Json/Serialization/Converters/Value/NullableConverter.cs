@@ -16,11 +16,13 @@ namespace System.Text.Json.Serialization.Converters
         public NullableConverter(JsonConverter<T> elementConverter)
         {
             _elementConverter = elementConverter;
-            ConverterStrategy = elementConverter.ConverterStrategy;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
-            // temporary workaround for JsonConverter base constructor needing to access
-            // ConverterStrategy when calculating `CanUseDirectReadOrWrite`.
-            CanUseDirectReadOrWrite = elementConverter.ConverterStrategy == ConverterStrategy.Value;
+
+            // Workaround for the base constructor depending on the (still unset) ConverterStrategy
+            // to derive the CanUseDirectReadOrWrite and RequiresReadAhead values.
+            ConverterStrategy = elementConverter.ConverterStrategy;
+            CanUseDirectReadOrWrite = elementConverter.CanUseDirectReadOrWrite;
+            RequiresReadAhead = elementConverter.RequiresReadAhead;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)

@@ -239,18 +239,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the object that manages the state needed to implement various Xslt functions.
         /// </summary>
-        public XsltLibrary XsltFunctions
-        {
-            get
-            {
-                if (_xsltLib == null)
-                {
-                    _xsltLib = new XsltLibrary(this);
-                }
-
-                return _xsltLib;
-            }
-        }
+        public XsltLibrary XsltFunctions => _xsltLib ??= new XsltLibrary(this);
 
         /// <summary>
         /// Get the early-bound extension object identified by "index".  If it does not yet exist, create an instance using the
@@ -486,7 +475,7 @@ namespace System.Xml.Xsl.Runtime
         /// Convert from the Clr type of "value" to Clr type "destinationType" using V1 Xslt rules.
         /// These rules include converting any Rtf values to Nodes.
         /// </summary>
-        internal object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
+        internal static object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
         {
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()),
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
@@ -793,7 +782,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Create an XmlQueryType that represents the type of "item".
         /// </summary>
-        private XmlQueryType CreateXmlType(XPathItem item)
+        private static XmlQueryType CreateXmlType(XPathItem item)
         {
             if (item.IsNode)
             {

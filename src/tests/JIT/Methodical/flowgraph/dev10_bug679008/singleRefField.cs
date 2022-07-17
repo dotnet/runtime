@@ -11,6 +11,8 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+namespace Test_singleRefField_cs
+{
 public struct MB8
 {
     public object foo;
@@ -73,4 +75,5 @@ public class Repro
         new Repro().Bug(new MB8(), "Test");
         return 100;
     }
+}
 }

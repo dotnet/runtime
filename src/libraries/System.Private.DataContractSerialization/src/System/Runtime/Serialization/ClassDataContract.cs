@@ -1,24 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security;
+using System.Threading;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
-    using System.Xml;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Linq;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class ClassDataContract : DataContract
     {
         public XmlDictionaryString[]? ContractNamespaces;
@@ -205,18 +204,7 @@ namespace System.Runtime.Serialization
         }
 
         private Func<object>? _makeNewInstance;
-        private Func<object> MakeNewInstance
-        {
-            get
-            {
-                if (_makeNewInstance == null)
-                {
-                    _makeNewInstance = FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
-                }
-
-                return _makeNewInstance;
-            }
-        }
+        private Func<object> MakeNewInstance => _makeNewInstance ??= FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
 
         internal bool CreateNewInstanceViaDefaultConstructor([NotNullWhen(true)] out object? obj)
         {
@@ -960,10 +948,8 @@ namespace System.Runtime.Serialization
 
                             DataMember memberContract = new DataMember(member);
 
-                            if (member is PropertyInfo)
+                            if (member is PropertyInfo property)
                             {
-                                PropertyInfo property = (PropertyInfo)member;
-
                                 MethodInfo? getMethod = property.GetMethod;
                                 if (getMethod != null && IsMethodOverriding(getMethod))
                                     continue;
@@ -1107,7 +1093,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private bool SetIfGetOnlyCollection(DataMember memberContract)
+            private static bool SetIfGetOnlyCollection(DataMember memberContract)
             {
                 //OK to call IsCollection here since the use of surrogated collection types is not supported in get-only scenarios
                 if (CollectionDataContract.IsCollection(memberContract.MemberType, false /*isConstructorRequired*/) && !memberContract.MemberType.IsValueType)
@@ -1490,15 +1476,7 @@ namespace System.Runtime.Serialization
                 set { _childElementNamespaces = value; }
             }
 
-            private static Type[] SerInfoCtorArgs
-            {
-                get
-                {
-                    if (s_serInfoCtorArgs == null)
-                        s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-                    return s_serInfoCtorArgs;
-                }
-            }
+            private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
             internal struct Member
             {
@@ -1622,21 +1600,6 @@ namespace System.Runtime.Serialization
             {
                 this.MemberNames[i] = dictionary.Add(memberNames[i]);
                 this.MemberNamespaces[i] = ns;
-            }
-        }
-
-        internal Type UnadaptedClassType
-        {
-            get
-            {
-                if (IsKeyValuePairAdapter)
-                {
-                    return Globals.TypeOfKeyValuePair.MakeGenericType(KeyValuePairGenericArguments);
-                }
-                else
-                {
-                    return UnderlyingType;
-                }
             }
         }
     }

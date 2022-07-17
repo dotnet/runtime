@@ -53,7 +53,6 @@ namespace System.IO.Compression
         {
             CheckDeflateStream();
             _deflateStream.Flush();
-            return;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -124,7 +123,7 @@ namespace System.IO.Compression
             else
             {
                 CheckDeflateStream();
-                _deflateStream.WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                _deflateStream.WriteCore(new ReadOnlySpan<byte>(in value));
             }
         }
 

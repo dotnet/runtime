@@ -9,7 +9,7 @@ namespace System.Reflection.Internal
     /// <summary>
     /// Represents raw memory owned by an external object.
     /// </summary>
-    internal unsafe sealed class ExternalMemoryBlockProvider : MemoryBlockProvider
+    internal sealed unsafe class ExternalMemoryBlockProvider : MemoryBlockProvider
     {
         private byte* _memory;
         private int _size;

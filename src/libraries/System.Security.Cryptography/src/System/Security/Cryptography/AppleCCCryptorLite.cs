@@ -75,6 +75,21 @@ namespace System.Security.Cryptography
             _isFinalized = true;
 #endif
 
+            // We just use CCCryptorUpdate instead of CCCryptorFinal. From the
+            // Apple documentation:
+
+            // In the following cases, the CCCryptorFinal() is superfluous as
+            // it will not yield any data nor return an error:
+            //     1. Encrypting or decrypting with a block cipher with padding
+            //        disabled, when the total amount of data provided to
+            //        CCCryptorUpdate() is an integral multiple of the block size.
+            //     2. Encrypting or decrypting with a stream cipher.
+
+            // For case 1, we do all of our padding manually and the cipher is opened with
+            // PAL_PaddingMode.None. So that condition is met. For the second part, we always
+            // submit data as a multiple of the block size, and is asserted below. So this condition
+            // is met.
+
             Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length <= output.Length);
 
@@ -86,7 +101,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    written = ProcessFinalBlock(input, rented);
+                    written = CipherUpdate(input, rented);
                     rented.AsSpan(0, written).CopyTo(output);
                 }
                 finally
@@ -96,7 +111,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                written = ProcessFinalBlock(input, output);
+                written = CipherUpdate(input, output);
             }
 
             return written;
@@ -171,7 +186,7 @@ namespace System.Security.Cryptography
             return bytesWritten;
         }
 
-        private PAL_ChainingMode GetPalChainMode(PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
+        private static PAL_ChainingMode GetPalChainMode(PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
         {
             return cipherMode switch
             {
@@ -181,39 +196,6 @@ namespace System.Security.Cryptography
                 CipherMode.CFB => PAL_ChainingMode.CFB,
                 _ => throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeNotSupported, cipherMode)),
             };
-        }
-
-        private unsafe int ProcessFinalBlock(ReadOnlySpan<byte> input, Span<byte> output)
-        {
-            if (input.Length == 0)
-            {
-                return 0;
-            }
-
-            int outputBytes = CipherUpdate(input, output);
-            int ret;
-            int errorCode;
-
-            Debug.Assert(output.Length > 0);
-
-            fixed (byte* outputStart = output)
-            {
-                byte* outputCurrent = outputStart + outputBytes;
-                int bytesWritten;
-
-                ret = Interop.AppleCrypto.CryptorFinal(
-                    _cryptor,
-                    outputCurrent,
-                    output.Length - outputBytes,
-                    out bytesWritten,
-                    out errorCode);
-
-                outputBytes += bytesWritten;
-            }
-
-            ProcessInteropError(ret, errorCode);
-
-            return outputBytes;
         }
 
         private static void ProcessInteropError(int functionReturnCode, int ccStatus)

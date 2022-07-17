@@ -1,5 +1,8 @@
 # Building
 
+These are instructions for building the common form of CoreCLR on common platforms. For instructions on particular form factors, see also [Build NativeAOT](nativeaot.md), [Build CoreCLR on Linux](linux-instructions.md), [Build CoreCLR on OS X](osx-instructions.md), [Build CoreCLR on FreeBSD](freebsd-instructions.md),
+[Cross Compilation for ARM on Windows](cross-building.md), [Cross Compilation for Android on Linux](android.md).
+
 To build just CoreCLR, use the `-subset` flag to the `build.sh` (or `build.cmd`) script at the repo root:
 
 For Linux:
@@ -50,5 +53,4 @@ Use `build -?` to learn about the options to this script.
 
 See [Running Tests](../../testing/coreclr/testing.md) for instructions on running the tests.
 
-See also [Build CoreCLR on Linux](linux-instructions.md), [Build CoreCLR on OS X](osx-instructions.md), [Build CoreCLR on FreeBSD](freebsd-instructions.md),
-[Cross Compilation for ARM on Windows](cross-building.md), [Cross Compilation for Android on Linux](android.md).
+

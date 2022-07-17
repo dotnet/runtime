@@ -18,8 +18,10 @@ namespace System.Text
         {
         }
 
-        public EncoderReplacementFallback(string replacement!!)
+        public EncoderReplacementFallback(string replacement)
         {
+            ArgumentNullException.ThrowIfNull(replacement);
+
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;
             foreach (char c in replacement)

@@ -82,8 +82,10 @@ namespace System.IO
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <param name="access"></param>
-        protected void Initialize(SafeBuffer buffer!!, long offset, long length, FileAccess access)
+        protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -157,8 +159,10 @@ namespace System.IO
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
         [CLSCompliant(false)]
-        protected unsafe void Initialize(byte* pointer!!, long length, long capacity, FileAccess access)
+        protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
+            ArgumentNullException.ThrowIfNull(pointer);
+
             if (length < 0 || capacity < 0)
                 throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)
@@ -585,7 +589,7 @@ namespace System.IO
             {
                 unsafe
                 {
-                    Buffer.ZeroMemory(_mem + len, (nuint)(value - len));
+                    NativeMemory.Clear(_mem + len, (nuint)(value - len));
                 }
             }
             Interlocked.Exchange(ref _length, value);
@@ -648,7 +652,7 @@ namespace System.IO
                 // zero any memory in the middle.
                 if (pos > len)
                 {
-                    Buffer.ZeroMemory(_mem + len, (nuint)(pos - len));
+                    NativeMemory.Clear(_mem + len, (nuint)(pos - len));
                 }
 
                 // set length after zeroing memory to avoid race condition of accessing unzeroed memory
@@ -778,7 +782,7 @@ namespace System.IO
                     {
                         unsafe
                         {
-                            Buffer.ZeroMemory(_mem + len, (nuint)(pos - len));
+                            NativeMemory.Clear(_mem + len, (nuint)(pos - len));
                         }
                     }
 

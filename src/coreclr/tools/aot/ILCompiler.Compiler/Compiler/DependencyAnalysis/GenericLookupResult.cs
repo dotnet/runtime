@@ -1427,24 +1427,59 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!_constrainedMethod.HasInstantiation || !_directCall, "Direct call to constrained generic method isn't supported");
         }
 
+        public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            // If we're producing a full vtable for the type, we don't need to report virtual method use.
+            // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
+            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots && !canonMethod.HasInstantiation)
+            {
+                // Report the method as virtually used so that types that could be used here at runtime
+                // have the appropriate implementations generated.
+                // This covers instantiations created at runtime (MakeGeneric*). The statically present generic dictionaries
+                // are already covered by the dependency analysis within the compiler because we call GetTarget for those.
+                yield return factory.VirtualMethodUse(canonMethod);
+            }
+        }
+
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            MethodDesc implMethod = instantiatedConstrainedMethod;
+            MethodDesc implMethod;
 
-            if (implMethod.OwningType.IsInterface)
+            if (instantiatedConstrainedMethod.OwningType.IsInterface)
             {
-                implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(implMethod);
+                if (instantiatedConstrainedMethod.Signature.IsStatic)
+                {
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
+                    if (implMethod == null && !instantiatedConstrainedMethod.IsAbstract)
+                    {
+                        implMethod = instantiatedConstrainedMethod;
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethod);
             }
 
-            implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(implMethod);
-
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
-            Debug.Assert(instantiatedConstraintType.IsValueType);
-            Debug.Assert(implMethod.OwningType == instantiatedConstraintType);
+            Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
 
-            if (implMethod.HasInstantiation)
+            if (implMethod.Signature.IsStatic)
+            {
+                if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
+                    return factory.ExactCallableAddress(implMethod);
+                else
+                    return factory.MethodEntrypoint(implMethod);
+            }
+            else if (implMethod.HasInstantiation)
             {
                 return factory.ExactCallableAddress(implMethod);
             }

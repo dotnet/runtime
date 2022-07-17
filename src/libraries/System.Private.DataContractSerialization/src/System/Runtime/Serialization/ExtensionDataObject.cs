@@ -168,7 +168,7 @@ namespace System.Runtime.Serialization
             _clrTypeName = _clrAssemblyName = null;
         }
 
-        internal void AddQualifiedNameAttribute(ElementData element, string elementPrefix, string elementName, string elementNs, string valueName, string? valueNs)
+        internal static void AddQualifiedNameAttribute(ElementData element, string elementPrefix, string elementName, string elementNs, string valueName, string? valueNs)
         {
             string prefix = ExtensionDataReader.GetPrefix(valueNs);
             element.AddAttribute(elementPrefix, elementNs, elementName, prefix + ":" + valueName);

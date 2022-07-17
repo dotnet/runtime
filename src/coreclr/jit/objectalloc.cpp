@@ -451,25 +451,20 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 {
     assert(allocObj != nullptr);
 
-    GenTree*     op1                  = allocObj->gtGetOp1();
+    GenTree*     arg                  = allocObj->gtGetOp1();
     unsigned int helper               = allocObj->gtNewHelper;
     bool         helperHasSideEffects = allocObj->gtHelperHasSideEffects;
 
-    GenTreeCall::Use* args;
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP entryPoint = allocObj->gtEntryPoint;
     if (helper == CORINFO_HELP_READYTORUN_NEW)
     {
-        args = nullptr;
+        arg = nullptr;
     }
-    else
 #endif
-    {
-        args = comp->gtNewCallArgs(op1);
-    }
 
     const bool morphArgs  = false;
-    GenTree*   helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, args, morphArgs);
+    GenTree*   helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, morphArgs, arg);
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
@@ -549,19 +544,13 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     //------------------------------------------------------------------------
     // STMTx (IL 0x... ???)
     //   * ASG       long
-    //   +--*  FIELD     long   #PseudoField:0x0
-    //   |  \--*  ADDR      byref
-    //   |     \--*  LCL_VAR   struct
+    //   +--*  LCL_FLD    long
     //   \--*  CNS_INT(h) long
     //------------------------------------------------------------------------
 
-    // Create a local representing the object
-    GenTree* tree = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
-
-    // Add a pseudo-field for the method table pointer and initialize it
-    tree = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
-    tree = comp->gtNewFieldRef(TYP_I_IMPL, FieldSeqStore::FirstElemPseudoField, tree, 0);
-    tree = comp->gtNewAssignNode(tree, allocObj->gtGetOp1());
+    // Initialize the method table pointer.
+    GenTree* tree = comp->gtNewLclFldNode(lclNum, TYP_I_IMPL, 0);
+    tree          = comp->gtNewAssignNode(tree, allocObj->gtGetOp1());
 
     Statement* newStmt = comp->gtNewStmt(tree);
 
@@ -727,10 +716,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 // Notes:
 //                      If newType is TYP_I_IMPL, the tree is definitely pointing to the stack (or is null);
 //                      if newType is TYP_BYREF, the tree may point to the stack.
-//                      In addition to updating types this method may set GTF_IND_TGTANYWHERE
-//                      or GTF_IND_TGT_NOT_HEAP on ancestor indirections to help codegen
-//                      with write barrier selection.
-
+//                      In addition to updating types this method may set GTF_IND_TGT_NOT_HEAP on ancestor
+//                      indirections to help codegen with write barrier selection.
+//
 void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType)
 {
     assert(newType == TYP_BYREF || newType == TYP_I_IMPL);
@@ -784,19 +772,17 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_FIELD:
             case GT_IND:
             {
-                if (newType == TYP_BYREF)
-                {
-                    // This ensures that a checked write barrier is used when writing
-                    // to this field/indirection (it can be inside a stack-allocated object).
-                    parent->gtFlags |= GTF_IND_TGTANYWHERE;
-                }
-                else
+                // The new target could be *not* on the heap.
+                parent->gtFlags &= ~GTF_IND_TGT_HEAP;
+
+                if (newType != TYP_BYREF)
                 {
                     // This indicates that a write barrier is not needed when writing
                     // to this field/indirection since the address is not pointing to the heap.
                     // It's either null or points to inside a stack-allocated object.
                     parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
                 }
+
                 int grandParentIndex = parentIndex + 1;
 
                 if (parentStack->Height() > grandParentIndex)

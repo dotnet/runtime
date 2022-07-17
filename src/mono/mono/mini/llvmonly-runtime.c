@@ -572,7 +572,7 @@ mini_llvmonly_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMetho
 	gpointer result = resolve_vcall (this_obj->vtable, slot, imt_method, out_arg, TRUE, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
+		mini_llvmonly_throw_exception ((MonoObject*)ex);
 	}
 	return result;
 }
@@ -612,7 +612,7 @@ mini_llvmonly_resolve_vcall_gsharedvt_fast (MonoObject *this_obj, int slot)
 	gpointer addr = resolve_vcall (vtable, slot, NULL, &arg, TRUE, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
+		mini_llvmonly_throw_exception ((MonoObject*)ex);
 	}
 
 	ftndesc = m_class_alloc0 (vtable->klass, sizeof (MonoFtnDesc));
@@ -697,7 +697,7 @@ mini_llvmonly_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, 
 	mini_resolve_imt_method (vt, imt + imt_slot, generic_virtual, &m, &aot_addr, &need_rgctx_tramp, &variant_iface, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
+		mini_llvmonly_throw_exception ((MonoObject*)ex);
 	}
 
 	if (m_class_is_valuetype (vt->klass))
@@ -803,9 +803,11 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	WrapperSubtype subtype = mono_marshal_get_delegate_invoke_subtype (info->invoke, del);
 
+	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND)
+		del->bound = TRUE;
+
 	ftndesc = info->invoke_impl;
 	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
-		ERROR_DECL (error);
 		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);
 		gpointer arg = NULL;
 		gpointer addr = mini_llvmonly_load_method (invoke_impl, FALSE, FALSE, &arg, error);
@@ -913,7 +915,7 @@ mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, 
 	gpointer addr = resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
+		mini_llvmonly_throw_exception ((MonoObject*)ex);
 	}
 
 	if (!gsharedvt_imt [imt_slot]) {
@@ -946,7 +948,7 @@ mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer meth
 		if (ex) {
 			/* Its okay to raise in llvmonly mode */
 			if (mono_llvm_only) {
-				mono_llvm_throw_exception ((MonoObject*)ex);
+				mini_llvmonly_throw_exception ((MonoObject*)ex);
 			} else {
 				mono_set_pending_exception (ex);
 			}
@@ -963,7 +965,7 @@ mini_llvmonly_throw_nullref_exception (void)
 
 	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
 
-	mono_llvm_throw_corlib_exception (ex_token_index);
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
 }
 
 void
@@ -972,19 +974,7 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	char *msg = g_strdup_printf ("AOT Compilation failed for method '%s'.", name);
 	MonoException *ex = mono_get_exception_execution_engine (msg);
 	g_free (msg);
-	mono_llvm_throw_exception ((MonoObject*)ex);
-}
-
-/*
- * mini_llvmonly_pop_lmf:
- *
- *   Pop LMF off the LMF stack.
- */
-void
-mini_llvmonly_pop_lmf (MonoLMF *lmf)
-{
-	if (lmf->previous_lmf)
-		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
+	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }
 
 void

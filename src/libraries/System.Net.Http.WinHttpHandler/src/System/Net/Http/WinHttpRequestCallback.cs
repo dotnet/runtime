@@ -109,18 +109,16 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 state.SavedException = ex;
-                if (state.RequestHandle != null)
-                {
-                    // Since we got a fatal error processing the request callback,
-                    // we need to close the WinHttp request handle in order to
-                    // abort the currently executing WinHttp async operation.
-                    //
-                    // We must always call Dispose() against the SafeWinHttpHandle
-                    // wrapper and never close directly the raw WinHttp handle.
-                    // The SafeWinHttpHandle wrapper is thread-safe and guarantees
-                    // calling the underlying WinHttpCloseHandle() function only once.
-                    state.RequestHandle.Dispose();
-                }
+
+                // Since we got a fatal error processing the request callback,
+                // we need to close the WinHttp request handle in order to
+                // abort the currently executing WinHttp async operation.
+                //
+                // We must always call Dispose() against the SafeWinHttpHandle
+                // wrapper and never close directly the raw WinHttp handle.
+                // The SafeWinHttpHandle wrapper is thread-safe and guarantees
+                // calling the underlying WinHttpCloseHandle() function only once.
+                state.RequestHandle?.Dispose();
             }
         }
 
@@ -274,9 +272,9 @@ namespace System.Net.Http
                     throw WinHttpException.CreateExceptionUsingError(lastError, "WINHTTP_CALLBACK_STATUS_SENDING_REQUEST/WinHttpQueryOption");
                 }
 
-                // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
-                X509Certificate2Collection remoteCertificateStore =
-                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle);
+                    // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
+                    X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
+                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle, remoteCertificateStore);
 
                 // Create a managed wrapper around the certificate handle. Since this results in duplicating
                 // the handle, we will close the original handle after creating the wrapper.
@@ -310,11 +308,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (chain != null)
-                    {
-                        chain.Dispose();
-                    }
-
+                    chain?.Dispose();
                     serverCertificate.Dispose();
                 }
 

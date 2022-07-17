@@ -23,8 +23,7 @@ namespace System.Xml
         public void SetOutput(XmlNodeWriter writer, Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             _writer = writer;
-            if (_signingWriter == null)
-                _signingWriter = new XmlCanonicalWriter();
+            _signingWriter ??= new XmlCanonicalWriter();
             _signingWriter.SetOutput(stream, includeComments, inclusivePrefixes);
             _chars = new byte[XmlConverter.MaxPrimitiveChars];
             _base64Chars = null;
@@ -65,7 +64,7 @@ namespace System.Xml
         public override void WriteDeclaration()
         {
             _writer.WriteDeclaration();
-            _signingWriter.WriteDeclaration();
+            XmlCanonicalWriter.WriteDeclaration();
         }
 
         public override void WriteComment(string text)
@@ -353,8 +352,7 @@ namespace System.Xml
 
         private void WriteBase64Text(byte[] buffer, int offset, int count)
         {
-            if (_base64Chars == null)
-                _base64Chars = new byte[512];
+            _base64Chars ??= new byte[512];
             Base64Encoding encoding = XmlConverter.Base64Encoding;
             while (count >= 3)
             {

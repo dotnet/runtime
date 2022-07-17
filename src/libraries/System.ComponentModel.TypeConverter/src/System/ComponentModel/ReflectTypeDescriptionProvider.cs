@@ -7,7 +7,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -165,17 +164,22 @@ namespace System.ComponentModel
                     [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
                     [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
                     [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
+                    [typeof(Int128)] = new IntrinsicTypeConverterData((type) => new Int128Converter()),
                     [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
                     [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
                     [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
+                    [typeof(Half)] = new IntrinsicTypeConverterData((type) => new HalfConverter()),
+                    [typeof(UInt128)] = new IntrinsicTypeConverterData((type) => new UInt128Converter()),
                     [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
                     [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
                     [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
                     [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
                     [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
+                    [typeof(DateOnly)] = new IntrinsicTypeConverterData((type) => new DateOnlyConverter()),
                     [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
                     [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
                     [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
+                    [typeof(TimeOnly)] = new IntrinsicTypeConverterData((type) => new TimeOnlyConverter()),
                     [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
                     [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
                     [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
@@ -228,8 +232,10 @@ namespace System.ComponentModel
         /// table for the editor type, if one can be found.
         /// </summary>
         [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
-        internal static void AddEditorTable(Type editorBaseType!!, Hashtable table)
+        internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
+            ArgumentNullException.ThrowIfNull(editorBaseType);
+
             Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
             lock (s_internalSyncObject)
@@ -572,10 +578,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor[] propertyArray = ReflectGetExtendedProperties(extenders[idx]);
 
-                if (propertyList == null)
-                {
-                    propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
-                }
+                propertyList ??= new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
 
                 for (int propIdx = 0; propIdx < propertyArray.Length; propIdx++)
                 {
@@ -619,8 +622,10 @@ namespace System.ComponentModel
             return properties;
         }
 
-        protected internal override IExtenderProvider[] GetExtenderProviders(object instance!!)
+        protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             IComponent? component = instance as IComponent;
             if (component != null && component.Site != null)
             {
@@ -908,10 +913,7 @@ namespace System.ComponentModel
                 if (td == null && createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
-                    {
-                        _typeData = new Hashtable();
-                    }
+                    _typeData ??= new Hashtable();
                     _typeData[type] = td;
                 }
             }
@@ -1006,7 +1008,7 @@ namespace System.ComponentModel
                 {
                     // Get the type's attributes.
                     //
-                    attrs = type.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(type, typeof(Attribute), inherit: false);
                     attributeCache[type] = attrs;
                 }
             }
@@ -1034,7 +1036,7 @@ namespace System.ComponentModel
                 {
                     // Get the member's attributes.
                     //
-                    attrs = member.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(member, typeof(Attribute), inherit: false);
                     attributeCache[member] = attrs;
                 }
             }
@@ -1292,7 +1294,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
+                    Debug.Assert(Array.TrueForAll(properties, dbgProp => dbgProp is not null), $"Holes in property array for type {type}");
 
                     propertyCache[type] = properties;
                 }
@@ -1415,10 +1417,7 @@ namespace System.ComponentModel
                 // Interfaces do not derive from object, so we
                 // must handle the case of no hash entry here.
                 //
-                if (hashEntry == null)
-                {
-                    hashEntry = table[typeof(object)];
-                }
+                hashEntry ??= table[typeof(object)];
 
                 // If the entry is a type, create an instance of it and then
                 // replace the entry. This way we only need to create once.

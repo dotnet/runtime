@@ -59,6 +59,7 @@ namespace ILCompiler
 
     public abstract class ProfileData
     {
+        public abstract MibcConfig Config { get; }
         public abstract bool PartialNGen { get; }
         public abstract MethodProfileData GetMethodProfileData(MethodDesc m);
         public abstract IEnumerable<MethodProfileData> GetAllMethodProfileData();
@@ -111,7 +112,7 @@ namespace ILCompiler
                         // Actually merge
                         schemaElemMergerArray[0] = dataToMerge.SchemaData;
                         schemaElemMergerArray[1] = data.SchemaData;
-                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown>(schemaElemMergerArray);
+                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(schemaElemMergerArray);
                     }
                     mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask, mergedSchemaData);
                 }
@@ -130,6 +131,8 @@ namespace ILCompiler
         private EmptyProfileData()
         {
         }
+
+        public override MibcConfig Config { get; } = new ();
 
         public override bool PartialNGen => false;
 

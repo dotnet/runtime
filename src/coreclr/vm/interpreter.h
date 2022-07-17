@@ -828,7 +828,7 @@ public:
         {
             if (methInfo_->m_localDescs[i].m_type.IsLargeStruct(&m_interpCeeInfo))
             {
-                void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+                void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
                 *reinterpret_cast<void**>(structPtr) = LargeStructLocalSlot(i);
             }
         }
@@ -1002,6 +1002,8 @@ private:
 #else
         static const int MaxNumFPRegArgSlots = 4;
 #endif
+#elif defined(HOST_LOONGARCH64)
+        static const int MaxNumFPRegArgSlots = 8;
 #endif
 
         ~ArgState()
@@ -1210,23 +1212,23 @@ private:
     template<typename T>
     __forceinline T* OpStackGetAddr(unsigned ind)
     {
-        return reinterpret_cast<T*>(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sizeof(T)));
+        return reinterpret_cast<T*>(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sizeof(T)));
     }
 
     __forceinline void* OpStackGetAddr(unsigned ind, size_t sz)
     {
-        return ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sz);
+        return ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sz);
     }
 #else
     template<typename T>
     __forceinline T* OpStackGetAddr(unsigned ind)
     {
-        return reinterpret_cast<T*>(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sizeof(T)));
+        return reinterpret_cast<T*>(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sizeof(T)));
     }
 
     __forceinline void* OpStackGetAddr(unsigned ind, size_t sz)
     {
-        return ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sz);
+        return ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sz);
     }
 #endif
 
@@ -1235,7 +1237,7 @@ private:
         _ASSERTE(sz <= sizeof(INT64));
 
         INT64 ret = 0;
-        memcpy(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&ret), sz), src, sz);
+        memcpy(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&ret), sz), src, sz);
         return ret;
     }
 
@@ -1772,8 +1774,6 @@ private:
     void DoStringLength();
     void DoStringGetChar();
     void DoGetTypeFromHandle();
-    void DoByReferenceCtor();
-    void DoByReferenceValue();
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
 
@@ -2061,6 +2061,8 @@ unsigned short Interpreter::NumberOfIntegerRegArgs()
 #elif defined(HOST_ARM)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_LOONGARCH64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

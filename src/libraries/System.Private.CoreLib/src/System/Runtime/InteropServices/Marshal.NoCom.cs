@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
@@ -20,6 +21,7 @@ namespace System.Runtime.InteropServices
         public static bool AreComObjectsAvailableForCleanup() => false;
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -43,6 +45,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -67,12 +70,14 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetComInterfaceForObject(object o, Type T)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -103,12 +108,14 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject(object? obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -127,24 +134,28 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? GetObjectForNativeVariant(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object?[] GetObjectsForNativeVariants(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -184,9 +195,19 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static bool IsComObject(object o!!) => false;
+        public static bool IsComObject(object o)
+        {
+            ArgumentNullException.ThrowIfNull(o);
 
-        public static bool IsTypeVisibleFromCom(Type t!!) => false;
+            return false;
+        }
+
+        public static bool IsTypeVisibleFromCom(Type t)
+        {
+            ArgumentNullException.ThrowIfNull(t);
+
+            return false;
+        }
 
         [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)

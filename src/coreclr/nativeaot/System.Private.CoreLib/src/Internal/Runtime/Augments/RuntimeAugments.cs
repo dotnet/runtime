@@ -57,12 +57,6 @@ namespace Internal.Runtime.Augments
         }
 
         [CLSCompliant(false)]
-        public static void InitializeInteropLookups(InteropCallbacks callbacks)
-        {
-            s_interopCallbacks = callbacks;
-        }
-
-        [CLSCompliant(false)]
         public static void InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks)
         {
             s_stackTraceMetadataCallbacks = callbacks;
@@ -92,6 +86,8 @@ namespace Internal.Runtime.Augments
                 || eeType == EETypePtr.EETypePtrOf<string>()
                )
                 return null;
+            if (eeType.IsByRefLike)
+                throw new System.Reflection.TargetException();
             return RuntimeImports.RhNewObject(eeType);
         }
 
@@ -143,42 +139,16 @@ namespace Internal.Runtime.Augments
             {
                 // We just checked above that all lower bounds are zero. In that case, we should actually allocate
                 // a new SzArray instead.
-                RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType);
-                int length = lengths[0];
-                if (length < 0)
-                    throw new OverflowException(); // For compat: we need to throw OverflowException(): Array.CreateInstance throws ArgumentOutOfRangeException()
-                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), length);
+                Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType))!;
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), lengths[0]);
             }
 
-            // Create a local copy of the lenghts that cannot be motified by the caller
-            int* pLengths = stackalloc int[lengths.Length];
+            // Create a local copy of the lengths that cannot be modified by the caller
+            int* pImmutableLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
-                pLengths[i] = lengths[i];
+                pImmutableLengths[i] = lengths[i];
 
-            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
-        }
-
-        //
-        // Helper to create an array from a newobj instruction
-        //
-        public static unsafe Array NewObjArray(RuntimeTypeHandle typeHandleForArrayType, int[] arguments)
-        {
-            EETypePtr eeTypePtr = typeHandleForArrayType.ToEETypePtr();
-            Debug.Assert(eeTypePtr.IsArray);
-
-            fixed (int* pArguments = arguments)
-            {
-                return ArrayHelpers.NewObjArray((IntPtr)eeTypePtr.ToPointer(), arguments.Length, pArguments);
-            }
-        }
-
-        public static ref byte GetSzArrayElementAddress(Array array, int index)
-        {
-            if ((uint)index >= (uint)array.Length)
-                throw new IndexOutOfRangeException();
-
-            ref byte start = ref Unsafe.As<RawArrayData>(array).Data;
-            return ref Unsafe.Add(ref start, (IntPtr)(nint)((nuint)index * array.ElementSize));
+            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -231,9 +201,16 @@ namespace Internal.Runtime.Augments
             functionPointer = delegateObj.m_functionPointer;
         }
 
+        // Low level method that returns the loaded modules as array. ReadOnlySpan returning overload
+        // cannot be used early during startup.
         public static int GetLoadedModules(TypeManagerHandle[] resultArray)
         {
             return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules(resultArray);
+        }
+
+        public static ReadOnlySpan<TypeManagerHandle> GetLoadedModules()
+        {
+            return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules();
         }
 
         public static IntPtr GetOSModuleFromPointer(IntPtr pointerVal)
@@ -372,6 +349,12 @@ namespace Internal.Runtime.Augments
         public static unsafe object GetThreadStaticBase(IntPtr cookie)
         {
             return ThreadStatics.GetThreadStaticBaseForType(*(TypeManagerSlot**)cookie, (int)*((IntPtr*)(cookie) + 1));
+        }
+
+        public static int GetHighestStaticThreadStaticIndex(TypeManagerHandle typeManager)
+        {
+            RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ThreadStaticRegion, out int length);
+            return length / IntPtr.Size;
         }
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
@@ -666,6 +649,17 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
         }
 
+        public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
+        {
+            EETypePtr genericContextPtr = default;
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot), &genericContextPtr);
+            if (result != IntPtr.Zero)
+                genericContext = new RuntimeTypeHandle(genericContextPtr);
+            else
+                genericContext = default;
+            return result;
+        }
+
         public static IntPtr ResolveDispatch(object instance, RuntimeTypeHandle interfaceType, int slot)
         {
             return RuntimeImports.RhResolveDispatch(instance, CreateEETypePtr(interfaceType), checked((ushort)slot));
@@ -729,7 +723,7 @@ namespace Internal.Runtime.Augments
 
         public static bool IsAssignable(object srcObject, RuntimeTypeHandle dstType)
         {
-            EETypePtr srcEEType = srcObject.EETypePtr;
+            EETypePtr srcEEType = srcObject.GetEETypePtr();
             return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToEETypePtr());
         }
 
@@ -835,16 +829,6 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        internal static InteropCallbacks InteropCallbacks
-        {
-            get
-            {
-                InteropCallbacks callbacks = s_interopCallbacks;
-                Debug.Assert(callbacks != null);
-                return callbacks;
-            }
-        }
-
         internal static StackTraceMetadataCallbacks StackTraceCallbacksIfAvailable
         {
             get
@@ -868,7 +852,6 @@ namespace Internal.Runtime.Augments
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
-        private static InteropCallbacks s_interopCallbacks;
 
         public static void ReportUnhandledException(Exception exception)
         {
@@ -877,7 +860,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
-            return new RuntimeTypeHandle(obj.EETypePtr);
+            return new RuntimeTypeHandle(obj.GetEETypePtr());
         }
 
         // Move memory which may be on the heap which may have object references in it.
@@ -994,7 +977,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
+                NativeMemory.Clear(region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>((IntPtr)pfnTargetToInvoke, region, ref context);
@@ -1033,7 +1016,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
+                NativeMemory.Clear(region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T, U>((IntPtr)pfnTargetToInvoke, region, ref context, ref context2);

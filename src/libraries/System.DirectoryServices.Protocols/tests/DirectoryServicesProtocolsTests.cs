@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
+using System.Text;
 using System.Threading;
 using Xunit;
 
@@ -14,6 +16,8 @@ namespace System.DirectoryServices.Protocols.Tests
     {
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
+
+        internal static bool IsServerSideSortSupported => IsLdapConfigurationExist && LdapConfiguration.Configuration.SupportsServerSideSort;
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestInvalidFilter()
@@ -472,6 +476,67 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
+        public static IEnumerable<object[]> TestCompareRequestTheory_TestData()
+        {
+            yield return new object[] { "input", "input", ResultCode.CompareTrue };
+            yield return new object[] { "input", "input"u8.ToArray(), ResultCode.CompareTrue };
+
+            yield return new object[] { "input", "false", ResultCode.CompareFalse };
+            yield return new object[] { "input", new byte[] { 1, 2, 3, 4, 5 }, ResultCode.CompareFalse };
+
+            yield return new object[] { "http://example.com/", "http://example.com/", ResultCode.CompareTrue };
+            yield return new object[] { "http://example.com/", new Uri("http://example.com/"), ResultCode.CompareTrue };
+            yield return new object[] { "http://example.com/", "http://example.com/"u8.ToArray(), ResultCode.CompareTrue };
+
+            yield return new object[] { "http://example.com/", "http://false/", ResultCode.CompareFalse };
+            yield return new object[] { "http://example.com/", new Uri("http://false/"), ResultCode.CompareFalse };
+            yield return new object[] { "http://example.com/", "http://false/"u8.ToArray(), ResultCode.CompareFalse };
+        }
+
+        [ConditionalTheory(nameof(IsLdapConfigurationExist))]
+        [MemberData(nameof(TestCompareRequestTheory_TestData))]
+        public void TestCompareRequestTheory(object value, object assertion, ResultCode compareResult)
+        {
+            using (LdapConnection connection = GetConnection())
+            {
+                string ouName = "ProtocolsGroup10";
+                string rdn = "ou=" + ouName;
+
+                DeleteEntry(connection, rdn);
+                AddOrganizationalUnit(connection, rdn);
+
+                string dn = rdn + "," + LdapConfiguration.Configuration.SearchDn;
+
+                // set description to value
+                var mod = new ModifyRequest(dn, DirectoryAttributeOperation.Replace, "description", value);
+                var response = connection.SendRequest(mod);
+                Assert.Equal(ResultCode.Success, response.ResultCode);
+
+                // compare description to assertion
+                var cmp = new CompareRequest(dn, new DirectoryAttribute("description", assertion));
+                response = connection.SendRequest(cmp);
+                // assert compare result
+                Assert.Equal(compareResult, response.ResultCode);
+
+                // compare description to value
+                cmp = new CompareRequest(dn, new DirectoryAttribute("description", value));
+                response = connection.SendRequest(cmp);
+                // compare result always true
+                Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
+            }
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestCompareRequest()
+        {
+            using (LdapConnection connection = GetConnection())
+            {
+                // negative case: ou=NotFound does not exist
+                var cmp = new CompareRequest("ou=NotFound," + LdapConfiguration.Configuration.SearchDn, "ou", "NotFound");
+                Assert.Throws<DirectoryOperationException>(() => connection.SendRequest(cmp));
+            }
+        }
+
         [ConditionalFact(nameof(IsActiveDirectoryServer))]
         public void TestPageRequests()
         {
@@ -527,6 +592,58 @@ namespace System.DirectoryServices.Protocols.Tests
                     for (int i=0; i<20; i++)
                     {
                         DeleteEntry(connection, "ou=ProtocolsSubGroup8." + i + "," + dn);
+                    }
+                    DeleteEntry(connection, dn);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsServerSideSortSupported))]
+        public void TestSortedSearch()
+        {
+            using (LdapConnection connection = GetConnection())
+            {
+                string ouName = "ProtocolsGroup10";
+                string dn = "ou=" + ouName;
+
+                try
+                {
+                    for (int i=0; i<10; i++)
+                    {
+                        DeleteEntry(connection, "ou=ProtocolsSubGroup10." + i + "," + dn);
+                    }
+                    DeleteEntry(connection, dn);
+
+                    AddOrganizationalUnit(connection, dn);
+                    SearchResultEntry sre = SearchOrganizationalUnit(connection, LdapConfiguration.Configuration.SearchDn, ouName);
+                    Assert.NotNull(sre);
+
+                    for (int i=0; i<10; i++)
+                    {
+                        AddOrganizationalUnit(connection, "ou=ProtocolsSubGroup10." + i + "," + dn);
+                    }
+
+                    string filter = "(objectClass=*)";
+                    SearchRequest searchRequest = new SearchRequest(
+                                                        dn + "," + LdapConfiguration.Configuration.SearchDn,
+                                                        filter,
+                                                        SearchScope.Subtree,
+                                                        null);
+
+                    var sortRequestControl = new SortRequestControl("ou", true);
+                    searchRequest.Controls.Add(sortRequestControl);
+
+                    SearchResponse searchResponse = (SearchResponse) connection.SendRequest(searchRequest);
+                    Assert.Equal(1, searchResponse.Controls.Length);
+                    Assert.True(searchResponse.Controls[0] is SortResponseControl);
+                    Assert.True(searchResponse.Entries.Count > 0);
+                    Assert.Equal("ou=ProtocolsSubGroup10.9," + dn + "," + LdapConfiguration.Configuration.SearchDn, searchResponse.Entries[0].DistinguishedName);
+                }
+                finally
+                {
+                    for (int i=0; i<20; i++)
+                    {
+                        DeleteEntry(connection, "ou=ProtocolsSubGroup10." + i + "," + dn);
                     }
                     DeleteEntry(connection, dn);
                 }

@@ -87,6 +87,7 @@ DECL_OFFSET(MonoDelegate, invoke_impl)
 DECL_OFFSET(MonoDelegate, method)
 DECL_OFFSET(MonoDelegate, method_code)
 DECL_OFFSET(MonoDelegate, method_is_virtual)
+DECL_OFFSET(MonoDelegate, bound)
 DECL_OFFSET(MonoDelegate, extra_arg)
 
 DECL_OFFSET(MonoInternalThread, tid)
@@ -163,6 +164,8 @@ DECL_OFFSET(MonoMethodILState, il_offset)
 DECL_OFFSET(MonoMethodILState, data)
 
 DECL_OFFSET(MonoMethodRuntimeGenericContext, class_vtable)
+DECL_OFFSET(MonoMethodRuntimeGenericContext, entries)
+DECL_OFFSET(MonoMethodRuntimeGenericContext, infos)
 
 DECL_OFFSET(MonoJitTlsData, lmf)
 DECL_OFFSET(MonoJitTlsData, class_cast_from)

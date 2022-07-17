@@ -89,6 +89,30 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>Adds a key to the table if it doesn't already exist.</summary>
+        /// <param name="key">The key to add.</param>
+        /// <param name="value">The key's property value.</param>
+        /// <returns>true if the key/value pair was added; false if the table already contained the key.</returns>
+        public bool TryAdd(TKey key, TValue value)
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            }
+
+            lock (_lock)
+            {
+                int entryIndex = _container.FindEntry(key, out _);
+                if (entryIndex != -1)
+                {
+                    return false;
+                }
+
+                CreateEntry(key, value);
+                return true;
+            }
+        }
+
         /// <summary>Adds the key and value if the key doesn't exist, or updates the existing key's value if it does exist.</summary>
         /// <param name="key">key to add or update. May not be null.</param>
         /// <param name="value">value to associate with key.</param>
@@ -178,8 +202,10 @@ namespace System.Runtime.CompilerServices
         /// This rule permits the table to invoke createValueCallback outside the internal table lock
         /// to prevent deadlocks.
         /// </remarks>
-        public TValue GetValue(TKey key, CreateValueCallback createValueCallback!!)
+        public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
+            ArgumentNullException.ThrowIfNull(createValueCallback);
+
             // key is validated by TryGetValue
             return TryGetValue(key, out TValue? existingValue) ?
                 existingValue :

@@ -2,6 +2,23 @@
 
 The Native AOT toolchain can be currently built for Linux (x64/arm64), macOS (x64) and Windows (x64/arm64).
 
+## Building
+
+1. [Install pre-requisites](../../README.md#build-requirements)
+1. Run `build[.cmd|.sh] clr.aot+libs -rc [Debug|Release]` from the repo root to build binaries for local development. This will build individual components, but not the NuGet packages and builds much faster.
+
+### Using built binaries
+
+The paths to major components can be overridden using `IlcToolsPath`, `IlcSdkPath`, `IlcFrameworkPath`, `IlcFrameworkNativePath` and `IlcMibcPath` properties for `dotnet publish`. For example, `/p:IlcToolsPath=<repo root>\artifacts\bin\coreclr\windows.x64.Debug\ilc` can be used to override the compiler with a local debug build for troubleshooting or quick iterations.
+
+The component that writes out object files (objwriter.dll/libobjwriter.so/libobjwriter.dylib) is based on LLVM and doesn't build in the runtime repo. It gets published as a NuGet package out of the [dotnet/llvm-project](https://github.com/dotnet/llvm-project) repo (branch [objwriter/12.x](https://github.com/dotnet/llvm-project/tree/objwriter/12.x)). If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requisites you need to build objwriter out of that repo and replace the file in the output.
+
+### Building packages
+
+Run `build[.cmd|.sh] -c Release` from the repo root to build the NativeAOT toolchain packages. The build will place the toolchain packages at `artifacts\packages\Release\Shipping`. To publish your project using these packages:
+   - Add the package directory to your `nuget.config` file. For example, add `<add key="local" value="C:\runtime\artifacts\packages\Release\Shipping" />`
+   - Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
+
 ## High Level Overview
 
 Native AOT is a stripped down version of the CoreCLR runtime specialized for ahead of time compilation, with an accompanying ahead of time compiler.
@@ -20,15 +37,6 @@ The executable looks like a native executable, in the sense that it can be debug
 
 The compiler also has a mode where each managed assembly can be compiled into a separate object file. The object files are later linked into a single executable using the platform linker. This mode is mostly used in testing (it's faster to compile this way because we don't need to recompiling the same code from e.g. CoreLib). It's not a shipping configuration and has many problems (requires exactly matching compilation settings, forfeits many optimizations, and has trouble around cross-module generic virtual method implementations).
 
-## Building
-
-- [Install pre-requisites](../../README.md#build-requirements)
-- Run `build[.cmd|.sh] clr+libs -rc [Debug|Release] -lc Release` from the repo root. This will restore nuget packages required for building and build the parts of the repo required for general CoreCLR development. Alternatively, instead of specifying `clr+libs`, you can specify `clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs` which is more targeted and builds faster.
-- [NOT PORTED OVER YET] The build will place the toolchain packages at `artifacts\packages\[Debug|Release]\Shipping`. To publish your project using these packages:
-   - [NOT PORTED OVER YET] Add the package directory to your `nuget.config` file. For example, replace `dotnet-experimental` line in `samples\HelloWorld\nuget.config` with `<add key="local" value="C:\runtimelab\artifacts\packages\Debug\Shipping" />`
-   - [NOT PORTED OVER YET] Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
-- The component that writes out object files (objwriter.dll/libobjwriter.so/libobjwriter.dylib) is based on LLVM and doesn't build in the runtime repo. It gets published as a NuGet package out of the dotnet/llvm-project repo (branch objwriter/12.x). If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requiresites you need to build objwriter out of that repo and replace the file in the output.
-
 ## Visual Studio Solutions
 
 The repository has a number of Visual Studio Solutions files (`*.sln`) that are useful for editing parts of the repository. Build the repo from command line first before building using the solution files. Remember to select the appropriate configuration that you built. By default, `build.cmd` builds Debug x64 and so `Debug` and `x64` must be selected in the solution build configuration drop downs.
@@ -39,7 +47,7 @@ The repository has a number of Visual Studio Solutions files (`*.sln`) that are 
 Typical workflow for working on the compiler:
 - Open `ilc.sln` in Visual Studio
 - Set "ILCompiler" project in solution explorer as your startup project
-- Set Working directory in the project Debug options to your test project directory, e.g. `C:\runtimelab\samples\HelloWorld`
+- Set Working directory in the project Debug options to your test project directory, e.g. `C:\test`
 - Set Application arguments in the project Debug options to the response file that was generated by regular native aot publishing of your test project, e.g. `@obj\Release\net6.0\win-x64\native\HelloWorld.ilc.rsp`
 - Build & run using **F5**
 
@@ -75,6 +83,10 @@ To run an individual test (after it was built), navigate to the `artifacts\tests
 Sometimes it's handy to be able to rebuild the managed test manually or run the compilation under a debugger. A response file that was used to invoke the ahead of time compiler can be found in `$repo_root\artifacts\tests\coreclr\obj\[Windows|Linux|OSX].x64.[Debug|Release]\Managed`.
 
 For more advanced scenarios, look for at [Building Test Subsets](../../testing/coreclr/windows-test-instructions.md#building-test-subsets) and [Generating Core_Root](../../testing/coreclr/windows-test-instructions.md#generating-core_root)
+
+### Running library tests
+
+Build library tests by passing the `libs.tests` subset together with the `/p:TestNativeAot=true` to build the libraries, i.e. `clr.aot+libs+libs.tests /p:TestNativeAot=true` together with the full arguments as specified [above](#building). Then, to run a specific library, go to the tests directory of the library and run the usual command to run tests for the library (see [Running tests for a single library](../../testing/libraries/testing.md#running-tests-for-a-single-library)) but add the `/p:TestNativeAot=true` and the build configuration that was used, i.e. `dotnet.cmd build /t:Test /p:TestNativeAot=true -c Release`.
 
 ## Design Documentation
 

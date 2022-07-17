@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Tests
             const string JsonString = @"[{""Key1"":1,""Key2"":2},{""Key1"":3,""Key2"":4}]";
 
             // Without key policy, deserialize keys as they are.
-            Dictionary<string, int>[] obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>[]>(JsonString);
+            Dictionary<string, int>[] obj = await Serializer.DeserializeWrapper<Dictionary<string, int>[]>(JsonString);
 
             Assert.Equal(2, obj.Length);
 
@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(4, obj[1]["Key2"]);
 
             // Ensure we ignore key policy and deserialize keys as they are.
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>[]>(JsonString, options);
+            obj = await Serializer.DeserializeWrapper<Dictionary<string, int>[]>(JsonString, options);
 
             Assert.Equal(2, obj.Length);
 
@@ -58,12 +58,12 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // Ensure we ignore key policy for extension data and deserialize keys as they are.
-            ClassWithExtensionData myClass = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithExtensionData>(@"{""Key1"":1, ""Key2"":2}", options);
+            ClassWithExtensionData myClass = await Serializer.DeserializeWrapper<ClassWithExtensionData>(@"{""Key1"":1, ""Key2"":2}", options);
             Assert.Equal(1, (myClass.ExtensionData["Key1"]).GetInt32());
             Assert.Equal(2, (myClass.ExtensionData["Key2"]).GetInt32());
 
             // Ensure we ignore key policy for extension data and serialize keys as they are.
-            Assert.Equal(@"{""Key1"":1,""Key2"":2}", await JsonSerializerWrapperForString.SerializeWrapper(myClass, options));
+            Assert.Equal(@"{""Key1"":1,""Key2"":2}", await Serializer.SerializeWrapper(myClass, options));
         }
 
         public class ClassWithExtensionData
@@ -90,11 +90,11 @@ namespace System.Text.Json.Serialization.Tests
             const string JsonCamel = @"[{""key1"":1,""key2"":2},{""key1"":3,""key2"":4}]";
 
             // Without key policy option, serialize keys as they are.
-            string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
+            string json = await Serializer.SerializeWrapper<object>(obj);
             Assert.Equal(Json, json);
 
             // With key policy option, serialize keys with camel casing.
-            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj, options);
+            json = await Serializer.SerializeWrapper<object>(obj, options);
             Assert.Equal(JsonCamel, json);
         }
 
@@ -115,11 +115,11 @@ namespace System.Text.Json.Serialization.Tests
             const string JsonCamel = @"[{""key1"":null,""key2"":null}]";
 
             // Without key policy option, serialize keys as they are.
-            string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
+            string json = await Serializer.SerializeWrapper<object>(obj);
             Assert.Equal(Json, json);
 
             // With key policy option, serialize keys with camel casing.
-            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj, options);
+            json = await Serializer.SerializeWrapper<object>(obj, options);
             Assert.Equal(JsonCamel, json);
         }
 
@@ -140,11 +140,11 @@ namespace System.Text.Json.Serialization.Tests
             const string JsonCamel = @"[{""key1"":null,""key2"":null}]";
 
             // Without key policy option, serialize keys as they are.
-            string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
+            string json = await Serializer.SerializeWrapper<object>(obj);
             Assert.Equal(Json, json);
 
             // With key policy option, serialize keys with camel casing.
-            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj, options);
+            json = await Serializer.SerializeWrapper<object>(obj, options);
             Assert.Equal(JsonCamel, json);
         }
 
@@ -158,11 +158,11 @@ namespace System.Text.Json.Serialization.Tests
 
 
             // Without key policy, deserialize keys as they are.
-            Dictionary<string, int> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>(@"{""myint"":1}");
+            Dictionary<string, int> obj = await Serializer.DeserializeWrapper<Dictionary<string, int>>(@"{""myint"":1}");
             Assert.Equal(1, obj["myint"]);
 
             // Ensure we ignore key policy and deserialize keys as they are.
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>(@"{""myint"":1}", options);
+            obj = await Serializer.DeserializeWrapper<Dictionary<string, int>>(@"{""myint"":1}", options);
             Assert.Equal(1, obj["myint"]);
         }
 
@@ -180,11 +180,11 @@ namespace System.Text.Json.Serialization.Tests
             const string JsonCustomKey = @"{""MYINT1"":1,""MYINT2"":2}";
 
             // Without key policy option, serialize keys as they are.
-            string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
+            string json = await Serializer.SerializeWrapper<object>(obj);
             Assert.Equal(Json, json);
 
             // With key policy option, serialize keys honoring the custom key policy.
-            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj, options);
+            json = await Serializer.SerializeWrapper<object>(obj, options);
             Assert.Equal(JsonCustomKey, json);
         }
 
@@ -292,10 +292,10 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // A naming policy that returns null is not allowed.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new Dictionary<string, int> { { "onlyKey", 1 } }, options));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new Dictionary<string, int> { { "onlyKey", 1 } }, options));
 
             // We don't use policy on deserialize, so we populate dictionary.
-            Dictionary<string, int> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>(@"{""onlyKey"": 1}", options);
+            Dictionary<string, int> obj = await Serializer.DeserializeWrapper<Dictionary<string, int>>(@"{""onlyKey"": 1}", options);
 
             Assert.Equal(1, obj.Count);
             Assert.Equal(1, obj["onlyKey"]);
@@ -315,11 +315,11 @@ namespace System.Text.Json.Serialization.Tests
             const string JsonCustomKey = @"{""MYINT1"":1,""MYINT2"":2}";
 
             // Without key policy option, serialize keys as they are.
-            string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
+            string json = await Serializer.SerializeWrapper<object>(obj);
             Assert.Equal(Json, json);
 
             // With key policy option, serialize keys honoring the custom key policy.
-            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj, options);
+            json = await Serializer.SerializeWrapper<object>(obj, options);
             Assert.Equal(JsonCustomKey, json);
         }
 
@@ -332,10 +332,10 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // A naming policy that returns null is not allowed.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new Dictionary<string, int?> { { "onlyKey", 1 } }, options));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new Dictionary<string, int?> { { "onlyKey", 1 } }, options));
 
             // We don't use policy on deserialize, so we populate dictionary.
-            Dictionary<string, int?> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int?>>(@"{""onlyKey"": 1}", options);
+            Dictionary<string, int?> obj = await Serializer.DeserializeWrapper<Dictionary<string, int?>>(@"{""onlyKey"": 1}", options);
 
             Assert.Equal(1, obj.Count);
             Assert.Equal(1, obj["onlyKey"]);
@@ -351,7 +351,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // The camel case policy resolves two keys to the same output key.
             Dictionary<string, int> obj = new Dictionary<string, int> { { "myInt", 1 }, { "MyInt", 2 } };
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
+            string json = await Serializer.SerializeWrapper(obj, options);
 
             // Check that we write all.
             Assert.Equal(@"{""myInt"":1,""myInt"":2}", json);
@@ -375,7 +375,7 @@ namespace System.Text.Json.Serialization.Tests
             };
             obj["KeyList"] = new List<int>() { 1, 2, 3 };
             
-            var json = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions()
+            var json = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions()
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
             });
@@ -400,7 +400,7 @@ namespace System.Text.Json.Serialization.Tests
                 { "KeyList", new List<string>() },
                 { "KeyDictionary", new Dictionary<string, string>() }
             };
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions()
+            string json = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions()
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
             });
@@ -421,7 +421,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 { "KeyDict", CreateCustomObject() }
             };
-            var json = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions()
+            var json = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions()
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
             });
@@ -454,7 +454,7 @@ namespace System.Text.Json.Serialization.Tests
                 { "KeyDict", new  Dictionary<string,CustomClass>()
                 {{ "NestedKeyDict", CreateCustomObject() }}
             }};
-            var json = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions()
+            var json = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions()
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
             });
@@ -475,7 +475,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.Data = new Dictionary<string, CustomClass> {
                 {"KeyObj", CreateCustomObject() }
             };
-            var json = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions()
+            var json = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions()
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
             });
@@ -497,7 +497,7 @@ namespace System.Text.Json.Serialization.Tests
               ("KeyPair", new Dictionary<string, CustomClass> {
               {"KeyDict", CreateCustomObject() }
             });
-            var json = await JsonSerializerWrapperForString.SerializeWrapper(obj, new JsonSerializerOptions()
+            var json = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions()
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
             });

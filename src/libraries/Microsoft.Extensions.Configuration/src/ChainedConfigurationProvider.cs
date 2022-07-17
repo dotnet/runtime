@@ -19,16 +19,18 @@ namespace Microsoft.Extensions.Configuration
         /// Initialize a new instance from the source configuration.
         /// </summary>
         /// <param name="source">The source configuration.</param>
-        public ChainedConfigurationProvider(ChainedConfigurationSource source!!)
+        public ChainedConfigurationProvider(ChainedConfigurationSource source)
         {
-            if (source.Configuration == null)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
-            }
+            ThrowHelper.ThrowIfNull(source);
 
-            _config = source.Configuration;
+            _config = source.Configuration ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             _shouldDisposeConfig = source.ShouldDisposeConfiguration;
         }
+
+        /// <summary>
+        /// Gets the chained configuration.
+        /// </summary>
+        public IConfiguration Configuration => _config;
 
         /// <summary>
         /// Tries to get a configuration value for the specified key.

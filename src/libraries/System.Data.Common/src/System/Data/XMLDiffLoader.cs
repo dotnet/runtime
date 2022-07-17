@@ -175,7 +175,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void ProcessErrors(DataSet ds, XmlReader ssync)
+        internal static void ProcessErrors(DataSet ds, XmlReader ssync)
         {
             DataTable? table;
 
@@ -449,7 +449,7 @@ namespace System.Data
             return record;
         }
 
-        internal void SkipWhitespaces(XmlReader reader)
+        internal static void SkipWhitespaces(XmlReader reader)
         {
             while (reader.NodeType == XmlNodeType.Whitespace || reader.NodeType == XmlNodeType.SignificantWhitespace)
             {

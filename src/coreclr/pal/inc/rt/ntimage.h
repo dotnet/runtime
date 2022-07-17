@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+// This file is a verbatim copy of the Windows OS header with PE file structure definitions.
+
+
 //
 // ===========================================================================
 // File: ntimage.h

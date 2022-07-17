@@ -121,13 +121,13 @@ namespace Internal.NativeCrypto
     {
         internal static partial class Interop
         {
-            [GeneratedDllImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
+            [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
             public static partial NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
 
-            [GeneratedDllImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
+            [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
             public static partial NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
 
-            [GeneratedDllImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", StringMarshalling = StringMarshalling.Utf16)]
+            [LibraryImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", StringMarshalling = StringMarshalling.Utf16)]
             private static partial NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
 
             public static unsafe NTSTATUS BCryptSetIntProperty(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int dwFlags)
@@ -145,7 +145,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [GeneratedDllImport(Libraries.BCrypt)]
+        [LibraryImport(Libraries.BCrypt)]
         private static partial uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
     }
 
@@ -177,7 +177,7 @@ namespace Internal.NativeCrypto
             return ntStatus == 0;
         }
 
-        [GeneratedDllImport(Libraries.BCrypt)]
+        [LibraryImport(Libraries.BCrypt)]
         private static partial uint BCryptDestroyKey(IntPtr hKey);
     }
 }

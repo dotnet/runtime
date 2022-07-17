@@ -24,7 +24,7 @@ handler_end:
 done:
 	ldc.i4	0x00000001
 	ret
-.try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end
+.try try_start to try_end catch [mscorlib]System.ArithmeticException handler handler_start to handler_end
 }
 
 .method public static int32 _ckfinite(float64) {
@@ -44,7 +44,7 @@ handler_end:
 done:
 	ldc.i4	0x00000001
 	ret
-.try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end
+.try try_start to try_end catch [mscorlib]System.ArithmeticException handler handler_start to handler_end
 }
 
 .method public static int32 main(class [mscorlib]System.String[]) {

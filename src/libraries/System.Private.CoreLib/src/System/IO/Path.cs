@@ -243,7 +243,7 @@ namespace System.IO
             for (int i = path.Length; --i >= 0;)
             {
                 if (i < root || PathInternal.IsDirectorySeparator(path[i]))
-                    return path.Slice(i + 1, path.Length - i - 1);
+                    return path.Slice(i + 1);
             }
 
             return path;
@@ -303,8 +303,10 @@ namespace System.IO
         /// <exception cref="ArgumentNullException">
         /// Thrown if <paramref name="path"/> is null.
         /// </exception>
-        public static bool IsPathFullyQualified(string path!!)
+        public static bool IsPathFullyQualified(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             return IsPathFullyQualified(path.AsSpan());
         }
 
@@ -341,23 +343,37 @@ namespace System.IO
             return false;
         }
 
-        public static string Combine(string path1!!, string path2!!)
+        public static string Combine(string path1, string path2)
         {
+            ArgumentNullException.ThrowIfNull(path1);
+            ArgumentNullException.ThrowIfNull(path2);
+
             return CombineInternal(path1, path2);
         }
 
-        public static string Combine(string path1!!, string path2!!, string path3!!)
+        public static string Combine(string path1, string path2, string path3)
         {
+            ArgumentNullException.ThrowIfNull(path1);
+            ArgumentNullException.ThrowIfNull(path2);
+            ArgumentNullException.ThrowIfNull(path3);
+
             return CombineInternal(path1, path2, path3);
         }
 
-        public static string Combine(string path1!!, string path2!!, string path3!!, string path4!!)
+        public static string Combine(string path1, string path2, string path3, string path4)
         {
+            ArgumentNullException.ThrowIfNull(path1);
+            ArgumentNullException.ThrowIfNull(path2);
+            ArgumentNullException.ThrowIfNull(path3);
+            ArgumentNullException.ThrowIfNull(path4);
+
             return CombineInternal(path1, path2, path3, path4);
         }
 
-        public static string Combine(params string[] paths!!)
+        public static string Combine(params string[] paths)
         {
+            ArgumentNullException.ThrowIfNull(paths);
+
             int maxSize = 0;
             int firstComponent = 0;
 
@@ -463,21 +479,50 @@ namespace System.IO
 
         public static string Join(string? path1, string? path2)
         {
-            return Join(path1.AsSpan(), path2.AsSpan());
+            if (string.IsNullOrEmpty(path1))
+                return path2 ?? string.Empty;
+
+            if (string.IsNullOrEmpty(path2))
+                return path1;
+
+            return JoinInternal(path1, path2);
         }
 
         public static string Join(string? path1, string? path2, string? path3)
         {
-            return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan());
+            if (string.IsNullOrEmpty(path1))
+                return Join(path2, path3);
+
+            if (string.IsNullOrEmpty(path2))
+                return Join(path1, path3);
+
+            if (string.IsNullOrEmpty(path3))
+                return Join(path1, path2);
+
+            return JoinInternal(path1, path2, path3);
         }
 
         public static string Join(string? path1, string? path2, string? path3, string? path4)
         {
-            return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan(), path4.AsSpan());
+            if (string.IsNullOrEmpty(path1))
+                return Join(path2, path3, path4);
+
+            if (string.IsNullOrEmpty(path2))
+                return Join(path1, path3, path4);
+
+            if (string.IsNullOrEmpty(path3))
+                return Join(path1, path2, path4);
+
+            if (string.IsNullOrEmpty(path4))
+                return Join(path1, path2, path3);
+
+            return JoinInternal(path1, path2, path3, path4);
         }
 
-        public static string Join(params string?[] paths!!)
+        public static string Join(params string?[] paths)
         {
+            ArgumentNullException.ThrowIfNull(paths);
+
             if (paths.Length == 0)
             {
                 return string.Empty;
@@ -651,7 +696,7 @@ namespace System.IO
                 string.Concat(first, PathInternal.DirectorySeparatorCharAsString, second);
         }
 
-        private unsafe readonly struct Join3Payload
+        private readonly unsafe struct Join3Payload
         {
             public Join3Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, byte separators)
             {
@@ -705,7 +750,7 @@ namespace System.IO
             }
         }
 
-        private unsafe readonly struct Join4Payload
+        private readonly unsafe struct Join4Payload
         {
             public Join4Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, char* fourth, int fourthLength, byte separators)
             {
@@ -771,11 +816,7 @@ namespace System.IO
             }
         }
 
-        private static ReadOnlySpan<byte> Base32Char => new byte[32] { // uses C# compiler's optimization for static byte[] data
-                (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f', (byte)'g', (byte)'h',
-                (byte)'i', (byte)'j', (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p',
-                (byte)'q', (byte)'r', (byte)'s', (byte)'t', (byte)'u', (byte)'v', (byte)'w', (byte)'x',
-                (byte)'y', (byte)'z', (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5' };
+        private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
         private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
@@ -842,8 +883,11 @@ namespace System.IO
             return GetRelativePath(relativeTo, path, PathInternal.StringComparison);
         }
 
-        private static string GetRelativePath(string relativeTo!!, string path!!, StringComparison comparisonType)
+        private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
         {
+            ArgumentNullException.ThrowIfNull(relativeTo);
+            ArgumentNullException.ThrowIfNull(path);
+
             if (PathInternal.IsEffectivelyEmpty(relativeTo.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(relativeTo));
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))

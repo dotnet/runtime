@@ -21,7 +21,7 @@ namespace System.Runtime
         [RuntimeExport("RhNewObject")]
         public static unsafe object RhNewObject(MethodTable* pEEType)
         {
-            // This is structured in a funny way because at the present state of things in CoreRT, the Debug.Assert
+            // This is structured in a funny way because at the present state of things, the Debug.Assert
             // below will call into the assert defined in the class library (and not the MRT version of it). The one
             // in the class library is not low level enough to be callable when GC statics are not initialized yet.
             // Feel free to restructure once that's not a problem.
@@ -75,8 +75,8 @@ namespace System.Runtime
         {
             ref byte dataAdjustedForNullable = ref data;
 
-            // Can box value types only (which also implies no finalizers).
-            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
+            // Can box non-ByRefLike value types only (which also implies no finalizers).
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsByRefLike && !pEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
@@ -171,11 +171,11 @@ namespace System.Runtime
 
                 if (ptrUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.MethodTable, ptrUnboxToEEType->NullableType);
+                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.GetMethodTable(), ptrUnboxToEEType->NullableType);
                 }
                 else
                 {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.MethodTable, ptrUnboxToEEType);
+                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), ptrUnboxToEEType);
                 }
 
                 if (!isValid)
@@ -207,7 +207,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnbox2")]
         public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj == null) || !UnboxAnyTypeCompare(obj.MethodTable, pUnboxToEEType))
+            if ((obj == null) || !UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
             {
                 ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
                 throw pUnboxToEEType->GetClasslibException(exID);
@@ -218,7 +218,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnboxNullable")]
         public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.MethodTable, pUnboxToEEType->NullableType))
+            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.GetMethodTable(), pUnboxToEEType->NullableType))
             {
                 throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
@@ -242,7 +242,7 @@ namespace System.Runtime
                 return;
             }
 
-            MethodTable* pEEType = obj.MethodTable;
+            MethodTable* pEEType = obj.GetMethodTable();
 
             // Can unbox value types only.
             Debug.Assert(pEEType->IsValueType);
@@ -282,10 +282,10 @@ namespace System.Runtime
         {
             object objClone;
 
-            if (src.MethodTable->IsArray)
-                objClone = RhNewArray(src.MethodTable, Unsafe.As<Array>(src).Length);
+            if (src.GetMethodTable()->IsArray)
+                objClone = RhNewArray(src.GetMethodTable(), Unsafe.As<Array>(src).Length);
             else
-                objClone = RhNewObject(src.MethodTable);
+                objClone = RhNewObject(src.GetMethodTable());
 
             InternalCalls.RhpCopyObjectContents(objClone, src);
 
@@ -300,9 +300,10 @@ namespace System.Runtime
                 return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0), new UIntPtr(&pOutputBuffer));
         }
 
-        [GeneratedDllImport(Redhawk.BaseName)]
+        // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
+        [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        private static unsafe partial int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
+        private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
         // frame that will be used to seed the stack trace and this method does all the real work.

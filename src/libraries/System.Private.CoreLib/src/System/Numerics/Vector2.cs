@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 
 namespace System.Numerics
@@ -587,7 +588,7 @@ namespace System.Numerics
 
             if ((index < 0) || (index >= array.Length))
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((array.Length - index) < 2)
@@ -641,10 +642,28 @@ namespace System.Numerics
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector2.X" /> and <see cref="System.Numerics.Vector2.Y" /> elements are equal.</remarks>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector2 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector64.IsHardwareAccelerated)
+            {
+                return Vector64.LoadUnsafe(ref Unsafe.AsRef(in X)).Equals(Vector64.LoadUnsafe(ref other.X));
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                return this.AsVector128().Equals(other.AsVector128());
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector2 self, Vector2 other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -688,7 +707,7 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString(string? format)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return ToString(format, CultureInfo.CurrentCulture);
         }
@@ -700,17 +719,11 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and <paramref name="formatProvider" />. The "&lt;" and "&gt;" characters are used to begin and end the string, and the format provider's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
-        public readonly string ToString(string? format, IFormatProvider? formatProvider)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
-            sb.Append('<');
-            sb.Append(X.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(Y.ToString(format, formatProvider));
-            sb.Append('>');
-            return sb.ToString();
+
+            return $"<{X.ToString(format, formatProvider)}{separator} {Y.ToString(format, formatProvider)}>";
         }
     }
 }

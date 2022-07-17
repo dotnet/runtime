@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <CLSCompliant>false</CLSCompliant>
+    <IsTrimmable>false</IsTrimmable>
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
     <!-- this assembly doesn't need to be binplaced -->

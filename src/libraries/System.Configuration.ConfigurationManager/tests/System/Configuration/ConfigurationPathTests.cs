@@ -44,6 +44,7 @@ namespace System.ConfigurationTests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fails when path contains #")]
         public void CustomAppConfigIsUsedWhenSpecifiedAsAbsoluteUri()
         {
             const string SettingName = "test_CustomAppConfigIsUsedWhenSpecified";

@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     public partial class EventLogLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public EventLogLoggerProvider() { }
-        public EventLogLoggerProvider(Microsoft.Extensions.Logging.EventLog.EventLogSettings settings) { }
+        public EventLogLoggerProvider(Microsoft.Extensions.Logging.EventLog.EventLogSettings? settings) { }
         public EventLogLoggerProvider(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Logging.EventLog.EventLogSettings> options) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
@@ -28,9 +28,9 @@ namespace Microsoft.Extensions.Logging.EventLog
     public partial class EventLogSettings
     {
         public EventLogSettings() { }
-        public System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { get { throw null; } set { } }
-        public string LogName { get { throw null; } set { } }
-        public string MachineName { get { throw null; } set { } }
-        public string SourceName { get { throw null; } set { } }
+        public System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool>? Filter { get { throw null; } set { } }
+        public string? LogName { get { throw null; } set { } }
+        public string? MachineName { get { throw null; } set { } }
+        public string? SourceName { get { throw null; } set { } }
     }
 }

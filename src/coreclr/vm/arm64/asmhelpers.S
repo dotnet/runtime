@@ -147,25 +147,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 NESTED_END NDirectImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// The call in fixup precode initally points to this function.
-// The pupose of this function is to load the MethodDesc and forward the call to prestub.
-NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
-    // x12 = FixupPrecode *
-    // On Exit
-    // x12 = MethodDesc*
-    // x13, x14 Trashed
-    // Inline computation done by FixupPrecode::GetMethodDesc()
-    ldrb    w13, [x12, #Offset_PrecodeChunkIndex]    //m_PrecodeChunkIndex
-    ldrb    w14, [x12, #Offset_MethodDescChunkIndex] // m_MethodDescChunkIndex
-
-    add     x12, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-    add     x13, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-    ldr     x13, [x13, #SIZEOF__FixupPrecode]
-    add     x12, x13, w14, uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-    b       C_FUNC(ThePreStub)
-NESTED_END PrecodeFixupThunk, _TEXT
-// ------------------------------------------------------------------
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 
@@ -232,7 +213,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     // x12 will be used for pointers
 
     mov x8, x0
-    mov x9, x1 
+    mov x9, x1
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]
@@ -773,7 +754,7 @@ LOCAL_LABEL(Success):
     blt     LOCAL_LABEL(Promote)
 
     ldr     x16, [x9, #ResolveCacheElem__target]    // get the ImplTarget
-    br      x16               // branch to interface implemenation target
+    br      x16               // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
                               // Move this entry to head postion of the chain
@@ -976,7 +957,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
     add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
-    mov     x1, x10 // stub-identifying token
+    mov     x1, x9 // stub-identifying token
     bl      C_FUNC(OnCallCountThresholdReached)
     mov     x9, x0
 

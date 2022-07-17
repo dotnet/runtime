@@ -238,10 +238,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object? VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
         {
-            if (argument.Factories == null)
-            {
-                argument.Factories = new List<Func<IServiceProvider, object>>();
-            }
+            argument.Factories ??= new List<Func<IServiceProvider, object>>();
 
             // this.Factories[i](ProviderScope)
             argument.Generator.Emit(OpCodes.Ldarg_0);
@@ -257,12 +254,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        private void AddConstant(ILEmitResolverBuilderContext argument, object? value)
+        private static void AddConstant(ILEmitResolverBuilderContext argument, object? value)
         {
-            if (argument.Constants == null)
-            {
-                argument.Constants = new List<object?>();
-            }
+            argument.Constants ??= new List<object?>();
 
             // this.Constants[i]
             argument.Generator.Emit(OpCodes.Ldarg_0);
@@ -273,7 +267,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Constants.Add(value);
         }
 
-        private void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
+        private static void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
             Debug.Assert(key.Type != null);
 

@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace System.Drawing.Internal
@@ -39,7 +36,6 @@ namespace System.Drawing.Internal
 
                 if (!addedTracker)
                 {
-                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                     addedTracker = true;
                     SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
                 }
@@ -52,7 +48,9 @@ namespace System.Drawing.Internal
 
                 // COM+ takes forever to Finalize() weak references, so it pays to reuse them.
                 if (list[index] == null)
+                {
                     list[index] = new WeakReference(obj);
+                }
                 else
                 {
                     Debug.Assert(list[index].Target == null, $"Trying to reuse a weak reference that isn't broken yet: list[{index}], length = {list.Length}");
@@ -132,20 +130,13 @@ namespace System.Drawing.Internal
 
         private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-
             // Update pens and brushes
             if (e.Category == UserPreferenceCategory.Color)
             {
                 for (int i = 0; i < count; i++)
                 {
                     Debug.Assert(list[i] != null, "null value in active part of list");
-                    ISystemColorTracker? tracker = (ISystemColorTracker?)list[i].Target;
-                    if (tracker != null)
-                    {
-                        // If object still around
-                        tracker.OnSystemColorChanged();
-                    }
+                    ((ISystemColorTracker?)list[i].Target)?.OnSystemColorChanged();
                 }
             }
         }

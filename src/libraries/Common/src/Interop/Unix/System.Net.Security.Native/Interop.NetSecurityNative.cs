@@ -11,83 +11,124 @@ internal static partial class Interop
 {
     internal static partial class NetSecurityNative
     {
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseGssBuffer")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseGssBuffer")]
         internal static partial void ReleaseGssBuffer(
             IntPtr bufferPtr,
             ulong length);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DisplayMinorStatus")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DisplayMinorStatus")]
         internal static partial Status DisplayMinorStatus(
             out Status minorStatus,
             Status statusValue,
             ref GssBuffer buffer);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DisplayMajorStatus")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DisplayMajorStatus")]
         internal static partial Status DisplayMajorStatus(
             out Status minorStatus,
             Status statusValue,
             ref GssBuffer buffer);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportUserName")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportUserName")]
         internal static partial Status ImportUserName(
             out Status minorStatus,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string inputName,
             int inputNameByteCount,
             out SafeGssNameHandle outputName);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportPrincipalName")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportPrincipalName")]
         internal static partial Status ImportPrincipalName(
             out Status minorStatus,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string inputName,
             int inputNameByteCount,
             out SafeGssNameHandle outputName);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseName")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseName")]
         internal static partial Status ReleaseName(
             out Status minorStatus,
             ref IntPtr inputName);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcquireAcceptorCred")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcquireAcceptorCred")]
         internal static partial Status AcquireAcceptorCred(
             out Status minorStatus,
             out SafeGssCredHandle outputCredHandle);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredSpNego")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredSpNego")]
         internal static partial Status InitiateCredSpNego(
             out Status minorStatus,
             SafeGssNameHandle desiredName,
             out SafeGssCredHandle outputCredHandle);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword", StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitiateCredWithPassword", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial Status InitiateCredWithPassword(
             out Status minorStatus,
-            bool isNtlm,
+            [MarshalAs(UnmanagedType.Bool)] bool isNtlm,
             SafeGssNameHandle desiredName,
             string password,
             int passwordLen,
             out SafeGssCredHandle outputCredHandle);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseCred")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseCred")]
         internal static partial Status ReleaseCred(
             out Status minorStatus,
             ref IntPtr credHandle);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContext")]
-        internal static partial Status InitSecContext(
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContext")]
+        private static partial Status InitSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle initiatorCredHandle,
+            ref SafeGssContextHandle contextHandle,
+            [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
+            SafeGssNameHandle? targetName,
+            uint reqFlags,
+            ref byte inputBytes,
+            int inputLength,
+            ref GssBuffer token,
+            out uint retFlags,
+            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContextEx")]
+        private static partial Status InitSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle initiatorCredHandle,
+            ref SafeGssContextHandle contextHandle,
+            [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
+            IntPtr cbt,
+            int cbtSize,
+            SafeGssNameHandle? targetName,
+            uint reqFlags,
+            ref byte inputBytes,
+            int inputLength,
+            ref GssBuffer token,
+            out uint retFlags,
+            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
+
+        internal static Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             bool isNtlmOnly,
             SafeGssNameHandle? targetName,
             uint reqFlags,
-            byte[]? inputBytes,
-            int inputLength,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer token,
             out uint retFlags,
-            out bool isNtlmUsed);
+            out bool isNtlmUsed)
+        {
+            return InitSecContext(
+                out minorStatus,
+                initiatorCredHandle,
+                ref contextHandle,
+                isNtlmOnly,
+                targetName,
+                reqFlags,
+                ref MemoryMarshal.GetReference(inputBytes),
+                inputBytes.Length,
+                ref token,
+                out retFlags,
+                out isNtlmUsed);
+        }
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContextEx")]
-        internal static partial Status InitSecContext(
+        internal static Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
@@ -96,78 +137,153 @@ internal static partial class Interop
             int cbtSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
-            byte[]? inputBytes,
-            int inputLength,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer token,
             out uint retFlags,
-            out bool isNtlmUsed);
+            out bool isNtlmUsed)
+        {
+            return InitSecContext(
+                out minorStatus,
+                initiatorCredHandle,
+                ref contextHandle,
+                isNtlmOnly,
+                cbt,
+                cbtSize,
+                targetName,
+                reqFlags,
+                ref MemoryMarshal.GetReference(inputBytes),
+                inputBytes.Length,
+                ref token,
+                out retFlags,
+                out isNtlmUsed);
+        }
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
-        internal static partial Status AcceptSecContext(
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
+        private static partial Status AcceptSecContext(
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            byte[]? inputBytes,
+            ref byte inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
-            out bool isNtlmUsed);
+            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DeleteSecContext")]
+        internal static Status AcceptSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle acceptorCredHandle,
+            ref SafeGssContextHandle acceptContextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer token,
+            out uint retFlags,
+            out bool isNtlmUsed)
+        {
+            return AcceptSecContext(
+                out minorStatus,
+                acceptorCredHandle,
+                ref acceptContextHandle,
+                ref MemoryMarshal.GetReference(inputBytes),
+                inputBytes.Length,
+                ref token,
+                out retFlags,
+                out isNtlmUsed);
+        }
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DeleteSecContext")]
         internal static partial Status DeleteSecContext(
             out Status minorStatus,
             ref IntPtr contextHandle);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_GetUser")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_GetUser")]
         internal static partial Status GetUser(
             out Status minorStatus,
             SafeGssContextHandle? acceptContextHandle,
             ref GssBuffer token);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Wrap")]
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Wrap")]
         private static unsafe partial Status Wrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            bool isEncrypt,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isEncrypt,
             byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);
 
-        [GeneratedDllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Unwrap")]
-        private static partial Status Unwrap(
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Unwrap")]
+        private static unsafe partial Status Unwrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
-            int offset,
+            [MarshalAs(UnmanagedType.Bool)] out bool isEncrypt,
+            byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_GetMic")]
+        private static unsafe partial Status GetMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            byte* inputBytes,
+            int inputLength,
+            ref GssBuffer outBuffer);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_VerifyMic")]
+        private static unsafe partial Status VerifyMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            byte* inputBytes,
+            int inputLength,
+            byte* tokenBytes,
+            int tokenLength);
 
         internal static unsafe Status WrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            bool isEncrypt,
+            ref bool isEncrypt,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
             fixed (byte* inputBytesPtr = inputBytes)
             {
-                return Wrap(out minorStatus, contextHandle, isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
+                return Wrap(out minorStatus, contextHandle, ref isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
             }
         }
 
-        internal static Status UnwrapBuffer(
+        internal static unsafe Status UnwrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
-            int offset,
-            int count,
+            out bool isEncrypt,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
-            Debug.Assert(inputBytes != null, "inputBytes must be valid value");
-            Debug.Assert(offset >= 0 && offset <= inputBytes.Length, "offset must be valid");
-            Debug.Assert(count >= 0 && count <= inputBytes.Length, "count must be valid");
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return Unwrap(out minorStatus, contextHandle, out isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
+            }
+        }
 
-            return Unwrap(out minorStatus, contextHandle, inputBytes, offset, count, ref outBuffer);
+        internal static unsafe Status GetMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer outBuffer)
+        {
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return GetMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, ref outBuffer);
+            }
+        }
+
+        internal static unsafe Status VerifyMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ReadOnlySpan<byte> tokenBytes)
+        {
+            fixed (byte* inputBytesPtr = inputBytes)
+            fixed (byte* tokenBytesPtr = tokenBytes)
+            {
+                return VerifyMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, tokenBytesPtr, tokenBytes.Length);
+            }
         }
     }
 }

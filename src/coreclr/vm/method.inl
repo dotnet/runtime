@@ -15,13 +15,6 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
     return dac_cast<PTR_InstantiatedMethodDesc>(this);
 }
 
-inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pResolver;
-}
-
 inline SigParser MethodDesc::GetSigParser()
 {
     WRAPPER_NO_CONTRACT;
@@ -42,6 +35,13 @@ inline SigPointer MethodDesc::GetSigPointer()
     GetSig(&pSig, &cSig);
 
     return SigPointer(pSig, cSig);
+}
+
+inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_pResolver;
 }
 
 inline PTR_LCGMethodResolver DynamicMethodDesc::GetLCGMethodResolver()
@@ -102,8 +102,6 @@ inline bool MethodDesc::IsLCGMethod()
 inline bool MethodDesc::IsILStub()
 {
     WRAPPER_NO_CONTRACT;
-
-    g_IBCLogger.LogMethodDescAccess(this);
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 

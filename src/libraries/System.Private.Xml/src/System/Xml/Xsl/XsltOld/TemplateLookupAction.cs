@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Xml;
-    using System.Xml.XPath;
-
     internal class TemplateLookupAction : Action
     {
         protected XmlQualifiedName? mode;
@@ -41,10 +41,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // Built-int template rules
-            if (action == null)
-            {
-                action = BuiltInTemplate(frame.Node!);
-            }
+            action ??= BuiltInTemplate(frame.Node!);
 
             // Jump
             if (action != null)
@@ -126,14 +123,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // Built-int template rules
-            if (action == null && processor.RootAction!.builtInSheet != null)
-            {
-                action = processor.RootAction.builtInSheet.FindTemplate(processor, frame.Node!, Compiler.BuiltInMode);
-            }
-            if (action == null)
-            {
-                action = BuiltInTemplate(frame.Node!);
-            }
+            action ??= BuiltInTemplate(frame.Node!);
 
             // Jump
             if (action != null)

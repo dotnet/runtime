@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _materializedSignature;
 
         public ImportSectionsTableNode(NodeFactory r2rFactory)
-            : base("ImportSectionsTableStart", "ImportSectionsTableEnd", new EmbeddedObjectNodeComparer(new CompilerComparer()))
+            : base("ImportSectionsTableStart", "ImportSectionsTableEnd", new EmbeddedObjectNodeComparer(CompilerComparer.Instance))
         {
             _r2rFactory = r2rFactory;
             _r2rFactory.ManifestMetadataTable.RegisterEmitter(this);

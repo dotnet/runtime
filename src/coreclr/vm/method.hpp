@@ -283,8 +283,8 @@ public:
     {
         CONTRACTL
         {
-            THROWS;
-            GC_TRIGGERS;
+            NOTHROW;
+            GC_NOTRIGGER;
             MODE_ANY;
         }
         CONTRACTL_END
@@ -943,7 +943,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         MethodTable *pMT = GetMethodTable();
-        g_IBCLogger.LogMethodTableAccess(pMT);
         return
             !IsEnCAddedMethod()
             // The slot numbers are currently meaningless for
@@ -999,7 +998,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         MethodTable *pMT = GetMethodTable_NoLogging();
-        g_IBCLogger.LogEEClassAndMethodTableAccess(pMT);
         EEClass *pClass = pMT->GetClass_NoLogging();
         PREFIX_ASSUME(pClass != NULL);
         return pClass;
@@ -1124,7 +1122,7 @@ public:
 public:
 
     // True iff it is possible to change the code this method will run using the CodeVersionManager. Note: EnC currently returns
-    // false here because it uses its own seperate scheme to manage versionability. We will likely want to converge them at some
+    // false here because it uses its own separate scheme to manage versionability. We will likely want to converge them at some
     // point.
     bool IsVersionable()
     {
@@ -1545,7 +1543,7 @@ public:
     // code pass in an BoxedEntryPointStub when pPrimaryMD is a virtual/interface method on
     // a struct.  These cases are confusing and should be rooted
     // out: it is probably preferable in terms
-    // of correctness to pass in the the corresponding non-unboxing MD.
+    // of correctness to pass in the corresponding non-unboxing MD.
     //
     // allowCreate may be set to FALSE to enforce that the method searched
     // should already be in existence - thus preventing creation and GCs during
@@ -1568,7 +1566,7 @@ public:
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
-    // an NGEN image then then other will be, and if one is "used" at runtime then
+    // an NGEN image then the other will be, and if one is "used" at runtime then
     // the other will be too.
     BOOL IsTightlyBoundToMethodTable();
 
@@ -2169,7 +2167,7 @@ class MethodDescChunk
 
     enum {
         enum_flag_TokenRangeMask                           = 0x07FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
-                                                                     // These are seperate to allow the flags space available and used to be obvious here
+                                                                     // These are separate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
         enum_flag_HasCompactEntrypoints                    = 0x4000, // Compact temporary entry points
@@ -2260,7 +2258,7 @@ public:
         m_methodTable = pMT;
     }
 
-    inline void SetSizeAndCount(ULONG sizeOfMethodDescs, COUNT_T methodDescCount)
+    inline void SetSizeAndCount(SIZE_T sizeOfMethodDescs, COUNT_T methodDescCount)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -2378,19 +2376,20 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;
 class StoredSigMethodDesc : public MethodDesc
 {
-  public:
+public:
     // Put the sig RVA in here - this allows us to avoid
     // touching the method desc table when CoreLib is prejitted.
 
     TADDR           m_pSig;
     DWORD           m_cSig;
-#ifdef TARGET_64BIT
+
+protected:
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
     // It is used by child classes. We allocate the space here to get
     // optimal layout.
     DWORD           m_dwExtendedFlags;
-#endif
 
+public:
     TADDR GetSigRVA()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2413,7 +2412,6 @@ class StoredSigMethodDesc : public MethodDesc
         return (PCCOR_SIGNATURE)
             DacInstantiateTypeByAddress(GetSigRVA(), m_cSig, true);
 #else // !DACCESS_COMPILE
-        g_IBCLogger.LogNDirectCodeAccess(this);
         return (PCCOR_SIGNATURE) m_pSig;
 #endif // !DACCESS_COMPILE
     }
@@ -2477,40 +2475,87 @@ protected:
     PTR_CUTF8           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
-#ifndef TARGET_64BIT
-    // We use m_dwExtendedFlags from StoredSigMethodDesc on WIN64
-    DWORD               m_dwExtendedFlags;   // see DynamicMethodDesc::ExtendedFlags enum
-#endif
-
-    typedef enum ExtendedFlags
+public:
+    enum ILStubType : DWORD
     {
-        nomdAttrs           = 0x0000FFFF, // method attributes (LCG)
-        nomdILStubAttrs     = mdMemberAccessMask | mdStatic, //  method attributes (IL stubs)
+        StubNotSet = 0,
+        StubCLRToNativeInterop,
+        StubCLRToCOMInterop,
+        StubNativeToCLRInterop,
+        StubCOMToCLRInterop,
+        StubStructMarshalInterop,
+#ifdef FEATURE_ARRAYSTUB_AS_IL
+        StubArrayOp,
+#endif
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+        StubMulticastDelegate,
+#endif
+        StubWrapperDelegate,
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+        StubUnboxingIL,
+        StubInstantiating,
+#endif
+        StubTailCallStoreArgs,
+        StubTailCallCallTarget,
 
-        // attributes (except mdStatic and mdMemberAccessMask) have different meaning for IL stubs
-        // mdMemberAccessMask        = 0x0007,
-        nomdReverseStub              = 0x0008,
-        // mdStatic                  = 0x0010,
-        nomdCALLIStub                = 0x0020,
-        nomdDelegateStub             = 0x0040,
-        nomdStructMarshalStub        = 0x0080,
-        nomdUnbreakable              = 0x0100,
-        //unused                     = 0x0200,
-        //unused                     = 0x0400,
-        nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
-        nomdMulticastStub            = 0x1000,
-        nomdUnboxingILStub           = 0x2000,
-        nomdWrapperDelegateStub      = 0x4000,
-        nomdUnmanagedCallersOnlyStub = 0x8000,
+        StubLast
+    };
 
-        nomdILStub          = 0x00010000,
-        nomdLCGMethod       = 0x00020000,
-        nomdStackArgSize    = 0xFFFC0000, // native stack arg size for IL stubs
-    } ExtendedFlags;
+    enum Flag : DWORD
+    {
+        // Flags for DynamicMethodDesc
+        // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
+        FlagNone                = 0x00000000,
+        FlagPublic              = 0x00000800,
+        FlagStatic              = 0x00001000,
+        FlagRequiresCOM         = 0x00002000,
+        FlagIsLCGMethod         = 0x00004000,
+        FlagIsILStub            = 0x00008000,
+        FlagIsDelegate          = 0x00010000,
+        FlagIsCALLI             = 0x00020000,
+        FlagMask                = 0x0003f800,
+        StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
+        ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
+    };
+    static_assert_no_msg((FlagMask & StubLast) == 0);
+    static_assert_no_msg((StackArgSizeMask & FlagMask) == 0);
+
+    // MethodDesc memory is acquired in an uninitialized state.
+    // The first step should be to explicitly set the entire
+    // flag state and then modify it.
+    void InitializeFlags(DWORD flags)
+    {
+        m_dwExtendedFlags = flags;
+    }
+    bool HasFlags(DWORD flags) const
+    {
+        return !!(m_dwExtendedFlags & flags);
+    }
+    void SetFlags(DWORD flags)
+    {
+        m_dwExtendedFlags |= flags;
+    }
+    void ClearFlags(DWORD flags)
+    {
+        m_dwExtendedFlags = (m_dwExtendedFlags & ~flags);
+    }
+
+    ILStubType GetILStubType() const
+    {
+        ILStubType type = (ILStubType)(m_dwExtendedFlags & ILStubTypeMask);
+        _ASSERTE(type == StubNotSet || HasFlags(FlagIsILStub));
+        return type;
+    }
+
+    void SetILStubType(ILStubType type)
+    {
+        _ASSERTE(HasFlags(FlagIsILStub));
+        m_dwExtendedFlags |= type;
+    }
 
 public:
-    bool IsILStub() { LIMITED_METHOD_DAC_CONTRACT; return !!(m_dwExtendedFlags & nomdILStub); }
-    bool IsLCGMethod() { LIMITED_METHOD_DAC_CONTRACT; return !!(m_dwExtendedFlags & nomdLCGMethod); }
+    bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsILStub); }
+    bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsLCGMethod); }
 
 	inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
@@ -2522,23 +2567,21 @@ public:
         return m_pszMethodName;
     }
 
-    WORD GetAttrs()
+    // Based on the current flags, compute the equivalent as COR metadata.
+    WORD GetAttrs() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (IsILStub() ? (m_dwExtendedFlags & nomdILStubAttrs) : (m_dwExtendedFlags & nomdAttrs));
-    }
-
-    DWORD GetExtendedFlags()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwExtendedFlags;
+        WORD asMetadata = 0;
+        asMetadata |= HasFlags(FlagPublic) ? mdPublic : 0;
+        asMetadata |= HasFlags(FlagStatic) ? mdStatic : 0;
+        return asMetadata;
     }
 
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return (WORD)((m_dwExtendedFlags & nomdStackArgSize) >> 16);
+        return (WORD)((m_dwExtendedFlags & StackArgSizeMask) >> 16);
     }
 
     void SetNativeStackArgSize(WORD cbArgSize)
@@ -2548,62 +2591,81 @@ public:
 #if !defined(OSX_ARM64_ABI)
         _ASSERTE((cbArgSize % TARGET_POINTER_SIZE) == 0);
 #endif
-        m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
+        m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
 
-    void SetUnbreakable(bool value)
+    bool IsReverseStub() const
     {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdUnbreakable;
-        }
-    }
-
-    void SetStubNeedsCOMStarted(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdStubNeedsCOMStarted;
-        }
-    }
-
-    bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
-    bool IsUnmanagedCallersOnlyStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnmanagedCallersOnlyStub)); }
-    bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
-    bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
-    bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }
-    bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
-    bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
-    bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
-    bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
-    bool IsMulticastStub() {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdMulticastStub);
+        ILStubType type = GetILStubType();
+        return type == StubCOMToCLRInterop || type == StubNativeToCLRInterop;
+    }
+
+    bool IsStepThroughStub() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+
+        bool isStepThrough = false;
+
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+        ILStubType type = GetILStubType();
+        isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
+
+        return isStepThrough;
+    }
+
+    bool IsCLRToCOMStub() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return !HasFlags(FlagStatic) && GetILStubType() == StubCLRToCOMInterop;
+    }
+    bool IsCOMToCLRStub() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return !HasFlags(FlagStatic) && GetILStubType() == StubCOMToCLRInterop;
+    }
+    bool IsPInvokeStub() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return HasFlags(FlagStatic)
+            && !HasFlags(FlagIsCALLI)
+            && GetILStubType() == StubCLRToNativeInterop;
+    }
+
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+    bool IsMulticastStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
 #endif
-    bool IsWrapperDelegateStub() {
+    bool IsWrapperDelegateStub() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdWrapperDelegateStub);
+        return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-    bool IsUnboxingILStub() {
+    bool IsUnboxingILStub() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdUnboxingILStub);
+        return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
 #endif
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
-    bool HasMDContextArg()
+    bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
+        return IsCLRToCOMStub() || (IsPInvokeStub() && !HasFlags(FlagIsDelegate));
     }
 
     //
@@ -2657,7 +2719,7 @@ class NDirectImportThunkGlue
     PVOID m_dummy; // Dummy field to make the alignment right
 
 public:
-    LPVOID GetEntrypoint()
+    LPVOID GetEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         return NULL;
@@ -3177,7 +3239,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        FastInterlockOr(reinterpret_cast<DWORD *>(&m_pComPlusCallInfo->m_flags), newFlags);
+        InterlockedOr((LONG*)&m_pComPlusCallInfo->m_flags, newFlags);
     }
 
 #ifdef TARGET_X86
@@ -3479,7 +3541,6 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodDescAccess(this);
     return GetMethodTable_NoLogging();
 }
 
@@ -3516,7 +3577,6 @@ inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
 inline mdMethodDef MethodDesc::GetMemberDef() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    g_IBCLogger.LogMethodDescAccess(this);
     return GetMemberDef_NoLogging();
 }
 
@@ -3618,7 +3678,6 @@ inline BOOL MethodDesc::IsGenericMethodDefinition() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodDescAccess(this);
     return GetClassification() == mcInstantiated && AsInstantiatedMethodDesc()->IMD_IsGenericMethodDefinition();
 }
 
@@ -3645,6 +3704,34 @@ public:
     CalledMethod * GetNext() { return m_pNext; }
 };
 #endif
+
+#ifdef FEATURE_READYTORUN
+struct ReadyToRunStandaloneMethodMetadata
+{
+    ReadyToRunStandaloneMethodMetadata() :
+        pByteData(nullptr),
+        cByteData(0),
+        pTypes(nullptr),
+        cTypes(0)
+    {}
+
+    ~ReadyToRunStandaloneMethodMetadata()
+    {
+        if (pByteData != nullptr)
+            delete[] pByteData;
+        if (pTypes != nullptr)
+            delete[] pTypes;
+    }
+
+    const uint8_t * pByteData;
+    size_t cByteData;
+    const TypeHandle * pTypes;
+    size_t cTypes;
+};
+
+ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
+void InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 
 #include "method.inl"
 

@@ -253,7 +253,7 @@ STDMETHODIMP RegMeta::AddDeclarativeSecurityHelper(
     DeclSecurityRec *pDeclSec = NULL;
     RID             iDeclSec;
     short           sAction = static_cast<short>(dwAction);
-    mdPermission    tkPerm;
+    mdPermission    tkPerm  = mdTokenNil;
 
     LOG((LOGMD, "MD RegMeta::AddDeclarativeSecurityHelper(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         tk, dwAction, pValue, cbValue, pmdPermission));

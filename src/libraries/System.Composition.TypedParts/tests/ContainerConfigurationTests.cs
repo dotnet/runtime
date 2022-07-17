@@ -248,10 +248,46 @@ namespace System.Composition.Hosting.Tests
         }
 
         [Fact]
-        public void WithAssemby_Null_ThrowsNullReferenceExceptionOnCreation()
+        public void WithAssembly_Null_ThrowsNullReferenceExceptionOnCreation()
         {
             ContainerConfiguration configuration = new ContainerConfiguration().WithAssembly(null);
             Assert.Throws<NullReferenceException>(() => configuration.CreateContainer());
+        }
+
+        [Fact]
+        public void WithExport_Base_Success()
+        {
+            var instance = new Base();
+
+            var configuration = new ContainerConfiguration();
+            Assert.Same(configuration, configuration.WithExport<Base>(instance));
+
+            CompositionHost container = configuration.CreateContainer();
+            Assert.Same(instance, container.GetExport<Base>());
+        }
+
+        [Fact]
+        public void WithExport_Derived_Success()
+        {
+            var instance = new Derived();
+
+            var configuration = new ContainerConfiguration();
+            Assert.Same(configuration, configuration.WithExport<Base>(instance));
+
+            CompositionHost container = configuration.CreateContainer();
+            Assert.Same(instance, container.GetExport<Base>());
+        }
+
+        [Fact]
+        public void WithExport_ContractName_Success()
+        {
+            var instance = new Base();
+
+            var configuration = new ContainerConfiguration();
+            Assert.Same(configuration, configuration.WithExport<Base>(instance, "Contract"));
+
+            CompositionHost container = configuration.CreateContainer();
+            Assert.Same(instance, container.GetExport<Base>("Contract"));
         }
 
         [Fact]

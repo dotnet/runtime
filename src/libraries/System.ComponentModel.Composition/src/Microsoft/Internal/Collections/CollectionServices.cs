@@ -56,8 +56,10 @@ namespace Microsoft.Internal.Collections
             return null;
         }
 
-        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source!!)
+        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             return new ReadOnlyCollection<T>(source.AsArray());
         }
 
@@ -129,10 +131,7 @@ namespace Microsoft.Internal.Collections
 
         private static List<T> FastAppendToListAllowNulls<T>(this List<T>? source, T value)
         {
-            if (source == null)
-            {
-                source = new List<T>();
-            }
+            source ??= new List<T>();
             source.Add(value);
 
             return source;
@@ -163,8 +162,10 @@ namespace Microsoft.Internal.Collections
             }
         }
 
-        public static EnumerableCardinality GetCardinality<T>(this IEnumerable<T> source!!)
+        public static EnumerableCardinality GetCardinality<T>(this IEnumerable<T> source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             // Cast to ICollection instead of ICollection<T> for performance reasons.
             if (source is ICollection collection)
             {
@@ -192,8 +193,10 @@ namespace Microsoft.Internal.Collections
             }
         }
 
-        public static Stack<T> Copy<T>(this Stack<T> stack!!)
+        public static Stack<T> Copy<T>(this Stack<T> stack)
         {
+            ArgumentNullException.ThrowIfNull(stack);
+
             // Stack<T>.GetEnumerator walks from top to bottom
             // of the stack, whereas Stack<T>(IEnumerable<T>)
             // pushes to bottom from top, so we need to reverse

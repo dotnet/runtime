@@ -308,8 +308,13 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="fromArray">Array from which to derive dimensions.</param>
         /// <param name="reverseStride">False (default) to indicate that the first dimension is most major (farthest apart) and the last dimension is most minor (closest together): akin to row-major in a rank-2 tensor.  True to indicate that the last dimension is most major (farthest apart) and the first dimension is most minor (closest together): akin to column-major in a rank-2 tensor.</param>
-        protected Tensor(Array fromArray!!, bool reverseStride)
+        protected Tensor(Array fromArray, bool reverseStride)
         {
+            if (fromArray is null)
+            {
+                throw new ArgumentNullException(nameof(fromArray));
+            }
+
             if (fromArray.Rank == 0)
             {
                 throw new ArgumentException(SR.ArrayMustContainElements, nameof(fromArray));
@@ -631,16 +636,26 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="indices">A one-dimensional array of integers that represent the indices specifying the position of the element to get.</param>
         /// <returns>The value at the specified position in this Tensor.</returns>
-        public virtual T this[params int[] indices!!]
+        public virtual T this[params int[] indices]
         {
             get
             {
+                if (indices is null)
+                {
+                    throw new ArgumentNullException(nameof(indices));
+                }
+
                 var span = new ReadOnlySpan<int>(indices);
                 return this[span];
             }
 
             set
             {
+                if (indices is null)
+                {
+                    throw new ArgumentNullException(nameof(indices));
+                }
+
                 var span = new ReadOnlySpan<int>(indices);
                 this[span] = value;
             }
@@ -917,8 +932,13 @@ namespace System.Numerics.Tensors
         /// <param name="arrayIndex">
         /// The zero-based index in array at which copying begins.
         /// </param>
-        protected virtual void CopyTo(T[] array!!, int arrayIndex)
+        protected virtual void CopyTo(T[] array, int arrayIndex)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (array.Length < arrayIndex + Length)
             {
                 throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));

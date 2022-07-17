@@ -9,7 +9,7 @@ namespace ILCompiler
 {
     partial class CompilerTypeSystemContext
     {
-        // Functionality related to determinstic ordering of types and members
+        // Functionality related to deterministic ordering of types and members
         partial class CompilerGeneratedType : MetadataType
         {
             protected override int ClassCode => -1036681447;

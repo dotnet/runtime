@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Loader;
-
-    internal class ContextAwareTables<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T> where T : class?
+    internal sealed class ContextAwareTables<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T> where T : class?
     {
         private Hashtable _defaultTable;
         private ConditionalWeakTable<Type, T> _collectibleTable;
@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
             _collectibleTable = new ConditionalWeakTable<Type, T>();
         }
 
-        internal T GetOrCreateValue(Type t, Func<T> f)
+        internal T GetOrCreateValue(Type t, Func<Type, T> f)
         {
             // The fast and most common default case
             T? ret = (T?)_defaultTable[t];
@@ -41,7 +41,7 @@ namespace System.Xml.Serialization
                 {
                     if ((ret = (T?)_defaultTable[t]) == null)
                     {
-                        ret = f();
+                        ret = f(t);
                         _defaultTable[t] = ret;
                     }
                 }
@@ -54,7 +54,7 @@ namespace System.Xml.Serialization
                 {
                     if (!_collectibleTable.TryGetValue(t, out ret))
                     {
-                        ret = f();
+                        ret = f(t);
                         _collectibleTable.AddOrUpdate(t, ret);
                     }
                 }

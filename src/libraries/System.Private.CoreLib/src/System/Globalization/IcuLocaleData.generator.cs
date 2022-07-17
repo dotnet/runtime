@@ -1226,12 +1226,10 @@ namespace System.Globalization
                 continue;
             }
 
-            Console.WriteLine("private static ReadOnlySpan<byte> CultureNames => new byte[]");
-            Console.WriteLine("{");
+            Console.WriteLine("private static ReadOnlySpan<byte> CultureNames =>");
 
             var indexes = new List<(int position, int length, string cultureName)>();
             int pos = 0;
-            var isFirst = true;
             for (int i = 0; i < list.Count; ++i)
             {
                 var row = list[i];
@@ -1242,22 +1240,9 @@ namespace System.Globalization
                     indexes.Add((pos, value.Length, value));
                 }
 
-                foreach (var ch in row.culture)
-                {
-                    if (isFirst)
-                    {
-                        isFirst = false;
-                        Console.Write("    ");
-                    }
-                    Console.Write($"(byte)'{ch}', ");
-                }
-                Console.WriteLine($" // {string.Join(", ", row.cultures)}");
-                isFirst = true;
-
+                Console.WriteLine($@"    ""{row.culture}""u8{(i == list.Count - 1 ? ';' : " +")}  // {string.Join(", ", row.cultures)}");
                 pos += row.culture.Length;
             }
-
-            Console.WriteLine("};");
 
             Console.WriteLine();
             Console.WriteLine($"private const int CulturesCount = {indexes.Count};");
@@ -1379,9 +1364,9 @@ namespace System.Globalization
                 Console.Write($"0x{(GeoId >> 24) & 0xff:x2}, 0x{(GeoId >> 16) & 0xff:x2},  0x{(GeoId >> 8) & 0xff:x2}, 0x{GeoId & 0xff:x2}, ");
                 Console.Write($"0x{DigitList & 0xff:x2}, ");
 
-                var Indicies = SpecificCultureIndex << 12 | ConsoleLocaleIndex;
+                var Indices = SpecificCultureIndex << 12 | ConsoleLocaleIndex;
 
-                Console.Write($"0x{(Indicies >> 16) & 0xff:x2},  0x{(Indicies >> 8) & 0xff:x2}, 0x{Indicies & 0xff:x2}, ");
+                Console.Write($"0x{(Indices >> 16) & 0xff:x2},  0x{(Indices >> 8) & 0xff:x2}, 0x{Indices & 0xff:x2}, ");
                 Console.Write($" // {i / NUMERIC_LOCALE_DATA_COUNT_PER_ROW,-4} - {cultures[i / NUMERIC_LOCALE_DATA_COUNT_PER_ROW]}");
                 Console.WriteLine();
             }

@@ -1,28 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>This package provides collections that are thread safe and guaranteed to never change their contents, also known as immutable collections. Like strings, any methods that perform modifications will not change the existing instance but instead return a new instance. For efficiency reasons, the implementation uses a sharing mechanism to ensure that newly created instances share as much data as possible with the previous instance while ensuring that operations have a predictable time complexity.
 
-Commonly Used Types:
-System.Collections.Immutable.ImmutableArray
-System.Collections.Immutable.ImmutableArray&lt;T&gt;
-System.Collections.Immutable.ImmutableDictionary
-System.Collections.Immutable.ImmutableDictionary&lt;TKey,TValue&gt;
-System.Collections.Immutable.ImmutableHashSet
-System.Collections.Immutable.ImmutableHashSet&lt;T&gt;
-System.Collections.Immutable.ImmutableList
-System.Collections.Immutable.ImmutableList&lt;T&gt;
-System.Collections.Immutable.ImmutableQueue
-System.Collections.Immutable.ImmutableQueue&lt;T&gt;
-System.Collections.Immutable.ImmutableSortedDictionary
-System.Collections.Immutable.ImmutableSortedDictionary&lt;TKey,TValue&gt;
-System.Collections.Immutable.ImmutableSortedSet
-System.Collections.Immutable.ImmutableSortedSet&lt;T&gt;
-System.Collections.Immutable.ImmutableStack
-System.Collections.Immutable.ImmutableStack&lt;T&gt;</PackageDescription>
+The System.Collections.Immutable library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Collections\Generic\IHashKeyCollection.cs" />
@@ -104,24 +89,23 @@ System.Collections.Immutable.ImmutableStack&lt;T&gt;</PackageDescription>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs"
              Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <None Include="Interfaces.cd" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Contracts" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Memory"  Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFrameworkVersion)' == 'v6.0'">
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 </Project>

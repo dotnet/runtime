@@ -35,7 +35,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorNoopRebuild(string config)
@@ -44,9 +44,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm");
+            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm");
 
-            BlazorBuild(id, config, NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
 
@@ -55,14 +55,14 @@ namespace Wasm.Build.NativeRebuild.Tests
             var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // build again
-            BlazorBuild(id, config, NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             CompareStat(originalStat, newStat, pathsDict.Values);
         }
 
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorOnlyLinkRebuild(string config)
@@ -71,9 +71,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm");
+            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm");
 
-            BlazorBuild(id, config, NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
 
@@ -84,7 +84,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // build again
-            BlazorBuild(id, config, NativeFilesType.Relinked, "-p:EmccLinkOptimizationFlag=-O1");
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O1");
             var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             CompareStat(originalStat, newStat, pathsDict.Values);

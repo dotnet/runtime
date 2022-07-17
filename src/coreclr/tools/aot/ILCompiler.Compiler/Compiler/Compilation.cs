@@ -112,9 +112,9 @@ namespace ILCompiler
             return _devirtualizationManager.CanConstructType(type);
         }
 
-        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
+        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
         {
-            // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
+            // If we're creating a delegate to a virtual method that cannot be overridden, devirtualize.
             // This is not just an optimization - it's required for correctness in the presence of sealed
             // vtable slots.
             if (followVirtualDispatch && (target.IsFinal || target.OwningType.IsSealed()))
@@ -123,7 +123,7 @@ namespace ILCompiler
             if (followVirtualDispatch)
                 target = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(target);
 
-            return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
+            return DelegateCreationInfo.Create(delegateType, target, constrainedType, NodeFactory, followVirtualDispatch);
         }
 
         /// <summary>
@@ -257,6 +257,10 @@ namespace ILCompiler
                 case ReadyToRunHelperId.FieldHandle:
                     return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
 
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return ((ConstrainedCallInfo)targetOfLookup).Method.IsRuntimeDeterminedExactMethod
+                        || ((ConstrainedCallInfo)targetOfLookup).ConstrainedType.IsRuntimeDeterminedSubtype;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -265,7 +269,8 @@ namespace ILCompiler
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
             bool canConstructPerWholeProgramAnalysis = _devirtualizationManager == null ? true : _devirtualizationManager.CanConstructType(type);
-            return canConstructPerWholeProgramAnalysis & DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type)
+            bool creationAllowed = DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type);
+            return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle
                 : ReadyToRunHelperId.NecessaryTypeHandle;
         }
@@ -294,9 +299,9 @@ namespace ILCompiler
             switch (lookupKind)
             {
                 case ReadyToRunHelperId.TypeHandle:
-                    return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                    return NodeFactory.ConstructedTypeSymbol(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
                 case ReadyToRunHelperId.NecessaryTypeHandle:
-                    return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
+                    return NecessaryTypeSymbolIfPossible(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         var type = (TypeDesc)targetOfLookup;
@@ -420,6 +425,10 @@ namespace ILCompiler
             return GenericDictionaryLookup.CreateHelperLookup(contextSource, lookupKind, targetOfLookup);
         }
 
+        // CoreCLR compat - referring to function pointer types handled as IntPtr. No MethodTable for function pointers for now.
+        private static TypeDesc WithoutFunctionPointerType(TypeDesc type)
+            => type.IsFunctionPointer ? type.Context.GetWellKnownType(WellKnownType.IntPtr) : type;
+
         public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
         {
             // Unmanaged calls are never fat pointers
@@ -441,7 +450,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Retreives method whose runtime handle is suitable for use with GVMLookupForSlot.
+        /// Retrieves method whose runtime handle is suitable for use with GVMLookupForSlot.
         /// </summary>
         public MethodDesc GetTargetOfGenericVirtualMethodCall(MethodDesc calledMethod)
         {
@@ -646,6 +655,21 @@ namespace ILCompiler
                     }
                 }
             }
+        }
+    }
+
+    public sealed class ConstrainedCallInfo
+    {
+        public readonly TypeDesc ConstrainedType;
+        public readonly MethodDesc Method;
+        public ConstrainedCallInfo(TypeDesc constrainedType, MethodDesc method)
+            => (ConstrainedType, Method) = (constrainedType, method);
+        public int CompareTo(ConstrainedCallInfo other, TypeSystemComparer comparer)
+        {
+            int result = comparer.Compare(ConstrainedType, other.ConstrainedType);
+            if (result == 0)
+                result = comparer.Compare(Method, other.Method);
+            return result;
         }
     }
 }

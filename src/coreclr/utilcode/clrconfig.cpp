@@ -200,15 +200,11 @@ namespace
 #if defined(DEBUG) && !defined(SELF_NO_HOST)
                 // Validate the cache and no-cache logic result in the same answer
                 SString nameToConvert(name);
-                SString nameAsUTF8;
-                nameToConvert.ConvertToUTF8(nameAsUTF8);
-                SString valueAsUTF8;
-                temp.ConvertToUTF8(valueAsUTF8);
 
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert(), noPrefix);
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix);
                 LPCSTR valueNoCache = nonCache.AsString();
 
-                _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8NoConvert()) == 0);
+                _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);
 #endif // defined(DEBUG) && !defined(SELF_NO_HOST)
             }
         }
@@ -374,13 +370,13 @@ namespace
 // Creating structs using the macro table in CLRConfigValues.h
 //
 
-// These macros intialize ConfigDWORDInfo structs.
+// These macros initialize ConfigDWORDInfo structs.
 #define RETAIL_CONFIG_DWORD_INFO(symbol, name, defaultValue, description) \
     const CLRConfig::ConfigDWORDInfo CLRConfig::symbol = {name, defaultValue, CLRConfig::LookupOptions::Default};
 #define RETAIL_CONFIG_DWORD_INFO_EX(symbol, name, defaultValue, description, lookupOptions) \
     const CLRConfig::ConfigDWORDInfo CLRConfig::symbol = {name, defaultValue, lookupOptions};
 
-// These macros intialize ConfigStringInfo structs.
+// These macros initialize ConfigStringInfo structs.
 #define RETAIL_CONFIG_STRING_INFO(symbol, name, description) \
     const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, CLRConfig::LookupOptions::Default};
 #define RETAIL_CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
@@ -634,8 +630,8 @@ void CLRConfig::Initialize()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
 
-    const WCHAR prefixC = towlower(COMPLUS_PREFIX[0]);
-    const WCHAR prefixD = towlower(DOTNET_PREFIX[0]);
+    const WCHAR prefixC = (WCHAR)towlower(COMPLUS_PREFIX[0]);
+    const WCHAR prefixD = (WCHAR)towlower(DOTNET_PREFIX[0]);
 
     // Create a cache of environment variables
     WCHAR* wszStrings = GetEnvironmentStringsW();
@@ -645,7 +641,7 @@ void CLRConfig::Initialize()
         // null terminated strings
         for(WCHAR *wszCurr = wszStrings; *wszCurr; wszCurr++)
         {
-            WCHAR wch = towlower(*wszCurr);
+            WCHAR wch = (WCHAR)towlower(*wszCurr);
 
             // Lets only cache env variables with targeted prefixes
             bool matchC = wch == prefixC;

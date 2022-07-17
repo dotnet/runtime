@@ -1,7 +1,5 @@
 project(mcc_native)
 
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
-
 add_library(native_i0c SHARED native_i0c.cpp)
 add_library(native_i1c SHARED native_i1c.cpp)
 add_library(native_i3c SHARED native_i3c.cpp)
@@ -17,39 +15,3 @@ add_library(native_i5s SHARED native_i5s.cpp)
 add_library(native_i6s SHARED native_i6s.cpp)
 add_library(native_i7s SHARED native_i7s.cpp)
 add_library(native_i8s SHARED native_i8s.cpp)
-
-
-
-# add the install targets (this "installs" the native file on Windows systems)
-install(TARGETS native_i0c DESTINATION bin)
-install(TARGETS native_i1c DESTINATION bin)
-install(TARGETS native_i3c DESTINATION bin)
-install(TARGETS native_i5c DESTINATION bin)
-install(TARGETS native_i6c DESTINATION bin)
-install(TARGETS native_i7c DESTINATION bin)
-install(TARGETS native_i8c DESTINATION bin)
-
-install(TARGETS native_i0s DESTINATION bin)
-install(TARGETS native_i1s DESTINATION bin)
-install(TARGETS native_i3s DESTINATION bin)
-install(TARGETS native_i5s DESTINATION bin)
-install(TARGETS native_i6s DESTINATION bin)
-install(TARGETS native_i7s DESTINATION bin)
-install(TARGETS native_i8s DESTINATION bin)
-
-# This "installs" the native file on System V systems
-set_target_properties(native_i0c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i0c)
-set_target_properties(native_i1c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i1c)
-set_target_properties(native_i3c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i3c)
-set_target_properties(native_i5c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i5c)
-set_target_properties(native_i6c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i6c)
-set_target_properties(native_i7c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i7c)
-set_target_properties(native_i8c PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i8c)
-
-set_target_properties(native_i0s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i0s)
-set_target_properties(native_i1s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i1s)
-set_target_properties(native_i3s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i3s)
-set_target_properties(native_i5s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i5s)
-set_target_properties(native_i6s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i6s)
-set_target_properties(native_i7s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i7s)
-set_target_properties(native_i8s PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/native_i8s)

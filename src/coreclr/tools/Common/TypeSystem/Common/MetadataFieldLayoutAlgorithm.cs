@@ -814,6 +814,7 @@ namespace Internal.TypeSystem
                 Debug.Assert(fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsByRef);
                 result.Size = fieldType.Context.Target.LayoutPointerSize;
                 result.Alignment = fieldType.Context.Target.LayoutPointerSize;
+                fieldTypeHasAutoLayout = fieldType.IsByRef;
             }
 
             // For non-auto layouts, we need to respect tighter packing requests for alignment.
@@ -894,11 +895,7 @@ namespace Internal.TypeSystem
             if (!type.IsValueType)
                 return ValueTypeShapeCharacteristics.None;
 
-            ValueTypeShapeCharacteristics result = ComputeHomogeneousAggregateCharacteristic(type);
-
-            // TODO: System V AMD64 characteristics (https://github.com/dotnet/corert/issues/158)
-
-            return result;
+            return ComputeHomogeneousAggregateCharacteristic(type);
         }
 
         private ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
@@ -912,7 +909,7 @@ namespace Internal.TypeSystem
             if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
                 return NotHA;
 
-            if (type.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (type.Context.Target.Abi == TargetAbi.NativeAotArmel)
                 return NotHA;
 
             MetadataType metadataType = (MetadataType)type;

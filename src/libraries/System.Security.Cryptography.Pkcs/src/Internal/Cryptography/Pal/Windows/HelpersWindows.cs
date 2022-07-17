@@ -53,11 +53,17 @@ namespace Internal.Cryptography.Pal.Windows
         {
             int cbData = 0;
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, IntPtr.Zero, ref cbData))
+            {
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
 
             SafeHandle pvData = SafeHeapAllocHandle.Alloc(cbData);
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, pvData.DangerousGetHandle(), ref cbData))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            {
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                pvData.Dispose();
+                throw e;
+            }
 
             return pvData;
         }
@@ -485,7 +491,9 @@ namespace Internal.Cryptography.Pal.Windows
 
             for (int i = 0; i < pCryptAttribute->cValue; i++)
             {
-                byte[] encodedAttribute = pCryptAttribute->rgValue[i].ToByteArray();
+                // CreateBestPkcs9AttributeObjectAvailable is expected to create a copy of the data so that it has ownership
+                // of the underlying data.
+                ReadOnlySpan<byte> encodedAttribute = pCryptAttribute->rgValue[i].DangerousAsSpan();
                 AsnEncodedData attributeObject = PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(oid, encodedAttribute);
                 attributeCollection.Add(attributeObject);
             }

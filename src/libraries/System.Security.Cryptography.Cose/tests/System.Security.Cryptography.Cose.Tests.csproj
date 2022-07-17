@@ -11,11 +11,26 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="CoseHeaderValueTests.cs" />
+    <Compile Include="CoseMessageTests.Verify.cs" />
     <Compile Include="CoseHeaderLabelTests.cs" />
     <Compile Include="CoseHeaderMapTests.cs" />
-    <Compile Include="CoseMessageTests.DecoseSign1.cs" />
-    <Compile Include="CoseSign1MessageTests.Verify.cs" />
+    <Compile Include="CoseMessageTests.DecodeMultiSign.cs" />
+    <Compile Include="CoseMessageTests.DecodeSign1.cs" />
+    <Compile Include="CoseMessageTests.Sign.cs" />
+    <Compile Include="CoseMessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseMessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Sign.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Verify.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Verify.Stream.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Verify.Stream.cs" />
+    <Compile Include="CoseSign1MessageTests.Verify.cs" />
+    <Compile Include="CoseSignerTests.cs" />
     <Compile Include="CoseTestHelpers.cs" />
   </ItemGroup>
   

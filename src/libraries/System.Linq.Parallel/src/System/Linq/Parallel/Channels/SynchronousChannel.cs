@@ -97,6 +97,7 @@ namespace System.Linq.Parallel
         // Signals that a producer will no longer be enqueueing items.
         //
 
+#pragma warning disable CA1822
         internal void SetDone()
         {
 #if DEBUG
@@ -105,6 +106,7 @@ namespace System.Linq.Parallel
             _done = true;
 #endif
         }
+#pragma warning restore CA1822
 
         //-----------------------------------------------------------------------------------
         // Copies the internal contents of this channel to an array.

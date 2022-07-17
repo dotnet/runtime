@@ -5,6 +5,7 @@
 	<body>
 	<script type='text/javascript'>
 		var App = {
+			static_method_table: {},
 			init: function () {
 				this.int_add = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:IntAdd");
 				this.use_complex = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:UseComplex");
@@ -57,7 +58,7 @@
 		}
 		function invoke_bad_js_test () {
 			console.log ("js: In invoke_bad_js_test");
-			App.non_existant ();
+			App.non_existent ();
 			console.log ("js: After.. shouldn't reach here");
 		}
 		function invoke_outer_method () {
@@ -91,9 +92,9 @@
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
 		}
 		</script>
-		<script type="text/javascript" src="debugger-main.js"></script>
+
 		<script type="text/javascript" src="other.js"></script>
-		<script async type="text/javascript" src="dotnet.js"></script>
+		<script type="module" src="debugger-main.js"></script>
 		Stuff goes here
 </body>
 </html>

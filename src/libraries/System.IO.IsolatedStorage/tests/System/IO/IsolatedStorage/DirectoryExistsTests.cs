@@ -57,26 +57,26 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void DirectoryExists_Existance()
+        public void DirectoryExists_Existence()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                isf.CreateDirectory("DirectoryExists_Existance");
+                isf.CreateDirectory("DirectoryExists_Existence");
 
-                Assert.True(isf.DirectoryExists("DirectoryExists_Existance"));
-                isf.DeleteDirectory("DirectoryExists_Existance");
-                Assert.False(isf.DirectoryExists("DirectoryExists_Existance"));
+                Assert.True(isf.DirectoryExists("DirectoryExists_Existence"));
+                isf.DeleteDirectory("DirectoryExists_Existence");
+                Assert.False(isf.DirectoryExists("DirectoryExists_Existence"));
             }
         }
 
         [Theory]
         [MemberData(nameof(ValidStores))]
-        public void DirectoryExists_Existance_WithScope(PresetScopes scope)
+        public void DirectoryExists_Existence_WithScope(PresetScopes scope)
         {
             using (var isf = GetPresetScope(scope))
             {
                 string root = isf.GetUserRootDirectory();
-                string directory = "DirectoryExists_Existance";
+                string directory = "DirectoryExists_Existence";
                 isf.CreateDirectory(directory);
 
                 Assert.True(Directory.Exists(Path.Combine(root, directory)), "exists per file.io where expected");

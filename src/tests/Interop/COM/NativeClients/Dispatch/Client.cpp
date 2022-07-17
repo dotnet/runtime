@@ -364,7 +364,7 @@ void Validate_LCID_Marshaled()
         nullptr
     ));
 
-    THROW_FAIL_IF_FALSE(lcid == V_I4(&result));
+    THROW_FAIL_IF_FALSE(lcid == (LCID)V_UI4(&result));
 }
 
 namespace

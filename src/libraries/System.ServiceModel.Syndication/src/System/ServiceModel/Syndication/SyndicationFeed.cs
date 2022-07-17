@@ -67,8 +67,13 @@ namespace System.ServiceModel.Syndication
             _items = items;
         }
 
-        protected SyndicationFeed(SyndicationFeed source!!, bool cloneItems)
+        protected SyndicationFeed(SyndicationFeed source, bool cloneItems)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
             _contributors = FeedUtils.ClonePersons(source._contributors);
@@ -107,7 +112,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationPerson> Authors
         {
-            get => _authors ?? (_authors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _authors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
 
@@ -115,12 +120,12 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationCategory> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<SyndicationCategory>());
+            get => _categories ??= new NullNotAllowedCollection<SyndicationCategory>();
         }
 
         public Collection<SyndicationPerson> Contributors
         {
-            get => _contributors ?? (_contributors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _contributors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
         public TextSyndicationContent Copyright { get; set; }
@@ -137,7 +142,7 @@ namespace System.ServiceModel.Syndication
 
         public IEnumerable<SyndicationItem> Items
         {
-            get => _items ?? (_items = new NullNotAllowedCollection<SyndicationItem>());
+            get => _items ??= new NullNotAllowedCollection<SyndicationItem>();
             set => _items = value ?? throw new ArgumentNullException(nameof(value));
         }
 
@@ -165,7 +170,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationLink> Links
         {
-            get => _links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
+            get => _links ??= new NullNotAllowedCollection<SyndicationLink>();
         }
 
         public TextSyndicationContent Title { get; set; }
@@ -174,7 +179,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationLink Documentation
         {
-            get => InternalDocumentation ?? (InternalDocumentation = TryReadDocumentationFromExtension(ElementExtensions));
+            get => InternalDocumentation ??= TryReadDocumentationFromExtension(ElementExtensions);
             set => InternalDocumentation = value;
         }
 
@@ -182,7 +187,7 @@ namespace System.ServiceModel.Syndication
 
         public TimeSpan? TimeToLive
         {
-            get => InternalTimeToLive ?? (InternalTimeToLive = TryReadTimeToLiveFromExtension(ElementExtensions));
+            get => InternalTimeToLive ??= TryReadTimeToLiveFromExtension(ElementExtensions);
             set
             {
                 if (value.HasValue && (value.Value.Milliseconds != 0 || value.Value.Seconds != 0 || value.Value.TotalMinutes < 0))
@@ -232,7 +237,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationTextInput TextInput
         {
-            get => InternalTextInput ?? (InternalTextInput = TryReadTextInputFromExtension(ElementExtensions));
+            get => InternalTextInput ??= TryReadTextInputFromExtension(ElementExtensions);
             set => InternalTextInput = value;
         }
 
@@ -251,7 +256,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private TimeSpan? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private static TimeSpan? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension timeToLiveElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -280,7 +285,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
+        private static void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
         {
             SyndicationElementExtension skipHoursElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -314,7 +319,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
+        private static void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
         {
             SyndicationElementExtension skipDaysElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -350,7 +355,7 @@ namespace System.ServiceModel.Syndication
 
         private static bool IsValidDay(string day) => s_acceptedDays.Contains(day);
 
-        private SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private static SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension textInputElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -404,8 +409,13 @@ namespace System.ServiceModel.Syndication
 
         public static SyndicationFeed Load(XmlReader reader) => Load<SyndicationFeed>(reader);
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader!!) where TSyndicationFeed : SyndicationFeed, new()
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader) where TSyndicationFeed : SyndicationFeed, new()
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {

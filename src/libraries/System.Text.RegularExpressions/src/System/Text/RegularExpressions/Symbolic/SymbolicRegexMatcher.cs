@@ -1,88 +1,49 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents a regex matching engine that performs regex matching using symbolic derivatives.</summary>
-    internal interface ISymbolicRegexMatcher
+    internal abstract class SymbolicRegexMatcher
     {
 #if DEBUG
-        /// <summary>Unwind the regex of the matcher and save the resulting state graph in DGML</summary>
-        /// <param name="bound">roughly the maximum number of states, 0 means no bound</param>
-        /// <param name="hideStateInfo">if true then hide state info</param>
-        /// <param name="addDotStar">if true then pretend that there is a .* at the beginning</param>
-        /// <param name="inReverse">if true then unwind the regex backwards (addDotStar is then ignored)</param>
-        /// <param name="onlyDFAinfo">if true then compute and save only genral DFA info</param>
-        /// <param name="writer">dgml output is written here</param>
-        /// <param name="maxLabelLength">maximum length of labels in nodes anything over that length is indicated with .. </param>
-        /// <param name="asNFA">if true creates NFA instead of DFA</param>
-        void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA);
+        /// <inheritdoc cref="Regex.SaveDGML(TextWriter, int)"/>
+        public abstract void SaveDGML(TextWriter writer, int maxLabelLength);
 
-        /// <summary>
-        /// Generates up to k random strings matched by the regex
-        /// </summary>
-        /// <param name="k">upper bound on the number of generated strings</param>
-        /// <param name="randomseed">random seed for the generator, 0 means no random seed</param>
-        /// <param name="negative">if true then generate inputs that do not match</param>
-        /// <returns></returns>
-        IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative);
+        /// <inheritdoc cref="Regex.SampleMatches(int, int)"/>
+        public abstract IEnumerable<string> SampleMatches(int k, int randomseed);
+
+        /// <inheritdoc cref="Regex.Explore(bool, bool, bool, bool, bool)"/>
+        public abstract void Explore(bool includeDotStarred, bool includeReverse, bool includeOriginal, bool exploreDfa, bool exploreNfa);
 #endif
     }
 
     /// <summary>Represents a regex matching engine that performs regex matching using symbolic derivatives.</summary>
-    /// <typeparam name="TSetType">Character set type.</typeparam>
-    internal sealed class SymbolicRegexMatcher<TSetType> : ISymbolicRegexMatcher where TSetType : notnull
+    /// <typeparam name="TSet">Character set type.</typeparam>
+    internal sealed partial class SymbolicRegexMatcher<TSet> : SymbolicRegexMatcher where TSet : IComparable<TSet>, IEquatable<TSet>
     {
-        /// <summary>Maximum number of states before switching over to Antimirov mode.</summary>
-        /// <remarks>
-        /// "Brzozowski" is by default used for state graphs that represent the DFA nodes for the regex.
-        /// In this mode, for the singular state we're currently in, we can evaluate the next character and determine
-        /// the singular next state to be in. Some regular expressions, however, can result in really, really large DFA
-        /// state graphs.  Instead of falling over with large representations, after this (somewhat arbitrary) threshold,
-        /// the implementation switches to "Antimirov" mode.  In this mode, which can be thought of as NFA-based instead
-        /// of DFA-based, we can be in any number of states at the same time, represented as a <see cref="SymbolicRegexNode{S}"/>
-        /// that's the union of all such states; transitioning based on the next character is then handled by finding
-        /// all possible states we might transition to from each of the states in the current set, and producing a new set
-        /// that's the union of all of those.  The matching engine switches dynamically from Brzozowski to Antimirov once
-        /// it trips over this threshold in the size of the state graph, which may be produced lazily.
-        /// </remarks>
-        private const int AntimirovThreshold = 10_000;
-
-        /// <summary>Wiggle room around the exact size of the state graph before we switch to Antimirov.</summary>
-        /// <remarks>
-        /// The inner loop of the matching engine wants to be as streamlined as possible, and in Brzozowski mode
-        /// having to check at every iteration whether we need to switch to Antimirov is a perf bottleneck.  As such,
-        /// the inner loop is allowed to run for up to this many transitions without regard for the size of the
-        /// graph, which could cause <see cref="AntimirovThreshold"/> to be exceeded by this limit.  Once
-        /// we've hit <see cref="AntimirovThresholdLeeway"/> number of transitions in the inner loop, we
-        /// force ourselves back out to the outerloop, where we can check the graph size and other things like timeouts.
-        /// </remarks>
-        private const int AntimirovThresholdLeeway = 1_000;
-
         /// <summary>Sentinel value used internally by the matcher to indicate no match exists.</summary>
         private const int NoMatchExists = -2;
 
         /// <summary>Builder used to create <see cref="SymbolicRegexNode{S}"/>s while matching.</summary>
         /// <remarks>
-        /// The builder servers two purposes:
-        /// 1. For Brzozowski, we build up the DFA state space lazily, which means we need to be able to
-        ///    produce new <see cref="SymbolicRegexNode{S}"/>s as we match.
-        /// 2. For Antimirov, currently the list of states we're currently in is represented as a <see cref="SymbolicRegexNode{S}"/>
-        ///    that's a union of all current states.  Augmenting that list requires building new nodes.
-        /// The builder maintains a cache of nodes, and requests for it to make new ones might return existing ones from the cache.
-        /// The separation of a matcher and a builder is somewhat arbitrary; they could potentially be combined.
+        /// The builder is used to build up the DFA state space lazily, which means we need to be able to
+        /// produce new <see cref="SymbolicRegexNode{S}"/>s as we match.  Once in NFA mode, we also use
+        /// the builder to produce new NFA states.  The builder maintains a cache of all DFA and NFA states.
         /// </remarks>
-        internal readonly SymbolicRegexBuilder<TSetType> _builder;
+        internal readonly SymbolicRegexBuilder<TSet> _builder;
 
-        /// <summary>Maps each character into a partition id in the range 0..K-1.</summary>
-        private readonly MintermClassifier _partitions;
+        /// <summary>Maps every character to its corresponding minterm ID.</summary>
+        private readonly MintermClassifier _mintermClassifier;
 
         /// <summary><see cref="_pattern"/> prefixed with [0-0xFFFF]*</summary>
         /// <remarks>
@@ -99,10 +60,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// is then used from that starting point to walk forward through the input characters again to find the
         /// actual end point used for the match.
         /// </remarks>
-        internal readonly SymbolicRegexNode<TSetType> _dotStarredPattern;
+        internal readonly SymbolicRegexNode<TSet> _dotStarredPattern;
 
         /// <summary>The original regex pattern.</summary>
-        internal readonly SymbolicRegexNode<TSetType> _pattern;
+        internal readonly SymbolicRegexNode<TSet> _pattern;
 
         /// <summary>The reverse of <see cref="_pattern"/>.</summary>
         /// <remarks>
@@ -111,7 +72,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// the matcher again, starting from the ending position. This <see cref="_reversePattern"/> caches
         /// that reversed pattern used for extracting match start.
         /// </remarks>
-        internal readonly SymbolicRegexNode<TSetType> _reversePattern;
+        internal readonly SymbolicRegexNode<TSet> _reversePattern;
 
         /// <summary>true iff timeout checking is enabled.</summary>
         private readonly bool _checkTimeout;
@@ -124,153 +85,194 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>The initial states for the original pattern, keyed off of the previous character kind.</summary>
         /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
-        private readonly DfaMatchingState<TSetType>[] _initialStates;
+        private readonly MatchingState<TSet>[] _initialStates;
 
         /// <summary>The initial states for the dot-star pattern, keyed off of the previous character kind.</summary>
         /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
-        private readonly DfaMatchingState<TSetType>[] _dotstarredInitialStates;
+        private readonly MatchingState<TSet>[] _dotstarredInitialStates;
 
         /// <summary>The initial states for the reverse pattern, keyed off of the previous character kind.</summary>
         /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
-        private readonly DfaMatchingState<TSetType>[] _reverseInitialStates;
+        private readonly MatchingState<TSet>[] _reverseInitialStates;
 
-        /// <summary>Lookup table to quickly determine the character kind for ASCII characters.</summary>
-        /// <remarks>Non-null iff the pattern contains anchors; otherwise, it's unused.</remarks>
-        private readonly uint[]? _asciiCharKinds;
+        /// <summary>Partition of the input space of sets.</summary>
+        private readonly TSet[] _minterms;
+
+        /// <summary>
+        /// Character kinds <see cref="CharKind"/> for all minterms in <see cref="_minterms"/> as well as two special
+        /// cases: character positions outside the input bounds and an end-of-line as the last input character.
+        /// </summary>
+        private readonly uint[] _positionKinds;
+
+        /// <summary>
+        /// The smallest k s.t. 2^k >= minterms.Length + 1. The "delta arrays", e.g., <see cref="_dfaDelta"/> allocate 2^k
+        /// consecutive slots for each state ID to represent the transitions for each minterm. The extra slot at index
+        /// _minterms.Length is used to represent an \n occurring at the very end of input, for supporting the \Z anchor.
+        /// </summary>
+        private readonly int _mintermsLog;
 
         /// <summary>Number of capture groups.</summary>
         private readonly int _capsize;
 
-        /// <summary>Fixed-length of any match, if there is one.</summary>
-        private readonly int? _fixedMatchLength;
-
-        /// <summary>This determines whether the matcher uses the special capturing NFA simulation mode.</summary>
+        /// <summary>Gets whether the regular expression contains captures (beyond the implicit root-level capture).</summary>
+        /// <remarks>This determines whether the matcher uses the special capturing NFA simulation mode.</remarks>
         internal bool HasSubcaptures => _capsize > 1;
 
-        /// <summary>Get the minterm of <paramref name="c"/>.</summary>
-        /// <param name="c">character code</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private TSetType GetMinterm(int c)
+        /// <remarks>
+        /// Both solvers supported here, <see cref="UInt64Solver"/> and <see cref="BitVectorSolver"/> are thread safe.
+        /// </remarks>
+        private ISolver<TSet> Solver => _builder._solver;
+
+        /// <summary>Creates a new <see cref="SymbolicRegexMatcher{TSetType}"/>.</summary>
+        /// <param name="captureCount">The number of captures in the regular expression.</param>
+        /// <param name="findOptimizations">The find optimizations computed from the expression.</param>
+        /// <param name="bddBuilder">The <see cref="BDD"/>-based builder.</param>
+        /// <param name="rootBddNode">The root <see cref="BDD"/>-based node from the pattern.</param>
+        /// <param name="solver">The solver to use.</param>
+        /// <param name="matchTimeout">The match timeout to use.</param>
+        public static SymbolicRegexMatcher<TSet> Create(
+            int captureCount, RegexFindOptimizations findOptimizations,
+            SymbolicRegexBuilder<BDD> bddBuilder, SymbolicRegexNode<BDD> rootBddNode, ISolver<TSet> solver,
+            TimeSpan matchTimeout)
         {
-            Debug.Assert(_builder._minterms is not null);
-            return _builder._minterms[_partitions.GetMintermID(c)];
+            CharSetSolver charSetSolver = (CharSetSolver)bddBuilder._solver;
+
+            var builder = new SymbolicRegexBuilder<TSet>(solver, charSetSolver)
+            {
+                // The default constructor sets the following sets to empty; they're lazily-initialized when needed.
+                // Only if anchors are in the regex will these be set to non-empty.
+                _wordLetterForBoundariesSet = solver.ConvertFromBDD(bddBuilder._wordLetterForBoundariesSet, charSetSolver),
+                _newLineSet = solver.ConvertFromBDD(bddBuilder._newLineSet, charSetSolver)
+            };
+
+            // Convert the BDD-based AST to TSet-based AST
+            SymbolicRegexNode<TSet> rootNode = bddBuilder.Transform(rootBddNode, builder, (builder, bdd) => builder._solver.ConvertFromBDD(bdd, charSetSolver));
+            return new SymbolicRegexMatcher<TSet>(builder, rootNode, captureCount, findOptimizations, matchTimeout);
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
+        private SymbolicRegexMatcher(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> rootNode, int captureCount, RegexFindOptimizations findOptimizations, TimeSpan matchTimeout)
         {
-            Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
+            Debug.Assert(builder._solver is UInt64Solver or BitVectorSolver, $"Unsupported solver: {builder._solver}");
 
-            _pattern = sr;
-            _builder = sr._builder;
+            _pattern = rootNode;
+            _builder = builder;
             _checkTimeout = Regex.InfiniteMatchTimeout != matchTimeout;
             _timeout = (int)(matchTimeout.TotalMilliseconds + 0.5); // Round up, so it will be at least 1ms
-            _partitions = _builder._solver switch
-            {
-                BV64Algebra bv64 => bv64._classifier,
-                BVAlgebra bv => bv._classifier,
-                _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
-            };
-            _capsize = code.CapSize;
+            TSet[]? solverMinterms = builder._solver.GetMinterms();
+            Debug.Assert(solverMinterms is not null);
+            _minterms = solverMinterms;
+            // BitOperations.Log2 gives the integer floor of the log, so the +1 below either rounds up with non-power-of-two
+            // minterms or adds an extra bit with power-of-two minterms. The extra slot at index _minterms.Length is used to
+            // represent an \n occurring at the very end of input, for supporting the \Z anchor.
+            _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
+            _mintermClassifier = builder._solver is UInt64Solver bv64 ?
+                bv64._classifier :
+                ((BitVectorSolver)(object)builder._solver)._classifier;
+            _capsize = captureCount;
 
-            if (code.Tree.MinRequiredLength == code.FindOptimizations.MaxPossibleLength)
+            // Initialization for fields in SymbolicRegexMatcher.Automata.cs
+            _stateArray = new MatchingState<TSet>[InitialDfaStateCapacity];
+            _stateFlagsArray = new StateFlags[InitialDfaStateCapacity];
+            _dfaDelta = new int[InitialDfaStateCapacity << _mintermsLog];
+
+            // Initialize a lookup array for the character kinds of each minterm ID. This includes one "special" minterm
+            // ID _minterms.Length, which is used to represent a \n at the very end of input, and another ID -1,
+            // which is used to represent any position outside the bounds of the input.
+            _positionKinds = new uint[_minterms.Length + 2];
+            for (int mintermId = -1; mintermId < _positionKinds.Length - 1; mintermId++)
             {
-                _fixedMatchLength = code.Tree.MinRequiredLength;
+                _positionKinds[mintermId + 1] = CalculateMintermIdKind(mintermId);
             }
 
-            if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
-                code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
+            // Store the find optimizations that can be used to jump ahead to the next possible starting location.
+            // If there's a leading beginning anchor, the find optimizations are unnecessary on top of the DFA's
+            // handling for beginning anchors.
+            if (findOptimizations.IsUseful &&
+                findOptimizations.LeadingAnchor is not RegexNodeKind.Beginning)
             {
-                _findOpts = code.FindOptimizations;
+                _findOpts = findOptimizations;
             }
 
             // Determine the number of initial states. If there's no anchor, only the default previous
             // character kind 0 is ever going to be used for all initial states.
             int statesCount = _pattern._info.ContainsSomeAnchor ? CharKind.CharKindCount : 1;
 
+            // The loops below and how character kinds are calculated assume that the "general" character kind is zero
+            Debug.Assert(CharKind.General == 0);
+
             // Create the initial states for the original pattern.
-            var initialStates = new DfaMatchingState<TSetType>[statesCount];
-            for (uint i = 0; i < initialStates.Length; i++)
+            var initialStates = new MatchingState<TSet>[statesCount];
+            for (uint charKind = 0; charKind < initialStates.Length; charKind++)
             {
-                initialStates[i] = _builder.CreateState(_pattern, i, capturing: HasSubcaptures);
+                initialStates[charKind] = GetOrCreateState_NoLock(_pattern, charKind);
             }
             _initialStates = initialStates;
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrderAndLazyness();
-            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, unorderedPattern);
-            var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
-            for (uint i = 0; i < dotstarredInitialStates.Length; i++)
+            _dotStarredPattern = builder.CreateConcat(builder._anyStarLazy, _pattern);
+            var dotstarredInitialStates = new MatchingState<TSet>[statesCount];
+            for (uint charKind = 0; charKind < dotstarredInitialStates.Length; charKind++)
             {
                 // Used to detect if initial state was reentered,
                 // but observe that the behavior from the state may ultimately depend on the previous
                 // input char e.g. possibly causing nullability of \b or \B or of a start-of-line anchor,
                 // in that sense there can be several "versions" (not more than StateCount) of the initial state.
-                DfaMatchingState<TSetType> state = _builder.CreateState(_dotStarredPattern, i, capturing: false);
-                state.IsInitialState = true;
-                dotstarredInitialStates[i] = state;
+                dotstarredInitialStates[charKind] = GetOrCreateState_NoLock(_dotStarredPattern, charKind, isInitialState: true);
             }
             _dotstarredInitialStates = dotstarredInitialStates;
 
             // Create the reverse pattern (the original pattern in reverse order) and all of its
-            // initial states.
-            _reversePattern = unorderedPattern.Reverse();
-            var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
-            for (uint i = 0; i < reverseInitialStates.Length; i++)
+            // initial states. Also disable backtracking simulation to ensure the reverse path from
+            // the final state that was found is followed. Not doing so might cause the earliest
+            // starting point to not be found.
+            _reversePattern = builder.CreateDisableBacktrackingSimulation(_pattern.Reverse(builder));
+            var reverseInitialStates = new MatchingState<TSet>[statesCount];
+            for (uint charKind = 0; charKind < reverseInitialStates.Length; charKind++)
             {
-                reverseInitialStates[i] = _builder.CreateState(_reversePattern, i, capturing: false);
+                reverseInitialStates[charKind] = GetOrCreateState_NoLock(_reversePattern, charKind);
             }
             _reverseInitialStates = reverseInitialStates;
 
-            // Initialize our fast-lookup for determining the character kind of ASCII characters.
-            // This is only required when the pattern contains anchors, as otherwise there's only
-            // ever a single kind used.
-            if (_pattern._info.ContainsSomeAnchor)
+            // Maps a minterm ID to a character kind
+            uint CalculateMintermIdKind(int mintermId)
             {
-                var asciiCharKinds = new uint[128];
-                for (int i = 0; i < asciiCharKinds.Length; i++)
+                // Only patterns with anchors use anything except the general kind
+                if (_pattern._info.ContainsSomeAnchor)
                 {
-                    TSetType predicate2;
-                    uint charKind;
-
-                    if (i == '\n')
+                    // A minterm ID of -1 represents the positions before the first and after the last character
+                    // in the input.
+                    if (mintermId == -1)
                     {
-                        predicate2 = _builder._newLinePredicate;
-                        charKind = CharKind.Newline;
-                    }
-                    else
-                    {
-                        predicate2 = _builder._wordLetterPredicateForAnchors;
-                        charKind = CharKind.WordLetter;
+                        return CharKind.BeginningEnd;
                     }
 
-                    asciiCharKinds[i] = _builder._solver.And(GetMinterm(i), predicate2).Equals(_builder._solver.False) ? 0 : charKind;
-                }
-                _asciiCharKinds = asciiCharKinds;
-            }
-        }
+                    // A minterm ID of minterms.Length represents a \n at the very end of input, which is matched
+                    // by the \Z anchor.
+                    if ((uint)mintermId == (uint)_minterms.Length)
+                    {
+                        return CharKind.NewLineS;
+                    }
 
-        /// <summary>
-        /// Per thread data to be held by the regex runner and passed into every call to FindMatch. This is used to
-        /// avoid repeated memory allocation.
-        /// </summary>
-        internal sealed class PerThreadData
-        {
-            /// <summary>Maps used for the capturing third phase.</summary>
-            public readonly SparseIntMap<Registers>? Current, Next;
-            /// <summary>Registers used for the capturing third phase.</summary>
-            public readonly Registers InitialRegisters;
+                    TSet minterm = _minterms[mintermId];
 
-            public PerThreadData(int capsize)
-            {
-                // Only create data used for capturing mode if there are subcaptures
-                if (capsize > 1)
-                {
-                    Current = new();
-                    Next = new();
-                    InitialRegisters = new Registers(new int[capsize], new int[capsize]);
+                    // Examine the minterm to figure out its character kind
+                    if (_builder._newLineSet.Equals(minterm))
+                    {
+                        // The minterm is a new line character
+                        return CharKind.Newline;
+                    }
+                    else if (!Solver.IsEmpty(Solver.And(_builder._wordLetterForBoundariesSet, minterm)))
+                    {
+                        Debug.Assert(Solver.IsEmpty(Solver.And(Solver.Not(_builder._wordLetterForBoundariesSet), minterm)));
+                        // The minterm is a subset of word letters as considered by \b and \B
+                        return CharKind.WordLetter;
+                    }
                 }
+
+                // All other minterms belong to the general kind
+                return CharKind.General;
             }
         }
 
@@ -279,44 +281,516 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal PerThreadData CreatePerThreadData() => new PerThreadData(_capsize);
 
-        /// <summary>Interface for transitions used by the <see cref="Delta"/> method.</summary>
-        private interface ITransition
+        /// <summary>Look up what is the character kind given a position ID</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private uint GetPositionKind(int positionId) => _positionKinds[positionId + 1];
+
+        /// <summary>
+        /// Lookup the actual minterm based on its ID. Also get its character kind, which is a general categorization of
+        /// characters used for cheaply deciding the nullability of anchors.
+        /// </summary>
+        internal TSet GetMintermFromId(int mintermId)
         {
-#pragma warning disable CA2252 // This API requires opting into preview features
-            /// <summary>Find the next state given the current state and next character.</summary>
-            static abstract DfaMatchingState<TSetType> TakeTransition(SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm);
-#pragma warning restore CA2252
+            TSet[] minterms = _minterms;
+
+            // A minterm ID of minterms.Length represents a \n at the very end of input, which is matched
+            // by the \Z anchor.
+            if ((uint)mintermId >= (uint)minterms.Length)
+            {
+                return _builder._newLineSet;
+            }
+
+            // Otherwise look up the minterm from the array
+            return minterms[mintermId];
         }
 
-        /// <summary>Compute the target state for the source state and input[i] character.</summary>
-        /// <param name="input">input span</param>
-        /// <param name="i">The index into <paramref name="input"/> at which the target character lives.</param>
-        /// <param name="sourceState">The source state</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DfaMatchingState<TSetType> Delta<TTransition>(ReadOnlySpan<char> input, int i, DfaMatchingState<TSetType> sourceState) where TTransition : struct, ITransition
+        private uint GetCharKind<TInputReader>(ReadOnlySpan<char> input, int i)
+            where TInputReader : struct, IInputReader => !_pattern._info.ContainsSomeAnchor ?
+                CharKind.General : // The previous character kind is irrelevant when anchors are not used.
+                GetPositionKind(TInputReader.GetPositionId(this, input, i));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsMintermId(int positionId) => positionId >= 0;
+
+        private void CheckTimeout(long timeoutOccursAt)
         {
-            TSetType[]? minterms = _builder._minterms;
-            Debug.Assert(minterms is not null);
+            Debug.Assert(_checkTimeout);
+            if (Environment.TickCount64 >= timeoutOccursAt)
+            {
+                throw new RegexMatchTimeoutException(string.Empty, string.Empty, TimeSpan.FromMilliseconds(_timeout));
+            }
+        }
 
-            int c = input[i];
+        /// <summary>Find a match.</summary>
+        /// <param name="mode">The mode of execution based on the regex operation being performed.</param>
+        /// <param name="input">The input span</param>
+        /// <param name="startat">The position to start search in the input span.</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        public SymbolicMatch FindMatch(RegexRunnerMode mode, ReadOnlySpan<char> input, int startat, PerThreadData perThreadData)
+        {
+            Debug.Assert(startat >= 0 && startat <= input.Length, $"{nameof(startat)} == {startat}, {nameof(input.Length)} == {input.Length}");
+            Debug.Assert(perThreadData is not null);
 
-            int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
-                minterms.Length : // mintermId = minterms.Length represents \Z (last \n)
-                _partitions.GetMintermID(c);
+            // If we need to perform timeout checks, store the absolute timeout value.
+            long timeoutOccursAt = 0;
+            if (_checkTimeout)
+            {
+                // Using Environment.TickCount for efficiency instead of Stopwatch -- as in the non-DFA case.
+                timeoutOccursAt = Environment.TickCount64 + _timeout;
+            }
 
-            TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
-                minterms[mintermId] :
-                _builder._solver.False; // minterm=False represents \Z
+            // Phase 1:
+            // Determine the end point of the match.  The returned index is one-past-the-end index for the characters
+            // in the match.  Note that -1 is a valid end point for an empty match at the beginning of the input.
+            // It returns NoMatchExists (-2) when there is no match.
+            // As an example, consider the pattern a{1,3}(b*) run against an input of aacaaaabbbc: phase 1 will find
+            // the position of the last b: aacaaaabbbc.  It additionally records the position of the first a after
+            // the c as the low boundary for the starting position.
+            int matchStartLowBoundary, matchStartLengthMarker;
+            int matchEnd = (_pattern._info.ContainsLineAnchor, _findOpts is not null, _pattern._info.ContainsSomeAnchor) switch
+            {
+                (true, true, true) => FindEndPosition<FullInputReader, InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (true, true, false) => FindEndPosition<FullInputReader, InitialStateFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (true, false, true) => FindEndPosition<FullInputReader, NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (true, false, false) => FindEndPosition<FullInputReader, NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (false, true, true) => FindEndPosition<NoZAnchorInputReader, InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (false, true, false) => FindEndPosition<NoZAnchorInputReader, InitialStateFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (false, false, true) => FindEndPosition<NoZAnchorInputReader, NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (false, false, false) => FindEndPosition<NoZAnchorInputReader, NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+            };
 
-            return TTransition.TakeTransition(this, sourceState, mintermId, minterm);
+            // If there wasn't a match, we're done.
+            if (matchEnd == NoMatchExists)
+            {
+                return SymbolicMatch.NoMatch;
+            }
+
+            // A match exists. If we don't need further details, e.g. because IsMatch was used (and thus we don't
+            // need the exact bounds of the match, captures, etc.), we're done.
+            if (mode == RegexRunnerMode.ExistenceRequired)
+            {
+                return SymbolicMatch.MatchExists;
+            }
+
+            // Phase 2:
+            // Match backwards through the input matching against the reverse of the pattern, looking for the earliest
+            // start position.  That tells us the actual starting position of the match.  We can skip this phase if we
+            // recorded a fixed-length marker for the portion of the pattern that matched, as we can then jump that
+            // exact number of positions backwards.  Continuing the previous example, phase 2 will walk backwards from
+            // that last b until it finds the 4th a: aaabbbc.
+            int matchStart;
+            if (matchStartLengthMarker >= 0)
+            {
+                matchStart = matchEnd - matchStartLengthMarker;
+            }
+            else
+            {
+                Debug.Assert(matchEnd >= startat - 1);
+                matchStart = matchEnd < startat ?
+                    startat : (_pattern._info.ContainsLineAnchor, _pattern._info.ContainsSomeAnchor) switch
+                    {
+                        (true, true) => FindStartPosition<FullInputReader, FullNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
+                        (true, false) => FindStartPosition<FullInputReader, NoAnchorsNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
+                        (false, true) => FindStartPosition<NoZAnchorInputReader, FullNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
+                        (false, false) => FindStartPosition<NoZAnchorInputReader, NoAnchorsNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData),
+                    };
+            }
+
+            // Phase 3:
+            // If there are no subcaptures (or if they're not needed), the matching process is done.  For patterns with subcaptures
+            // (captures other than the top-level capture for the whole match), we need to do an additional pass to find their bounds.
+            // Continuing for the previous example, phase 3 will be executed for the characters inside the match, aaabbbc,
+            // and will find associate the one capture (b*) with it's match: bbb.
+            if (!HasSubcaptures || mode < RegexRunnerMode.FullMatchRequired)
+            {
+                return new SymbolicMatch(matchStart, matchEnd - matchStart);
+            }
+            else
+            {
+                Registers endRegisters = _pattern._info.ContainsLineAnchor ?
+                    FindSubcaptures<FullInputReader>(input, matchStart, matchEnd, perThreadData) :
+                    FindSubcaptures<NoZAnchorInputReader>(input, matchStart, matchEnd, perThreadData);
+                return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
+            }
+        }
+
+        /// <summary>Performs the initial Phase 1 match to find the end position of the match, or first final state if this is an isMatch call.</summary>
+        /// <param name="input">The input text.</param>
+        /// <param name="pos">The starting position in <paramref name="input"/>.</param>
+        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
+        /// <param name="mode">The mode of execution based on the regex operation being performed.</param>
+        /// <param name="initialStatePos">The last position the initial state of <see cref="_dotStarredPattern"/> was visited before the end position was found.</param>
+        /// <param name="matchLength">Length of the match if there's a match; otherwise, -1.</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        /// <returns>
+        /// A one-past-the-end index into input for the preferred match, or first final state position if isMatch is true, or NoMatchExists if no match exists.
+        /// </returns>
+        private int FindEndPosition<TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, out int matchLength, PerThreadData perThreadData)
+            where TInputReader : struct, IInputReader
+            where TFindOptimizationsHandler : struct, IInitialStateHandler
+            where TNullabilityHandler : struct, INullabilityHandler
+        {
+            initialStatePos = pos;
+            int initialStatePosCandidate = pos;
+
+            var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind<TInputReader>(input, pos - 1)]);
+
+            int endPos = NoMatchExists;
+            int endStateId = -1;
+
+            while (true)
+            {
+                // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
+                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop. Note that
+                // the timeout exists not to provide perfect guarantees around execution time but rather as a mitigation against
+                // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
+                // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
+                // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
+                const int CharsPerTimeoutCheck = 1_000;
+                ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
+                    input.Slice(0, pos + CharsPerTimeoutCheck) :
+                    input;
+
+                bool done = currentState.NfaState is not null ?
+                    FindEndPositionDeltas<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(inputForInnerLoop, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
+                    FindEndPositionDeltas<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(inputForInnerLoop, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
+
+                // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
+                // there is no more input available, then the whole search is done.
+                if (done || pos >= input.Length)
+                {
+                    break;
+                }
+
+                // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
+                // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
+                // input available.
+                if (pos < inputForInnerLoop.Length)
+                {
+                    // Because there was still more input available, a failure to transition in DFA mode must be the cause
+                    // of the early exit. Upgrade to NFA mode.
+                    NfaMatchingState nfaState = perThreadData.NfaState;
+                    nfaState.InitializeFrom(this, GetState(currentState.DfaStateId));
+                    currentState = new CurrentState(nfaState);
+                }
+
+                // Check for a timeout before continuing.
+                if (_checkTimeout)
+                {
+                    CheckTimeout(timeoutOccursAt);
+                }
+            }
+
+            // Check whether there's a fixed-length marker for the current state.  If there is, we can
+            // use that length to optimize subsequent matching phases.
+            matchLength = endStateId > 0 ? GetState(endStateId).FixedLength(GetCharKind<TInputReader>(input, endPos)) : -1;
+            return endPos;
         }
 
         /// <summary>
-        /// Stores additional data for tracking capture start and end positions.
+        /// Workhorse inner loop for <see cref="FindEndPosition"/>.  Consumes the <paramref name="input"/> character by character,
+        /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
+        /// lazily building out the graph as needed.
         /// </summary>
         /// <remarks>
-        /// The NFA simulation based third phase has one of these for each current state in the current set of live states.
+        /// The <typeparamref name="TStateHandler"/> supplies the actual transitioning logic, controlling whether processing is
+        /// performed in DFA mode or in NFA mode.  However, it expects <paramref name="state"/> to be configured to match,
+        /// so for example if <typeparamref name="TStateHandler"/> is a <see cref="DfaStateHandler"/>, it expects the <paramref name="state"/>'s
+        /// <see cref="CurrentState.DfaStateId"/> to be non-negative and its <see cref="CurrentState.NfaState"/> to be null; vice versa for
+        /// <see cref="NfaStateHandler"/>.
         /// </remarks>
+        /// <returns>
+        /// A positive value if iteration completed because it reached a deadend state or nullable state and the call is an isMatch.
+        /// 0 if iteration completed because we reached an initial state.
+        /// A negative value if iteration completed because we ran out of input or we failed to transition.
+        /// </returns>
+        private bool FindEndPositionDeltas<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, RegexRunnerMode mode,
+                ref int posRef, ref CurrentState state, ref int endPosRef, ref int endStateIdRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+            where TStateHandler : struct, IStateHandler
+            where TInputReader : struct, IInputReader
+            where TFindOptimizationsHandler : struct, IInitialStateHandler
+            where TNullabilityHandler : struct, INullabilityHandler
+        {
+            // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
+            int pos = posRef;
+            int endPos = endPosRef;
+            int endStateId = endStateIdRef;
+            int initialStatePos = initialStatePosRef;
+            int initialStatePosCandidate = initialStatePosCandidateRef;
+            try
+            {
+                // Loop through each character in the input, transitioning from state to state for each.
+                while (true)
+                {
+                    StateFlags flags = TStateHandler.GetStateFlags(this, in state);
+
+                    // Check if currentState represents an initial state. If it does, call into any possible find optimizations
+                    // to hopefully more quickly find the next possible starting location.
+                    if (flags.IsInitial())
+                    {
+                        if (!TFindOptimizationsHandler.TryFindNextStartingPosition<TInputReader>(this, input, ref state, ref pos))
+                        {
+                            return true;
+                        }
+
+                        initialStatePosCandidate = pos;
+                    }
+
+                    // If the state is a dead end, such that we can't transition anywhere else, end the search.
+                    if (flags.IsDeadend())
+                    {
+                        return true;
+                    }
+
+                    int positionId = TInputReader.GetPositionId(this, input, pos);
+
+                    // If the state is nullable for the next character, meaning it accepts the empty string,
+                    // we found a potential end state.
+                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
+                    {
+                        endPos = pos;
+                        endStateId = TStateHandler.ExtractNullableCoreStateId(this, in state, input, pos);
+                        initialStatePos = initialStatePosCandidate;
+
+                        // A match is known to exist.  If that's all we need to know, we're done.
+                        if (mode == RegexRunnerMode.ExistenceRequired)
+                        {
+                            return true;
+                        }
+                    }
+
+                    // If there is more input available try to transition with the next character.
+                    if (!IsMintermId(positionId) || !TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    {
+                        return false;
+                    }
+
+                    // We successfully transitioned, so update our current input index to match.
+                    pos++;
+                }
+            }
+            finally
+            {
+                // Write back the local copies of the ref values.
+                posRef = pos;
+                endPosRef = endPos;
+                endStateIdRef = endStateId;
+                initialStatePosRef = initialStatePos;
+                initialStatePosCandidateRef = initialStatePosCandidate;
+            }
+        }
+
+        /// <summary>
+        /// Phase 2 of matching. From a found ending position, walk in reverse through the input using the reverse pattern to find the
+        /// start position of match.
+        /// </summary>
+        /// <remarks>
+        /// The start position is known to exist; this function just needs to determine exactly what it is.
+        /// We need to find the earliest (lowest index) starting position that's not earlier than <paramref name="matchStartBoundary"/>.
+        /// </remarks>
+        /// <param name="input">The input text.</param>
+        /// <param name="i">The ending position to walk backwards from. <paramref name="i"/> points one past the last character of the match.</param>
+        /// <param name="matchStartBoundary">The initial starting location discovered in phase 1, a point we must not walk earlier than.</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        /// <returns>The found starting position for the match.</returns>
+        private int FindStartPosition<TInputReader, TNullabilityHandler>(ReadOnlySpan<char> input, int i, int matchStartBoundary, PerThreadData perThreadData)
+            where TInputReader : struct, IInputReader
+            where TNullabilityHandler : struct, INullabilityHandler
+        {
+            Debug.Assert(i >= 0, $"{nameof(i)} == {i}");
+            Debug.Assert(matchStartBoundary >= 0 && matchStartBoundary <= input.Length, $"{nameof(matchStartBoundary)} == {matchStartBoundary}");
+            Debug.Assert(i >= matchStartBoundary, $"Expected {i} >= {matchStartBoundary}.");
+
+            // Get the starting state for the reverse pattern. This depends on previous character (which, because we're
+            // going backwards, is character number i).
+            var currentState = new CurrentState(_reverseInitialStates[GetCharKind<TInputReader>(input, i)]);
+
+            int lastStart = -1; // invalid sentinel value
+
+            // Walk backwards to the furthest accepting state of the reverse pattern but no earlier than matchStartBoundary.
+            while (true)
+            {
+                // Run the DFA or NFA traversal backwards from the current point using the current state.
+                bool done = currentState.NfaState is not null ?
+                    FindStartPositionDeltas<NfaStateHandler, TInputReader, TNullabilityHandler>(input, ref i, matchStartBoundary, ref currentState, ref lastStart) :
+                    FindStartPositionDeltas<DfaStateHandler, TInputReader, TNullabilityHandler>(input, ref i, matchStartBoundary, ref currentState, ref lastStart);
+
+                // If we found the starting position, we're done.
+                if (done)
+                {
+                    break;
+                }
+
+                // We didn't find the starting position but we did exit out of the backwards traversal.  That should only happen
+                // if we were unable to transition, which should only happen if we were in DFA mode and exceeded our graph size.
+                // Upgrade to NFA mode and continue.
+                Debug.Assert(i >= matchStartBoundary);
+                NfaMatchingState nfaState = perThreadData.NfaState;
+                nfaState.InitializeFrom(this, GetState(currentState.DfaStateId));
+                currentState = new CurrentState(nfaState);
+            }
+
+            Debug.Assert(lastStart != -1, "We expected to find a starting position but didn't.");
+            return lastStart;
+        }
+
+        /// <summary>
+        /// Workhorse inner loop for <see cref="FindStartPosition"/>.  Consumes the <paramref name="input"/> character by character in reverse,
+        /// starting at <paramref name="i"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
+        /// lazily building out the graph as needed.
+        /// </summary>
+        private bool FindStartPositionDeltas<TStateHandler, TInputReader, TNullabilityHandler>(ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState state, ref int lastStart)
+            where TStateHandler : struct, IStateHandler
+            where TInputReader : struct, IInputReader
+            where TNullabilityHandler : struct, INullabilityHandler
+        {
+            // To avoid frequent reads/writes to ref values, make and operate on local copies, which we then copy back once before returning.
+            int pos = i;
+            try
+            {
+                // Loop backwards through each character in the input, transitioning from state to state for each.
+                while (true)
+                {
+                    StateFlags flags = TStateHandler.GetStateFlags(this, in state);
+
+                    int positionId = TInputReader.GetPositionId(this, input, pos - 1);
+
+                    // If the state accepts the empty string, we found a valid starting position.  Record it and keep going,
+                    // since we're looking for the earliest one to occur within bounds.
+                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
+                    {
+                        lastStart = pos;
+                    }
+
+                    // If we are past the start threshold or if the state is a dead end, bail; we should have already
+                    // found a valid starting location.
+                    if (pos <= startThreshold || flags.IsDeadend())
+                    {
+                        Debug.Assert(lastStart != -1);
+                        return true;
+                    }
+
+                    // Try to transition with the next character, the one before the current position.
+                    if (!TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    {
+                        // Return false to indicate the search didn't finish.
+                        return false;
+                    }
+
+                    // Since we successfully transitioned, update our current index to match the fact that we consumed the previous character in the input.
+                    pos--;
+                }
+            }
+            finally
+            {
+                // Write back the local copies of the ref values.
+                i = pos;
+            }
+        }
+
+
+        /// <summary>Run the pattern on a match to record the capture starts and ends.</summary>
+        /// <param name="input">input span</param>
+        /// <param name="i">inclusive start position</param>
+        /// <param name="iEnd">exclusive end position</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        /// <returns>the final register values, which indicate capture starts and ends</returns>
+        private Registers FindSubcaptures<TInputReader>(ReadOnlySpan<char> input, int i, int iEnd, PerThreadData perThreadData)
+            where TInputReader : struct, IInputReader
+        {
+            // Pick the correct start state based on previous character kind.
+            MatchingState<TSet> initialState = _initialStates[GetCharKind<TInputReader>(input, i - 1)];
+
+            Registers initialRegisters = perThreadData.InitialRegisters;
+
+            // Initialize registers with -1, which means "not seen yet"
+            Array.Fill(initialRegisters.CaptureStarts, -1);
+            Array.Fill(initialRegisters.CaptureEnds, -1);
+
+            // Use two maps from state IDs to register values for the current and next set of states.
+            // Note that these maps use insertion order, which is used to maintain priorities between states in a way
+            // that matches the order the backtracking engines visit paths.
+            Debug.Assert(perThreadData.Current is not null && perThreadData.Next is not null);
+            SparseIntMap<Registers> current = perThreadData.Current, next = perThreadData.Next;
+            current.Clear();
+            next.Clear();
+
+            ForEachNfaState(initialState.Node, initialState.PrevCharKind, (current, initialRegisters),
+                static (int nfaId, (SparseIntMap<Registers> Current, Registers InitialRegisters) args) =>
+                    args.Current.Add(nfaId, args.InitialRegisters.Clone()));
+
+            while ((uint)i < (uint)iEnd)
+            {
+                Debug.Assert(next.Count == 0);
+
+                // i is guaranteed to be within bounds, so the position ID is a minterm ID
+                int mintermId = TInputReader.GetPositionId(this, input, i);
+
+                foreach ((int sourceId, Registers sourceRegisters) in current.Values)
+                {
+                    // Get or create the transitions
+                    int offset = DeltaOffset(sourceId, mintermId);
+                    (int, DerivativeEffect[])[] transitions = _capturingNfaDelta[offset] ??
+                        CreateNewCapturingTransition(sourceId, mintermId, offset);
+
+                    // Take the transitions in their prioritized order
+                    for (int j = 0; j < transitions.Length; ++j)
+                    {
+                        (int targetStateId, DerivativeEffect[] effects) = transitions[j];
+
+                        // Try to add the state and handle the case where it didn't exist before. If the state already
+                        // exists, then the transition can be safely ignored, as the existing state was generated by a
+                        // higher priority transition.
+                        if (next.Add(targetStateId, out int index))
+                        {
+                            // Avoid copying the registers on the last transition from this state, reusing the registers instead
+                            Registers newRegisters = j != transitions.Length - 1 ? sourceRegisters.Clone() : sourceRegisters;
+                            newRegisters.ApplyEffects(effects, i);
+                            next.Update(index, targetStateId, newRegisters);
+
+                            int coreStateId = GetCoreStateId(targetStateId);
+                            StateFlags flags = _stateFlagsArray[coreStateId];
+                            Debug.Assert(!flags.IsDeadend());
+
+                            if (flags.IsNullable() || (flags.CanBeNullable() && GetState(coreStateId).IsNullableFor(GetCharKind<TInputReader>(input, i + 1))))
+                            {
+                                // No lower priority transitions from this or other source states are taken because the
+                                // backtracking engines would return the match ending here.
+                                goto BreakNullable;
+                            }
+                        }
+                    }
+                }
+
+            BreakNullable:
+                // Swap the state sets and prepare for the next character
+                SparseIntMap<Registers> tmp = current;
+                current = next;
+                next = tmp;
+                next.Clear();
+                i++;
+            }
+
+            Debug.Assert(current.Count > 0);
+            foreach (var (endStateId, endRegisters) in current.Values)
+            {
+                MatchingState<TSet> endState = GetState(GetCoreStateId(endStateId));
+                if (endState.IsNullableFor(GetCharKind<TInputReader>(input, iEnd)))
+                {
+                    // Apply effects for finishing at the stored end state
+                    endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
+                        CharKind.Context(endState.PrevCharKind, GetCharKind<TInputReader>(input, iEnd)), (Registers: endRegisters, Pos: iEnd));
+                    return endRegisters;
+                }
+            }
+
+            Debug.Fail("No nullable state found in the set of end states");
+            return default;
+        }
+
+        /// <summary>Stores additional data for tracking capture start and end positions.</summary>
+        /// <remarks>The NFA simulation based third phase has one of these for each current state in the current set of live states.</remarks>
         internal struct Registers
         {
             public Registers(int[] captureStarts, int[] captureEnds)
@@ -334,7 +808,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             /// <param name="effects">list of effects to be applied</param>
             /// <param name="pos">the current input position to record</param>
-            public void ApplyEffects(List<DerivativeEffect> effects, int pos)
+            public void ApplyEffects(DerivativeEffect[] effects, int pos)
             {
                 foreach (DerivativeEffect effect in effects)
                 {
@@ -388,617 +862,462 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>Transition for Brzozowski-style derivatives (i.e. a DFA).</summary>
-        private readonly struct BrzozowskiTransition : ITransition
+        /// <summary>
+        /// Per thread data to be held by the regex runner and passed into every call to FindMatch. This is used to
+        /// avoid repeated memory allocation.
+        /// </summary>
+        internal sealed class PerThreadData
+        {
+            public readonly NfaMatchingState NfaState;
+            /// <summary>Maps used for the capturing third phase.</summary>
+            public readonly SparseIntMap<Registers>? Current, Next;
+            /// <summary>Registers used for the capturing third phase.</summary>
+            public readonly Registers InitialRegisters;
+
+            public PerThreadData(int capsize)
+            {
+                NfaState = new NfaMatchingState();
+
+                // Only create data used for capturing mode if there are subcaptures
+                if (capsize > 1)
+                {
+                    Current = new SparseIntMap<Registers>();
+                    Next = new SparseIntMap<Registers>();
+                    InitialRegisters = new Registers(new int[capsize], new int[capsize]);
+                }
+            }
+        }
+
+        /// <summary>Stores the state that represents a current state in NFA mode.</summary>
+        /// <remarks>The entire state is composed of a list of individual states.</remarks>
+        /// <remarks>New instances should only be created once per runner.</remarks>
+        internal sealed class NfaMatchingState
+        {
+            /// <summary>Ordered set used to store the current NFA states.</summary>
+            /// <remarks>The value is unused.  The type is used purely for its keys.</remarks>
+            public SparseIntMap<int> NfaStateSet = new();
+            /// <summary>Scratch set to swap with <see cref="NfaStateSet"/> on each transition.</summary>
+            /// <remarks>
+            /// On each transition, <see cref="NfaStateSetScratch"/> is cleared and filled with the next
+            /// states computed from the current states in <see cref="NfaStateSet"/>, and then the sets
+            /// are swapped so the scratch becomes the current and the current becomes the scratch.
+            /// </remarks>
+            public SparseIntMap<int> NfaStateSetScratch = new();
+
+            /// <summary>Resets this NFA state to represent the supplied DFA state.</summary>
+            /// <param name="matcher"></param>
+            /// <param name="dfaMatchingState">The DFA state to use to initialize the NFA state.</param>
+            public void InitializeFrom(SymbolicRegexMatcher<TSet> matcher, MatchingState<TSet> dfaMatchingState)
+            {
+                NfaStateSet.Clear();
+
+                // If the DFA state is a union of multiple DFA states, loop through all of them
+                // adding an NFA state for each.
+                matcher.ForEachNfaState(dfaMatchingState.Node, dfaMatchingState.PrevCharKind, NfaStateSet,
+                    static (int nfaId, SparseIntMap<int> nfaStateSet) => nfaStateSet.Add(nfaId, out _));
+            }
+        }
+
+        /// <summary>Represents a current state in a DFA or NFA graph walk while processing a regular expression.</summary>
+        /// <remarks>This is a discriminated union between a DFA state and an NFA state. One and only one will be non-null.</remarks>
+        private struct CurrentState
+        {
+            /// <summary>Initializes the state as a DFA state.</summary>
+            public CurrentState(MatchingState<TSet> dfaState)
+            {
+                DfaStateId = dfaState.Id;
+                NfaState = null;
+            }
+
+            /// <summary>Initializes the state as an NFA state.</summary>
+            public CurrentState(NfaMatchingState nfaState)
+            {
+                DfaStateId = -1;
+                NfaState = nfaState;
+            }
+
+            /// <summary>The DFA state.</summary>
+            public int DfaStateId;
+            /// <summary>The NFA state.</summary>
+            public NfaMatchingState? NfaState;
+        }
+
+        /// <summary>Represents a set of routines for operating over a <see cref="CurrentState"/>.</summary>
+        private interface IStateHandler
+        {
+            public static abstract bool StartsWithLineAnchor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state);
+            public static abstract bool IsNullableFor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind);
+            public static abstract int ExtractNullableCoreStateId(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, ReadOnlySpan<char> input, int pos);
+            public static abstract int FixedLength(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind);
+            public static abstract bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId);
+            public static abstract StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state);
+        }
+
+        /// <summary>An <see cref="IStateHandler"/> for operating over <see cref="CurrentState"/> instances configured as DFA states.</summary>
+        private readonly struct DfaStateHandler : IStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static DfaMatchingState<TSetType> TakeTransition(
-                SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentState, int mintermId, TSetType minterm)
-            {
-                SymbolicRegexBuilder<TSetType> builder = matcher._builder;
-                Debug.Assert(builder._delta is not null);
+            public static bool StartsWithLineAnchor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state) => matcher.GetState(state.DfaStateId).StartsWithLineAnchor;
 
-                int offset = (currentState.Id << builder._mintermsCount) | mintermId;
-                return Volatile.Read(ref builder._delta[offset]) ?? matcher.CreateNewTransition(currentState, minterm, offset);
-            }
-        }
-
-        /// <summary>Transition for Antimirov-style derivatives (i.e. an NFA).</summary>
-        private readonly struct AntimirovTransition : ITransition
-        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static DfaMatchingState<TSetType> TakeTransition(
-                SymbolicRegexMatcher<TSetType> matcher, DfaMatchingState<TSetType> currentStates, int mintermId, TSetType minterm)
+            public static bool IsNullableFor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind) => matcher.GetState(state.DfaStateId).IsNullableFor(nextCharKind);
+
+            /// <summary>Gets the preferred DFA state for nullability. In DFA mode this is just the state itself.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int ExtractNullableCoreStateId(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, ReadOnlySpan<char> input, int pos) => state.DfaStateId;
+
+            /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int FixedLength(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind) => matcher.GetState(state.DfaStateId).FixedLength(nextCharKind);
+
+            /// <summary>Take the transition to the next DFA state.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId)
             {
-                if (currentStates.Node.Kind != SymbolicRegexNodeKind.Or)
+                Debug.Assert(state.DfaStateId > 0, $"Expected non-zero {nameof(state.DfaStateId)}.");
+                Debug.Assert(state.NfaState is null, $"Expected null {nameof(state.NfaState)}.");
+
+                // Use the mintermId for the character being read to look up which state to transition to.
+                // If that state has already been materialized, move to it, and we're done. If that state
+                // hasn't been materialized, try to create it; if we can, move to it, and we're done.
+                int dfaOffset = matcher.DeltaOffset(state.DfaStateId, mintermId);
+                int nextStateId = matcher._dfaDelta[dfaOffset];
+                if (nextStateId > 0)
                 {
-                    // If the state isn't an or (a disjunction), then we're in only a single state, and can use Brzozowski.
-                    return BrzozowskiTransition.TakeTransition(matcher, currentStates, mintermId, minterm);
-                }
-
-                SymbolicRegexBuilder<TSetType> builder = matcher._builder;
-                Debug.Assert(builder._delta is not null);
-
-                SymbolicRegexNode<TSetType> union = builder._nothing;
-                uint kind = 0;
-
-                // Produce the new list of states from the current list, considering transitions from members one at a time.
-                Debug.Assert(currentStates.Node._alts is not null);
-                foreach (SymbolicRegexNode<TSetType> oneState in currentStates.Node._alts)
-                {
-                    DfaMatchingState<TSetType> nextStates = builder.CreateState(oneState, currentStates.PrevCharKind, capturing: false);
-
-                    int offset = (nextStates.Id << builder._mintermsCount) | mintermId;
-                    DfaMatchingState<TSetType> p = Volatile.Read(ref builder._delta[offset]) ?? matcher.CreateNewTransition(nextStates, minterm, offset);
-
-                    // Observe that if p.Node is an Or it will be flattened.
-                    union = builder.Or(union, p.Node);
-
-                    // kind is just the kind of the partition.
-                    kind = p.PrevCharKind;
-                }
-
-                return builder.CreateState(union, kind, capturing: false, antimirov: true);
-            }
-        }
-
-        /// <summary>Critical region for defining a new transition</summary>
-        private DfaMatchingState<TSetType> CreateNewTransition(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
-        {
-            Debug.Assert(_builder._delta is not null);
-            lock (this)
-            {
-                // check if meanwhile delta[offset] has become defined possibly by another thread
-                DfaMatchingState<TSetType> p = _builder._delta[offset];
-                if (p is null)
-                {
-                    // this is the only place in code where the Next method is called in the matcher
-                    _builder._delta[offset] = p = state.Next(minterm);
-
-                    // switch to antimirov mode if the maximum bound has been reached
-                    if (p.Id == AntimirovThreshold)
-                    {
-                        _builder._antimirov = true;
-                    }
-                }
-
-                return p;
-            }
-        }
-
-        private List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)> CreateNewCapturingTransitions(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
-        {
-            Debug.Assert(_builder._capturingDelta is not null);
-            lock (this)
-            {
-                // check if meanwhile delta[offset] has become defined possibly by another thread
-                List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)> p = _builder._capturingDelta[offset];
-                if (p is null)
-                {
-                    // this is the only place in code where the Next method is called in the matcher
-                    p = state.AntimirovEagerNextWithEffects(minterm);
-                    Volatile.Write(ref _builder._capturingDelta[offset], p);
-                }
-
-                return p;
-            }
-        }
-
-        private void DoCheckTimeout(int timeoutOccursAt)
-        {
-            // This logic is identical to RegexRunner.DoCheckTimeout, with the exception of check skipping. RegexRunner calls
-            // DoCheckTimeout potentially on every iteration of a loop, whereas this calls it only once per transition.
-            int currentMillis = Environment.TickCount;
-            if (currentMillis >= timeoutOccursAt && (0 <= timeoutOccursAt || 0 >= currentMillis))
-            {
-                throw new RegexMatchTimeoutException(string.Empty, string.Empty, TimeSpan.FromMilliseconds(_timeout));
-            }
-        }
-
-        /// <summary>Find a match.</summary>
-        /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
-        /// <param name="input">The input span</param>
-        /// <param name="startat">The position to start search in the input span.</param>
-        /// <param name="perThreadData">Per thread data reused between calls.</param>
-        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat, PerThreadData perThreadData)
-        {
-            // If we need to perform timeout checks, store the absolute timeout value.
-            int timeoutOccursAt = 0;
-            if (_checkTimeout)
-            {
-                // Using Environment.TickCount for efficiency instead of Stopwatch -- as in the non-DFA case.
-                timeoutOccursAt = Environment.TickCount + (int)(_timeout + 0.5);
-            }
-
-            // If we're starting at the end of the input, we don't need to do any work other than
-            // determine whether an empty match is valid, i.e. whether the pattern is "nullable"
-            // given the kinds of characters at and just before the end.
-            if (startat == input.Length)
-            {
-                uint prevKind = GetCharKind(input, startat - 1);
-                uint nextKind = GetCharKind(input, startat);
-                return _pattern.IsNullableFor(CharKind.Context(prevKind, nextKind)) ?
-                    new SymbolicMatch(startat, 0) :
-                    SymbolicMatch.NoMatch;
-            }
-
-            // Phase 1:
-            // Determine whether there is a match by finding the first final state position.  This only tells
-            // us whether there is a match but needn't give us the longest possible match. This may return -1 as
-            // a legitimate value when the initial state is nullable and startat == 0. It returns NoMatchExists (-2)
-            // when there is no match.  As an example, consider the pattern a{5,10}b* run against an input
-            // of aaaaaaaaaaaaaaabbbc: phase 1 will find the position of the first b: aaaaaaaaaaaaaaab.
-            int i = FindFinalStatePosition(input, startat, timeoutOccursAt, out int matchStartLowBoundary, out int matchStartLengthMarker);
-
-            // If there wasn't a match, we're done.
-            if (i == NoMatchExists)
-            {
-                return SymbolicMatch.NoMatch;
-            }
-
-            // A match exists. If we don't need further details, because IsMatch was used (and thus we don't
-            // need the exact bounds of the match, captures, etc.), we're done.
-            if (isMatch)
-            {
-                return SymbolicMatch.QuickMatch;
-            }
-
-            // Phase 2:
-            // Match backwards through the input matching against the reverse of the pattern, looking for the earliest
-            // start position.  That tells us the actual starting position of the match.  We can skip this phase if we
-            // recorded a fixed-length marker for the portion of the pattern that matched, as we can then jump that
-            // exact number of positions backwards.  Continuing the previous example, phase 2 will walk backwards from
-            // that first b until it finds the 6th a: aaaaaaaaaab.
-            int matchStart;
-            if (matchStartLengthMarker >= 0)
-            {
-                matchStart = i - matchStartLengthMarker + 1;
-            }
-            else
-            {
-                Debug.Assert(i >= startat - 1);
-                matchStart = i < startat ?
-                    startat :
-                    FindStartPosition(input, i, matchStartLowBoundary);
-            }
-
-            // Phase 3:
-            // Match again, this time from the computed start position, to find the latest end position.  That start
-            // and end then represent the bounds of the match.  If the pattern has subcaptures (captures other than
-            // the top-level capture for the whole match), we need to do more work to compute their exact bounds, so we
-            // take a faster path if captures aren't required.  Further, if captures aren't needed, and if any possible
-            // match of the whole pattern is a fixed length, we can skip this phase as well, just using that fixed-length
-            // to compute the ending position based on the starting position.  Continuing the previous example, phase 3
-            // will walk forwards from the 6th a until it finds the end of the match: aaaaaaaaaabbb.
-            if (!HasSubcaptures)
-            {
-                if (_fixedMatchLength.HasValue)
-                {
-                    return new SymbolicMatch(matchStart, _fixedMatchLength.GetValueOrDefault());
-                }
-
-                int matchEnd = FindEndPosition(input, matchStart);
-                return new SymbolicMatch(matchStart, matchEnd + 1 - matchStart);
-            }
-            else
-            {
-                int matchEnd = FindEndPositionCapturing(input, matchStart, out Registers endRegisters, perThreadData);
-                return new SymbolicMatch(matchStart, matchEnd + 1 - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
-            }
-        }
-
-        /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
-        /// <param name="input">input span</param>
-        /// <param name="i">inclusive start position</param>
-        /// <returns>the match end position</returns>
-        private int FindEndPosition(ReadOnlySpan<char> input, int i)
-        {
-            int i_end = input.Length;
-
-            // Pick the correct start state based on previous character kind.
-            uint prevCharKind = GetCharKind(input, i - 1);
-            DfaMatchingState<TSetType> state = _initialStates[prevCharKind];
-
-            if (state.IsNullable(GetCharKind(input, i)))
-            {
-                // Empty match exists because the initial state is accepting.
-                i_end = i - 1;
-            }
-
-            while (i < input.Length)
-            {
-                int j = Math.Min(input.Length, i + AntimirovThresholdLeeway);
-                bool done = _builder._antimirov ?
-                    FindEndPositionDeltas<AntimirovTransition>(input, ref i, j, ref state, ref i_end) :
-                    FindEndPositionDeltas<BrzozowskiTransition>(input, ref i, j, ref state, ref i_end);
-
-                if (done)
-                {
-                    break;
-                }
-            }
-
-            Debug.Assert(i_end < input.Length);
-            return i_end;
-        }
-
-        /// <summary>Inner loop for FindEndPosition parameterized by an ITransition type.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindEndPositionDeltas<TTransition>(ReadOnlySpan<char> input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int i_end) where TTransition : struct, ITransition
-        {
-            do
-            {
-                q = Delta<TTransition>(input, i, q);
-
-                if (q.IsNullable(GetCharKind(input, i + 1)))
-                {
-                    // Accepting state has been reached. Record the position.
-                    i_end = i;
-                }
-                else if (q.IsDeadend)
-                {
-                    // Non-accepting sink state (deadend) has been reached in the original pattern.
-                    // So the match ended when the last i_end was updated.
+                    // There was an existing DFA transition to some state. Move to it and
+                    // return that we're still operating as a DFA and can keep going.
+                    state.DfaStateId = nextStateId;
                     return true;
                 }
 
-                i++;
-            }
-            while (i < j);
+                if (matcher.TryCreateNewTransition(matcher.GetState(state.DfaStateId), mintermId, dfaOffset, checkThreshold: true, out MatchingState<TSet>? nextState))
+                {
+                    // We were able to create a new DFA transition to some state. Move to it and
+                    // return that we're still operating as a DFA and can keep going.
+                    state.DfaStateId = nextState.Id;
+                    return true;
+                }
 
-            return false;
+                return false;
+            }
+
+            /// <summary>
+            /// Gets context independent state information:
+            /// - whether this is an initial state
+            /// - whether this is a dead-end state, meaning there are no transitions possible out of the state
+            /// - whether this state is unconditionally nullable
+            /// - whether this state may be contextually nullable
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state)
+                => matcher._stateFlagsArray[state.DfaStateId];
         }
 
-        /// <summary>Find match end position using the original pattern, end position is known to exist. This version also produces captures.</summary>
-        /// <param name="input">input span</param>
-        /// <param name="i">inclusive start position</param>
-        /// <param name="resultRegisters">out parameter for the final register values, which indicate capture starts and ends</param>
-        /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns>the match end position</returns>
-        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int i, out Registers resultRegisters, PerThreadData perThreadData)
+        /// <summary>An <see cref="IStateHandler"/> for operating over <see cref="CurrentState"/> instances configured as NFA states.</summary>
+        private readonly struct NfaStateHandler : IStateHandler
         {
-            int i_end = input.Length;
-            Registers endRegisters = default(Registers);
-            DfaMatchingState<TSetType>? endState = null;
-
-            // Pick the correct start state based on previous character kind.
-            uint prevCharKind = GetCharKind(input, i - 1);
-            DfaMatchingState<TSetType> state = _initialStates[prevCharKind];
-
-            Registers initialRegisters = perThreadData.InitialRegisters;
-            // Initialize registers with -1, which means "not seen yet"
-            Array.Fill(initialRegisters.CaptureStarts, -1);
-            Array.Fill(initialRegisters.CaptureEnds, -1);
-
-            if (state.IsNullable(GetCharKind(input, i)))
+            /// <summary>Check if any underlying core state starts with a line anchor.</summary>
+            public static bool StartsWithLineAnchor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state)
             {
-                // Empty match exists because the initial state is accepting.
-                i_end = i - 1;
-                endRegisters.Assign(initialRegisters);
-                endState = state;
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                {
+                    if (matcher.GetState(matcher.GetCoreStateId(nfaState.Key)).StartsWithLineAnchor)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
-            // Use two maps from state IDs to register values for the current and next set of states.
-            // Note that these maps use insertion order, which is used to maintain priorities between states in a way
-            // that matches the order the backtracking engines visit paths.
-            Debug.Assert(perThreadData.Current is not null && perThreadData.Next is not null);
-            SparseIntMap<Registers> current = perThreadData.Current, next = perThreadData.Next;
-            current.Clear();
-            next.Clear();
-            current.Add(state.Id, initialRegisters);
-
-            while ((uint)i < (uint)input.Length)
+            /// <summary>Check if any underlying core state is nullable in the context of the next character kind.</summary>
+            public static bool IsNullableFor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind)
             {
-                Debug.Assert(next.Count == 0);
-
-                TSetType[]? minterms = _builder._minterms;
-                Debug.Assert(minterms is not null);
-
-                int c = input[i];
-                int normalMintermId = _partitions.GetMintermID(c);
-
-                foreach ((int sourceId, SymbolicRegexMatcher<TSetType>.Registers sourceRegisters) in current.Values)
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
                 {
-                    Debug.Assert(_builder._capturingStateArray is not null);
-                    DfaMatchingState<TSetType> sourceState = _builder._capturingStateArray[sourceId];
-
-                    // Find the minterm, handling the special case for the last \n
-                    int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
-                        minterms.Length : normalMintermId; // mintermId = minterms.Length represents \Z (last \n)
-                    TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
-                        minterms[mintermId] :
-                        _builder._solver.False; // minterm=False represents \Z
-
-                    // Get or create the transitions
-                    int offset = (sourceId << _builder._mintermsCount) | mintermId;
-                    Debug.Assert(_builder._capturingDelta is not null);
-                    List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>? transitions = Volatile.Read(ref _builder._capturingDelta[offset])
-                        ?? CreateNewCapturingTransitions(sourceState, minterm, offset);
-
-                    // Take the transitions in their prioritized order
-                    for (int j = 0; j < transitions.Count; ++j)
+                    if (matcher.GetState(matcher.GetCoreStateId(nfaState.Key)).IsNullableFor(nextCharKind))
                     {
-                        (DfaMatchingState<TSetType> targetState, List<DerivativeEffect> effects) = transitions[j];
-                        if (targetState.IsDeadend)
-                            continue;
+                        return true;
+                    }
+                }
 
-                        // Try to add the state and handle the case where it didn't exist before. If the state already
-                        // exists, then the transition can be safely ignored, as the existing state was generated by a
-                        // higher priority transition.
-                        if (next.Add(targetState.Id, out int index))
+                return false;
+            }
+
+            /// <summary>Gets the preferred DFA state for nullability. In DFA mode this is just the state itself.</summary>
+            public static int ExtractNullableCoreStateId(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, ReadOnlySpan<char> input, int pos)
+            {
+                uint nextCharKind = matcher.GetCharKind<FullInputReader>(input, pos);
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                {
+                    MatchingState<TSet> coreState = matcher.GetState(matcher.GetCoreStateId(nfaState.Key));
+                    if (coreState.IsNullableFor(nextCharKind))
+                    {
+                        return coreState.Id;
+                    }
+                }
+
+                Debug.Fail("ExtractNullableCoreStateId should only be called in nullable state/context.");
+                return -1;
+            }
+
+            /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
+            public static int FixedLength(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind)
+            {
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                {
+                    MatchingState<TSet> coreState = matcher.GetState(matcher.GetCoreStateId(nfaState.Key));
+                    if (coreState.IsNullableFor(nextCharKind))
+                    {
+                        return coreState.FixedLength(nextCharKind);
+                    }
+                }
+
+                Debug.Fail("FixedLength should only be called in nullable state/context.");
+                return -1;
+            }
+
+            /// <summary>Take the transition to the next NFA state.</summary>
+            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId)
+            {
+                Debug.Assert(state.DfaStateId < 0, $"Expected negative {nameof(state.DfaStateId)}.");
+                Debug.Assert(state.NfaState is not null, $"Expected non-null {nameof(state.NfaState)}.");
+
+                NfaMatchingState nfaState = state.NfaState!;
+
+                // Grab the sets, swapping the current active states set with the scratch set.
+                SparseIntMap<int> nextStates = nfaState.NfaStateSetScratch;
+                SparseIntMap<int> sourceStates = nfaState.NfaStateSet;
+                nfaState.NfaStateSet = nextStates;
+                nfaState.NfaStateSetScratch = sourceStates;
+
+                // Compute the set of all unique next states from the current source states and the mintermId.
+                nextStates.Clear();
+                if (sourceStates.Count == 1)
+                {
+                    // We have a single source state.  We know its next states are already deduped,
+                    // so we can just add them directly to the destination states list.
+                    foreach (int nextState in GetNextStates(sourceStates.Values[0].Key, mintermId, matcher))
+                    {
+                        nextStates.Add(nextState, out _);
+                        // Nothing is required for backtracking simulation here, since there's just one state so the
+                        // transition itself already handles it.
+                    }
+                }
+                else
+                {
+                    // We have multiple source states, so we need to potentially dedup across each of
+                    // their next states.  For each source state, get its next states, adding each into
+                    // our set (which exists purely for deduping purposes), and if we successfully added
+                    // to the set, then add the known-unique state to the destination list.
+                    uint nextCharKind = matcher.GetPositionKind(mintermId);
+                    foreach (ref KeyValuePair<int, int> sourceState in CollectionsMarshal.AsSpan(sourceStates.Values))
+                    {
+                        foreach (int nextState in GetNextStates(sourceState.Key, mintermId, matcher))
                         {
-                            // Avoid copying the registers on the last transition from this state, reusing the registers instead
-                            Registers newRegisters = j != transitions.Count - 1 ? sourceRegisters.Clone() : sourceRegisters;
-                            newRegisters.ApplyEffects(effects, i);
-                            next.Update(index, targetState.Id, newRegisters);
-                            if (targetState.IsNullable(GetCharKind(input, i + 1)))
-                            {
-                                // Accepting state has been reached. Record the position.
-                                i_end = i;
-                                endRegisters.Assign(newRegisters);
-                                endState = targetState;
-                                // No lower priority transitions from this or other source states are taken because the
-                                // backtracking engines would return the match ending here.
-                                goto BreakNullable;
-                            }
+                            nextStates.Add(nextState, out _);
+                        }
+
+                        // To simulate backtracking, if a source state is nullable then no further transitions are taken
+                        // as the backtracking engines would prefer the match ending here.
+                        int coreStateId = matcher.GetCoreStateId(sourceState.Key);
+                        StateFlags flags = matcher._stateFlagsArray[coreStateId];
+                        if (flags.SimulatesBacktracking() &&
+                            (flags.IsNullable() || (flags.CanBeNullable() && matcher.GetState(coreStateId).IsNullableFor(nextCharKind))))
+                        {
+                            break;
                         }
                     }
                 }
 
-            BreakNullable:
-                if (next.Count == 0)
+                return true;
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static int[] GetNextStates(int sourceState, int mintermId, SymbolicRegexMatcher<TSet> matcher)
                 {
-                    // If all states died out some nullable state must have been seen before
-                    goto FINISH;
-                }
+                    // Calculate the offset into the NFA transition table.
+                    int nfaOffset = matcher.DeltaOffset(sourceState, mintermId);
 
-                // Swap the state sets and prepare for the next character
-                SparseIntMap<SymbolicRegexMatcher<TSetType>.Registers> tmp = current;
-                current = next;
-                next = tmp;
-                next.Clear();
-                i++;
-            }
-
-        FINISH:
-            Debug.Assert(i_end != input.Length && endState is not null);
-            // Apply effects for finishing at the stored end state
-            endState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i_end + 1),
-                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)));
-            resultRegisters = endRegisters;
-            return i_end;
-        }
-
-        /// <summary>Walk back in reverse using the reverse pattern to find the start position of match, start position is known to exist.</summary>
-        /// <param name="input">the input span</param>
-        /// <param name="i">position to start walking back from, i points at the last character of the match</param>
-        /// <param name="match_start_boundary">do not pass this boundary when walking back</param>
-        /// <returns></returns>
-        private int FindStartPosition(ReadOnlySpan<char> input, int i, int match_start_boundary)
-        {
-            // Fetch the correct start state for the reverse pattern.
-            // This depends on previous character --- which, because going backwards, is character number i+1.
-            uint prevKind = GetCharKind(input, i + 1);
-            DfaMatchingState<TSetType> q = _reverseInitialStates[prevKind];
-
-            if (i == -1)
-            {
-                Debug.Assert(q.IsNullable(GetCharKind(input, i)), "we reached the beginning of the input, thus the state q must be accepting");
-                return 0;
-            }
-
-            int last_start = -1;
-            if (q.IsNullable(GetCharKind(input, i)))
-            {
-                // The whole prefix of the reverse pattern was in reverse a prefix of the original pattern,
-                // for example when the original pattern is concrete word such as "abc"
-                last_start = i + 1;
-            }
-
-            // Walk back to the accepting state of the reverse pattern
-            while (i >= match_start_boundary)
-            {
-                int j = Math.Max(match_start_boundary, i - AntimirovThresholdLeeway);
-                bool done = _builder._antimirov ?
-                    FindStartPositionDeltas<AntimirovTransition>(input, ref i, j, ref q, ref last_start) :
-                    FindStartPositionDeltas<BrzozowskiTransition>(input, ref i, j, ref q, ref last_start);
-
-                if (done)
-                {
-                    break;
+                    // Get the next NFA state.
+                    return matcher._nfaDelta[nfaOffset] ?? matcher.CreateNewNfaTransition(sourceState, mintermId, nfaOffset);
                 }
             }
 
-            Debug.Assert(last_start != -1);
-            return last_start;
-        }
-
-        // Inner loop for FindStartPosition parameterized by an ITransition type.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindStartPositionDeltas<TTransition>(ReadOnlySpan<char> input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int last_start) where TTransition : struct, ITransition
-        {
-            do
+            /// <summary>
+            /// Gets context independent state information:
+            /// - whether this is an initial state
+            /// - whether this is a dead-end state, meaning there are no transitions possible out of the state
+            /// - whether this state is unconditionally nullable
+            /// - whether this state may be contextually nullable
+            /// </summary>
+            /// <remarks>
+            /// In NFA mode:
+            /// - an empty set of states means that it is a dead end
+            /// - no set of states qualifies as an initial state. This could be made more accurate, but with that the
+            ///   matching logic would need to be updated to handle the fact that <see cref="InitialStateFindOptimizationsHandler"/>
+            ///   can transition back to a DFA state.
+            /// </remarks>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state)
             {
-                q = Delta<TTransition>(input, i, q);
-
-                // Reached a deadend state, thus the earliest match start point must have occurred already.
-                if (q.IsNothing)
+                SparseIntMap<int> stateSet = state.NfaState!.NfaStateSet;
+                if (stateSet.Count == 0)
                 {
-                    return true;
+                    // In NFA state sets dead ends are never included. Instead an empty set of states represents a dead end.
+                    return StateFlags.IsDeadendFlag;
                 }
-
-                if (q.IsNullable(GetCharKind(input, i - 1)))
+                else
                 {
-                    // Earliest start point so far. This must happen at some point
-                    // or else the dot-star pattern would not have reached a final state after match_start_boundary.
-                    last_start = i;
-                }
-
-                i -= 1;
-            }
-            while (i > j);
-
-            return false;
-        }
-
-        /// <summary>Returns NoMatchExists if no match exists. Returns -1 when i=0 and the initial state is nullable.</summary>
-        /// <param name="input">given input span</param>
-        /// <param name="i">start position</param>
-        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
-        /// <param name="initialStateIndex">last position the initial state of <see cref="_dotStarredPattern"/> was visited</param>
-        /// <param name="matchLength">length of match when positive</param>
-        private int FindFinalStatePosition(ReadOnlySpan<char> input, int i, int timeoutOccursAt, out int initialStateIndex, out int matchLength)
-        {
-            // Get the correct start state of the dot-star pattern, which in general depends on the previous character kind in the input.
-            uint prevCharKindId = GetCharKind(input, i - 1);
-            DfaMatchingState<TSetType> q = _dotstarredInitialStates[prevCharKindId];
-            initialStateIndex = i;
-
-            if (q.IsNothing)
-            {
-                // If q is nothing then it is a deadend from the beginning this happens for example when the original
-                // regex started with start anchor and prevCharKindId is not Start
-                matchLength = -1;
-                return NoMatchExists;
-            }
-
-            if (q.IsNullable(GetCharKind(input, i)))
-            {
-                // The initial state is nullable in this context so at least an empty match exists.
-                // The last position of the match is i-1 because the match is empty.
-                // This value is -1 if i == 0.
-                matchLength = -1;
-                return i - 1;
-            }
-
-            matchLength = -1;
-
-            // Search for a match end position within input[i..k-1]
-            while (i < input.Length)
-            {
-                if (q.IsInitialState)
-                {
-                    // i_q0_A1 is the most recent position in the input when the dot-star pattern is in the initial state
-                    initialStateIndex = i;
-
-                    if (_findOpts is RegexFindOptimizations findOpts)
+                    // Build the flags for the set of states by taking a bitwise Or of all the per-state flags and then
+                    // masking out the irrelevant ones. This works because IsNullable and CanBeNullable should be true if
+                    // they are true for any state in the set; SimulatesBacktracking is true for all the states if
+                    // it is true for any state (since it is a phase-wide property); and all other flags are masked out.
+                    StateFlags flags = 0;
+                    foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(stateSet.Values))
                     {
-                        // Find the first position i that matches with some likely character.
-                        if (!findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, input.Length))
-                        {
-                            // no match was found
-                            return NoMatchExists;
-                        }
-
-                        initialStateIndex = i;
-
-                        // the start state must be updated
-                        // to reflect the kind of the previous character
-                        // when anchors are not used, q will remain the same state
-                        q = _dotstarredInitialStates[GetCharKind(input, i - 1)];
-                        if (q.IsNothing)
-                        {
-                            return NoMatchExists;
-                        }
+                        flags |= matcher._stateFlagsArray[matcher.GetCoreStateId(nfaState.Key)];
                     }
-                }
-
-                int result;
-                int j = Math.Min(input.Length, i + AntimirovThresholdLeeway);
-                bool done = _builder._antimirov ?
-                    FindFinalStatePositionDeltas<AntimirovTransition>(input, j, ref i, ref q, ref matchLength, out result) :
-                    FindFinalStatePositionDeltas<BrzozowskiTransition>(input, j, ref i, ref q, ref matchLength, out result);
-
-                if (done)
-                {
-                    return result;
-                }
-
-                if (_checkTimeout)
-                {
-                    DoCheckTimeout(timeoutOccursAt);
+                    return flags & (StateFlags.IsNullableFlag | StateFlags.CanBeNullableFlag | StateFlags.SimulatesBacktrackingFlag);
                 }
             }
-
-            //no match was found
-            return NoMatchExists;
-        }
-
-        /// <summary>Inner loop for FindFinalStatePosition parameterized by an ITransition type.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindFinalStatePositionDeltas<TTransition>(ReadOnlySpan<char> input, int j, ref int i, ref DfaMatchingState<TSetType> q, ref int matchLength, out int result) where TTransition : struct, ITransition
-        {
-            do
-            {
-                // Make the transition based on input[i].
-                q = Delta<TTransition>(input, i, q);
-
-                if (q.IsNullable(GetCharKind(input, i + 1)))
-                {
-                    matchLength = q.FixedLength;
-                    result = i;
-                    return true;
-                }
-
-                if (q.IsNothing)
-                {
-                    // q is a deadend state so any further search is meaningless
-                    result = NoMatchExists;
-                    return true;
-                }
-
-                // continue from the next character
-                i++;
-            }
-            while (i < j && !q.IsInitialState);
-
-            result = 0;
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private uint GetCharKind(ReadOnlySpan<char> input, int i)
-        {
-            return !_pattern._info.ContainsSomeAnchor ?
-                CharKind.General : // The previous character kind is irrelevant when anchors are not used.
-                GetCharKindWithAnchor(input, i);
-
-            uint GetCharKindWithAnchor(ReadOnlySpan<char> input, int i)
-            {
-                Debug.Assert(_asciiCharKinds is not null);
-
-                if ((uint)i >= (uint)input.Length)
-                {
-                    return CharKind.StartStop;
-                }
-
-                char nextChar = input[i];
-                if (nextChar == '\n')
-                {
-                    return
-                        _builder._newLinePredicate.Equals(_builder._solver.False) ? 0 : // ignore \n
-                        i == 0 || i == input.Length - 1 ? CharKind.NewLineS : // very first or very last \n. Detection of very first \n is needed for rev(\Z).
-                        CharKind.Newline;
-                }
-
-                uint[] asciiCharKinds = _asciiCharKinds;
-                return
-                    nextChar < (uint)asciiCharKinds.Length ? asciiCharKinds[nextChar] :
-                    _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterPredicateForAnchors).Equals(_builder._solver.False) ? 0 : //apply the wordletter predicate to compute the kind of the next character
-                    CharKind.WordLetter;
-            }
-        }
 
 #if DEBUG
-        public void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA)
-        {
-            var graph = new DGML.RegexAutomaton<TSetType>(this, bound, addDotStar, inReverse, asNFA);
-            var dgml = new DGML.DgmlWriter(writer, hideStateInfo, maxLabelLength, onlyDFAinfo);
-            dgml.Write(graph);
+            /// <summary>Undo a previous call to <see cref="TryTakeTransition"/>.</summary>
+            public static void UndoTransition(ref CurrentState state)
+            {
+                Debug.Assert(state.DfaStateId < 0, $"Expected negative {nameof(state.DfaStateId)}.");
+                Debug.Assert(state.NfaState is not null, $"Expected non-null {nameof(state.NfaState)}.");
+
+                NfaMatchingState nfaState = state.NfaState!;
+
+                // Swap the current active states set with the scratch set to undo a previous transition.
+                SparseIntMap<int> nextStates = nfaState.NfaStateSet;
+                SparseIntMap<int> sourceStates = nfaState.NfaStateSetScratch;
+                nfaState.NfaStateSet = sourceStates;
+                nfaState.NfaStateSetScratch = nextStates;
+
+                // Sanity check: if there are any next states, then there must have been some source states.
+                Debug.Assert(nextStates.Count == 0 || sourceStates.Count > 0);
+            }
+#endif
         }
 
-        public IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative) =>
-            new SymbolicRegexSampler<TSetType>(_pattern, randomseed, negative).GenerateRandomMembers(k);
-#endif
+        /// <summary>
+        /// Interface for mapping positions in the input to position IDs, which capture all the information necessary to
+        /// both take transitions and decide nullability. For positions of valid characters that are handled normally,
+        /// these IDs coincide with minterm IDs (i.e. indices to <see cref="_minterms"/>). Positions outside the bounds
+        /// of the input are mapped to -1. Optionally, an end-of-line as the very last character in the input may be
+        /// mapped to _minterms.Length for supporting the \Z anchor.
+        /// </summary>
+        private interface IInputReader
+        {
+            public static abstract int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos);
+        }
+
+        /// <summary>This reader omits the special handling of \n for the \Z anchor.</summary>
+        private readonly struct NoZAnchorInputReader : IInputReader
+        {
+            public static int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos) =>
+                (uint)pos >= (uint)input.Length ? -1 : matcher._mintermClassifier.GetMintermID(input[pos]);
+        }
+
+        /// <summary>This reader includes full handling of an \n as the last character of input for the \Z anchor.</summary>
+        private readonly struct FullInputReader : IInputReader
+        {
+            public static int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos)
+            {
+                if ((uint)pos >= (uint)input.Length)
+                    return -1;
+
+                int c = input[pos];
+
+                // Find the minterm, handling the special case for the last \n for states that start with a relevant anchor
+                return c == '\n' && pos == input.Length - 1 ?
+                    matcher._minterms.Length : // mintermId = minterms.Length represents an \n at the very end of input
+                    matcher._mintermClassifier.GetMintermID(c);
+            }
+        }
+
+        /// <summary>
+        /// Interface for optimizations to accelerate search from initial states.
+        /// </summary>
+        private interface IInitialStateHandler
+        {
+            public static abstract bool TryFindNextStartingPosition<TInputReader>(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
+                where TInputReader : struct, IInputReader;
+        }
+
+        /// <summary>
+        /// No-op handler for when there are no initial state optimizations to apply.
+        /// </summary>
+        private readonly struct NoOptimizationsInitialStateHandler : IInitialStateHandler
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryFindNextStartingPosition<TInputReader>(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
+                where TInputReader : struct, IInputReader
+            {
+                // return true to indicate that the current position is a possible starting position
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Handler for when a <see cref="RegexFindOptimizations"/> instance is available.
+        /// </summary>
+        private readonly struct InitialStateFindOptimizationsHandler : IInitialStateHandler
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryFindNextStartingPosition<TInputReader>(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
+                where TInputReader : struct, IInputReader
+            {
+                // Find the first position that matches with some likely character.
+                if (!matcher._findOpts!.TryFindNextStartingPosition(input, ref pos, 0))
+                {
+                    // No match exists
+                    return false;
+                }
+
+                // Update the starting state based on where TryFindNextStartingPosition moved us to.
+                // As with the initial starting state, if it's a dead end, no match exists.
+                state = new CurrentState(matcher._dotstarredInitialStates[matcher.GetCharKind<TInputReader>(input, pos - 1)]);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Interface for evaluating nullability of states.
+        /// </summary>
+        private interface INullabilityHandler
+        {
+            public static abstract bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
+                    where TStateHandler : struct, IStateHandler;
+        }
+
+        /// <summary>
+        /// Specialized nullability handler for patterns without any anchors.
+        /// </summary>
+        private readonly struct NoAnchorsNullabilityHandler : INullabilityHandler
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
+                where TStateHandler : struct, IStateHandler
+            {
+                Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
+                return flags.IsNullable();
+            }
+        }
+
+        /// <summary>
+        /// Nullability handler that will work for any pattern.
+        /// </summary>
+        private readonly struct FullNullabilityHandler : INullabilityHandler
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
+                where TStateHandler : struct, IStateHandler
+            {
+                return flags.IsNullable() || (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
+            }
+        }
     }
 }

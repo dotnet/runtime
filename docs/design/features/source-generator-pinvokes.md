@@ -80,7 +80,7 @@ An example of how the previous P/Invoke snippet could be transformed is below. T
 `Program.cs` (User written code)
 
 ``` CSharp
-/* A */ [GeneratedDllImportAttribute("Kernel32.dll")]
+/* A */ [LibraryImportAttribute("Kernel32.dll")]
 /* B */ partial static bool QueryPerformanceCounter(out long lpPerformanceCount);
 ...
 long count;
@@ -89,7 +89,7 @@ long count;
 
 Observe point (A), the new attribute. This attribute provides an indication to a Source Generator that the following declaration represents a native export that will be called via a generated stub.
 
-During the source generation process the metadata in the `GeneratedDllImportAttribute` (A) would be used to generate a stub and invoke the desired native export. Also note that the method declaration is marked `partial`. The Source Generator would then generate the source for this partial method. The invocation (C) remains unchanged to that of usage involving `DllImportAttribute`.
+During the source generation process the metadata in the `LibraryImportAttribute` (A) would be used to generate a stub and invoke the desired native export. Also note that the method declaration is marked `partial`. The Source Generator would then generate the source for this partial method. The invocation (C) remains unchanged to that of usage involving `DllImportAttribute`.
 
 `Stubs.g.cs` (Source Generator code)
 
@@ -117,11 +117,11 @@ In this system it is not defined how marshaling of specific types would be perfo
 
 In the current Source Generator design modification of any user written code is not permitted. This includes modification of any non-functional metadata (e.g. Attributes). The above design therefore introduces a new attribute and signature for consumption of a native export. In order to consume Source Generators, users would need to update their source and adoption could be stunted by this requirement.
 
-As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](https://github.com/dotnet/roslyn/blob/master/docs/wiki/Getting-Started-Writing-a-Custom-Analyzer-&-Code-Fix.md) to aid the developer in converting `DllImportAttribute` marked functions to use `GeneratedDllImportAttribute`. Additionally, the function signature would need to be updated to remove the `extern` keyword and add the `partial` keyword to the function and potentially the enclosing class.
+As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](https://github.com/dotnet/roslyn/blob/master/docs/wiki/Getting-Started-Writing-a-Custom-Analyzer-&-Code-Fix.md) to aid the developer in converting `DllImportAttribute` marked functions to use `LibraryImportAttribute`. Additionally, the function signature would need to be updated to remove the `extern` keyword and add the `partial` keyword to the function and potentially the enclosing class.
 
 ## Proposed API
 
-Given the Source Generator restrictions and potential confusion about overloaded attribute usage, the new `GeneratedDllImportAttribute` attribute mirrors the existing `DllImportAttribute`.
+Given the Source Generator restrictions and potential confusion about overloaded attribute usage, the new `LibraryImportAttribute` attribute mirrors the existing `DllImportAttribute`.
 
 ``` CSharp
 namespace System.Runtime.InteropServices
@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices
     /// arguments instead of relying on the CLR to generate an IL Stub at runtime.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class GeneratedDllImportAttribute : Attribute
+    public sealed class LibraryImportAttribute : Attribute
     {
         /// <summary>
         /// Enables or disables best-fit mapping behavior when converting Unicode characters

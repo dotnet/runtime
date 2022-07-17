@@ -3,14 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
-
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
 
 namespace System.Net
 {
@@ -137,11 +134,13 @@ namespace System.Net
             switch (credential.Policy)
             {
                 case EncryptionPolicy.RequireEncryption:
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
                     // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
                     // since AllowNoEncryption intersect OS-supported isn't nothing,
                     // let it pass.
                     break;
+#pragma warning restore SYSLIB0040
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
             }
@@ -339,8 +338,10 @@ namespace System.Net
             SslProtocols.Ssl2,
             SslProtocols.Ssl3,
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             SslProtocols.Tls,
             SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
             SslProtocols.Tls12
         };
 

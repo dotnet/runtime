@@ -367,7 +367,7 @@ namespace System.Configuration
                                 // remove the LocationSectionRecord from the list
                                 _parent._locationSections.RemoveAt(i);
 
-                                if (locationSubPathInputs == null) locationSubPathInputs = new ArrayList();
+                                locationSubPathInputs ??= new ArrayList();
 
                                 locationSubPathInputs.Add(locationSectionRecord);
                             }
@@ -408,8 +408,7 @@ namespace System.Configuration
 
                                         // First add all indirect inputs per configKey to a local list.
                                         // We will sort all lists after the while loop.
-                                        if (indirectLocationInputs == null)
-                                            indirectLocationInputs = new Dictionary<string, List<SectionInput>>(1);
+                                        indirectLocationInputs ??= new Dictionary<string, List<SectionInput>>(1);
 
                                         string configKey = locationSectionRecord.SectionXmlInfo.ConfigKey;
 
@@ -655,7 +654,7 @@ namespace System.Configuration
                         else
                         {
                             // Remove the entire section record
-                            if (removes == null) removes = new List<SectionRecord>();
+                            removes ??= new List<SectionRecord>();
 
                             removes.Add(sectionRecord);
                         }
@@ -717,12 +716,9 @@ namespace System.Configuration
                 }
 
                 // Add implicit sections to the factory list
-                if (factoryList == null)
-                {
-                    // But if factoryList isn't found in this config, we still try to
-                    // add implicit sections to an empty factoryList.
-                    factoryList = new Hashtable();
-                }
+                // But if factoryList isn't found in this config, we still try to
+                // add implicit sections to an empty factoryList.
+                factoryList ??= new Hashtable();
 
                 AddImplicitSections(factoryList);
                 factoryRecord = (FactoryRecord)factoryList[configKey];
@@ -803,7 +799,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -848,7 +844,7 @@ namespace System.Configuration
                     //
                     // It WILL be common in web scenarios for there to be
                     // deep hierarchies of config files, most of which have
-                    // sparse input. Therefore we do not want to retreive a
+                    // sparse input. Therefore we do not want to retrieve a
                     // factory record if it is not necessary to do so, as
                     // it would always lead to an order N-squared operation,
                     // where N is the depth of the config hierarchy.
@@ -1062,7 +1058,7 @@ namespace System.Configuration
                         // Cache the results.
                         if (cacheResults)
                         {
-                            if (sectionRecord == null) sectionRecord = EnsureSectionRecord(configKey, true);
+                            sectionRecord ??= EnsureSectionRecord(configKey, true);
 
                             sectionRecord.Result = tmpResult;
                             if (getRuntimeObject) sectionRecord.ResultRuntimeObject = tmpResultRuntimeObject;
@@ -1075,7 +1071,7 @@ namespace System.Configuration
                 }
                 catch
                 {
-                    // Ignore the error if we are attempting to retreive
+                    // Ignore the error if we are attempting to retrieve
                     // the last known good configuration.
                     if (!getLkg) throw;
                 }
@@ -1189,7 +1185,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -1740,10 +1736,7 @@ namespace System.Configuration
                 }
             }
 
-            if (factoryRecord.Factory == null)
-            {
-                factoryRecord.Factory = rootFactoryRecord.Factory;
-            }
+            factoryRecord.Factory ??= rootFactoryRecord.Factory;
 
             isRootDeclaredHere = ReferenceEquals(this, rootConfigRecord);
 
@@ -2917,8 +2910,7 @@ namespace System.Configuration
                             }
 
                             // Check if the definition is allowed
-                            if (factoryRecord == null)
-                                factoryRecord = FindFactoryRecord(locationSectionRecord.ConfigKey, true);
+                            factoryRecord ??= FindFactoryRecord(locationSectionRecord.ConfigKey, true);
 
                             if (factoryRecord.HasErrors) continue;
 
@@ -3143,8 +3135,14 @@ namespace System.Configuration
 
             lock (this)
             {
-                if (_sectionRecords == null) _sectionRecords = new Hashtable();
-                else sectionRecord = GetSectionRecord(configKey, permitErrors);
+                if (_sectionRecords == null)
+                {
+                    _sectionRecords = new Hashtable();
+                }
+                else
+                {
+                    sectionRecord = GetSectionRecord(configKey, permitErrors);
+                }
 
                 if (sectionRecord == null)
                 {
@@ -3181,12 +3179,12 @@ namespace System.Configuration
         // per record by creating the table on demand.
         protected Hashtable EnsureFactories()
         {
-            return _factoryRecords ?? (_factoryRecords = new Hashtable());
+            return _factoryRecords ??= new Hashtable();
         }
 
         private ArrayList EnsureLocationSections()
         {
-            return _locationSections ?? (_locationSections = new ArrayList());
+            return _locationSections ??= new ArrayList();
         }
 
         internal static string NormalizeConfigSource(string configSource, IConfigErrorInfo errorInfo)
@@ -3252,10 +3250,7 @@ namespace System.Configuration
 
                 if (_flags[SupportsChangeNotifications])
                 {
-                    if (ConfigStreamInfo.CallbackDelegate == null)
-                        ConfigStreamInfo.CallbackDelegate = OnStreamChanged;
-
-                    callbackDelegate = ConfigStreamInfo.CallbackDelegate;
+                    callbackDelegate = ConfigStreamInfo.CallbackDelegate ??= OnStreamChanged;
                 }
             }
 
@@ -3413,7 +3408,7 @@ namespace System.Configuration
         // Requires the hierarchy lock to be acquired (hl)
         internal void HlAddChild(string configName, BaseConfigurationRecord child)
         {
-            if (_children == null) _children = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            _children ??= new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             _children.Add(configName, child);
         }
@@ -3654,7 +3649,7 @@ namespace System.Configuration
             // (e.g. if we're in machine.config)
             if (!_parent.IsRootConfig) return;
 
-            if (factoryList == null) factoryList = EnsureFactories();
+            factoryList ??= EnsureFactories();
 
             // Look to see if we already have a factory for "configProtectedData"
             FactoryRecord factoryRecord = (FactoryRecord)factoryList[ReservedSectionProtectedConfiguration];
@@ -3695,7 +3690,7 @@ namespace System.Configuration
                 StringUtil.StartsWithOrdinal(name, "lock");
         }
 
-        protected class ConfigRecordStreamInfo
+        protected sealed class ConfigRecordStreamInfo
         {
             private HybridDictionary _streamInfos;
 
@@ -3714,7 +3709,7 @@ namespace System.Configuration
 
             internal StreamChangeCallback CallbackDelegate { get; set; }
 
-            internal HybridDictionary StreamInfos => _streamInfos ?? (_streamInfos = new HybridDictionary(true));
+            internal HybridDictionary StreamInfos => _streamInfos ??= new HybridDictionary(true);
 
             internal bool HasStreamInfos => _streamInfos != null;
 

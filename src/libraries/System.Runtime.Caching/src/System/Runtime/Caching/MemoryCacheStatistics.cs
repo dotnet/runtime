@@ -37,7 +37,7 @@ namespace System.Runtime.Caching
         private CacheMemoryMonitor _cacheMemoryMonitor;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _configSupported => !OperatingSystem.IsBrowser();
 #else
@@ -348,10 +348,7 @@ namespace System.Runtime.Caching
                 {
                     Thread.Sleep(100);
                 }
-                if (_cacheMemoryMonitor != null)
-                {
-                    _cacheMemoryMonitor.Dispose();
-                }
+                _cacheMemoryMonitor?.Dispose();
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.
             }
         }

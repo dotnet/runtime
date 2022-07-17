@@ -288,7 +288,7 @@ namespace System.Data.OleDb
             {
                 if (ADP.IsDirection(parameters[i], ParameterDirection.Input))
                 {
-                    columnBindings[i].SetOffset(parameters[i].Offset);
+                    columnBindings[i].SetOffset(OleDbParameter.Offset);
                     columnBindings[i].Value(parameters[i].GetCoercedValue());
                 }
                 else
@@ -353,21 +353,14 @@ namespace System.Data.OleDb
                 ColumnBinding[] columnBindings = this.ColumnBindings();
                 for (int i = 0; i < columnBindings.Length; ++i)
                 {
-                    ColumnBinding binding = columnBindings[i];
-                    if (null != binding)
-                    {
-                        binding.ResetValue();
-                    }
+                    columnBindings[i]?.ResetValue();
                 }
             }
         }
 
         internal void CloseFromConnection()
         {
-            if (null != _rowBinding)
-            {
-                _rowBinding.CloseFromConnection();
-            }
+            _rowBinding?.CloseFromConnection();
             Dispose();
         }
 
@@ -386,10 +379,7 @@ namespace System.Data.OleDb
 
             RowBinding? rowBinding = _rowBinding;
             _rowBinding = null;
-            if (null != rowBinding)
-            {
-                rowBinding.Dispose();
-            }
+            rowBinding?.Dispose();
         }
 
         internal void GuidKindName(Guid guid, int eKind, IntPtr propid)

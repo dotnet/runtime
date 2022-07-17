@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public enum TYPEKIND
     {
         TKIND_ENUM = 0,
@@ -16,6 +19,7 @@ namespace System.Runtime.InteropServices.ComTypes
         TKIND_MAX = TKIND_UNION + 1
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum TYPEFLAGS : short
     {
@@ -36,6 +40,7 @@ namespace System.Runtime.InteropServices.ComTypes
         TYPEFLAG_FPROXY = 0x4000
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum IMPLTYPEFLAGS
     {
@@ -45,6 +50,7 @@ namespace System.Runtime.InteropServices.ComTypes
         IMPLTYPEFLAG_FDEFAULTVTABLE = 0x8,
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct TYPEATTR
     {
@@ -72,6 +78,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public IDLDESC idldescType;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential)]
     public struct FUNCDESC
     {
@@ -89,6 +96,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public short wFuncFlags;            // WORD wFuncFlags;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum IDLFLAG : short
     {
@@ -99,6 +107,7 @@ namespace System.Runtime.InteropServices.ComTypes
         IDLFLAG_FRETVAL = PARAMFLAG.PARAMFLAG_FRETVAL
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct IDLDESC
     {
@@ -106,6 +115,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public IDLFLAG wIDLFlags;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum PARAMFLAG : short
     {
@@ -119,6 +129,7 @@ namespace System.Runtime.InteropServices.ComTypes
         PARAMFLAG_FHASCUSTDATA = 0x40
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct PARAMDESC
     {
@@ -126,6 +137,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public PARAMFLAG wParamFlags;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct TYPEDESC
     {
@@ -133,6 +145,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public short vt;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct ELEMDESC
     {
@@ -149,6 +162,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public DESCUNION desc;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public enum VARKIND : int
     {
         VAR_PERINSTANCE = 0x0,
@@ -157,8 +171,8 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_DISPATCH = 0x3
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-
     public struct VARDESC
     {
         public int memid;
@@ -180,6 +194,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public VARKIND varkind;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct DISPPARAMS
     {
@@ -189,6 +204,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public int cNamedArgs;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct EXCEPINFO
     {
@@ -203,6 +219,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public int scode;
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public enum FUNCKIND : int
     {
         FUNC_VIRTUAL = 0,
@@ -212,6 +229,7 @@ namespace System.Runtime.InteropServices.ComTypes
         FUNC_DISPATCH = 4
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum INVOKEKIND : int
     {
@@ -221,6 +239,7 @@ namespace System.Runtime.InteropServices.ComTypes
         INVOKE_PROPERTYPUTREF = 0x8
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public enum CALLCONV : int
     {
         CC_CDECL = 1,
@@ -235,6 +254,7 @@ namespace System.Runtime.InteropServices.ComTypes
         CC_MAX = 9
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum FUNCFLAGS : short
     {
@@ -253,6 +273,7 @@ namespace System.Runtime.InteropServices.ComTypes
         FUNCFLAG_FIMMEDIATEBIND = 0x1000
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum VARFLAGS : short
     {
@@ -272,6 +293,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("00020401-0000-0000-C000-000000000046")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeInfo

@@ -92,6 +92,14 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0035`__ | ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner. |
 |  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead. |
 |  __`SYSLIB0037`__ | AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported. |
+|  __`SYSLIB0038`__ | SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information. |
+|  __`SYSLIB0039`__ | TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults. |
+|  __`SYSLIB0040`__ | EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code. |
+|  __`SYSLIB0041`__ | The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations. |
+|  __`SYSLIB0042`__ | ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys. |
+|  __`SYSLIB0043`__ | ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead. |
+|  __`SYSLIB0044`__ | AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported. |
+|  __`SYSLIB0045`__ | Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead. |
 
 ## Analyzer Warnings
 
@@ -150,3 +158,24 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1047`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
 |  __`SYSLIB1048`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
 |  __`SYSLIB1049`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1050`__ | Invalid LibraryImportAttribute usage |
+|  __`SYSLIB1051`__ | Specified type is not supported by source-generated P/Invokes |
+|  __`SYSLIB1052`__ | Specified configuration is not supported by source-generated P/Invokes |
+|  __`SYSLIB1053`__ | Specified LibraryImportAttribute arguments cannot be forwarded to DllImportAttribute |
+|  __`SYSLIB1054`__ | Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time |
+|  __`SYSLIB1055`__ | Invalid CustomTypeMarshallerAttribute usage |
+|  __`SYSLIB1056`__ | Specified native type is invalid |
+|  __`SYSLIB1057`__ | Marshaller type does not have the required shape |
+|  __`SYSLIB1058`__ | Marshaller type defines a well-known method without specifying support for the corresponding feature |
+|  __`SYSLIB1059`__ | Marshaller type does not support allocating constructor |
+|  __`SYSLIB1060`__ | BufferSize should be set on CustomTypeMarshallerAttribute |
+|  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
+|  __`SYSLIB1062`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1063`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1064`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+
+### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
+
+| Suppression ID     | Suppressed Diagnostic ID | Description |
+| :----------------- | :----------------------- | :---------- |
+| __`SYSLIBSUPPRESS0001`__ | CA1822 | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |

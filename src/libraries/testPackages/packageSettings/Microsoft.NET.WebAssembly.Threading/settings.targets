@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <SkipVerifyRuntime>true</SkipVerifyRuntime>
+  </PropertyGroup>
+</Project>

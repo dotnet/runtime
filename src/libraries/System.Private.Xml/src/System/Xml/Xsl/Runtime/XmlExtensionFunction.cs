@@ -36,8 +36,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlExtensionFunction func;
 
-            if (_funcCached == null)
-                _funcCached = new XmlExtensionFunction();
+            _funcCached ??= new XmlExtensionFunction();
 
             // If the extension function already exists in the table, then binding has already been performed
             _funcCached.Init(name, namespaceUri, numArgs, objectType, flags);
@@ -340,7 +339,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Infer an Xml type from a Clr type using Xslt inference rules
         /// </summary>
-        private XmlQueryType InferXmlType(Type clrType)
+        private static XmlQueryType InferXmlType(Type clrType)
         {
             return XsltConvert.InferXsltType(clrType);
         }

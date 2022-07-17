@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler.DependencyAnalysisFramework</RootNamespace>
     <AssemblyName>ILCompiler.DependencyAnalysisFramework</AssemblyName>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -15,11 +15,6 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Collections.Immutable">
-      <Version>$(SystemCollectionsImmutableVersion)</Version>
-    </PackageReference>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="ComputedStaticDependencyNode.cs" />
     <Compile Include="DependencyAnalyzer.cs" />
@@ -54,6 +49,5 @@
     <Compile Include="..\..\Common\Sorting\MergeSortCore.cs">
       <Link>Sorting\MergeSortCore.cs</Link>
     </Compile>
-
   </ItemGroup>
 </Project>

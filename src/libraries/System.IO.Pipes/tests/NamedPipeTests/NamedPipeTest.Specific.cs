@@ -23,6 +23,10 @@ namespace System.IO.Pipes.Tests
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds(-2)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds(-2), default); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds((long)int.MaxValue + 1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds((long)int.MaxValue + 1), default); });
             }
         }
 
@@ -32,9 +36,12 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
             {
                 var ctx = new CancellationTokenSource();
-                Assert.Throws<TimeoutException>(() => client.Connect(60));  // 60 to be over internal 50 interval
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(50));
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(60, ctx.Token)); // testing Token overload; ctx is not canceled in this test
+                Assert.Throws<TimeoutException>(() =>
+                    client.Connect(TimeSpan.FromMilliseconds(60))); // 60 to be over internal 50 interval
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(TimeSpan.FromMilliseconds(50), default));
+                await Assert.ThrowsAsync<TimeoutException>(() =>
+                    client.ConnectAsync(TimeSpan.FromMilliseconds(60),
+                        ctx.Token)); // testing Token overload; ctx is not canceled in this test
             }
         }
 
@@ -78,6 +85,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(1)]
         [InlineData(3)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task MultipleWaitingClients_ServerServesOneAtATime(int numClients)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -113,6 +121,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void MaxNumberOfServerInstances_TooManyServers_Throws()
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -150,6 +159,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(1)]
         [InlineData(4)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task MultipleServers_ServeMultipleClientsConcurrently(int numServers)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -346,6 +356,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invoke to verify the user name
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -376,6 +387,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         [InlineData(PipeDirection.InOut)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix implementation uses bidirectional sockets
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public static void Unix_BufferSizeRoundtripping(PipeDirection direction)
         {
             int desiredBufferSize = 0;
@@ -439,6 +451,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task PipeTransmissionMode_Returns_Byte()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -494,6 +507,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix doesn't currently support message mode
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void Unix_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -534,6 +548,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeDirection.Out, PipeDirection.In)]
         [InlineData(PipeDirection.In, PipeDirection.Out)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void InvalidReadMode_Throws_ArgumentOutOfRangeException(PipeDirection serverDirection, PipeDirection clientDirection)
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -551,6 +566,7 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void NameTooLong_MaxLengthPerPlatform()
         {
             // Increase a name's length until it fails
@@ -611,7 +627,8 @@ namespace System.IO.Pipes.Tests
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
             {
-                Task waitingClient = client.ConnectAsync(92, cancellationToken);
+                TimeSpan timeout = TimeSpan.FromMilliseconds(92);
+                Task waitingClient = client.ConnectAsync(timeout, cancellationToken);
                 await Assert.ThrowsAsync<TimeoutException>(() => { return waitingClient; });
             }
         }
@@ -626,16 +643,18 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
             using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
             {
-                const int timeout = 10_000;
+                var ctx = new CancellationTokenSource();
+                TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
                 Task[] clientAndServerTasks = new[]
                     {
-                        firstClient.ConnectAsync(timeout),
+                        firstClient.ConnectAsync(timeout, ctx.Token),
                         Task.Run(() => server.WaitForConnection())
                     };
 
                 Assert.True(Task.WaitAll(clientAndServerTasks, timeout));
 
-                Assert.Throws<TimeoutException>(() => secondClient.Connect(93));
+                TimeSpan connectionTimeout = TimeSpan.FromMilliseconds(93);
+                Assert.Throws<TimeoutException>(() => secondClient.Connect(connectionTimeout));
             }
         }
 
@@ -650,17 +669,43 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
             using (NamedPipeClientStream secondClient = new NamedPipeClientStream(pipeName))
             {
-                const int timeout = 10_000;
+                TimeSpan timeout = TimeSpan.FromMilliseconds(10_000);
                 Task[] clientAndServerTasks = new[]
                     {
-                        firstClient.ConnectAsync(timeout),
+                        firstClient.ConnectAsync(timeout, cancellationToken),
                         Task.Run(() => server.WaitForConnection())
                     };
 
                 Assert.True(Task.WaitAll(clientAndServerTasks, timeout));
 
-                Task waitingClient = secondClient.ConnectAsync(94, cancellationToken);
+                TimeSpan connectionTimeout = TimeSpan.FromMilliseconds(94);
+                Task waitingClient = secondClient.ConnectAsync(connectionTimeout, cancellationToken);
                 await Assert.ThrowsAsync<TimeoutException>(() => { return waitingClient; });
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation doesn't rely on a timeout and cancellation token when connecting
+        public async Task ClientConnectAsync_Cancel_With_InfiniteTimeout()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+
+            using (var cts = new CancellationTokenSource())
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1))
+            using (var firstClient = new NamedPipeClientStream(pipeName))
+            using (var secondClient = new NamedPipeClientStream(pipeName))
+            {
+                var firstConnectionTasks = new Task[]
+                    {
+                        firstClient.ConnectAsync(),
+                        server.WaitForConnectionAsync()
+                    };
+
+                Assert.True(Task.WaitAll(firstConnectionTasks, 1000));
+
+                cts.CancelAfter(100);
+
+                await Assert.ThrowsAsync<OperationCanceledException>(() => secondClient.ConnectAsync(cts.Token)).WaitAsync(1000);
             }
         }
 

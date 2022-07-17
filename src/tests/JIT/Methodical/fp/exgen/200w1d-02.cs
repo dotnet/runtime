@@ -3,7 +3,10 @@
 
 
 using System;
-internal unsafe class testout1
+using Xunit;
+namespace Test_200w1d_02
+{
+public unsafe class testout1
 {
     public struct VT_0
     {
@@ -147,7 +150,8 @@ internal unsafe class testout1
         return Convert.ToInt32((Convert.ToInt32((Convert.ToInt32((Convert.ToInt32(Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(Convert.ToInt64(Convert.ToUInt16(Convert.ToUInt16(asgop26 / Convert.ToSingle(Convert.ToSingle(Convert.ToUInt64(Convert.ToInt16(asgop6) + Convert.ToInt64(Convert.ToInt64(Convert.ToUInt16(vtstatic_0.a74_0) - Convert.ToInt64((Convert.ToInt64(clstatic_0.a17_0) + -1747119413L))))) * asgop5)))) - Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(asgop25) * asgop24)))) * (Convert.ToDouble((Convert.ToInt64((Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(Convert.ToInt64(Convert.ToDouble(clstatic_0.a27_0) * -1.1920928960153885E-07)) * (Convert.ToInt16(1 * s_a18_0) * (clstatic_0.a27_0 / -4503599625452928.0)))) * Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(asgop20) / (Convert.ToUInt32(vtstatic_0.a74_0 + 1746873331) * -2517.6143380671915))))) * Convert.ToInt64((Convert.ToInt64((Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(s_a61_0) * asgop32)) * Convert.ToInt64(64L)) / (Convert.ToInt64((Convert.ToInt64((asgop18 + 0L) / asgop15)) / clstatic_0.a96_0)))))) * (Convert.ToUInt32(Convert.ToUInt32(Convert.ToInt32(s_a18_0 / 7.8880111854144145E-10) / Convert.ToDouble(Convert.ToDecimal(10.4980392156863M) / Convert.ToDecimal(35.3437719552881165816490907M))) % Convert.ToUInt32(Convert.ToInt64(asgop22) + Convert.ToInt64(vtstatic_0.a25_0))) * (Convert.ToDouble((Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(vtstatic_0.a25_0) * 1.7947574048581106E-09)) * Convert.ToInt64(Convert.ToInt64(Convert.ToDouble(vtstatic_0.a25_0) * 4.4868935121452766E-10))) * 8.3079175512520556E-13))))))) + Convert.ToInt64(Convert.ToInt64(Convert.ToUInt16((Convert.ToUInt16(Convert.ToUInt16(Convert.ToInt16(Convert.ToDecimal(asgop31) / (Convert.ToDecimal(clstatic_0.a26_0) * s_a75_0)) + Convert.ToInt16(Convert.ToInt64(Convert.ToInt64(clstatic_0.a26_0 - 7UL)) + Convert.ToInt64(asgop17))) % (Convert.ToUInt16(asgop16 / asgop35))))) - Convert.ToInt64(Convert.ToInt64(Convert.ToUInt16(Convert.ToUInt16(Convert.ToInt16(Convert.ToInt16(16475 / s_a18_0) * Convert.ToSingle(0.4701062F)) * Convert.ToSingle(Convert.ToSingle(vtstatic_0.a70_0 * (s_a42_0 / 223377976.25057024))))) - Convert.ToInt64((Convert.ToInt64(Convert.ToInt64(Convert.ToUInt16(Convert.ToUInt16(0.00013283314898831372 + (0.00013283314898831372 + (0.00013283314898831372 + 37004.999601500553)))) - Convert.ToInt64(vtstatic_0.a38_0))) * Convert.ToInt64((Convert.ToInt64(Convert.ToInt64(Convert.ToUInt32(clstatic_0.a17_0) - Convert.ToInt64(clstatic_0.a98_0))) * Convert.ToInt64((Convert.ToInt64(clstatic_0.a17_0) + clstatic_0.a68_0)))))))))))))) % (Convert.ToInt32(Convert.ToInt32((Convert.ToInt32((Convert.ToInt32(Convert.ToInt32(Convert.ToDecimal((Convert.ToInt32((Convert.ToUInt16((Convert.ToUInt16(Convert.ToInt32(asgop34) - Convert.ToInt32((asgop27)))) % vtstatic_0.a74_0))) + (Convert.ToInt32(Convert.ToInt64(s_a16_0) + Convert.ToInt64(Convert.ToInt64(Convert.ToInt32((clstatic_0.arr1d_0[28] + -109529)) - Convert.ToInt64(s_a86_0))))))) * (Convert.ToDecimal(Convert.ToInt64(Convert.ToDouble(s_a16_0) * clstatic_0.a57_0)) / asgop8)))) % (Convert.ToInt32(Convert.ToInt32((*a36_0) + (Convert.ToDecimal(asgop2 * asgop12))))))) / asgop3))))));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         vtstatic_0.a0_0 = 3.7914999471280252E-09;
         vtstatic_0.a2_0 = 5.0980403367171836E-10;
@@ -171,4 +175,5 @@ internal unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

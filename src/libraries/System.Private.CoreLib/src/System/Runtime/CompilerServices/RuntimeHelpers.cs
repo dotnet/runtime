@@ -27,33 +27,18 @@ namespace System.Runtime.CompilerServices
 
             (int offset, int length) = range.GetOffsetAndLength(array.Length);
 
-            T[] dest;
-
-            if (typeof(T).IsValueType || typeof(T[]) == array.GetType())
+            if (length == 0)
             {
-                // We know the type of the array to be exactly T[] or an array variance
-                // compatible value type substitution like int[] <-> uint[].
-
-                if (length == 0)
-                {
-                    return Array.Empty<T>();
-                }
-
-                dest = new T[length];
-            }
-            else
-            {
-                // The array is actually a U[] where U:T. We'll make sure to create
-                // an array of the exact same backing type. The cast to T[] will
-                // never fail.
-
-                dest = Unsafe.As<T[]>(Array.CreateInstance(array.GetType().GetElementType()!, length));
+                return Array.Empty<T>();
             }
 
-            // In either case, the newly-allocated array is the exact same type as the
-            // original incoming array. It's safe for us to Buffer.Memmove the contents
-            // from the source array to the destination array, otherwise the contents
-            // wouldn't have been valid for the source array in the first place.
+            T[] dest = new T[length];
+
+            // Due to array variance, it's possible that the incoming array is
+            // actually of type U[], where U:T; or that an int[] <-> uint[] or
+            // similar cast has occurred. In any case, since it's always legal
+            // to reinterpret U as T in this scenario (but not necessarily the
+            // other way around), we can use Buffer.Memmove here.
 
             Buffer.Memmove(
                 ref MemoryMarshal.GetArrayDataReference(dest),
@@ -64,8 +49,11 @@ namespace System.Runtime.CompilerServices
         }
 
         [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code!!, CleanupCode backoutCode!!, object? userData)
+        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
         {
+            ArgumentNullException.ThrowIfNull(code);
+            ArgumentNullException.ThrowIfNull(backoutCode);
+
             bool exceptionThrown = true;
 
             try
@@ -107,7 +95,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="fldHandle">A field handle that specifies the location of the data to be referred to by the ReadOnlySpan{T}. The Rva of the field must be aligned on a natural boundary of type T</param>
         /// <returns>A ReadOnlySpan{T} of the data stored in the field</returns>
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
-        /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, bool, char, short, ushort, int, uint, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
 

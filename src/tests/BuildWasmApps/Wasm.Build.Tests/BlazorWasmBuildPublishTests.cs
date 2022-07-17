@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
             _enablePerTestCleanup = true;
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void DefaultTemplate_WithoutWorkload(string config)
@@ -38,7 +38,7 @@ namespace Wasm.Build.Tests
             AssertBlazorBootJson(config, isPublish: true);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void DefaultTemplate_NoAOT_WithWorkload(string config)
@@ -46,19 +46,19 @@ namespace Wasm.Build.Tests
             string id = $"blz_no_aot_{config}";
             CreateBlazorWasmTemplateProject(id);
 
-            BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
             if (config == "Release")
             {
                 // relinking in publish for Release config
-                BlazorPublish(id, config, NativeFilesType.Relinked);
+                BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             }
             else
             {
-                BlazorPublish(id, config, NativeFilesType.FromRuntimePack);
+                BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
             }
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void DefaultTemplate_AOT_InProjectFile(string config)
@@ -68,20 +68,21 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
             // No relinking, no AOT
-            BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
             // will aot
-            BlazorPublish(id, config, NativeFilesType.AOT);
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT));
 
             // build again
-            BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug", true)]
         [InlineData("Debug", false)]
         [InlineData("Release", true)]
         [InlineData("Release", false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
         {
             string id = $"blz_deploy_on_build_{config}_{nativeRelink}";
@@ -89,7 +90,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
 
             // build with -p:DeployOnBuild=true, and that will trigger a publish
-            (CommandResult res, _) = BuildInternal(id, config, publish: false, "-p:DeployOnBuild=true");
+            (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
 
             var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
@@ -107,7 +108,7 @@ namespace Wasm.Build.Tests
             }
 
             // Check that we linked only for publish
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "for-build");
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", "for-build");
             Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets creating when relinking during Build");
 
             // double check!
@@ -121,7 +122,7 @@ namespace Wasm.Build.Tests
 
         // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
         // how to pick which one to check, for the test
-        //[ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        //[Theory]
         //[InlineData("Debug")]
         //[InlineData("Release")]
         //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
@@ -130,50 +131,52 @@ namespace Wasm.Build.Tests
             //CreateBlazorWasmTemplateProject(id);
 
             //// No relinking, no AOT
-            //BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
+            //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
 
             //// AOT=true only for the publish command line, similar to what
             //// would happen when setting it in Publish dialog for VS
-            //BlazorPublish(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+            //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
             //// publish again, no AOT
-            //BlazorPublish(id, config, NativeFilesType.Relinked);
+            //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
         //}
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void WithNativeReference_AOTInProjectFile(string config)
         {
             string id = $"blz_nativeref_aot_{config}";
             string projectFile = CreateProjectWithNativeReference(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
-            BlazorBuild(id, config, expectedFileType: NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
-            BlazorPublish(id, config, expectedFileType: NativeFilesType.AOT);
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT));
 
             // will relink
-            BlazorBuild(id, config, expectedFileType: NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void WithNativeReference_AOTOnCommandLine(string config)
         {
             string id = $"blz_nativeref_aot_{config}";
             CreateProjectWithNativeReference(id);
 
-            BlazorBuild(id, config, expectedFileType: NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
-            BlazorPublish(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
 
             // no aot!
-            BlazorPublish(id, config, expectedFileType: NativeFilesType.Relinked);
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void WithDllImportInMainAssembly(string config)
@@ -206,17 +209,17 @@ namespace Wasm.Build.Tests
 
             AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""mylib.cpp"" />");
 
-            BlazorBuild(id, config, expectedFileType: NativeFilesType.Relinked);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             CheckNativeFileLinked(forPublish: false);
 
-            BlazorPublish(id, config, expectedFileType: NativeFilesType.Relinked);
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             CheckNativeFileLinked(forPublish: true);
 
             void CheckNativeFileLinked(bool forPublish)
             {
                 // very crude way to check that the native file was linked in
                 // needed because we don't run the blazor app yet
-                string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "for-build");
+                string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", forPublish ? "for-publish" : "for-build");
                 string pinvokeTableHPath = Path.Combine(objBuildDir, "pinvoke-table.h");
                 Assert.True(File.Exists(pinvokeTableHPath), $"Could not find {pinvokeTableHPath}");
 
@@ -227,7 +230,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Fact]
         public void BugRegression_60479_WithRazorClassLib()
         {
             string id = "blz_razor_lib_top";
@@ -236,7 +239,7 @@ namespace Wasm.Build.Tests
             string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
             string wasmProjectFile = Path.Combine(wasmProjectDir, "wasm.csproj");
             Directory.CreateDirectory(wasmProjectDir);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(wasmProjectDir)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
@@ -244,7 +247,7 @@ namespace Wasm.Build.Tests
 
             string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
             Directory.CreateDirectory(razorProjectDir);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(razorProjectDir)
                     .ExecuteWithCapturedOutput("new razorclasslib")
                     .EnsureSuccessful();
@@ -257,10 +260,10 @@ namespace Wasm.Build.Tests
             _projectDir = wasmProjectDir;
             string config = "Release";
             // No relinking, no AOT
-            BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
             // will relink
-            BlazorPublish(id, config, NativeFilesType.Relinked);
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
             // publish/wwwroot/_framework/blazor.boot.json
             string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true);
@@ -282,10 +285,10 @@ namespace Wasm.Build.Tests
             CreateBlazorWasmTemplateProject(id);
 
             string extraItems = @$"
-                <PackageReference Include=""SkiaSharp"" Version=""2.80.3"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.80.3"" />
+                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
 
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\2.0.9\*.a"" />
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
             ";
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");

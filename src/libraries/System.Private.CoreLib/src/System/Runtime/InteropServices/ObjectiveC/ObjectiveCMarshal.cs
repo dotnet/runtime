@@ -58,11 +58,16 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// referenced. Any other value has undefined behavior.
         /// </remarks>
         public static unsafe void Initialize(
-            delegate* unmanaged<void> beginEndCallback!!,
-            delegate* unmanaged<IntPtr, int> isReferencedCallback!!,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization!!,
-            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler!!)
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler)
         {
+            ArgumentNullException.ThrowIfNull(beginEndCallback);
+            ArgumentNullException.ThrowIfNull(isReferencedCallback);
+            ArgumentNullException.ThrowIfNull(trackedObjectEnteredFinalization);
+            ArgumentNullException.ThrowIfNull(unhandledExceptionPropagationHandler);
+
             if (s_unhandledExceptionPropagationHandler != null
                 || !TryInitializeReferenceTracker(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization))
             {
@@ -98,9 +103,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The caller is responsible for freeing the returned <see cref="GCHandle"/>.
         /// </remarks>
         public static GCHandle CreateReferenceTrackingHandle(
-            object obj!!,
+            object obj,
             out Span<IntPtr> taggedMemory)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             IntPtr refCountHandle = CreateReferenceTrackingHandleInternal(
                 ObjectHandleOnStack.Create(ref obj),
                 out int memInSizeT,

@@ -21,7 +21,7 @@ typedef enum {
 	/* Enables full AOT mode, JIT is disabled and not allowed,
 	 * equivalent to mono_jit_set_aot_only (true) */
 	MONO_AOT_MODE_FULL,
-	/* Same as full, but use only llvm compiled code */
+	/* Same as LLVMONLY_INTERP */
 	MONO_AOT_MODE_LLVMONLY,
 	/*
 	 * Use interpreter only, no native code is generated
@@ -30,7 +30,7 @@ typedef enum {
 	MONO_AOT_MODE_INTERP,
 	/* Same as INTERP, but use only llvm compiled code */
 	MONO_AOT_MODE_INTERP_LLVMONLY,
-	/* Use only llvm compiled code, fall back to the interpeter */
+	/* Use only llvm compiled code, fall back to the interpreter */
 	MONO_AOT_MODE_LLVMONLY_INTERP,
 	/* Same as --interp */
 	MONO_AOT_MODE_INTERP_ONLY,

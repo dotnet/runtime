@@ -76,16 +76,20 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        public StackTrace(Exception e!!)
+        public StackTrace(Exception e)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             InitializeForException(e, METHODS_TO_SKIP, false);
         }
 
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        public StackTrace(Exception e!!, bool fNeedFileInfo)
+        public StackTrace(Exception e, bool fNeedFileInfo)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             InitializeForException(e, METHODS_TO_SKIP, fNeedFileInfo);
         }
 
@@ -93,8 +97,10 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        public StackTrace(Exception e!!, int skipFrames)
+        public StackTrace(Exception e, int skipFrames)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -106,8 +112,10 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        public StackTrace(Exception e!!, int skipFrames, bool fNeedFileInfo)
+        public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -190,7 +198,7 @@ namespace System.Diagnostics
             return sb.ToString();
         }
 
-#if !CORERT
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "ToString is best effort when it comes to available information.")]
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
@@ -349,7 +357,7 @@ namespace System.Diagnostics
             if (traceFormat == TraceFormat.TrailingNewLine)
                 sb.AppendLine();
         }
-#endif // !CORERT
+#endif // !NATIVEAOT
 
         private static bool ShowInStackTrace(MethodBase mb)
         {
@@ -418,7 +426,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                IEnumerable<StateMachineAttribute>? attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[])Attribute.GetCustomAttributes(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;

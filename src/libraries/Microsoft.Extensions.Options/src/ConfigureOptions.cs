@@ -29,8 +29,10 @@ namespace Microsoft.Extensions.Options
         /// Invokes the registered configure <see cref="Action"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
-        public virtual void Configure(TOptions options!!)
+        public virtual void Configure(TOptions options)
         {
+            ThrowHelper.ThrowIfNull(options);
+
             Action?.Invoke(options);
         }
     }

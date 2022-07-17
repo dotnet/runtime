@@ -15,7 +15,11 @@ namespace System.Security.Cryptography
     {
         internal const string CreateFromNameUnreferencedCodeMessage = "The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.";
 
+        // Suppressed for the linker by the assembly-level UnconditionalSuppressMessageAttribute
+        // https://github.com/dotnet/linker/issues/2648
+#pragma warning disable IL2026
         private static readonly Func<string, object?> s_createFromName = BindCreateFromName();
+#pragma warning restore IL2026
 
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         private static Func<string, object?> BindCreateFromName()
@@ -37,7 +41,19 @@ namespace System.Security.Cryptography
         }
 
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
-        internal static object? CreateFromName(string name) => s_createFromName(name);
+        internal static T? CreateFromName<T>(string name) where T : class
+        {
+            object? o = s_createFromName(name);
+            try
+            {
+                return (T?)o;
+            }
+            catch
+            {
+                (o as IDisposable)?.Dispose();
+                throw;
+            }
+        }
 
         internal static HashAlgorithm CreateDefaultHashAlgorithm() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);

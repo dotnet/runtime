@@ -44,13 +44,17 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public int Add(X509Certificate2 certificate!!)
+        public int Add(X509Certificate2 certificate)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             return base.Add(certificate);
         }
 
-        public void AddRange(X509Certificate2[] certificates!!)
+        public void AddRange(X509Certificate2[] certificates)
         {
+            ArgumentNullException.ThrowIfNull(certificates);
+
             int i = 0;
             try
             {
@@ -69,8 +73,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void AddRange(X509Certificate2Collection certificates!!)
+        public void AddRange(X509Certificate2Collection certificates)
         {
+            ArgumentNullException.ThrowIfNull(certificates);
+
             int i = 0;
             try
             {
@@ -112,8 +118,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public X509Certificate2Collection Find(X509FindType findType, object findValue!!, bool validOnly)
+        public X509Certificate2Collection Find(X509FindType findType, object findValue, bool validOnly)
         {
+            ArgumentNullException.ThrowIfNull(findValue);
+
             return FindPal.FindFromCollection(this, findType, findValue, validOnly);
         }
 
@@ -124,8 +132,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         IEnumerator<X509Certificate2> IEnumerable<X509Certificate2>.GetEnumerator() => GetEnumerator();
 
-        public void Import(byte[] rawData!!)
+        public void Import(byte[] rawData)
         {
+            ArgumentNullException.ThrowIfNull(rawData);
+
             Import(rawData.AsSpan());
         }
 
@@ -140,8 +150,10 @@ namespace System.Security.Cryptography.X509Certificates
             Import(rawData, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(byte[] rawData!!, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
+            ArgumentNullException.ThrowIfNull(rawData);
+
             Import(rawData.AsSpan(), password.AsSpan(), keyStorageFlags);
         }
 
@@ -190,8 +202,10 @@ namespace System.Security.Cryptography.X509Certificates
             Import(fileName, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(string fileName!!, string? password, X509KeyStorageFlags keyStorageFlags = 0)
+        public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -213,8 +227,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="keyStorageFlags">
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
-        public void Import(string fileName!!, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
+        public void Import(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -224,18 +240,24 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void Insert(int index, X509Certificate2 certificate!!)
+        public void Insert(int index, X509Certificate2 certificate)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             base.Insert(index, certificate);
         }
 
-        public void Remove(X509Certificate2 certificate!!)
+        public void Remove(X509Certificate2 certificate)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             base.Remove(certificate);
         }
 
-        public void RemoveRange(X509Certificate2[] certificates!!)
+        public void RemoveRange(X509Certificate2[] certificates)
         {
+            ArgumentNullException.ThrowIfNull(certificates);
+
             int i = 0;
             try
             {
@@ -254,8 +276,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void RemoveRange(X509Certificate2Collection certificates!!)
+        public void RemoveRange(X509Certificate2Collection certificates)
         {
+            ArgumentNullException.ThrowIfNull(certificates);
+
             int i = 0;
             try
             {
@@ -299,8 +323,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         /// <paramref name="certPemFilePath" /> is <see langword="null" />.
         /// </exception>
-        public void ImportFromPemFile(string certPemFilePath!!)
+        public void ImportFromPemFile(string certPemFilePath)
         {
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
+
             ReadOnlySpan<char> contents = System.IO.File.ReadAllText(certPemFilePath);
             ImportFromPem(contents);
         }
@@ -391,16 +417,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_ExportFailed);
             }
 
-            int encodedSize = PemEncoding.GetEncodedSize(PemLabels.Pkcs7Certificate.Length, pkcs7.Length);
-
-            return string.Create(encodedSize, pkcs7, static (destination, pkcs7) => {
-                if (!PemEncoding.TryWrite(PemLabels.Pkcs7Certificate, pkcs7, destination, out int written) ||
-                    written != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
+            return PemEncoding.WriteString(PemLabels.Pkcs7Certificate, pkcs7);
         }
 
         /// <summary>

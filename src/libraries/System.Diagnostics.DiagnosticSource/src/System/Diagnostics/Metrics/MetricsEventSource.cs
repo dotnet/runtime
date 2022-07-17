@@ -260,7 +260,7 @@ namespace System.Diagnostics.Metrics
 
                         double defaultIntervalSecs = 1;
                         Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
-                        double refreshIntervalSecs = defaultIntervalSecs;
+                        double refreshIntervalSecs;
                         if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                         {
                             Log.Message($"RefreshInterval argument received: {refreshInterval}");
@@ -360,7 +360,7 @@ namespace System.Diagnostics.Metrics
                 return false;
             }
 
-            private static readonly char[] s_instrumentSeperators = new char[] { '\r', '\n', ',', ';' };
+            private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
             [UnsupportedOSPlatform("browser")]
             private void ParseSpecs(string? metricsSpecs)
@@ -369,7 +369,7 @@ namespace System.Diagnostics.Metrics
                 {
                     return;
                 }
-                string[] specStrings = metricsSpecs.Split(s_instrumentSeperators, StringSplitOptions.RemoveEmptyEntries);
+                string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
                     if (!MetricSpec.TryParse(specString, out MetricSpec spec))
@@ -391,7 +391,7 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
+            private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
             {
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
@@ -409,7 +409,7 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private string FormatTags(KeyValuePair<string, string>[] labels)
+            private static string FormatTags(KeyValuePair<string, string>[] labels)
             {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < labels.Length; i++)
@@ -423,7 +423,7 @@ namespace System.Diagnostics.Metrics
                 return sb.ToString();
             }
 
-            private string FormatQuantiles(QuantileValue[] quantiles)
+            private static string FormatQuantiles(QuantileValue[] quantiles)
             {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)

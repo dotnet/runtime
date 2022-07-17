@@ -152,7 +152,6 @@ T VolatileLoad(T const * pt)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T val;
@@ -208,7 +207,7 @@ T VolatileLoad(Volatile<T> const * pt)
 }
 
 //
-// VolatileStore stores a T into the target of a pointer to T.  Is is guaranteed that this store will
+// VolatileStore stores a T into the target of a pointer to T.  It is guaranteed that this store will
 // not be optimized away by the compiler, and that any operation that occurs before this store, in program
 // order, will not be moved after this store.  In general, it is not guaranteed that the store will be
 // atomic, though this is the case for most aligned scalar data types.  If you need atomic loads or stores,
@@ -233,7 +232,6 @@ void VolatileStore(T* pt, T val)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T* pv = &val;

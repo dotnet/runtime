@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     public class Parity_Property : PortsTest
     {
         //The default number of bytes to read/write to verify the speed of the port
-        //and that the bytes were transfered successfully
+        //and that the bytes were transferred successfully
         private const int DEFAULT_BYTE_SIZE = 512;
 
         //If the percentage difference between the expected time to transfer with the specified parity

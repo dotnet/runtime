@@ -111,7 +111,7 @@ namespace System.Data
             return this;
         }
 
-        private object SmallestDecimal(object constant)
+        private static object SmallestDecimal(object constant)
         {
             if (null == constant)
             {
@@ -185,7 +185,7 @@ namespace System.Data
             return constant;
         }
 
-        private object SmallestNumeric(object constant)
+        private static object SmallestNumeric(object constant)
         {
             if (null == constant)
             {

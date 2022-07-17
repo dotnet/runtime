@@ -159,8 +159,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
 
             _subnets = new ActiveDirectorySubnetCollection(context, "CN=" + siteName + "," + _siteDN);
@@ -172,7 +171,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ActiveDirectorySite(DirectoryContext context, string siteName, bool existing)
         {
-            Debug.Assert(existing == true);
+            Debug.Assert(existing);
 
             this.context = context;
             _name = siteName;
@@ -1090,11 +1089,8 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
-                    cachedEntry.Dispose();
-
-                if (_ntdsEntry != null)
-                    _ntdsEntry.Dispose();
+                cachedEntry?.Dispose();
+                _ntdsEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)
@@ -1102,8 +1098,10 @@ namespace System.DirectoryServices.ActiveDirectory
             _disposed = true;
         }
 
-        private static void ValidateArgument(DirectoryContext context!!, string siteName)
+        private static void ValidateArgument(DirectoryContext context, string siteName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {

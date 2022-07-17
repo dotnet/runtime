@@ -151,6 +151,45 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR ep_rt_redefine
 
 /*
+ * Little-Endian Conversion.
+ */
+
+static
+inline
+uint16_t
+ep_rt_val_uint16_t (uint16_t value);
+
+static
+inline
+uint32_t
+ep_rt_val_uint32_t (uint32_t value);
+
+static
+inline
+uint64_t
+ep_rt_val_uint64_t (uint64_t value);
+
+static
+inline
+int16_t
+ep_rt_val_int16_t (int16_t value);
+
+static
+inline
+int32_t
+ep_rt_val_int32_t (int32_t value);
+
+static
+inline
+int64_t
+ep_rt_val_int64_t (int64_t value);
+
+static
+inline
+uintptr_t
+ep_rt_val_uintptr_t (uintptr_t value);
+
+/*
 * Atomics.
 */
 
@@ -182,6 +221,10 @@ static
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
 
+static
+ep_char8_t *
+eo_rt_atomic_compare_exchange_utf8_string (volatile ep_char8_t **target, ep_char8_t *expected, ep_char8_t *value);
+
 /*
  * EventPipe.
  */
@@ -206,7 +249,7 @@ ep_rt_shutdown (void);
 
 static
 bool
-ep_rt_config_aquire (void);
+ep_rt_config_acquire (void);
 
 static
 bool
@@ -615,7 +658,7 @@ ep_rt_runtime_version_get_utf8 (void);
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock);
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock);
 
 static
 bool
@@ -648,7 +691,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock);
 
 static
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock);
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock);
 
 static
 bool
@@ -721,7 +764,7 @@ ep_rt_utf8_string_replace (
 
 static
 ep_char16_t *
-ep_rt_utf8_to_utf16_string (
+ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
 	size_t len);
 
@@ -740,6 +783,12 @@ ep_rt_utf16_string_len (const ep_char16_t *str);
 static
 ep_char8_t *
 ep_rt_utf16_to_utf8_string (
+	const ep_char16_t *str,
+	size_t len);
+
+static
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string (
 	const ep_char16_t *str,
 	size_t len);
 
@@ -912,7 +961,7 @@ ep_rt_volatile_store_ptr_without_barrier (
 #define EP_SPIN_LOCK_ENTER(expr, section_name) \
 { \
 	ep_rt_spin_lock_requires_lock_not_held (expr); \
-	ep_rt_spin_lock_aquire (expr); \
+	ep_rt_spin_lock_acquire (expr); \
 	bool _no_error_ ##section_name = false;
 
 #define EP_SPIN_LOCK_EXIT(expr, section_name) \
@@ -936,7 +985,7 @@ _ep_on_spinlock_exit_ ##section_name : \
 #define EP_LOCK_ENTER(section_name) \
 { \
 	ep_requires_lock_not_held (); \
-	bool _owns_config_lock_ ##section_name = ep_rt_config_aquire (); \
+	bool _owns_config_lock_ ##section_name = ep_rt_config_acquire (); \
 	bool _no_config_error_ ##section_name = false; \
 	if (EP_UNLIKELY((!_owns_config_lock_ ##section_name))) \
 		goto _ep_on_config_lock_exit_ ##section_name;

@@ -17,8 +17,89 @@ BYTE * ExecutableAllocator::g_preferredRangeMax;
 bool ExecutableAllocator::g_isWXorXEnabled = false;
 
 ExecutableAllocator::FatalErrorHandler ExecutableAllocator::g_fatalErrorHandler = NULL;
-
 ExecutableAllocator* ExecutableAllocator::g_instance = NULL;
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+int64_t ExecutableAllocator::g_mapTimeSum = 0;
+int64_t ExecutableAllocator::g_mapTimeWithLockSum = 0;
+int64_t ExecutableAllocator::g_unmapTimeSum = 0;
+int64_t ExecutableAllocator::g_unmapTimeWithLockSum = 0;
+int64_t ExecutableAllocator::g_mapFindRXTimeSum = 0;
+int64_t ExecutableAllocator::g_mapCreateTimeSum = 0;
+int64_t ExecutableAllocator::g_releaseCount = 0;
+int64_t ExecutableAllocator::g_reserveCount = 0;
+
+ExecutableAllocator::LogEntry ExecutableAllocator::s_usageLog[256];
+int ExecutableAllocator::s_logMaxIndex = 0;
+CRITSEC_COOKIE ExecutableAllocator::s_LoggerCriticalSection;
+
+class StopWatch
+{
+    LARGE_INTEGER m_start;
+    int64_t* m_accumulator;
+
+public:
+    StopWatch(int64_t* accumulator) : m_accumulator(accumulator)
+    {
+        QueryPerformanceCounter(&m_start);
+    }
+
+    ~StopWatch()
+    {
+        LARGE_INTEGER end;
+        QueryPerformanceCounter(&end);
+
+        InterlockedExchangeAdd64(m_accumulator, end.QuadPart - m_start.QuadPart);
+    }
+};
+
+void ExecutableAllocator::LogUsage(const char* source, int line, const char* function)
+{
+    CRITSEC_Holder csh(s_LoggerCriticalSection);
+
+    for (int i = 0; i < s_logMaxIndex; i++)
+    {
+        if (s_usageLog[i].source == source && s_usageLog[i].line == line)
+        {
+            s_usageLog[i].count++;
+            return;
+        }
+    }
+
+    int i = s_logMaxIndex;
+    s_logMaxIndex++;
+    s_usageLog[i].source = source;
+    s_usageLog[i].function = function;
+    s_usageLog[i].line = line;
+    s_usageLog[i].count = 1;
+}
+
+void ExecutableAllocator::DumpHolderUsage()
+{
+    CRITSEC_Holder csh(s_LoggerCriticalSection);
+
+    LARGE_INTEGER freq;
+    QueryPerformanceFrequency(&freq);
+
+    fprintf(stderr, "Map time with lock sum: %I64dms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map time sum: %I64dms\n", g_mapTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map find RX time sum: %I64dms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map create time sum: %I64dms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Unmap time with lock sum: %I64dms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Unmap time sum: %I64dms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
+
+    fprintf(stderr, "Reserve count: %I64d\n", g_reserveCount);
+    fprintf(stderr, "Release count: %I64d\n", g_releaseCount);
+
+    fprintf(stderr, "ExecutableWriterHolder usage:\n");
+
+    for (int i = 0; i < s_logMaxIndex; i++)
+    {
+        fprintf(stderr, "Count: %d at %s:%d in %s\n", s_usageLog[i].count, s_usageLog[i].source, s_usageLog[i].line, s_usageLog[i].function);
+    }
+}
+
+#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
 bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
@@ -114,7 +195,7 @@ void ExecutableAllocator::ResetLazyPreferredRangeHint()
     g_lazyPreferredRangeHint = g_lazyPreferredRangeStart;
 #endif
 }
-// Returns TRUE if p is is located in the memory area where we prefer to put
+// Returns TRUE if p is located in the memory area where we prefer to put
 // executable code and static fields. This area is typically close to the
 // coreclr library.
 bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
@@ -154,6 +235,9 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
         return E_FAIL;
     }
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    s_LoggerCriticalSection = ClrCreateCriticalSection(CrstExecutableAllocatorLock, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
+#endif
     return S_OK;
 }
 
@@ -165,7 +249,8 @@ bool ExecutableAllocator::Initialize()
     {
         if (!VMToOSInterface::CreateDoubleMemoryMapper(&m_doubleMemoryMapperHandle, &m_maxExecutableCodeSize))
         {
-            return false;
+            g_isWXorXEnabled = false;
+            return true;
         }
 
         m_CriticalSection = ClrCreateCriticalSection(CrstExecutableAllocatorLock,CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -201,7 +286,7 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
         m_cachedMapping = pBlock;
         pBlock->refCount++;
     }
-#endif // ENABLE_CACHED_MAPPINGS    
+#endif // ENABLE_CACHED_MAPPINGS
 }
 
 void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
@@ -212,7 +297,11 @@ void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
     {
         if (pBlock->baseRX <= baseRX && ((size_t)baseRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
         {
-            pBlock->refCount++;
+#ifdef TARGET_64BIT
+            InterlockedIncrement64((LONG64*)& pBlock->refCount);
+#else
+            InterlockedIncrement((LONG*)&pBlock->refCount);
+#endif
             UpdateCachedMapping(pBlock);
 
             return (BYTE*)pBlock->baseRW + ((size_t)baseRX - (size_t)pBlock->baseRX);
@@ -225,14 +314,6 @@ void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
 bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size)
 {
     LIMITED_METHOD_CONTRACT;
-
-    for (BlockRW* pBlock = m_pFirstBlockRW; pBlock != NULL; pBlock = pBlock->next)
-    {
-        if (pBlock->baseRX <= baseRX && ((size_t)baseRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
-        {
-            break;
-        }
-    }
 
     // The new "nothrow" below failure is handled as fail fast since it is not recoverable
     PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
@@ -340,6 +421,10 @@ void ExecutableAllocator::Release(void* pRX)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    InterlockedIncrement64(&g_releaseCount);
+#endif
+
     if (IsDoubleMappingEnabled())
     {
         CRITSEC_Holder csh(m_CriticalSection);
@@ -386,54 +471,40 @@ void ExecutableAllocator::Release(void* pRX)
     }
 }
 
-// Find a free block with the closest size >= the requested size.
+// Find a free block with the size == the requested size.
 // Returns NULL if no such block exists.
 ExecutableAllocator::BlockRX* ExecutableAllocator::FindBestFreeBlock(size_t size)
 {
     LIMITED_METHOD_CONTRACT;
 
     BlockRX* pPrevBlock = NULL;
-    BlockRX* pPrevBestBlock = NULL;
-    BlockRX* pBestBlock = NULL;
     BlockRX* pBlock = m_pFirstFreeBlockRX;
 
     while (pBlock != NULL)
     {
-        if (pBlock->size >= size)
+        if (pBlock->size == size)
         {
-            if (pBestBlock != NULL)
-            {
-                if (pBlock->size < pBestBlock->size)
-                {
-                    pPrevBestBlock = pPrevBlock;
-                    pBestBlock = pBlock;
-                }
-            }
-            else
-            {
-                pPrevBestBlock = pPrevBlock;
-                pBestBlock = pBlock;
-            }
+            break;
         }
         pPrevBlock = pBlock;
         pBlock = pBlock->next;
     }
 
-    if (pBestBlock != NULL)
+    if (pBlock != NULL)
     {
-        if (pPrevBestBlock != NULL)
+        if (pPrevBlock != NULL)
         {
-            pPrevBestBlock->next = pBestBlock->next;
+            pPrevBlock->next = pBlock->next;
         }
         else
         {
-            m_pFirstFreeBlockRX = pBestBlock->next;
+            m_pFirstFreeBlockRX = pBlock->next;
         }
 
-        pBestBlock->next = NULL;
+        pBlock->next = NULL;
     }
 
-    return pBestBlock;
+    return pBlock;
 }
 
 // Allocate a new block of executable memory and the related descriptor structure.
@@ -491,6 +562,10 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    InterlockedIncrement64(&g_reserveCount);
+#endif
+
     _ASSERTE((size & (Granularity() - 1)) == 0);
     if (IsDoubleMappingEnabled())
     {
@@ -510,7 +585,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
             block->baseRX = result;
             AddRXBlock(block);
         }
-        else 
+        else
         {
             BackoutBlock(block, isFreeBlock);
         }
@@ -536,6 +611,10 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
 void* ExecutableAllocator::Reserve(size_t size)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    InterlockedIncrement64(&g_reserveCount);
+#endif
 
     _ASSERTE((size & (Granularity() - 1)) == 0);
 
@@ -598,7 +677,7 @@ void* ExecutableAllocator::Reserve(size_t size)
                 block->baseRX = result;
                 AddRXBlock(block);
             }
-            else 
+            else
             {
                 BackoutBlock(block, isFreeBlock);
             }
@@ -625,6 +704,10 @@ void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    InterlockedIncrement64(&g_reserveCount);
+#endif
+
     _ASSERTE((size & (Granularity() - 1)) == 0);
 
     if (IsDoubleMappingEnabled())
@@ -645,7 +728,7 @@ void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
             block->baseRX = result;
             AddRXBlock(block);
         }
-        else 
+        else
         {
             BackoutBlock(block, isFreeBlock);
         }
@@ -670,30 +753,45 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size)
         return pRX;
     }
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    StopWatch swAll(&g_mapTimeWithLockSum);
+#endif
+
     CRITSEC_Holder csh(m_CriticalSection);
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    StopWatch sw(&g_mapTimeSum);
+#endif
 
     void* result = FindRWBlock(pRX, size);
     if (result != NULL)
     {
         return result;
     }
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    StopWatch sw2(&g_mapFindRXTimeSum);
+#endif
 
     for (BlockRX* pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
     {
         if (pRX >= pBlock->baseRX && ((size_t)pRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
         {
-            // Offset of the RX address in the originally allocated block
-            size_t offset = (size_t)pRX - (size_t)pBlock->baseRX;
-            // Offset of the RX address that will start the newly mapped block
-            size_t mapOffset = ALIGN_DOWN(offset, Granularity());
-            // Size of the block we will map
-            size_t mapSize = ALIGN_UP(offset - mapOffset + size, Granularity());
-            void* pRW = VMToOSInterface::GetRWMapping(m_doubleMemoryMapperHandle, (BYTE*)pBlock->baseRX + mapOffset, pBlock->offset + mapOffset, mapSize);
+        // Offset of the RX address in the originally allocated block
+        size_t offset = (size_t)pRX - (size_t)pBlock->baseRX;
+        // Offset of the RX address that will start the newly mapped block
+        size_t mapOffset = ALIGN_DOWN(offset, Granularity());
+        // Size of the block we will map
+        size_t mapSize = ALIGN_UP(offset - mapOffset + size, Granularity());
 
-            if (pRW == NULL)
-            {
-                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Failed to create RW mapping for RX memory"));
-            }
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+        StopWatch sw2(&g_mapCreateTimeSum);
+#endif
+        void* pRW = VMToOSInterface::GetRWMapping(m_doubleMemoryMapperHandle, (BYTE*)pBlock->baseRX + mapOffset, pBlock->offset + mapOffset, mapSize);
+
+        if (pRW == NULL)
+        {
+            g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Failed to create RW mapping for RX memory"));
+        }
 
             AddRWBlock(pRW, (BYTE*)pBlock->baseRX + mapOffset, mapSize);
 
@@ -720,6 +818,10 @@ void ExecutableAllocator::UnmapRW(void* pRW)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    StopWatch swAll(&g_unmapTimeWithLockSum);
+#endif
+
     if (!IsDoubleMappingEnabled())
     {
         return;
@@ -727,6 +829,10 @@ void ExecutableAllocator::UnmapRW(void* pRW)
 
     CRITSEC_Holder csh(m_CriticalSection);
     _ASSERTE(pRW != NULL);
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    StopWatch swNoLock(&g_unmapTimeSum);
+#endif
 
     void* unmapAddress = NULL;
     size_t unmapSize;

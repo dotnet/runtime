@@ -84,20 +84,14 @@ namespace System.Net
             else
             {
 #pragma warning disable CA5359
-                _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
+                _sslStream = HttpListener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)
                     {
                         return true;
                     }
 
-                    var c2 = c as X509Certificate2;
-                    if (c2 == null)
-                    {
-                        c2 = new X509Certificate2(c.GetRawCertData());
-                    }
-
-                    _clientCert = c2;
+                    _clientCert = c as X509Certificate2 ?? new X509Certificate2(c.GetRawCertData());
                     _clientCertErrors = new int[] { (int)e };
                     return true;
                 });
@@ -107,9 +101,7 @@ namespace System.Net
             }
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
-            if (_sslStream != null) {
-                _sslStream.AuthenticateAsServer (_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
-            }
+            _sslStream?.AuthenticateAsServer(_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
             Init();
         }
 
@@ -192,8 +184,7 @@ namespace System.Net
 
         public void BeginReadRequest()
         {
-            if (_buffer == null)
-                _buffer = new byte[BufferSize];
+            _buffer ??= new byte[BufferSize];
             try
             {
                 if (_reuses == 1)
@@ -409,8 +400,7 @@ namespace System.Net
 
         private string? ReadLine(byte[] buffer, int offset, int len, ref int used)
         {
-            if (_currentLine == null)
-                _currentLine = new StringBuilder(128);
+            _currentLine ??= new StringBuilder(128);
             int last = offset + len;
             used = 0;
             for (int i = offset; i < last && _lineState != LineState.LF; i++)
@@ -472,7 +462,7 @@ namespace System.Net
         {
             if (_contextBound)
             {
-                _epl.UnbindContext(_context);
+                HttpEndPointListener.UnbindContext(_context);
                 _contextBound = false;
             }
         }
@@ -504,9 +494,7 @@ namespace System.Net
         {
             if (_socket != null)
             {
-                Stream st = GetResponseStream();
-                if (st != null)
-                    st.Close();
+                GetResponseStream()?.Close();
 
                 _responseStream = null;
             }
@@ -540,16 +528,14 @@ namespace System.Net
                 _socket = null;
                 try
                 {
-                    if (s != null)
-                        s.Shutdown(SocketShutdown.Both);
+                    s?.Shutdown(SocketShutdown.Both);
                 }
                 catch
                 {
                 }
                 finally
                 {
-                    if (s != null)
-                        s.Close();
+                    s?.Close();
                 }
                 Unbind();
                 RemoveConnection();

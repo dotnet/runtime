@@ -1,23 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_Create_Tests : FileSystemWatcherTest
     {
         [Fact]
         public void FileSystemWatcher_File_Create()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(TestDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () => File.Create(fileName).Dispose();
@@ -31,12 +31,11 @@ namespace System.IO.Tests
         [OuterLoop]
         public void FileSystemWatcher_File_Create_EnablingDisablingNotAffectRaisingEvent()
         {
-            ExecuteWithRetry(() =>
+            FileSystemWatcherTest.Execute(() =>
             {
-                using (var testDirectory = new TempDirectory(GetTestFilePath()))
-                using (var watcher = new FileSystemWatcher(testDirectory.Path))
+                using (var watcher = new FileSystemWatcher(TestDirectory))
                 {
-                    string fileName = Path.Combine(testDirectory.Path, "file");
+                    string fileName = Path.Combine(TestDirectory, "file");
                     watcher.Filter = Path.GetFileName(fileName);
 
                     int numberOfRaisedEvents = 0;
@@ -63,16 +62,15 @@ namespace System.IO.Tests
                     Assert.False(autoResetEvent.WaitOne(SubsequentExpectedWait));
                     Assert.True(numberOfRaisedEvents == 1);
                 }
-            });
+            }, DefaultAttemptsForExpectedEvent, (iteration) => RetryDelayMilliseconds);
         }
 
         [Fact]
         public void FileSystemWatcher_File_Create_ForcedRestart()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
-                string fileName = Path.Combine(testDirectory.Path, "file");
+                string fileName = Path.Combine(TestDirectory, "file");
                 watcher.Filter = Path.GetFileName(fileName);
 
                 Action action = () =>
@@ -89,15 +87,13 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_InNestedDirectory()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
-                string fileName = Path.Combine(nestedDir.Path, "file");
+                string fileName = Path.Combine(nestedDir, "file");
                 Action action = () => File.Create(fileName).Dispose();
                 Action cleanup = () => File.Delete(fileName);
 
@@ -109,15 +105,14 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_File_Create_DeepDirectoryStructure()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string deepDir = CreateTestDirectory(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.FileName;
 
                 // Put a file at the very bottom and expect it to raise an event
-                string fileName = Path.Combine(deepDir.Path, "file");
+                string fileName = Path.Combine(deepDir, "file");
                 Action action = () => File.Create(fileName).Dispose();
                 Action cleanup = () => File.Delete(fileName);
 
@@ -128,14 +123,13 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Create_SymLink()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var temp = new TempFile(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            string temp = CreateTestFile();
+            using (var watcher = new FileSystemWatcher(dir, "*"))
             {
                 // Make the symlink in our path (to the temp file) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
-                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, false));
+                string symLinkPath = Path.Combine(dir, GetRandomLinkName());
+                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp, false));
                 Action cleanup = () => File.Delete(symLinkPath);
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, symLinkPath);
@@ -145,21 +139,23 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            FileSystemWatcherTest.Execute(() =>
             {
-                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
-                watcher.SynchronizingObject = invoker;
+                using (var watcher = new FileSystemWatcher(TestDirectory))
+                {
+                    TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                    watcher.SynchronizingObject = invoker;
 
-                string fileName = Path.Combine(testDirectory.Path, "file");
-                watcher.Filter = Path.GetFileName(fileName);
+                    string fileName = Path.Combine(TestDirectory, "file");
+                    watcher.Filter = Path.GetFileName(fileName);
 
-                Action action = () => File.Create(fileName).Dispose();
-                Action cleanup = () => File.Delete(fileName);
+                    Action action = () => File.Create(fileName).Dispose();
+                    Action cleanup = () => File.Delete(fileName);
 
-                ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
-                Assert.True(invoker.BeginInvoke_Called);
-            }
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
+                    Assert.True(invoker.BeginInvoke_Called);
+                }
+            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
     }
 }

@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByKeyParameters", StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByKeyParameters", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
@@ -35,7 +35,7 @@ internal static partial class Interop
             return key;
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
         internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
             byte[]? qx, int qxLength,
@@ -82,8 +82,7 @@ internal static partial class Interop
 
             if (key == null || key.IsInvalid)
             {
-                if (key != null)
-                    key.Dispose();
+                key?.Dispose();
                 throw new CryptographicException();
             }
 
@@ -91,10 +90,10 @@ internal static partial class Interop
         }
 
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        [LibraryImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
+            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
             out SafeBignumHandle qy_bn, out int y_cb,
             out SafeBignumHandle d_bn, out int d_cb);
@@ -149,10 +148,10 @@ internal static partial class Interop
             return parameters;
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        [LibraryImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
-            bool includePrivate,
+            [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out ECCurve.ECCurveType curveType,
             out SafeBignumHandle qx, out int x_cb,
             out SafeBignumHandle qy, out int y_cb,

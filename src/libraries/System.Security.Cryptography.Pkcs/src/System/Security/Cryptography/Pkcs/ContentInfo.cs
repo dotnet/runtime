@@ -19,8 +19,17 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        public ContentInfo(Oid contentType!!, byte[] content!!)
+        public ContentInfo(Oid contentType, byte[] content)
         {
+            if (contentType is null)
+            {
+                throw new ArgumentNullException(nameof(contentType));
+            }
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
             ContentType = contentType;
             Content = content;
         }
@@ -29,8 +38,13 @@ namespace System.Security.Cryptography.Pkcs
 
         public byte[] Content { get; }
 
-        public static Oid GetContentType(byte[] encodedMessage!!)
+        public static Oid GetContentType(byte[] encodedMessage)
         {
+            if (encodedMessage is null)
+            {
+                throw new ArgumentNullException(nameof(encodedMessage));
+            }
+
             return PkcsPal.Instance.GetEncodedMessageType(encodedMessage);
         }
 

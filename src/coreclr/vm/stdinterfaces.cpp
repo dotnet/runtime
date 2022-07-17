@@ -32,7 +32,7 @@
 #include "posterror.h"
 #include <corerror.h>
 #include <mscoree.h>
-#include "mtx.h"
+#include <mtx.h>
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
@@ -556,7 +556,7 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     ITypeLib *pTlb = pAssembly->GetTypeLib();
     if (pTlb != nullptr)
     {
-        // If the cached value is the invalid sentinal, an attempt was already made but failed.
+        // If the cached value is the invalid sentinel, an attempt was already made but failed.
         if (pTlb == Assembly::InvalidTypeLib)
             return TLBX_E_LIBNOTREGISTERED;
 
@@ -2171,7 +2171,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
     {
         if(!pSimpleWrap->GetComCallWrapperTemplate()->IsSafeTypeForMarshalling())
         {
-            LogInterop(W("Unmarshal class blocked for reflection types."));
+            LogInterop("Unmarshal class blocked for reflection types.");
             hr = E_NOINTERFACE;
             return hr;
         }
@@ -2241,7 +2241,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
     {
         if(!pSimpleWrap->GetComCallWrapperTemplate()->IsSafeTypeForMarshalling())
         {
-            LogInterop(W("Marshal interface blocked for reflection types."));
+            LogInterop("Marshal interface blocked for reflection types.");
             hr = E_NOINTERFACE;
             return hr;
         }

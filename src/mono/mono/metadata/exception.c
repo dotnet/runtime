@@ -1079,7 +1079,7 @@ append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset
 	if (data->prefix)
 		g_string_append (data->text, data->prefix);
 	if (method) {
-		char *msg = mono_debug_print_stack_frame (method, native_offset, NULL);
+		char *msg = mono_debug_print_stack_frame (method, (uint32_t)native_offset, NULL);
 		g_string_append_printf (data->text, "%s\n", msg);
 		g_free (msg);
 	} else {
@@ -1328,7 +1328,6 @@ mono_error_set_field_missing (MonoError *error, MonoClass *klass, const char *fi
 void
 mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *method_name, MonoMethodSignature *sig, const char *reason, ...)
 {
-	int i;
 	char *result;
 	GString *res;
 
@@ -1361,7 +1360,7 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 	if (sig) {
 		if (sig->generic_param_count) {
 			g_string_append_c (res, '<');
-			for (i = 0; i < sig->generic_param_count; ++i) {
+			for (guint i = 0; i < sig->generic_param_count; ++i) {
 				if (i > 0)
 					g_string_append (res, ",");
 				g_string_append_printf (res, "!%d", i);
@@ -1370,7 +1369,7 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 		}
 
 		g_string_append_c (res, '(');
-		for (i = 0; i < sig->param_count; ++i) {
+		for (guint16 i = 0; i < sig->param_count; ++i) {
 			if (i > 0)
 				g_string_append_c (res, ',');
 			mono_type_get_desc (res, sig->params [i], TRUE);

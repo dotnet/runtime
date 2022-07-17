@@ -58,8 +58,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The hash algorithm to use when signing the certificate or certificate request.
         /// </param>
         /// <seealso cref="X500DistinguishedName(string)"/>
-        public CertificateRequest(string subjectName!!, ECDsa key!!, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(string subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = new X500DistinguishedName(subjectName);
@@ -83,8 +85,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="hashAlgorithm">
         ///   The hash algorithm to use when signing the certificate or certificate request.
         /// </param>
-        public CertificateRequest(X500DistinguishedName subjectName!!, ECDsa key!!, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(X500DistinguishedName subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
@@ -176,8 +180,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="hashAlgorithm">
         ///   The hash algorithm to use when signing the certificate or certificate request.
         /// </param>
-        public CertificateRequest(X500DistinguishedName subjectName!!, PublicKey publicKey!!, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(X500DistinguishedName subjectName, PublicKey publicKey, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(publicKey);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
@@ -238,8 +244,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="signatureGenerator">
         ///   A <see cref="X509SignatureGenerator"/> with which to sign the request.
         /// </param>
-        public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator!!)
+        public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
+            ArgumentNullException.ThrowIfNull(signatureGenerator);
+
             X501Attribute[] attributes = Array.Empty<X501Attribute>();
 
             if (CertificateExtensions.Count > 0)
@@ -405,11 +413,13 @@ namespace System.Security.Cryptography.X509Certificates
         ///   which does not accept a <see cref="RSASignaturePadding"/> value.
         /// </exception>
         public X509Certificate2 Create(
-            X509Certificate2 issuerCertificate!!,
+            X509Certificate2 issuerCertificate,
             DateTimeOffset notBefore,
             DateTimeOffset notAfter,
             ReadOnlySpan<byte> serialNumber)
         {
+            ArgumentNullException.ThrowIfNull(issuerCertificate);
+
             if (!issuerCertificate.HasPrivateKey)
                 throw new ArgumentException(SR.Cryptography_CertReq_IssuerRequiresPrivateKey, nameof(issuerCertificate));
             if (notAfter < notBefore)
@@ -581,12 +591,15 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
         public X509Certificate2 Create(
-            X500DistinguishedName issuerName!!,
-            X509SignatureGenerator generator!!,
+            X500DistinguishedName issuerName,
+            X509SignatureGenerator generator,
             DateTimeOffset notBefore,
             DateTimeOffset notAfter,
             ReadOnlySpan<byte> serialNumber)
         {
+            ArgumentNullException.ThrowIfNull(issuerName);
+            ArgumentNullException.ThrowIfNull(generator);
+
             if (notAfter < notBefore)
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (serialNumber == null || serialNumber.Length < 1)
@@ -672,7 +685,7 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
-        private ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
+        private static ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
         {
             byte[] newSerialNumber;
 

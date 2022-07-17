@@ -27,7 +27,9 @@ namespace System.Diagnostics
 
         private static void SetCurrent(Activity? activity)
         {
+            Activity? previous = s_current.Value;
             s_current.Value = activity;
+            CurrentChanged?.Invoke(null, new ActivityChangedEventArgs(previous, activity));
         }
     }
 }

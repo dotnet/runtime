@@ -147,13 +147,16 @@ namespace ILCompiler.DependencyAnalysis
                     if  (!interfaceType.IsTypeDefinition)
                         declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
 
-                    var implMethod = declTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    var implMethod = declMethod.Signature.IsStatic ?
+                        declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(declMethod) :
+                        declTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
                     // dispatch will walk the inheritance chain).
                     if (implMethod != null)
                     {
-                        if (implMethod.CanMethodBeInSealedVTable() && !implMethod.OwningType.HasSameTypeDefinition(declType))
+                        if (implMethod.Signature.IsStatic ||
+                            (implMethod.CanMethodBeInSealedVTable() && !implMethod.OwningType.HasSameTypeDefinition(declType)))
                         {
                             TypeDesc implType = declType;
                             while (!implType.HasSameTypeDefinition(implMethod.OwningType))
@@ -201,7 +204,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
-            objData.RequireInitialAlignment(4);
+            objData.RequireInitialAlignment(factory.Target.SupportsRelativePointers ? 4 : factory.Target.PointerSize);
             objData.AddSymbol(this);
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
@@ -245,12 +248,15 @@ namespace ILCompiler.DependencyAnalysis
 
             public IMethodNode GetTarget(NodeFactory factory, TypeDesc implementingClass)
             {
+                bool isStaticVirtualMethod = _method.Signature.IsStatic;
                 MethodDesc implMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (_interfaceDefinition != null && implMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                if (_interfaceDefinition != null && !isStaticVirtualMethod && implMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                 {
+                    // Canonical instance default interface methods need to go through a thunk that acquires the generic context from `this`.
+                    // Static methods have their generic context passed explicitly.
                     implMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(implMethod, implementingClass.ConvertToCanonForm(CanonicalFormKind.Specific), _interfaceDefinition);
                 }
-                return factory.MethodEntrypoint(implMethod, _method.OwningType.IsValueType);
+                return factory.MethodEntrypoint(implMethod, unboxingStub: !isStaticVirtualMethod && _method.OwningType.IsValueType);
             }
 
             public bool Matches(MethodDesc method)

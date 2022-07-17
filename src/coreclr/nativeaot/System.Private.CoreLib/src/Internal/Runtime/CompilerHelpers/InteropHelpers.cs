@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -30,30 +31,6 @@ namespace Internal.Runtime.CompilerHelpers
         public static unsafe string AnsiStringToString(byte* buffer)
         {
             return PInvokeMarshal.AnsiStringToString(buffer);
-        }
-
-        internal static unsafe byte* StringToUTF8String(string str)
-        {
-            if (str == null)
-                return null;
-
-            fixed (char* charsPtr = str)
-            {
-                int length = Encoding.UTF8.GetByteCount(str);
-                byte* bytesPtr = (byte*)Marshal.AllocCoTaskMem(checked(length + 1));
-                int bytes = Encoding.UTF8.GetBytes(charsPtr, str.Length, bytesPtr, length);
-                Debug.Assert(bytes == length);
-                bytesPtr[length] = 0;
-                return bytesPtr;
-            }
-        }
-
-        public static unsafe string UTF8StringToString(byte* buffer)
-        {
-            if (buffer == null)
-                return null;
-
-            return Encoding.UTF8.GetString(buffer, string.strlen(buffer));
         }
 
         internal static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
@@ -340,7 +317,7 @@ namespace Internal.Runtime.CompilerHelpers
                 if (hModule == IntPtr.Zero)
                 {
                     // Built-in rules didn't resolve the library. Use AssemblyLoadContext as a last chance attempt.
-                    AssemblyLoadContext? loadContext = AssemblyLoadContext.GetLoadContext(callingAssembly);
+                    AssemblyLoadContext loadContext = AssemblyLoadContext.GetLoadContext(callingAssembly)!;
                     hModule = loadContext.GetResolvedUnmanagedDll(callingAssembly, moduleName);
                 }
 
@@ -429,13 +406,8 @@ namespace Internal.Runtime.CompilerHelpers
             // Marshal.AllocCoTaskMem will throw OOMException if out of memory
             Debug.Assert(ptr != null);
 
-            Buffer.ZeroMemory(ptr, (uint)size);
+            NativeMemory.Clear(ptr, (uint)size);
             return ptr;
-        }
-
-        internal static unsafe void CoTaskMemFree(void* p)
-        {
-            Marshal.FreeCoTaskMem((IntPtr)p);
         }
 
         /// <summary>
@@ -502,10 +474,12 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "This API will be called from compiler generated code only.")]
         internal static int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -516,10 +490,12 @@ namespace Internal.Runtime.CompilerHelpers
             return Marshal.SizeOf(o.GetType());
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "This API will be called from compiler generated code only.")]
         internal static void AsAnyMarshalManagedToNative(object o, IntPtr address)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -532,7 +508,7 @@ namespace Internal.Runtime.CompilerHelpers
         internal static void AsAnyMarshalNativeToManaged(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -542,10 +518,12 @@ namespace Internal.Runtime.CompilerHelpers
             Marshal.PtrToStructureImpl(address, o);
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "This API will be called from compiler generated code only.")]
         internal static void AsAnyCleanupNative(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.EETypePtr.IsArray ||
+            if (o.GetEETypePtr().IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -612,7 +590,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(marshaller.EETypePtr, EETypePtr.EETypePtrOf<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(marshaller.GetEETypePtr(), EETypePtr.EETypePtrOf<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }
@@ -679,7 +657,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             internal static CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
 
-            protected unsafe override object Factory(CustomMarshallerKey key)
+            protected override unsafe object Factory(CustomMarshallerKey key)
             {
                 return key.GetInstanceMethod(key.Cookie);
             }

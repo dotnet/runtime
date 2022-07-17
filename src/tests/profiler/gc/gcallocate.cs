@@ -14,6 +14,11 @@ namespace Profiler.Tests
         {
             int[] large = new int[100000];
             int[] pinned = GC.AllocateArray<int>(32, true);
+
+            // don't let the jit to optimize these allocations
+            GC.KeepAlive(large);
+            GC.KeepAlive(pinned);
+
             Console.WriteLine("Test Passed");
             return 100;
         }

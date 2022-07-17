@@ -31,10 +31,11 @@ namespace System.Text.Json
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
 
             ReadStack state = default;
+            jsonTypeInfo.EnsureConfigured();
             state.Initialize(jsonTypeInfo);
 
             TValue? value;
-            JsonConverter jsonConverter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            JsonConverter jsonConverter = jsonTypeInfo.Converter;
 
             // For performance, the code below is a lifted ReadCore() above.
             if (jsonConverter is JsonConverter<TValue> converter)

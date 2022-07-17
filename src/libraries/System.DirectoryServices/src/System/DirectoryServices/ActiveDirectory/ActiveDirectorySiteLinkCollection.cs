@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (links == null)
                 throw new ArgumentNullException(nameof(links));
 
-            for (int i = 0; i < links.Length; i = i + 1)
+            for (int i = 0; i < links.Length; i++)
                 this.Add(links[i]);
         }
 
@@ -175,7 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnInsertComplete(int index, object value)
 #pragma warning restore CS8765
         {
@@ -194,7 +194,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnRemoveComplete(int index, object value)
 #pragma warning restore CS8765
         {
@@ -210,7 +210,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnSetComplete(int index, object oldValue, object newValue)
 #pragma warning restore CS8765
         {

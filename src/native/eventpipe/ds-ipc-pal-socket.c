@@ -530,14 +530,14 @@ ipc_socket_accept (
 	ds_ipc_socket_t client_socket;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {
-#if defined(HAVE_ACCEPT4) && defined(SOCK_CLOEXEC)
+#if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
     	client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
 #else
     	client_socket = accept (s, address, address_len);
 #endif
 	} while (ipc_retry_syscall (client_socket));
 
-#if !defined(HAVE_ACCEPT4) || !defined(SOCK_CLOEXEC)
+#if !HAVE_ACCEPT4 || !defined(SOCK_CLOEXEC)
 #if defined(FD_CLOEXEC)
 		if (client_socket != -1)
 		{
@@ -848,7 +848,7 @@ ipc_alloc_tcp_address (
 
 	const ep_char8_t *host_address = address;
 	const ep_char8_t *host_port = strrchr (address, ':');
-	
+
 	if (host_port && host_port != host_address) {
 		size_t host_address_len = host_port - address;
 		address [host_address_len] = 0;
@@ -884,7 +884,7 @@ ipc_alloc_tcp_address (
 		if (!ipc->server_address && info->ai_family == AF_INET) {
 			server_address = ep_rt_object_alloc (struct sockaddr_in);
 			if (server_address) {
-				server_address->sin_family = info->ai_family;
+				server_address->sin_family = (uint8_t) info->ai_family;
 				server_address->sin_port = htons (port);
 				server_address->sin_addr = ((struct sockaddr_in*)info->ai_addr)->sin_addr;
 				ipc->server_address = (ds_ipc_socket_address_t *)server_address;
@@ -898,7 +898,7 @@ ipc_alloc_tcp_address (
 		if (!ipc->server_address && info->ai_family == AF_INET6) {
 			server_address6 = ep_rt_object_alloc (struct sockaddr_in6);
 			if (server_address6) {
-				server_address6->sin6_family = info->ai_family;
+				server_address6->sin6_family = (uint8_t) info->ai_family;
 				server_address6->sin6_port = htons (port);
 				server_address6->sin6_addr = ((struct sockaddr_in6*)info->ai_addr)->sin6_addr;
 				ipc->server_address = (ds_ipc_socket_address_t *)server_address6;

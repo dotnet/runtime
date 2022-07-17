@@ -117,6 +117,13 @@ typedef int32_t (*SslCtxSetAlpnCallback)(SSL* ssl,
     const uint8_t* in,
     uint32_t inlen,
     void* arg);
+
+// the function pointer used for new  session
+typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* sesssion);
+
+// the function pointer used for new  session
+typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* sesssion);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -152,10 +159,36 @@ Requests that client sends Post-Handshake Authentication extension in ClientHell
 */
 PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
 
-/*=======
+/*
 Sets session caching. 0 is disabled.
 */
-PALEXPORT void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode);
+PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
+
+/*
+Returns name associated with given ssl session.
+OpenSSL holds reference to it and it must not be freed.
+*/
+PALEXPORT const char* CryptoNative_SslGetServerName(SSL* ssl);
+
+/*
+This function will attach existing ssl session for possible TLS resume.
+*/
+PALEXPORT int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session);
+
+/*
+ * Frees SSL session.
+ */
+PALEXPORT void CryptoNative_SslSessionFree(SSL_SESSION* session);
+
+/*
+ * Get name associated with given SSL_SESSION.
+ */
+PALEXPORT const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session);
+
+/*
+ * Associate name with given SSL_SESSION.
+ */
+PALEXPORT int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostname);
 
 /*
 Shims the SSL_new method.
@@ -332,7 +365,7 @@ PALEXPORT void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx);
 /*
 Shims the SSL_set_quiet_shutdown method.
 */
-PALEXPORT void CryptoNative_SslSetQuietShutdown(SSL* ctx, int mode);
+PALEXPORT void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode);
 
 /*
 Shims the SSL_get_client_CA_list method.
@@ -349,7 +382,7 @@ PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
 /*
 Shims SSL_set_ex_data to attach application context.
 */
-PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void *ptr);
+PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void* ptr);
 
 /*
 Shims SSL_get_ex_data to retrieve application context.
@@ -357,10 +390,25 @@ Shims SSL_get_ex_data to retrieve application context.
 PALEXPORT void* CryptoNative_SslGetData(SSL* ssl);
 
 /*
+Shims SSL_CTX_set_ex_data to attach application context.
+*/
+PALEXPORT int32_t  CryptoNative_SslCtxSetData(SSL_CTX* ctx, void* ptr);
+
+/*
+Shims SSL_CTX_get_ex_data to retrieve application context.
+*/
+PALEXPORT void* CryptoNative_SslCtxGetData(SSL_CTX* ctx);
+
+/*
 
 Sets the specified encryption policy on the SSL_CTX.
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+
+/*
+Activates the default OCSP stapling callback.
+*/
+PALEXPORT void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx);
 
 /*
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
@@ -417,7 +465,7 @@ PALEXPORT int32_t CryptoNative_SslAddClientCAs(SSL* ssl, X509** x509s, uint32_t 
 /*
 Shims the ssl_ctx_set_alpn_select_cb method.
 */
-PALEXPORT void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void *arg);
+PALEXPORT void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg);
 
 /*
 Shims the ssl_set_alpn_protos method.
@@ -450,3 +498,8 @@ PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t c
 Checks if given protocol version is supported.
 */
 PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
+
+/*
+Staples an encoded OCSP response onto the TLS session
+*/
+PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);

@@ -12,15 +12,14 @@ using System.Text;
 using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
+using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
+using F = System.Xml.Xsl.Xslt.AstFactory;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
+using QName = System.Xml.Xsl.Xslt.XsltInput.DelayedQName;
+using XsltAttribute = System.Xml.Xsl.Xslt.XsltInput.XsltAttribute;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ContextInfo = XsltInput.ContextInfo;
-    using F = AstFactory;
-    using TypeFactory = XmlQueryTypeFactory;
-    using QName = XsltInput.DelayedQName;
-    using XsltAttribute = XsltInput.XsltAttribute;
-
     internal sealed class XsltLoader : IErrorHelper
     {
         private Compiler _compiler = null!;
@@ -1296,10 +1295,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (scriptNs == null)
-            {
-                scriptNs = _compiler.CreatePhantomNamespace();
-            }
+            scriptNs ??= _compiler.CreatePhantomNamespace();
             ParseStringAttribute(1, "language");
 
             if (!_compiler.Settings.EnableScript)
@@ -1551,11 +1547,7 @@ namespace System.Xml.Xsl.Xslt
         {
             ContextInfo ctxInfo = _input.GetAttributes(_applyTemplatesAttributes);
 
-            string? select = ParseStringAttribute(0, "select");
-            if (select == null)
-            {
-                select = "node()";
-            }
+            string select = ParseStringAttribute(0, "select") ?? "node()";
             QilName mode = ParseModeAttribute(1);
 
             List<XslNode> content = LoadWithParams(InstructionFlags.AllowSort);
@@ -1819,10 +1811,7 @@ namespace System.Xml.Xsl.Xslt
             string? groupingSize = ParseStringAttribute(10, "grouping-size");
 
             // Default values for xsl:number :  level="single"  format="1"
-            if (format == null)
-            {
-                format = "1";
-            }
+            format ??= "1";
 
             CheckNoContent();
             return SetInfo(
@@ -1848,13 +1837,7 @@ namespace System.Xml.Xsl.Xslt
             string? separator = ParseStringAttribute(1, "separator");
             bool doe = ParseYesNoAttribute(2, /*attName:*/"disable-output-escaping") == TriState.True;
 
-            if (separator == null)
-            {
-                if (!_input.BackwardCompatibility)
-                {
-                }
-            }
-            else
+            if (separator != null)
             {
                 ReportNYI("xsl:value-of/@separator");
             }
@@ -2154,10 +2137,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (select == null /*&& content.Count == 0*/)
-            {
-                select = ".";
-            }
+            select ??= ".";
 
             return SetInfo(F.Sort(select, lang, dataType, order, caseOrder, _input.XslVersion),
                 null, ctxInfo
@@ -2194,10 +2174,7 @@ namespace System.Xml.Xsl.Xslt
 
             string select = ParseStringAttribute(0, "select");
             string regex  = ParseStringAttribute(1, "regex" );
-            string flags  = ParseStringAttribute(2, "flags" );
-            if (flags == null) {
-                flags = "";
-            }
+            string flags  = ParseStringAttribute(2, "flags" ) ?? "";
 
             ReportNYI("xsl:analyze-string");
 
@@ -2419,9 +2396,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (format != null) ReportNYI("xsl:result-document/@format");
 
-            if (href == null) {
-                href = string.Empty;
-            }
+            href ??= string.Empty;
             // attHref is a BaseUri of new output tree. It should be resolved relative to "base output URI"
 
 
@@ -2729,7 +2704,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 if (1 < modes.Count)
                 {
-                    ReportNYI("Multipe modes");
+                    ReportNYI("Multiple modes");
                     return nullMode;
                 }
                 if (modes.Count == 0)
@@ -2854,11 +2829,7 @@ namespace System.Xml.Xsl.Xslt
                     }
                     else
                     {
-                        namespaceName = _input.LookupXmlNamespace(prefix);
-                        if (namespaceName == null)
-                        {
-                            namespaceName = _compiler.CreatePhantomNamespace();
-                        }
+                        namespaceName = _input.LookupXmlNamespace(prefix) ?? _compiler.CreatePhantomNamespace();
                     }
                     int index = (
                         (localName == null ? 1 : 0) +
@@ -2876,7 +2847,7 @@ namespace System.Xml.Xsl.Xslt
             ResolveQName(/*ignoreDefaultNs:*/true, attValue, out localName, out namespaceName, out prefix);
             method = XmlOutputMethod.AutoDetect;
 
-            if (_compiler.IsPhantomNamespace(namespaceName))
+            if (Compiler.IsPhantomNamespace(namespaceName))
             {
                 return null;
             }
@@ -3078,10 +3049,7 @@ namespace System.Xml.Xsl.Xslt
                     // NOTE: XmlNodeType.SignificantWhitespace is not allowed here
                     if (_input.NodeType != XmlNodeType.Whitespace)
                     {
-                        if (result == null)
-                        {
-                            result = _input.BuildNameLineInfo();
-                        }
+                        result ??= _input.BuildNameLineInfo();
                         _input.SkipNode();
                     }
                 } while (_input.MoveToNextSibling());
@@ -3118,7 +3086,7 @@ namespace System.Xml.Xsl.Xslt
         // NOTE! We inverting namespace order that is irelevant for namespace of the same node, but
         // for included styleseets we don't keep stylesheet as a node and adding it's namespaces to
         // each toplevel element by MergeNamespaces().
-        // Namespaces of stylesheet can be overriden in template and to make this works correclety we
+        // Namespaces of stylesheet can be overridden in template and to make this works correclety we
         // should attache them after NsDec of top level elements.
         // Toplevel element almost never contais NsDecl and in practice node duplication will not happened, but if they have
         // we should copy NsDecls of stylesheet locally in toplevel elements.

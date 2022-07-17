@@ -49,8 +49,10 @@ namespace System.Diagnostics
             Dictionary.Add(objectName, value);
         }
 
-        public bool Contains(string counterName!!)
+        public bool Contains(string counterName)
         {
+            ArgumentNullException.ThrowIfNull(counterName);
+
             object objectName = counterName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }

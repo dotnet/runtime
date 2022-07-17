@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -18,9 +17,9 @@ namespace System.Net.Test.Common
         private X509Certificate2 _cert;
         private QuicListener _listener;
 
-        public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
+        public override Uri Address => new Uri($"https://{_listener.LocalEndPoint}/");
 
-        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, Http3Options options = null)
+        public Http3LoopbackServer(Http3Options options = null)
         {
             options ??= new Http3Options();
 
@@ -29,26 +28,41 @@ namespace System.Net.Test.Common
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(options.Address, 0),
-                ServerAuthenticationOptions = new SslServerAuthenticationOptions
+                ApplicationProtocols = new List<SslApplicationProtocol>
                 {
-                    EnabledSslProtocols = options.SslProtocols,
-                    ApplicationProtocols = new List<SslApplicationProtocol>
-                    {
-                        new SslApplicationProtocol(options.Alpn)
-                    },
-                    ServerCertificate = _cert,
-                    ClientCertificateRequired = false
+                    new SslApplicationProtocol(options.Alpn)
                 },
-                MaxUnidirectionalStreams = options.MaxUnidirectionalStreams,
-                MaxBidirectionalStreams = options.MaxBidirectionalStreams,
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = new QuicServerConnectionOptions()
+                    {
+                        DefaultStreamErrorCode = Http3LoopbackConnection.H3_REQUEST_CANCELLED,
+                        DefaultCloseErrorCode = Http3LoopbackConnection.H3_NO_ERROR,
+                        MaxInboundBidirectionalStreams = options.MaxInboundBidirectionalStreams,
+                        MaxInboundUnidirectionalStreams = options.MaxInboundUnidirectionalStreams,
+                        ServerAuthenticationOptions = new SslServerAuthenticationOptions
+                        {
+                            EnabledSslProtocols = options.SslProtocols,
+                            ApplicationProtocols = new List<SslApplicationProtocol>
+                            {
+                                new SslApplicationProtocol(options.Alpn)
+                            },
+                            ServerCertificate = _cert,
+                            ClientCertificateRequired = false
+                        }
+                    };
+                    return ValueTask.FromResult(serverOptions);
+                }
             };
 
-            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, listenerOptions);
+            ValueTask<QuicListener> valueTask = QuicListener.ListenAsync(listenerOptions);
+            Debug.Assert(valueTask.IsCompleted);
+            _listener = valueTask.Result;
         }
 
         public override void Dispose()
         {
-            _listener.Dispose();
+            _listener.DisposeAsync().GetAwaiter().GetResult();
             _cert.Dispose();
         }
 
@@ -68,34 +82,27 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
+            await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
             await funcAsync(con).ConfigureAwait(false);
             await con.ShutdownAsync();
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using var con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
+            await using Http3LoopbackConnection con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
             return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }
     }
 
     public sealed class Http3LoopbackServerFactory : LoopbackServerFactory
     {
-        private QuicImplementationProvider _quicImplementationProvider;
-
-        public Http3LoopbackServerFactory(QuicImplementationProvider quicImplementationProvider)
-        {
-            _quicImplementationProvider = quicImplementationProvider;
-        }
-
-        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory(null);
+        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory();
 
         public override Version Version { get; } = new Version(3, 0);
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new Http3LoopbackServer(_quicImplementationProvider, CreateOptions(options));
+            return new Http3LoopbackServer(CreateOptions(options));
         }
 
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)
@@ -131,16 +138,16 @@ namespace System.Net.Test.Common
     }
     public class Http3Options : GenericLoopbackOptions
     {
-        public int MaxUnidirectionalStreams { get; set; }
+        public int MaxInboundUnidirectionalStreams { get; set; }
 
-        public int MaxBidirectionalStreams { get; set; }
+        public int MaxInboundBidirectionalStreams { get; set; }
 
         public string Alpn { get; set; }
 
         public Http3Options()
         {
-            MaxUnidirectionalStreams = 100;
-            MaxBidirectionalStreams = 100;
+            MaxInboundUnidirectionalStreams = 10;
+            MaxInboundBidirectionalStreams = 100;
             Alpn = SslApplicationProtocol.Http3.ToString();
         }
     }

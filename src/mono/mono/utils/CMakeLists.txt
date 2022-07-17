@@ -65,14 +65,9 @@ set(utils_common_sources
     mono-coop-mutex.h
     mono-once.h
     mono-lazy-init.h
-    mono-networkinterfaces.c
-    mono-networkinterfaces.h
     mono-proclib.c
-    mono-proclib-windows.c
     mono-proclib.h
-    mono-proclib-windows-internals.h
     mono-publib.c
-    mono-jemalloc.c
     mono-string.h
     mono-time.c
     mono-time.h
@@ -95,7 +90,6 @@ set(utils_common_sources
     freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
-    gc_wrapper.h
     mono-error.c
     mono-error-internals.h
     monobitset.h
@@ -141,6 +135,7 @@ set(utils_common_sources
     mono-threads-android.c
     mono-threads-haiku.c
     mono-threads-aix.c
+    mono-threads-wasm.h
     mono-threads-wasm.c
     mono-threads-sunos.c
     mono-threads.h
@@ -155,7 +150,6 @@ set(utils_common_sources
     mono-tls.c
     mono-utils-debug.c
     mono-utils-debug.h
-    linux_magic.h
     mono-memory-model.h
     atomic.h
     atomic.c
@@ -215,9 +209,7 @@ endif()
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-cross.c")
-elseif(TARGET_AMD64)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
-elseif(TARGET_X86)
+elseif(TARGET_AMD64 OR TARGET_X86)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
 elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
@@ -227,8 +219,32 @@ elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+elseif(TARGET_POWERPC OR TARGET_POWERPC64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 else()
   message(FATAL_ERROR "")
 endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+
+if(ENABLE_DTRACE)
+    find_program(DTRACE dtrace)
+    if(TARGET_OSX)
+        set(dtrace_flags "-arch ${TARGET_ARCH}")
+    else()
+        if(TARGET_SIZEOF_VOID_P EQUAL 8)
+            set(dtrace_flags "-64")
+        elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+            set(dtrace_flags "-32")
+        endif()
+    endif()
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h
+        COMMAND ${DTRACE} -h -s "${CMAKE_CURRENT_LIST_DIR}/mono.d" -o "${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h"
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/mono.d
+        VERBATIM
+    )
+
+    set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
+endif()

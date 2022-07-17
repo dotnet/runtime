@@ -26,8 +26,10 @@ namespace System.ComponentModel.Composition
             return new ReadOnlyDictionary<string, object?>(metadata);
         }
 
-        public static T? GetValue<T>(this IDictionary<string, object?> metadata!!, string key)
+        public static T? GetValue<T>(this IDictionary<string, object?> metadata, string key)
         {
+            ArgumentNullException.ThrowIfNull(metadata);
+
             if (metadata.TryGetValue(key, out object? untypedValue) && untypedValue is T t)
             {
                 return t;

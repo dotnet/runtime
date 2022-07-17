@@ -60,10 +60,8 @@ namespace System.Net
                     {
                         _cookies = ParseCookies(RequestUri, cookieString);
                     }
-                    if (_cookies == null)
-                    {
-                        _cookies = new CookieCollection();
-                    }
+
+                    _cookies ??= new CookieCollection();
                 }
                 return _cookies;
             }
@@ -514,12 +512,9 @@ namespace System.Net
 
                 internal void AddByte(byte b)
                 {
-                    {
-                        if (_byteBuffer == null)
-                            _byteBuffer = new byte[_bufferSize];
+                    _byteBuffer ??= new byte[_bufferSize];
 
-                        _byteBuffer[_numBytes++] = b;
-                    }
+                    _byteBuffer[_numBytes++] = b;
                 }
 
                 internal string GetString()
@@ -537,8 +532,8 @@ namespace System.Net
 
             internal static void FillFromString(NameValueCollection nvc, string s, bool urlencoded, Encoding encoding)
             {
+                int i = s.StartsWith('?') ? 1 : 0;
                 int l = s.Length;
-                int i = (l > 0 && s[0] == '?') ? 1 : 0;
 
                 while (i < l)
                 {

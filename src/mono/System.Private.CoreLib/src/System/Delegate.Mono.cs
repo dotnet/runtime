@@ -70,16 +70,14 @@ namespace System
         private DelegateData data;
 
         private bool method_is_virtual;
+        private bool bound;
         #endregion
 
         [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
-
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             this._target = target;
             this.data = new DelegateData()
@@ -90,14 +88,12 @@ namespace System
 
         protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
 
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (target is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
@@ -125,10 +121,8 @@ namespace System
 
         private static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure, bool allowClosed)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -159,12 +153,9 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -185,14 +176,11 @@ namespace System
 
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -443,8 +431,7 @@ namespace System
 
             object? target = _target;
 
-            if (data is null)
-                data = CreateDelegateData();
+            data ??= CreateDelegateData();
 
             // replace all Type.Missing with default values defined on parameters of the delegate if any
             MethodInfo? invoke = GetType().GetMethod("Invoke");

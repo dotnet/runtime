@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid", StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEcKeyHandle AndroidCryptoNative_EcKeyCreateByOid(string oid);
         internal static SafeEcKeyHandle? EcKeyCreateByOid(string oid)
         {
@@ -19,14 +19,14 @@ internal static partial class Interop
             return handle;
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyDestroy")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyDestroy")]
         internal static partial void EcKeyDestroy(IntPtr a);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyUpRef")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EcKeyUpRef(IntPtr r);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        [LibraryImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_EcKeyGetSize(SafeEcKeyHandle ecKey, out int keySize);
         internal static int EcKeyGetSize(SafeEcKeyHandle key)
         {
@@ -39,7 +39,7 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyGetCurveName")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyGetCurveName")]
         private static partial int AndroidCryptoNative_EcKeyGetCurveName(SafeEcKeyHandle ecKey, out IntPtr curveName);
 
         internal static string? EcKeyGetCurveName(SafeEcKeyHandle key)
@@ -103,6 +103,7 @@ namespace System.Security.Cryptography
 
             if (!Interop.AndroidCrypto.EcKeyUpRef(handle))
             {
+                safeHandle.Dispose();
                 throw new CryptographicException();
             }
 

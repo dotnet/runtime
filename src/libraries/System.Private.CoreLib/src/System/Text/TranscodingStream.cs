@@ -439,8 +439,8 @@ namespace System.Text
 
         public override unsafe int ReadByte()
         {
-            byte b;
-            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) != 0 ? b : -1;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -606,7 +606,7 @@ namespace System.Text
             }
         }
 
-        public override unsafe void WriteByte(byte value)
-            => Write(new ReadOnlySpan<byte>(&value, 1));
+        public override void WriteByte(byte value)
+            => Write(new ReadOnlySpan<byte>(in value));
     }
 }

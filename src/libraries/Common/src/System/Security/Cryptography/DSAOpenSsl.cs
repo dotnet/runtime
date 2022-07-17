@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -9,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class DSAOpenSsl : DSA
+    public sealed partial class DSAOpenSsl : DSA, IRuntimeAlgorithm
     {
         // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
         // maximally produces a 72-byte DER signature.
@@ -21,7 +22,7 @@ namespace System.Security.Cryptography
         private const int SignatureStackBufSize = 72;
         private const int BitsPerByte = 8;
 
-        private Lazy<SafeDsaHandle> _key = null!;
+        private Lazy<SafeDsaHandle>? _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -125,7 +126,9 @@ namespace System.Security.Cryptography
                 parameters.Y, parameters.Y.Length,
                 parameters.X, parameters.X != null ? parameters.X.Length : 0))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                key.Dispose();
+                throw e;
             }
 
             SetKey(key);
@@ -154,7 +157,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 FreeKey();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -164,12 +167,7 @@ namespace System.Security.Cryptography
         {
             if (_key != null && _key.IsValueCreated)
             {
-                SafeDsaHandle handle = _key.Value;
-
-                if (handle != null)
-                {
-                    handle.Dispose();
-                }
+                _key.Value?.Dispose();
             }
         }
 
@@ -187,31 +185,18 @@ namespace System.Security.Cryptography
 
             if (!Interop.Crypto.DsaGenerateKey(out key, KeySize))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                key.Dispose();
+                throw e;
             }
 
             return key;
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
+        public override byte[] CreateSignature(byte[] rgbHash)
         {
-            // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
-            Debug.Assert(offset >= 0 && offset <= data.Length);
-            Debug.Assert(count >= 0 && count <= data.Length);
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
+            ArgumentNullException.ThrowIfNull(rgbHash);
 
-            return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
-        }
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
-
-        public override byte[] CreateSignature(byte[] rgbHash!!)
-        {
             SafeDsaHandle key = GetKey();
             int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
             int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
@@ -320,8 +305,11 @@ namespace System.Security.Cryptography
             return destination.Slice(0, actualLength);
         }
 
-        public override bool VerifySignature(byte[] rgbHash!!, byte[] rgbSignature!!)
+        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
+
             return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
         }
 
@@ -357,6 +345,7 @@ namespace System.Security.Cryptography
             return Interop.Crypto.DsaVerify(key, hash, signature);
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
             if (_key == null)
@@ -375,6 +364,7 @@ namespace System.Security.Cryptography
             return key;
         }
 
+        [MemberNotNull(nameof(_key))]
         private void SetKey(SafeDsaHandle newKey)
         {
             // Do not call ThrowIfDisposed here, as it breaks the SafeEvpPKey ctor
@@ -383,6 +373,7 @@ namespace System.Security.Cryptography
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.DsaKeySize(newKey));
 
+            FreeKey();
             _key = new Lazy<SafeDsaHandle>(newKey);
         }
 

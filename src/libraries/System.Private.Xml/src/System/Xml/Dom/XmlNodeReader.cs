@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Xml.Schema;
+
 namespace System.Xml
 {
-    using System;
-    using System.Text;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Xml.Schema;
-    using System.Globalization;
-
     internal sealed class XmlNodeReaderNavigator
     {
         private XmlNode _curNode;
@@ -167,7 +167,7 @@ namespace System.Xml
             }
         }
 
-        private bool IsLocalNameEmpty(XmlNodeType nt)
+        private static bool IsLocalNameEmpty(XmlNodeType nt)
         {
             switch (nt)
             {
@@ -228,34 +228,46 @@ namespace System.Xml
             {
                 string? retValue;
                 XmlNodeType nt = _curNode.NodeType;
+
                 if (_nAttrInd != -1)
                 {
                     //Pointing at the one of virtual attributes of Declaration or DocumentType nodes
                     Debug.Assert(nt == XmlNodeType.XmlDeclaration || nt == XmlNodeType.DocumentType);
                     Debug.Assert(_nAttrInd >= 0 && _nAttrInd < AttributeCount);
-                    if (_curNode.NodeType == XmlNodeType.XmlDeclaration)
-                        return decNodeAttributes[_nAttrInd].value!;
-                    else
-                        return docTypeNodeAttributes[_nAttrInd].value!;
+                    return _curNode.NodeType == XmlNodeType.XmlDeclaration ?
+                        decNodeAttributes[_nAttrInd].value! :
+                        docTypeNodeAttributes[_nAttrInd].value!;
                 }
+
                 if (nt == XmlNodeType.DocumentType)
+                {
                     retValue = ((XmlDocumentType)_curNode).InternalSubset; //in this case nav.Value will be null
+                }
                 else if (nt == XmlNodeType.XmlDeclaration)
                 {
                     StringBuilder strb = new StringBuilder(string.Empty);
                     if (_nDeclarationAttrCount == -1)
+                    {
                         InitDecAttr();
+                    }
+
                     for (int i = 0; i < _nDeclarationAttrCount; i++)
                     {
                         strb.Append($"{decNodeAttributes[i].name}=\"{decNodeAttributes[i].value}\"");
                         if (i != (_nDeclarationAttrCount - 1))
+                        {
                             strb.Append(' ');
+                        }
                     }
+
                     retValue = strb.ToString();
                 }
                 else
+                {
                     retValue = _curNode.Value;
-                return (retValue == null) ? string.Empty : retValue;
+                }
+
+                return retValue ?? string.Empty;
             }
         }
 
@@ -377,7 +389,7 @@ namespace System.Xml
             _nDeclarationAttrCount = i;
         }
 
-        public string? GetDeclarationAttr(XmlDeclaration decl, string name)
+        public static string? GetDeclarationAttr(XmlDeclaration decl, string name)
         {
             //PreCondition: curNode is pointing at Declaration node or one of its virtual attributes
             if (name == strVersion)
@@ -437,7 +449,7 @@ namespace System.Xml
             _nDocTypeAttrCount = i;
         }
 
-        public string? GetDocumentTypeAttr(XmlDocumentType docType, string name)
+        public static string? GetDocumentTypeAttr(XmlDocumentType docType, string name)
         {
             //PreCondition: nav is pointing at DocumentType node or one of its virtual attributes
             if (name == strPublicID)
@@ -466,7 +478,7 @@ namespace System.Xml
             return -1;
         }
 
-        private string? GetAttributeFromElement(XmlElement elem, string name)
+        private static string? GetAttributeFromElement(XmlElement elem, string name)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name);
             if (attr != null)
@@ -489,7 +501,7 @@ namespace System.Xml
             };
         }
 
-        private string? GetAttributeFromElement(XmlElement elem, string name, string? ns)
+        private static string? GetAttributeFromElement(XmlElement elem, string name, string? ns)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name, ns);
             if (attr != null)
@@ -853,13 +865,10 @@ namespace System.Xml
             }
 
             // construct the name of the xmlns attribute
-            string attrName;
-            if (prefix == null)
-                prefix = string.Empty;
-            if (prefix.Length == 0)
-                attrName = "xmlns";
-            else
-                attrName = $"xmlns:{prefix}";
+            prefix ??= string.Empty;
+            string attrName = prefix.Length == 0 ?
+                "xmlns" :
+                $"xmlns:{prefix}";
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;
@@ -1027,7 +1036,7 @@ namespace System.Xml
 
             if (scope != XmlNamespaceScope.Local)
             {
-                if (dict.ContainsKey(string.Empty) && dict[string.Empty] == string.Empty)
+                if (dict.TryGetValue(string.Empty, out string? value) && value == string.Empty)
                 {
                     dict.Remove(string.Empty);
                 }
@@ -1133,8 +1142,10 @@ namespace System.Xml
 
 
         // Creates an instance of the XmlNodeReader class using the specified XmlNode.
-        public XmlNodeReader(XmlNode node!!)
+        public XmlNodeReader(XmlNode node)
         {
+            ArgumentNullException.ThrowIfNull(node);
+
             _readerNav = new XmlNodeReaderNavigator(node);
             _curDepth = 0;
 
@@ -1338,7 +1349,7 @@ namespace System.Xml
             //if not on Attribute, only element node could have attributes
             if (!IsInReadingStates())
                 return null;
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = namespaceURI ?? string.Empty;
             return _readerNav.GetAttribute(name, ns);
         }
 
@@ -1378,7 +1389,7 @@ namespace System.Xml
             if (!IsInReadingStates())
                 return false;
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = namespaceURI ?? string.Empty;
             if (_readerNav.MoveToAttribute(name, ns))
             { //, ref curDepth ) ) {
                 _curDepth++;

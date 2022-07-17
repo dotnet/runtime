@@ -10,9 +10,9 @@
 }
 .assembly 'ldelema' { }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_ldelema_operand_il
 {
-  .class private sequential ansi sealed beforefieldinit Test
+  .class public sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
   {
     .field private int32 m_v
@@ -20,28 +20,28 @@
             mdarray_ldobj() cil managed
     {
       .maxstack  8
-      .locals (value class JitTest.Test[] arr, value class JitTest.Test elem)
+      .locals (value class JitTest_ldelema_operand_il.Test[] arr, value class JitTest_ldelema_operand_il.Test elem)
       ldc.i4 11
-      newarr JitTest.Test
+      newarr JitTest_ldelema_operand_il.Test
       stloc.s arr
 
       // arr[5].m_v = 1234;
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldc.i4 1234
-      stfld int32 JitTest.Test::m_v
+      stfld int32 JitTest_ldelema_operand_il.Test::m_v
       
       // elem = arr[5];
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
-      ldobj JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
+      ldobj JitTest_ldelema_operand_il.Test
       stloc.s elem
 
       // return elem.m_v - 1234;
       ldloca.s elem
-      ldfld int32 JitTest.Test::m_v
+      ldfld int32 JitTest_ldelema_operand_il.Test::m_v
       ldc.i4 1234
       xor
       ret
@@ -50,26 +50,26 @@
             mdarray_initobj() cil managed
     {
       .maxstack  8
-      .locals (value class JitTest.Test[] arr)
+      .locals (value class JitTest_ldelema_operand_il.Test[] arr)
       ldc.i4 11
-      newarr JitTest.Test
+      newarr JitTest_ldelema_operand_il.Test
       stloc.s arr
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldc.i4 1234
-      stfld int32 JitTest.Test::m_v
+      stfld int32 JitTest_ldelema_operand_il.Test::m_v
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
-      initobj JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
+      initobj JitTest_ldelema_operand_il.Test
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
-      ldfld int32 JitTest.Test::m_v
+      ldelema JitTest_ldelema_operand_il.Test
+      ldfld int32 JitTest_ldelema_operand_il.Test::m_v
       ret
     }
 
@@ -77,48 +77,48 @@
             mdarray_cpobj() cil managed
     {
       .maxstack  8
-      .locals (value class JitTest.Test[] arr, value class JitTest.Test elem)
+      .locals (value class JitTest_ldelema_operand_il.Test[] arr, value class JitTest_ldelema_operand_il.Test elem)
       ldloca.s elem
-      initobj JitTest.Test
+      initobj JitTest_ldelema_operand_il.Test
 
       ldc.i4 11
-      newarr JitTest.Test
+      newarr JitTest_ldelema_operand_il.Test
       stloc.s arr
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldc.i4 1234
-      stfld int32 JitTest.Test::m_v
+      stfld int32 JitTest_ldelema_operand_il.Test::m_v
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldloca.s elem
-      cpobj JitTest.Test
+      cpobj JitTest_ldelema_operand_il.Test
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
-      ldfld int32 JitTest.Test::m_v
+      ldelema JitTest_ldelema_operand_il.Test
+      ldfld int32 JitTest_ldelema_operand_il.Test::m_v
       dup
       brtrue RET
       pop
       
       ldloc.s arr
       ldc.i4.7
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldc.i4 4321
-      stfld int32 JitTest.Test::m_v
+      stfld int32 JitTest_ldelema_operand_il.Test::m_v
       
       ldloca.s elem
       ldloc.s arr
       ldc.i4.7
-      ldelema JitTest.Test
-      cpobj JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
+      cpobj JitTest_ldelema_operand_il.Test
 
       ldloca.s elem
-      ldfld int32 JitTest.Test::m_v
+      ldfld int32 JitTest_ldelema_operand_il.Test::m_v
       ldc.i4 4321
       xor
 
@@ -130,33 +130,33 @@
             mdarray_stobj() cil managed
     {
       .maxstack  8
-      .locals (value class JitTest.Test[] arr, value class JitTest.Test elem)
+      .locals (value class JitTest_ldelema_operand_il.Test[] arr, value class JitTest_ldelema_operand_il.Test elem)
       ldloca.s elem
-      initobj JitTest.Test
+      initobj JitTest_ldelema_operand_il.Test
       
       ldc.i4 11
-      newarr JitTest.Test
+      newarr JitTest_ldelema_operand_il.Test
       stloc.s arr
 
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldc.i4 1234
-      stfld int32 JitTest.Test::m_v
+      stfld int32 JitTest_ldelema_operand_il.Test::m_v
       
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
+      ldelema JitTest_ldelema_operand_il.Test
       ldloc.s elem
-      stobj JitTest.Test
+      stobj JitTest_ldelema_operand_il.Test
       
       ldloc.s arr
       ldc.i4.5
-      ldelema JitTest.Test
-      ldfld int32 JitTest.Test::m_v
+      ldelema JitTest_ldelema_operand_il.Test
+      ldfld int32 JitTest_ldelema_operand_il.Test::m_v
       ret
     }
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -165,28 +165,28 @@
       .entrypoint
       .maxstack  1
       .locals (int32 V_0)
-      IL_0000:  call       int32 JitTest.Test::mdarray_ldobj()
+      IL_0000:  call       int32 JitTest_ldelema_operand_il.Test::mdarray_ldobj()
       IL_0005:  brfalse.s  IL_0016
       IL_0007:  ldstr      "mdarray_ldobj() failed."
       IL_000c:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0011:  ldc.i4.s   101
       IL_0013:  stloc.0
       IL_0014:  br.s       IL_0067
-      IL_0016:  call       int32 JitTest.Test::mdarray_initobj()
+      IL_0016:  call       int32 JitTest_ldelema_operand_il.Test::mdarray_initobj()
       IL_001b:  brfalse.s  IL_002c
       IL_001d:  ldstr      "mdarray_initobj() failed."
       IL_0022:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0027:  ldc.i4.s   102
       IL_0029:  stloc.0
       IL_002a:  br.s       IL_0067
-      IL_002c:  call       int32 JitTest.Test::mdarray_stobj()
+      IL_002c:  call       int32 JitTest_ldelema_operand_il.Test::mdarray_stobj()
       IL_0031:  brfalse.s  IL_0042
       IL_0033:  ldstr      "mdarray_stobj() failed."
       IL_0038:  call       void [System.Console]System.Console::WriteLine(string)
       IL_003d:  ldc.i4.s   103
       IL_003f:  stloc.0
       IL_0040:  br.s       IL_0067
-      IL_0042:  call       int32 JitTest.Test::mdarray_cpobj()
+      IL_0042:  call       int32 JitTest_ldelema_operand_il.Test::mdarray_cpobj()
       IL_0047:  brfalse.s  IL_0058
       IL_0049:  ldstr      "mdarray_cpobj() failed."
       IL_004e:  call       void [System.Console]System.Console::WriteLine(string)

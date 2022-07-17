@@ -7,12 +7,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Xml.Xsl.Qil;
+using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
+using XPathQilFactory = System.Xml.Xsl.XPath.XPathQilFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ContextInfo = XsltInput.ContextInfo;
-    using XPathQilFactory = System.Xml.Xsl.XPath.XPathQilFactory;
-
     // Set of classes that represent XSLT AST
 
     // XSLT AST is a tree of nodes that represent content of xsl template.
@@ -118,10 +117,7 @@ namespace System.Xml.Xsl.Xslt
         public void AddContent(XslNode node)
         {
             Debug.Assert(node != null);
-            if (_content == null)
-            {
-                _content = new List<XslNode>();
-            }
+            _content ??= new List<XslNode>();
             _content.Add(node);
         }
 
@@ -134,51 +130,6 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 _content.InsertRange(0, collection);
-            }
-        }
-
-        internal string? TraceName
-        {
-            get
-            {
-#if DEBUG
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                string nodeTypeName = NodeType switch
-                {
-                    XslNodeType.AttributeSet => "attribute-set",
-                    XslNodeType.Template => "template",
-                    XslNodeType.Param => "param",
-                    XslNodeType.Variable => "variable",
-                    XslNodeType.WithParam => "with-param",
-                    _ => NodeType.ToString(),
-                };
-                sb.Append(nodeTypeName);
-                if (Name != null)
-                {
-                    sb.Append(' ');
-                    sb.Append(Name.QualifiedName);
-                }
-
-                ISourceLineInfo? lineInfo = SourceLine;
-                if (lineInfo == null && NodeType == XslNodeType.AttributeSet)
-                {
-                    lineInfo = Content[0].SourceLine;
-                    Debug.Assert(lineInfo != null);
-                }
-                if (lineInfo != null)
-                {
-                    string fileName = SourceLineInfo.GetFileName(lineInfo.Uri!);
-                    int idx = fileName.LastIndexOf(System.IO.Path.DirectorySeparatorChar) + 1;
-                    sb.Append(" (");
-                    sb.Append(fileName, idx, fileName.Length - idx);
-                    sb.Append(':');
-                    sb.Append(lineInfo.Start.Line);
-                    sb.Append(')');
-                }
-                return sb.ToString();
-#else
-                return null;
-#endif
             }
         }
     }
@@ -204,14 +155,7 @@ namespace System.Xml.Xsl.Xslt
 
         public AttributeSet(QilName name, XslVersion xslVer) : base(XslNodeType.AttributeSet, name, xslVer) { }
 
-        public override string GetDebugName()
-        {
-            StringBuilder dbgName = new StringBuilder();
-            dbgName.Append("<xsl:attribute-set name=\"");
-            dbgName.Append(Name!.QualifiedName);
-            dbgName.Append("\">");
-            return dbgName.ToString();
-        }
+        public override string GetDebugName() => $"<xsl:attribute-set name=\"{Name!.QualifiedName}\">";
 
         public new void AddContent(XslNode node)
         {

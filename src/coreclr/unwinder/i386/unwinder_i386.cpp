@@ -81,7 +81,7 @@ Arguments:
 
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     EstablisherFrame - Supplies a pointer to a variable that receives the
         the establisher frame pointer value.
@@ -169,7 +169,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINT
 //     ContextRecord - Supplies the address of a context record.
 //
 //     HandlerData - Supplies a pointer to a variable that receives a pointer
-//         the the language handler data.
+//         the language handler data.
 //
 //     EstablisherFrame - Supplies a pointer to a variable that receives the
 //         the establisher frame pointer value.

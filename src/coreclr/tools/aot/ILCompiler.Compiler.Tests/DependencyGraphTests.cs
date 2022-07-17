@@ -33,7 +33,7 @@ namespace ILCompiler.Compiler.Tests
     {
         public static IEnumerable<object[]> GetTestMethods()
         {
-            var target = new TargetDetails(TargetArchitecture.X64, TargetOS.Windows, TargetAbi.CoreRT);
+            var target = new TargetDetails(TargetArchitecture.X64, TargetOS.Windows, TargetAbi.NativeAot);
             var context = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
 
             context.InputFilePaths = new Dictionary<string, string> {
@@ -66,12 +66,12 @@ namespace ILCompiler.Compiler.Tests
             var context = (CompilerTypeSystemContext)method.Context;
             CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
-            CoreRTILProvider ilProvider = new CoreRTILProvider();
+            NativeAotILProvider ilProvider = new NativeAotILProvider();
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(compilationGroup, context,
                 new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),
                 null, new NoStackTraceEmissionPolicy(), new NoDynamicInvokeThunkGenerationPolicy(),
-                new Dataflow.FlowAnnotations(Logger.Null, ilProvider), UsageBasedMetadataGenerationOptions.None,
+                new ILLink.Shared.TrimAnalysis.FlowAnnotations(Logger.Null, ilProvider), UsageBasedMetadataGenerationOptions.None,
                 Logger.Null, Array.Empty<KeyValuePair<string, bool>>(), Array.Empty<string>(), Array.Empty<string>());
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(context, compilationGroup)

@@ -6,7 +6,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
-    public partial class CustomLineCap : MarshalByRefObject, ICloneable, IDisposable
+    public class CustomLineCap : MarshalByRefObject, ICloneable, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -39,6 +39,28 @@ namespace System.Drawing.Drawing2D
         }
 
         internal CustomLineCap(IntPtr nativeLineCap) => SetNativeLineCap(nativeLineCap);
+
+        internal static CustomLineCap CreateCustomLineCapObject(IntPtr cap)
+        {
+            int status = Gdip.GdipGetCustomLineCapType(cap, out CustomLineCapType capType);
+            if (status != Gdip.Ok)
+            {
+                Gdip.GdipDeleteCustomLineCap(cap);
+                throw Gdip.StatusException(status);
+            }
+
+            switch (capType)
+            {
+                case CustomLineCapType.Default:
+                    return new CustomLineCap(cap);
+
+                case CustomLineCapType.AdjustableArrowCap:
+                    return new AdjustableArrowCap(cap);
+            }
+
+            Gdip.GdipDeleteCustomLineCap(cap);
+            throw Gdip.StatusException(Gdip.NotImplemented);
+        }
 
         internal void SetNativeLineCap(IntPtr handle)
         {

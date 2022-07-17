@@ -23,7 +23,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        internal TemplateLocator TemplateLookup => new TemplateLocator();
+        internal static TemplateLocator TemplateLookup => new TemplateLocator();
 
         internal class RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<RuntimeTypeHandle, RuntimeTypeHandle>
         {
@@ -141,7 +141,7 @@ namespace Internal.TypeSystem
 #endif
 
         // Helper routine for ResolveRuntimeTypeHandle, used to handle lookups which may result in a metadata based type.
-        private TypeDesc TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(RuntimeTypeHandle rtth)
+        private static TypeDesc TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(RuntimeTypeHandle rtth)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             QTypeDefinition qTypeDefinition;
@@ -220,11 +220,9 @@ namespace Internal.TypeSystem
             }
             else
             {
-                returnedType = TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth);
-                if (returnedType == null)
-                {
-                    returnedType = new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
-                }
+                returnedType =
+                    TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth) ??
+                    new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
             }
 
             // We either retrieved an existing DefType that is already registered with the runtime
@@ -321,10 +319,8 @@ namespace Internal.TypeSystem
 
                 protected override bool CompareKeyToValue(RuntimeMethodKey key, MethodDesc value)
                 {
-                    if (value is RuntimeMethodDesc)
+                    if (value is RuntimeMethodDesc runtimeMethod)
                     {
-                        RuntimeMethodDesc runtimeMethod = (RuntimeMethodDesc)value;
-
                         if (key._unboxingStub != runtimeMethod.UnboxingStub)
                             return false;
 
@@ -416,8 +412,7 @@ namespace Internal.TypeSystem
 
         internal MethodDesc ResolveRuntimeMethod(bool unboxingStub, DefType owningType, MethodNameAndSignature nameAndSignature, IntPtr functionPointer, bool usgFunctionPointer)
         {
-            if (_runtimeMethods == null)
-                _runtimeMethods = new RuntimeMethodKey.RuntimeMethodKeyHashtable();
+            _runtimeMethods ??= new RuntimeMethodKey.RuntimeMethodKeyHashtable();
 
             MethodDesc retVal = _runtimeMethods.GetOrCreateValue(new RuntimeMethodKey(unboxingStub, owningType, nameAndSignature));
 
@@ -433,7 +428,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Get a DefType that is the generic instantiation of an open generic type over instantiation arguments
-        /// This looks like a rename of GetInstantiatedType, but isn't because the corert GetInstantiatedType
+        /// This looks like a rename of GetInstantiatedType, but isn't because the GetInstantiatedType
         /// relies on typeDef being a MetadataType, whereas this permits non-metadata types.
         /// </summary>
         public DefType ResolveGenericInstantiation(DefType typeDef, Instantiation arguments)
@@ -445,8 +440,7 @@ namespace Internal.TypeSystem
             if (typeAsMetadataType != null)
                 return GetInstantiatedType(typeAsMetadataType, arguments);
 
-            if (_genericTypeInstances == null)
-                _genericTypeInstances = new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
+            _genericTypeInstances ??= new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
 
             GenericTypeInstanceKey key = new GenericTypeInstanceKey(typeDef, arguments);
 
@@ -571,8 +565,7 @@ namespace Internal.TypeSystem
         /// </summary>
         internal void RegisterTypeForTypeSystemStateFlushing(TypeDesc type)
         {
-            if (_typesToFlushTypeSystemStateFrom == null)
-                _typesToFlushTypeSystemStateFrom = new LowLevelList<TypeDesc>();
+            _typesToFlushTypeSystemStateFrom ??= new LowLevelList<TypeDesc>();
             _typesToFlushTypeSystemStateFrom.Add(type);
         }
 
@@ -648,7 +641,7 @@ namespace Internal.TypeSystem
         public static T WithDebugName<T>(this T type) where T : TypeDesc
         {
 #if DEBUG
-            if (type.DebugName == null) type.DebugName = type.ToString();
+            type.DebugName ??= type.ToString();
 #endif
             return type;
         }

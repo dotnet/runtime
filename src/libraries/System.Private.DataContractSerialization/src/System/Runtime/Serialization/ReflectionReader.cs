@@ -26,17 +26,8 @@ namespace System.Runtime.Serialization
         private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
         private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
 
-        private static MethodInfo CollectionSetItemDelegateMethod
-        {
-            get
-            {
-                if (s_getCollectionSetItemDelegateMethod == null)
-                {
-                    s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)!;
-                }
-                return s_getCollectionSetItemDelegateMethod!;
-            }
-        }
+        private static MethodInfo CollectionSetItemDelegateMethod =>
+            s_getCollectionSetItemDelegateMethod ??= typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract)
@@ -152,7 +143,7 @@ namespace System.Runtime.Serialization
             Type itemType = collectionContract.ItemType;
             CollectionReadItemDelegate collectionReadItemDelegate = GetCollectionReadItemDelegate(collectionContract);
             MethodInfo getCollectionSetItemDelegateMethod = CollectionSetItemDelegateMethod.MakeGenericMethod(itemType);
-            CollectionSetItemDelegate collectionSetItemDelegate = (CollectionSetItemDelegate)getCollectionSetItemDelegateMethod.Invoke(this, new object[] { collectionContract, resultCollection, isReadOnlyCollection })!;
+            CollectionSetItemDelegate collectionSetItemDelegate = (CollectionSetItemDelegate)getCollectionSetItemDelegateMethod.Invoke(null, new object[] { collectionContract, resultCollection, isReadOnlyCollection })!;
 
             int index = 0;
             while (true)
@@ -359,12 +350,12 @@ namespace System.Runtime.Serialization
             };
         }
 
-        private object? ReflectionGetMemberValue(object obj, DataMember dataMember)
+        private static object? ReflectionGetMemberValue(object obj, DataMember dataMember)
         {
             return dataMember.Getter(obj);
         }
 
-        private void ReflectionSetMemberValue(ref object obj, object? memberValue, DataMember dataMember)
+        private static void ReflectionSetMemberValue(ref object obj, object? memberValue, DataMember dataMember)
         {
             dataMember.Setter(ref obj, memberValue);
         }
@@ -406,7 +397,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void InvokeDeserializationCallback(object obj)
+        private static void InvokeDeserializationCallback(object obj)
         {
             var deserializationCallbackObject = obj as IDeserializationCallback;
             deserializationCallbackObject?.OnDeserialization(null);
@@ -443,7 +434,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        private bool IsArrayLikeInterface(CollectionDataContract collectionContract)
+        private static bool IsArrayLikeInterface(CollectionDataContract collectionContract)
         {
             if (collectionContract.UnderlyingType.IsInterface)
             {
@@ -461,13 +452,13 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        private bool IsArrayLikeCollection(CollectionDataContract collectionContract)
+        private static bool IsArrayLikeCollection(CollectionDataContract collectionContract)
         {
             return collectionContract.Kind == CollectionKind.Array || IsArrayLikeInterface(collectionContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private object ReflectionCreateCollection(CollectionDataContract collectionContract)
+        private static object ReflectionCreateCollection(CollectionDataContract collectionContract)
         {
             if (IsArrayLikeCollection(collectionContract))
             {
@@ -514,7 +505,7 @@ namespace System.Runtime.Serialization
             return ((KeyValue<K, V>)o).Value;
         }
 
-        private CollectionSetItemDelegate GetCollectionSetItemDelegate<T>(CollectionDataContract collectionContract, object resultCollectionObject, bool isReadOnlyCollection)
+        private static CollectionSetItemDelegate GetCollectionSetItemDelegate<T>(CollectionDataContract collectionContract, object resultCollectionObject, bool isReadOnlyCollection)
         {
             if (isReadOnlyCollection && collectionContract.Kind == CollectionKind.Array)
             {
@@ -613,7 +604,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
+        private static bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
         {
             resultArray = null;
 

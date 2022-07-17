@@ -874,6 +874,57 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestHasRemoteParent()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("HasRemoteParent");
+                using ActivityListener listener1 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => activitySource == aSource;
+
+                listener1.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                listener1.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+
+                ActivitySource.AddActivityListener(listener1);
+
+                using (Activity activity = aSource.StartActivity("a1", ActivityKind.Client))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.StartActivity("a2", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, false)))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.StartActivity("a3", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, true)))
+                {
+                    Assert.True(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.CreateActivity("a2", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, false)))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                    activity.Start();
+                    Assert.False(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.CreateActivity("a3", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, true)))
+                {
+                    Assert.True(activity.HasRemoteParent);
+                    activity.Start();
+                    Assert.True(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = new Activity("a4"))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                    activity.Start();
+                    Assert.False(activity.HasRemoteParent);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAddSamplerAndActivityCreationTags()
         {
             RemoteExecutor.Invoke(() => {

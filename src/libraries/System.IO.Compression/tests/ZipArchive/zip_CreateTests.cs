@@ -176,20 +176,35 @@ namespace System.IO.Compression.Tests
             AssertDataDescriptor(memoryStream, false);
         }
 
-        [Fact]
-        public static void CreateNormal_With2SameEntries_ThrowException()
+        [Theory]
+        [InlineData(UnicodeFileName, UnicodeFileName, true)]
+        [InlineData(UnicodeFileName, AsciiFileName, true)]
+        [InlineData(AsciiFileName, UnicodeFileName, true)]
+        [InlineData(AsciiFileName, AsciiFileName, false)]
+        public static void CreateNormal_VerifyUnicodeFileNameAndComment(string fileName, string entryComment, bool isUnicodeFlagExpected)
         {
-            using var memoryStream = new MemoryStream();
-            // We need an non-seekable stream so the data descriptor bit is turned on when saving
-            var wrappedStream = new WrappedStream(memoryStream);
+            using var ms = new MemoryStream();
+            using var archive = new ZipArchive(ms, ZipArchiveMode.Create);
 
-            // Creation will go through the path that sets the data descriptor bit when the stream is unseekable
-            using (var archive = new ZipArchive(wrappedStream, ZipArchiveMode.Create))
+            CreateEntry(archive, fileName, fileContents: "xxx", entryComment);
+
+            AssertUnicodeFileNameAndComment(ms, isUnicodeFlagExpected);
+        }
+
+        [Fact]
+        public void Create_VerifyDuplicateEntriesAreAllowed()
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
             {
-                string entryName = "duplicate.txt";
-                CreateEntry(archive, entryName, "xxx");
-                AssertExtensions.ThrowsContains<InvalidOperationException>(() => CreateEntry(archive, entryName, "yyy"),
-                    entryName);
+                string entryName = "foo";
+                AddEntry(archive, entryName, contents: "xxx", DateTimeOffset.Now);
+                AddEntry(archive, entryName, contents: "yyy", DateTimeOffset.Now);
+            }
+
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Update))
+            {
+                Assert.Equal(2, archive.Entries.Count);
             }
         }
 
@@ -198,11 +213,12 @@ namespace System.IO.Compression.Tests
             return Text.Encoding.UTF8.GetString(input.ToArray());
         }
 
-        private static void CreateEntry(ZipArchive archive, string fileName, string fileContents)
+        private static void CreateEntry(ZipArchive archive, string fileName, string fileContents, string entryComment = null)
         {
             ZipArchiveEntry entry = archive.CreateEntry(fileName);
             using StreamWriter writer = new StreamWriter(entry.Open());
             writer.Write(fileContents);
+            entry.Comment = entryComment;
         }
 
         private static void AssertDataDescriptor(MemoryStream memoryStream, bool hasDataDescriptor)
@@ -210,6 +226,13 @@ namespace System.IO.Compression.Tests
             byte[] fileBytes = memoryStream.ToArray();
             Assert.Equal(hasDataDescriptor ? 8 : 0, fileBytes[6]);
             Assert.Equal(0, fileBytes[7]);
+        }
+
+        private static void AssertUnicodeFileNameAndComment(MemoryStream memoryStream, bool isUnicodeFlagExpected)
+        {
+            byte[] fileBytes = memoryStream.ToArray();
+            Assert.Equal(0, fileBytes[6]);
+            Assert.Equal(isUnicodeFlagExpected ? 8 : 0, fileBytes[7]);
         }
     }
 }

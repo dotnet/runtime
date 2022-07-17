@@ -145,7 +145,7 @@ namespace System.Reflection.Metadata
                 return (ushort)column;
             }
 
-            private int AddOffsets(int value, int delta)
+            private static int AddOffsets(int value, int delta)
             {
                 int result = unchecked(value + delta);
                 if (result < 0)
@@ -156,7 +156,7 @@ namespace System.Reflection.Metadata
                 return result;
             }
 
-            private int AddLines(int value, int delta)
+            private static int AddLines(int value, int delta)
             {
                 int result = unchecked(value + delta);
                 if (result < 0 || result >= SequencePoint.HiddenLine)
@@ -167,7 +167,7 @@ namespace System.Reflection.Metadata
                 return result;
             }
 
-            private ushort AddColumns(ushort value, int delta)
+            private static ushort AddColumns(ushort value, int delta)
             {
                 int result = unchecked(value + delta);
                 if (result < 0 || result >= ushort.MaxValue)

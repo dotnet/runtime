@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Security;
+using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Security;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Diagnostics.CodeAnalysis;
-
     internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
     {
         internal Attributes? attributes;
@@ -24,18 +24,9 @@ namespace System.Runtime.Serialization
         private object? _getOnlyCollectionValue;
         private bool _isGetOnlyCollection;
 
-        private HybridObjectCache DeserializedObjects
-        {
-            get
-            {
-                if (_deserializedObjects == null)
-                    _deserializedObjects = new HybridObjectCache();
-                return _deserializedObjects;
-            }
-        }
+        private HybridObjectCache DeserializedObjects => _deserializedObjects ??= new HybridObjectCache();
 
-        private XmlDocument Document => _xmlDocument ?? (_xmlDocument = new XmlDocument());
-
+        private XmlDocument Document => _xmlDocument ??= new XmlDocument();
 
         internal override bool IsGetOnlyCollection
         {
@@ -107,8 +98,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, DataContract? dataContract, string? name, string? ns)
         {
-            if (dataContract == null)
-                dataContract = GetDataContract(declaredType);
+            dataContract ??= GetDataContract(declaredType);
             return InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
         }
 
@@ -276,8 +266,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void HandleUnknownElement(XmlReaderDelegator xmlReader, ExtensionDataObject extensionData, int memberIndex)
         {
-            if (extensionData.Members == null)
-                extensionData.Members = new List<ExtensionDataMember>();
+            extensionData.Members ??= new List<ExtensionDataMember>();
             extensionData.Members.Add(ReadExtensionDataMember(xmlReader, memberIndex));
         }
 
@@ -310,15 +299,13 @@ namespace System.Runtime.Serialization
         [MemberNotNull(nameof(attributes))]
         internal virtual void ReadAttributes(XmlReaderDelegator xmlReader)
         {
-            if (attributes == null)
-                attributes = new Attributes();
+            attributes ??= new Attributes();
             attributes.Read(xmlReader);
         }
 
         internal void ResetAttributes()
         {
-            if (attributes != null)
-                attributes.Reset();
+            attributes?.Reset();
         }
 
         internal string GetObjectId()
@@ -468,8 +455,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal object? ReadIXmlSerializable(XmlReaderDelegator xmlReader, XmlDataContract xmlDataContract, bool isMemberType)
         {
-            if (_xmlSerializableReader == null)
-                _xmlSerializableReader = new XmlSerializableReader();
+            _xmlSerializableReader ??= new XmlSerializableReader();
             return ReadIXmlSerializable(_xmlSerializableReader, xmlReader, xmlDataContract, isMemberType);
         }
 
@@ -759,8 +745,7 @@ namespace System.Runtime.Serialization
                 if (nodeType != XmlNodeType.Element)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
 
-                if (dataNode.Members == null)
-                    dataNode.Members = new List<ExtensionDataMember>();
+                dataNode.Members ??= new List<ExtensionDataMember>();
                 dataNode.Members.Add(ReadExtensionDataMember(xmlReader, memberIndex++));
             }
             xmlReader.ReadEndElement();
@@ -789,8 +774,7 @@ namespace System.Runtime.Serialization
                 }
                 if (xmlReader.IsStartElement(dataNode.ItemName, dataNode.ItemNamespace!))
                 {
-                    if (dataNode.Items == null)
-                        dataNode.Items = new List<IDataNode?>();
+                    dataNode.Items ??= new List<IDataNode?>();
                     dataNode.Items.Add(ReadExtensionDataValue(xmlReader));
                 }
                 else
@@ -849,8 +833,7 @@ namespace System.Runtime.Serialization
 
                 var member = new ISerializableDataMember(xmlReader.LocalName);
                 member.Value = ReadExtensionDataValue(xmlReader);
-                if (dataNode.Members == null)
-                    dataNode.Members = new List<ISerializableDataMember>();
+                dataNode.Members ??= new List<ISerializableDataMember>();
                 dataNode.Members.Add(member);
             }
             xmlReader.ReadEndElement();
@@ -877,8 +860,7 @@ namespace System.Runtime.Serialization
                     string ns = xmlReader.NamespaceURI;
                     if (ns != Globals.SerializationNamespace && ns != Globals.SchemaInstanceNamespace)
                     {
-                        if (xmlAttributes == null)
-                            xmlAttributes = new List<XmlAttribute>();
+                        xmlAttributes ??= new List<XmlAttribute>();
                         xmlAttributes.Add((XmlAttribute)Document.ReadNode(xmlReader.UnderlyingReader)!);
                     }
                 }
@@ -890,8 +872,7 @@ namespace System.Runtime.Serialization
                 if (xmlReader.EOF)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
 
-                if (xmlChildNodes == null)
-                    xmlChildNodes = new List<XmlNode>();
+                xmlChildNodes ??= new List<XmlNode>();
                 xmlChildNodes.Add(Document.ReadNode(xmlReader.UnderlyingReader)!);
             }
             xmlReader.ReadEndElement();
@@ -941,8 +922,10 @@ namespace System.Runtime.Serialization
                             elementNs = ns;
                         }
                         else
+                        {
                             couldBeCollectionData = (string.CompareOrdinal(elementName, name) == 0) &&
                                 (string.CompareOrdinal(elementNs, ns) == 0);
+                        }
                     }
                 }
                 else if (xmlReader.EOF)
@@ -950,7 +933,7 @@ namespace System.Runtime.Serialization
                 else if (IsContentNode(xmlReader.NodeType))
                     couldBeClassData = couldBeISerializableData = couldBeCollectionData = false;
 
-                if (_attributesInXmlData == null) _attributesInXmlData = new Attributes();
+                _attributesInXmlData ??= new Attributes();
                 _attributesInXmlData.Read(xmlReader);
 
                 XmlNode childNode = Document.ReadNode(xmlReader.UnderlyingReader)!;
@@ -983,7 +966,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private bool IsContentNode(XmlNodeType nodeType)
+        private static bool IsContentNode(XmlNodeType nodeType)
         {
             switch (nodeType)
             {
@@ -1009,8 +992,8 @@ namespace System.Runtime.Serialization
 
         internal static XmlNode CreateWrapperXmlElement(XmlDocument document, IList<XmlAttribute>? xmlAttributes, IList<XmlNode> xmlChildNodes, string? prefix, string? localName, string? ns)
         {
-            localName = localName ?? "wrapper";
-            ns = ns ?? string.Empty;
+            localName ??= "wrapper";
+            ns ??= string.Empty;
             XmlElement wrapperElement = document.CreateElement(prefix, localName, ns);
             if (xmlAttributes != null)
             {

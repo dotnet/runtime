@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)
         {
-            if (!state.SupportContinuation)
+            if (!state.SupportAsync)
             {
                 ThrowHelper.ThrowNotSupportedException_TypeRequiresAsyncSerialization(TypeToConvert);
             }
@@ -117,6 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
+                state.Current.EndCollectionElement();
                 moveNextTask = enumerator.MoveNextAsync();
             } while (moveNextTask.IsCompleted);
 

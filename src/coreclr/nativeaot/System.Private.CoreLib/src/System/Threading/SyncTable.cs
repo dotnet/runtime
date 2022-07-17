@@ -49,11 +49,6 @@ namespace System.Threading
         /// The initial size of the table.  Must be positive and not greater than
         /// ObjectHeader.MASK_HASHCODE_INDEX + 1.
         /// </summary>
-        /// <remarks>
-        /// CLR uses 250 as the initial table size.  In contrast to CoreRT, CLR creates sync
-        /// entries less frequently since uncontended Monitor synchronization employs a thin lock
-        /// stored in the object header.
-        /// </remarks>
 #if DEBUG
         // Exercise table expansion more frequently in debug builds
         private const int InitialSize = 1;

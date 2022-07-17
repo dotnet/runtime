@@ -38,6 +38,10 @@ You can also build and test with code coverage for a particular test project rat
 
     dotnet build /t:Test /p:Coverage=true
 
+By default, coverage is only provided for the library being tested.  However, if you want coverage data also gathered for the tests themselves, you can add `/p:CoverageIncludeTests=true`:
+
+    dotnet build /t:test /p:Coverage=true /p:CoverageIncludeTests=true
+
 The results for this one library will then be available in this index.htm file, where $(OutDir) is the directory where the binaries were generated.
 
     $(OutDir)\report\index.htm

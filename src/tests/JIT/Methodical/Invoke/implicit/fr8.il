@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {B1A03CB5-0762-4E9F-BA39-E5C10C9A69AE}
-.namespace JitTest
+.namespace JitTest_fr8_implicit_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig instance void 
@@ -56,7 +56,7 @@
       			throw
     } // end of method 'Test::MulTest'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -68,11 +68,11 @@
       .locals (int32 V_0)
       .try
       {
-        IL_0000:  newobj     instance void JitTest.Test::.ctor()
+        IL_0000:  newobj     instance void JitTest_fr8_implicit_il.Test::.ctor()
         IL_0005:  ldc.r8     0.12345679
         IL_000a:  ldc.r8     123456789.0
         IL_000f:  ldc.r8     15241579.4
-        IL_0014:  call       instance void JitTest.Test::MulTest(float64, float64, float64)
+        IL_0014:  call       instance void JitTest_fr8_implicit_il.Test::MulTest(float64, float64, float64)
         IL_0019:  leave.s    IL_002a
       }  // end .try
       catch ['mscorlib']System.Object 
@@ -107,6 +107,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_fr8_implicit_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

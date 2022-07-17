@@ -136,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint isSigned = (data < 0 ? 1u : 0u);
             uint udata = unchecked((uint)data);
 
-            // Note that we cannot use CompressData to pack the data value, because of negative values 
+            // Note that we cannot use CompressData to pack the data value, because of negative values
             // like: 0xffffe000 (-8192) which has to be encoded as 1 in 2 bytes, i.e. 0x81 0x00
             // However CompressData would store value 1 as 1 byte: 0x01
             if ((udata & SignMask.ONEBYTE) == 0 || (udata & SignMask.ONEBYTE) == SignMask.ONEBYTE)
@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            // Out of compressable range
+            // Out of compressible range
             throw new NotImplementedException();
         }
 
@@ -330,7 +330,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void EmitModuleOverride(EcmaModule module, SignatureContext context)
+        private void EmitModuleOverride(IEcmaModule module, SignatureContext context)
         {
             if (module != context.LocalContext)
             {
@@ -348,7 +348,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void EmitInstantiatedTypeSignature(InstantiatedType type, SignatureContext context)
         {
-            EcmaModule targetModule = context.GetTargetModule(type);
+            IEcmaModule targetModule = context.GetTargetModule(type);
             EmitModuleOverride(targetModule, context);
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
             EmitTypeSignature(type.GetTypeDefinition(), context.InnerContext(targetModule));
@@ -393,7 +393,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public void EmitMethodSignature(
-            MethodWithToken method, 
+            MethodWithToken method,
             bool enforceDefEncoding,
             bool enforceOwningType,
             SignatureContext context,
@@ -437,7 +437,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodWithToken method, 
+        private void EmitMethodSpecificationSignature(MethodWithToken method,
             uint flags, bool enforceDefEncoding, bool enforceOwningType, SignatureContext context)
         {
             ModuleToken methodToken = method.Token;
@@ -470,7 +470,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
             }
 
-            if ((method.Token.Module != context.LocalContext) && !enforceOwningType)
+            if ((method.Token.Module != context.LocalContext) && (!enforceOwningType || (enforceDefEncoding && methodToken.TokenType == CorTokenType.mdtMemberRef)))
             {
                 // If enforeOwningType is set, this is an entry for the InstanceEntryPoint or InstrumentationDataTable nodes
                 // which are not used in quite the same way, and for which the MethodDef is always matched to the module
@@ -497,10 +497,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Instantiation instantiation = method.Method.Instantiation;
                 EmitUInt((uint)instantiation.Length);
-                SignatureContext outerContext = context.OuterContext;
+                SignatureContext methodInstantiationsContext;
+                if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
+                    methodInstantiationsContext = context;
+                else
+                    methodInstantiationsContext = context.OuterContext;
+
                 for (int typeParamIndex = 0; typeParamIndex < instantiation.Length; typeParamIndex++)
                 {
-                    EmitTypeSignature(instantiation[typeParamIndex], outerContext);
+                    EmitTypeSignature(instantiation[typeParamIndex], methodInstantiationsContext);
                 }
             }
         }
@@ -573,7 +578,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _builder.ToObjectData();
         }
 
-        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
+        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, IEcmaModule targetModule, SignatureContext outerContext)
         {
             if (targetModule == outerContext.LocalContext)
             {

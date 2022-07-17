@@ -8,11 +8,23 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptDecodeObjectPointer(
             CertEncodingType dwCertEncodingType,
             IntPtr lpszStructType,
             byte[] pbEncoded,
+            int cbEncoded,
+            CryptDecodeObjectFlags dwFlags,
+            void* pvStructInfo,
+            ref int pcbStructInfo);
+
+        [LibraryImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CryptDecodeObjectPointer(
+            CertEncodingType dwCertEncodingType,
+            IntPtr lpszStructType,
+            byte* pbEncoded,
             int cbEncoded,
             CryptDecodeObjectFlags dwFlags,
             void* pvStructInfo,

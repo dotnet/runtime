@@ -258,7 +258,9 @@ namespace System.Security.Cryptography
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey) => null!;
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey) => null!;
         public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey) => null!;
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void FromXmlString(string xml, ECKeyXmlFormat format) { }
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string ToXmlString(ECKeyXmlFormat format) => null!;
         public override ECDiffieHellmanPublicKey PublicKey => null!;
     }
@@ -275,8 +277,14 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
 
-        // Also throws in Windows, no SupportedOSPlatform required.
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ECDiffieHellmanCngPublicKey FromXmlString(string xml)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        public override string ToXmlString()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
@@ -309,10 +317,12 @@ namespace System.Security.Cryptography
 
         public CngAlgorithm HashAlgorithm { get => null!; set { } }
         public CngKey Key => null!;
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void FromXmlString(string xml, ECKeyXmlFormat format) { }
         public byte[] SignData(byte[] data) => null!;
         public byte[] SignData(byte[] data, int offset, int count) => null!;
         public byte[] SignData(System.IO.Stream data) => null!;
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string ToXmlString(ECKeyXmlFormat format) => null!;
         public bool VerifyData(byte[] data, byte[] signature) => false;
         public bool VerifyData(byte[] data, int offset, int count, byte[] signature) => false;

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.
 
@@ -10,8 +9,10 @@ System.Net.Http.Json.HttpClientJsonExtensions
 System.Net.Http.Json.HttpContentJsonExtensions
 System.Net.Http.Json.JsonContent</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Delete.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />
@@ -20,11 +21,13 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
     <Compile Include="System\Net\Http\Json\JsonContentOfT.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContentOfT.netcoreapp.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.netstandard.cs" />
@@ -37,17 +40,18 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Mail" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

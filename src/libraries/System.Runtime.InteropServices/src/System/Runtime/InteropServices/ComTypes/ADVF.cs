@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
     /// <remarks>
@@ -8,6 +10,7 @@ namespace System.Runtime.InteropServices.ComTypes
     /// the Platform SDK documentation as of 07/21/2003.
     /// https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ne-objidl-tagadvf.
     /// </remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum ADVF
     {

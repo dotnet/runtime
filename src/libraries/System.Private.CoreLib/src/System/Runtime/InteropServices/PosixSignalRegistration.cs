@@ -34,8 +34,12 @@ namespace System.Runtime.InteropServices
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler!!) =>
-            Register(signal, handler);
+        public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
+        {
+            ArgumentNullException.ThrowIfNull(handler);
+
+            return Register(signal, handler);
+        }
 
         /// <summary>Initializes the registration to wrap the specified token.</summary>
         private PosixSignalRegistration(Token token) => _token = token;

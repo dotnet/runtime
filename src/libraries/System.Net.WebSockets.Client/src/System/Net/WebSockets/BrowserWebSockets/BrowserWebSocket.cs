@@ -6,8 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices.JavaScript;
 
-using JavaScript = System.Runtime.InteropServices.JavaScript;
-
 namespace System.Net.WebSockets
 {
     /// <summary>
@@ -38,7 +36,7 @@ namespace System.Net.WebSockets
 
         public override WebSocketCloseStatus? CloseStatus => _closeStatus;
         public override string? CloseStatusDescription => _closeStatusDescription;
-        public override string? SubProtocol => _innerWebSocket != null && !_innerWebSocket.IsDisposed ? _innerWebSocket!.GetObjectProperty("protocol")?.ToString() : null;
+        public override string? SubProtocol => BrowserInterop.GetProtocol(_innerWebSocket);
 
         #endregion Properties
 
@@ -143,7 +141,7 @@ namespace System.Net.WebSockets
                 _aborted = true;
                 if (_innerWebSocket != null)
                 {
-                    JavaScript.Runtime.WebSocketAbort(_innerWebSocket!);
+                    BrowserInterop.WebSocketAbort(_innerWebSocket!);
                 }
             }
         }
@@ -171,7 +169,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                object[]? subProtocols = requestedSubProtocols?.ToArray();
+                string[]? subProtocols = requestedSubProtocols?.ToArray();
                 var onClose = (int code, string reason) =>
                 {
                     _closeStatus = (WebSocketCloseStatus)code;
@@ -183,8 +181,9 @@ namespace System.Net.WebSockets
                     }
                 };
 
-                var openTask = JavaScript.Runtime.WebSocketOpen(uri.ToString(), subProtocols, onClose, out _innerWebSocket, out int promiseJSHandle);
-                var wrappedTask = CancelationHelper(openTask, promiseJSHandle, cancellationToken, _state);
+                _innerWebSocket = BrowserInterop.WebSocketCreate(uri.ToString(), subProtocols, onClose);
+                var openTask = BrowserInterop.WebSocketOpen(_innerWebSocket);
+                var wrappedTask = CancelationHelper(openTask!, cancellationToken, _state);
 
                 await wrappedTask.ConfigureAwait(true);
                 if (State == WebSocketState.Connecting)
@@ -212,13 +211,13 @@ namespace System.Net.WebSockets
         {
             try
             {
-                var sendTask = JavaScript.Runtime.WebSocketSend(_innerWebSocket!, buffer, (int)messageType, endOfMessage, out int promiseJSHandle);
+                var sendTask = BrowserInterop.WebSocketSend(_innerWebSocket!, buffer, (int)messageType, endOfMessage);
                 if (sendTask == null)
                 {
                     // return synchronously
                     return;
                 }
-                var wrappedTask = CancelationHelper(sendTask, promiseJSHandle, cancellationToken, _state);
+                var wrappedTask = CancelationHelper(sendTask, cancellationToken, _state);
 
                 await wrappedTask.ConfigureAwait(true);
             }
@@ -241,14 +240,14 @@ namespace System.Net.WebSockets
             try
             {
                 ArraySegment<int> response = new ArraySegment<int>(new int[3]);
-                var receiveTask = JavaScript.Runtime.WebSocketReceive(_innerWebSocket!, buffer, response, out int promiseJSHandle);
+                var receiveTask = BrowserInterop.WebSocketReceive(_innerWebSocket!, buffer, response);
                 if (receiveTask == null)
                 {
                     // return synchronously
                     return ConvertResponse(response);
                 }
 
-                var wrappedTask = CancelationHelper(receiveTask, promiseJSHandle, cancellationToken, _state);
+                var wrappedTask = CancelationHelper(receiveTask, cancellationToken, _state);
                 await wrappedTask.ConfigureAwait(true);
 
                 return ConvertResponse(response);
@@ -286,10 +285,10 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = statusDescription;
 
-            var closeTask = JavaScript.Runtime.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived, out int promiseJSHandle);
+            var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived);
             if (closeTask != null)
             {
-                var wrappedTask = CancelationHelper(closeTask, promiseJSHandle, cancellationToken, _state);
+                var wrappedTask = CancelationHelper(closeTask, cancellationToken, _state);
                 await wrappedTask.ConfigureAwait(true);
             }
 
@@ -300,24 +299,21 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async ValueTask<object> CancelationHelper(Task<object> jsTask, int promiseJSHandle, CancellationToken cancellationToken, WebSocketState previousState)
+        private async ValueTask CancelationHelper(Task jsTask, CancellationToken cancellationToken, WebSocketState previousState)
         {
             if (jsTask.IsCompletedSuccessfully)
             {
-                return jsTask.Result;
+                return;
             }
             try
             {
                 using (var receiveRegistration = cancellationToken.Register(() =>
                 {
-                    // this check makes sure that promiseJSHandle is still valid handle
-                    if (!jsTask.IsCompleted)
-                    {
-                        JavaScript.Runtime.CancelPromise(promiseJSHandle);
-                    }
+                    CancelablePromise.CancelPromise(jsTask);
                 }))
                 {
-                    return await jsTask.ConfigureAwait(true);
+                    await jsTask.ConfigureAwait(true);
+                    return;
                 }
             }
             catch (JSException ex)
@@ -352,7 +348,7 @@ namespace System.Net.WebSockets
 
         private WebSocketState GetReadyState()
         {
-            int readyState = (int)_innerWebSocket!.GetObjectProperty("readyState");
+            int readyState = BrowserInterop.GetReadyState(_innerWebSocket);
 
             // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
             return readyState switch

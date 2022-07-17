@@ -11,22 +11,14 @@ namespace Internal.Cryptography
     internal static partial class Helpers
     {
         [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasSymmetricEncryption { get; } =
-#if NET5_0_OR_GREATER
+        internal static bool HasNonAesSymmetricEncryption =>
+#if NETCOREAPP
             !OperatingSystem.IsBrowser();
 #else
             true;
 #endif
 
-        [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasHMAC { get; } =
-#if NET5_0_OR_GREATER
-            !OperatingSystem.IsBrowser();
-#else
-            true;
-#endif
-
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
         public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
@@ -34,17 +26,17 @@ namespace Internal.Cryptography
         public static bool IsDSASupported => true;
 #endif
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("android")]
         [UnsupportedOSPlatformGuard("browser")]
-        public static bool IsRC2Supported => !OperatingSystem.IsAndroid();
+        public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
 #else
         public static bool IsRC2Supported => true;
 #endif
 
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool HasMD5 { get; } =
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
             !OperatingSystem.IsBrowser();
 #else
             true;

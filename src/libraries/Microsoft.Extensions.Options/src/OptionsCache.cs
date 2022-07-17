@@ -28,12 +28,14 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="createOptions">The func used to create the new instance.</param>
         /// <returns>The options instance.</returns>
-        public virtual TOptions GetOrAdd(string? name, Func<TOptions> createOptions!!)
+        public virtual TOptions GetOrAdd(string? name, Func<TOptions> createOptions)
         {
-            name ??= Options.DefaultName;
-            Lazy<TOptions>? value;
+            ThrowHelper.ThrowIfNull(createOptions);
 
-#if NETSTANDARD2_1
+            name ??= Options.DefaultName;
+            Lazy<TOptions> value;
+
+#if NET || NETSTANDARD2_1
             value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
 #else
             if (!_cache.TryGetValue(name, out value))
@@ -43,6 +45,28 @@ namespace Microsoft.Extensions.Options
 #endif
 
             return value.Value;
+        }
+
+        internal TOptions GetOrAdd<TArg>(string? name, Func<string, TArg, TOptions> createOptions, TArg factoryArgument)
+        {
+            // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
+            // For simplicity, we do the same for older frameworks that don't support the factoryArgument overload of GetOrAdd().
+#if NET || NETSTANDARD2_1
+            if (GetType() != typeof(OptionsCache<TOptions>))
+#endif
+            {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
+                string? localName = name;
+                Func<string, TArg, TOptions> localCreateOptions = createOptions;
+                TArg localFactoryArgument = factoryArgument;
+                return GetOrAdd(name, () => localCreateOptions(localName ?? Options.DefaultName, localFactoryArgument));
+            }
+
+#if NET || NETSTANDARD2_1
+            return _cache.GetOrAdd(
+                name ?? Options.DefaultName,
+                static (name, arg) => new Lazy<TOptions>(arg.createOptions(name, arg.factoryArgument)), (createOptions, factoryArgument)).Value;
+#endif
         }
 
         /// <summary>
@@ -69,10 +93,12 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>Whether anything was added.</returns>
-        public virtual bool TryAdd(string? name, TOptions options!!)
+        public virtual bool TryAdd(string? name, TOptions options)
         {
+            ThrowHelper.ThrowIfNull(options);
+
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
-#if !NETSTANDARD2_1
+#if !(NET || NETSTANDARD2_1)
                 () =>
 #endif
                 options));

@@ -248,8 +248,6 @@ remove_breakpoint (BreakpointInstance *inst)
 static gboolean
 bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 {
-	int i;
-
 	if (!bp->method)
 		return TRUE;
 	if (method == bp->method)
@@ -263,7 +261,7 @@ bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 
 		/* Open generic methods should match closed generic methods of the same class */
 		if (bpimethod->declaring == imethod->declaring && bpimethod->context.class_inst == imethod->context.class_inst && bpimethod->context.method_inst && bpimethod->context.method_inst->is_open) {
-			for (i = 0; i < bpimethod->context.method_inst->type_argc; ++i) {
+			for (guint i = 0; i < bpimethod->context.method_inst->type_argc; ++i) {
 				MonoType *t1 = bpimethod->context.method_inst->type_argv [i];
 
 				/* FIXME: Handle !mvar */
@@ -285,7 +283,6 @@ bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 void
 mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 {
-	int i, j;
 	MonoSeqPointInfo *seq_points;
 	MonoDomain *domain;
 
@@ -296,14 +293,14 @@ mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 
 	mono_loader_lock ();
 
-	for (i = 0; i < breakpoints->len; ++i) {
+	for (guint i = 0; i < breakpoints->len; ++i) {
 		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
 		gboolean found = FALSE;
 
 		if (!bp_matches_method (bp, method))
 			continue;
 
-		for (j = 0; j < bp->children->len; ++j) {
+		for (guint j = 0; j < bp->children->len; ++j) {
 			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
 
 			if (inst->ji == ji)
@@ -399,7 +396,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	GPtrArray *methods;
 	GPtrArray *method_domains;
 	GPtrArray *method_seq_points;
-	int i;
 
 	if (error)
 		error_init (error);
@@ -432,7 +428,7 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	user_data.method_seq_points = method_seq_points;
 	mono_de_foreach_domain (collect_domain_bp, &user_data);
 
-	for (i = 0; i < methods->len; ++i) {
+	for (guint i = 0; i < methods->len; ++i) {
 		m = (MonoMethod *)g_ptr_array_index (methods, i);
 		domain = (MonoDomain *)g_ptr_array_index (method_domains, i);
 		seq_points = (MonoSeqPointInfo *)g_ptr_array_index (method_seq_points, i);
@@ -458,10 +454,8 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 void
 mono_de_clear_breakpoint (MonoBreakpoint *bp)
 {
-	int i;
-
 	// FIXME: locking, races
-	for (i = 0; i < bp->children->len; ++i) {
+	for (guint i = 0; i < bp->children->len; ++i) {
 		BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, i);
 
 		remove_breakpoint (inst);
@@ -481,13 +475,13 @@ mono_de_clear_breakpoint (MonoBreakpoint *bp)
 void
 mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GPtrArray *bp_reqs)
 {
-	for (int i = 0; i < breakpoints->len; ++i) {
+	for (guint i = 0; i < breakpoints->len; ++i) {
 		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
 
 		if (!bp->method)
 			continue;
 
-		for (int j = 0; j < bp->children->len; ++j) {
+		for (guint j = 0; j < bp->children->len; ++j) {
 			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
 			if (inst->ji == ji && inst->il_offset == sp->il_offset && inst->native_offset == sp->native_offset) {
 				if (bp->req->event_kind == EVENT_KIND_STEP) {
@@ -505,11 +499,9 @@ mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_
 static void
 breakpoints_cleanup (void)
 {
-	int i;
-
 	mono_loader_lock ();
 
-	for (i = 0; i < breakpoints->len; ++i)
+	for (guint i = 0; i < breakpoints->len; ++i)
 		g_free (g_ptr_array_index (breakpoints, i));
 
 	g_ptr_array_free (breakpoints, TRUE);
@@ -529,17 +521,15 @@ breakpoints_cleanup (void)
 void
 mono_de_clear_breakpoints_for_domain (MonoDomain *domain)
 {
-	int i, j;
-
 	/* This could be called after shutdown */
 	if (!breakpoints)
 		return;
 
 	mono_loader_lock ();
-	for (i = 0; i < breakpoints->len; ++i) {
+	for (guint i = 0; i < breakpoints->len; ++i) {
 		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
 
-		j = 0;
+		guint j = 0;
 		while (j < bp->children->len) {
 			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
 
@@ -711,8 +701,7 @@ ss_req_acquire (MonoInternalThread *thread)
 {
 	SingleStepReq *req = NULL;
 	dbg_lock ();
-	int i;
-	for (i = 0; i < the_ss_reqs->len; ++i) {
+	for (guint i = 0; i < the_ss_reqs->len; ++i) {
 		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
 		if (current_req->thread == thread) {
 			current_req->refcount ++;
@@ -757,8 +746,7 @@ mono_de_cancel_ss (SingleStepReq *req)
 void
 mono_de_cancel_all_ss (void)
 {
-	int i;
-	for (i = 0; i < the_ss_reqs->len; ++i) {
+	for (guint i = 0; i < the_ss_reqs->len; ++i) {
 		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
 		mono_de_ss_req_release (current_req);
 	}
@@ -834,7 +822,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * The ip points to the instruction causing the single step event, which is before
 	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-	if (!mono_find_next_seq_point_for_native_offset (method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp)) {
+	if (!mono_find_next_seq_point_for_native_offset (method, GPTRDIFF_TO_INT32 ((guint8*)ip - (guint8*)ji->code_start), &info, &sp)) {
 		g_assert_not_reached ();
 		goto exit;
 	}
@@ -1015,7 +1003,6 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	DebuggerTlsData *tls = (DebuggerTlsData*)void_tls;
 	MonoJitInfo *ji;
 	guint8 *ip;
-	int i;
 	guint32 native_offset;
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
@@ -1035,7 +1022,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	method = jinfo_get_method (ji);
 
 	/* Compute the native offset of the breakpoint from the ip */
-	native_offset = ip - (guint8*)ji->code_start;
+	native_offset = GPTRDIFF_TO_UINT32 (ip - (guint8*)ji->code_start);
 
 	if (!rt_callbacks.begin_breakpoint_processing (tls, ctx, ji, from_signal))
 		return;
@@ -1075,7 +1062,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	}
 
 	/* Process single step requests */
-	for (i = 0; i < ss_reqs_orig->len; ++i) {
+	for (guint i = 0; i < ss_reqs_orig->len; ++i) {
 		EventRequest *req = (EventRequest *)g_ptr_array_index (ss_reqs_orig, i);
 		SingleStepReq *ss_req = (SingleStepReq *)req->info;
 		gboolean hit;
@@ -1256,11 +1243,11 @@ is_last_non_empty (SeqPoint* sp, MonoSeqPointInfo *info)
 static void
 mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 {
-	int i, j, frame_index;
+	int frame_index;
 	SeqPoint *next_sp, *parent_sp = NULL;
 	SeqPoint local_sp, local_parent_sp;
 	gboolean found_sp;
-	MonoSeqPointInfo *parent_info;
+	MonoSeqPointInfo *parent_info = NULL;
 	MonoMethod *parent_sp_method = NULL;
 	gboolean enable_global = FALSE;
 
@@ -1307,18 +1294,18 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
 
 		/* Need to stop in catch clauses as well */
-		for (i = ss_req->depth == STEP_DEPTH_OUT ? 1 : 0; i < nframes; ++i) {
+		for (int i = ss_req->depth == STEP_DEPTH_OUT ? 1 : 0; i < nframes; ++i) {
 			DbgEngineStackFrame *frame = frames [i];
 
 			if (frame->ji) {
 				MonoJitInfo *jinfo = frame->ji;
-				for (j = 0; j < jinfo->num_clauses; ++j) {
+				for (guint32 j = 0; j < jinfo->num_clauses; ++j) {
 					// In case of async method we don't want to place breakpoint on last catch handler(which state machine added for whole method)
 					if (asyncMethod && asyncMethod->num_awaits && i == 0 && j + 1 == jinfo->num_clauses)
 						break;
 					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
-					if (mono_find_next_seq_point_for_native_offset (frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
+					if (mono_find_next_seq_point_for_native_offset (frame->method, GPTRDIFF_TO_INT32 ((char*)ei->handler_start - (char*)jinfo->code_start), NULL, &local_sp))
 						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, local_sp.il_offset);
 				}
 			}
@@ -1330,7 +1317,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			// Check if we hit yield_offset during normal stepping, because if we did...
 			// Go into special async stepping mode which places breakpoint on resumeOffset
 			// of this await call and sets async_id so we can distinguish it from parallel executions
-			for (i = 0; i < asyncMethod->num_awaits; i++) {
+			for (int i = 0; i < asyncMethod->num_awaits; i++) {
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
 					ss_req->async_id = mono_de_frame_async_id (frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
@@ -1416,7 +1403,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			SeqPoint* next = g_new(SeqPoint, sp->next_len);
 
 			mono_seq_point_init_next (ss_args->info, *sp, next);
-			for (i = 0; i < sp->next_len; i++) {
+			for (int i = 0; i < sp->next_len; i++) {
 				next_sp = &next[i];
 
 				ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, next_sp->il_offset);
@@ -1428,7 +1415,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			SeqPoint* next = g_new(SeqPoint, parent_sp->next_len);
 
 			mono_seq_point_init_next (parent_info, *parent_sp, next);
-			for (i = 0; i < parent_sp->next_len; i++) {
+			for (int i = 0; i < parent_sp->next_len; i++) {
 				next_sp = &next[i];
 
 				ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, parent_sp_method, next_sp->il_offset);
@@ -1690,7 +1677,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 		builder = mono_vtype_get_field_addr (*(guint8**)this_addr, builder_field);
 	} else {
 		this_obj = *(MonoObject**)this_addr;
-		builder = (char*)this_obj + builder_field->offset;
+		builder = (char*)this_obj + m_field_get_offset (builder_field);
 	}
 
 	return builder;
