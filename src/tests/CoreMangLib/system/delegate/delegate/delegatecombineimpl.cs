@@ -71,8 +71,8 @@ namespace DelegateTest
 
             try
             {
-                booldelegate delegate = new booldelegate(new TestClass().Working_Bool);
-                if (!CombineImpl(delegate,identify_null.c_Start_null_false))
+                booldelegate delegate1 = new booldelegate(new TestClass().Working_Bool);
+                if (!CombineImpl(delegate1,identify_null.c_Start_null_false))
                 {
                     TestLibrary.TestFramework.LogError("001", "delegate combineimpl is not successful ");
                     retVal = false;
@@ -98,8 +98,8 @@ namespace DelegateTest
             try
             {
 
-                booldelegate delegate = null;
-                if (!CombineImpl(delegate, identify_null.c_Working_null_false))
+                booldelegate delegate1 = null;
+                if (!CombineImpl(delegate1, identify_null.c_Working_null_false))
                 {
                     TestLibrary.TestFramework.LogError("003", "delegate combine is not successful ");
                     retVal = false;
@@ -126,8 +126,8 @@ namespace DelegateTest
             try
             {
 
-                booldelegate delegate = new booldelegate(new TestClass().StartWork_Bool);
-                if (!CombineImpl(delegate, identify_null.c_Working_null_true   ))
+                booldelegate delegate1 = new booldelegate(new TestClass().StartWork_Bool);
+                if (!CombineImpl(delegate1, identify_null.c_Working_null_true   ))
                 {
                     TestLibrary.TestFramework.LogError("005", "delegate combine is not successful ");
                     retVal = false;
@@ -153,8 +153,8 @@ namespace DelegateTest
 
             try
             {
-                booldelegate delegate = null;
-                if (!CombineImpl(delegate, identify_null.c_Working_null_true))
+                booldelegate delegate1 = null;
+                if (!CombineImpl(delegate1, identify_null.c_Working_null_true))
                 {
                     TestLibrary.TestFramework.LogError("007", "delegate combine is not successful ");
                     retVal = false;
@@ -180,8 +180,8 @@ namespace DelegateTest
 
             try
             {
-                booldelegate delegate = new booldelegate(new TestClass().Working_Bool);
-                if (!CombineImpl(delegate, identify_null.c_Start_null_false_duplicate ))
+                booldelegate delegate1 = new booldelegate(new TestClass().Working_Bool);
+                if (!CombineImpl(delegate1, identify_null.c_Start_null_false_duplicate ))
                 {
                     TestLibrary.TestFramework.LogError("009", "delegate combine is not successful ");
                     retVal = false;
@@ -261,10 +261,9 @@ namespace DelegateTest
                 return true;
             else
                 return false;
-
         }
-
     }
+
     //create testclass for provding test method and test target.
     class TestClass
     {
@@ -281,9 +280,6 @@ namespace DelegateTest
         public void CompleteWork_Void()
         {
             TestLibrary.TestFramework.LogInformation("CompleteWork_Void method  is running .");
-
         }
     }
-
-
 }
