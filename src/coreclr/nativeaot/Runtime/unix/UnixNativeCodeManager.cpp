@@ -327,6 +327,12 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
+{
+    // VirtualUnwind can't unwind prologues.
+    return TrailingEpilogueInstructionsCount(pvAddress) == 0;
+}
+
 #define SIZE64_PREFIX 0x48
 #define ADD_IMM8_OP 0x83
 #define ADD_IMM32_OP 0x81
@@ -342,23 +348,51 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
 #define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
 
-bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
+// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
+// otherwise returns 0
+int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 {
 #ifdef TARGET_AMD64
 
-//
-//
-// <NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE>
-//
-// Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
-// 
-// For details see similar code in OOPStackUnwinderAMD64::UnwindEpilogue
-//
-// <NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE>
-//
-//
+    //
+    // Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
+    // For details see similar code in OOPStackUnwinderAMD64::UnwindEpilogue
+    //
+    //
+    //    
+    // A canonical epilogue sequence consists of the following operations:
+    //
+    // 1. Optional cleanup of fixed and dynamic stack allocations, which is
+    //    considered to be outside of the epilogue region.
+    //
+    //    add rsp, imm
+    //        or
+    //    lea rsp, disp[fp]
+    //
+    // 2. Zero or more pop nonvolatile-integer-register[0..15] instructions.
+    //
+    //    pop r64
+    //        or
+    //    REX.R pop r64
+    //
+    // 3. An optional one-byte pop r64 to a volatile register to clean up an
+    //    RFLAGS register pushed with pushfq.
+    //
+    //    pop rcx
+    //
+    // 4. A control transfer instruction (ret or jump, in a case of a tailcall)
+    //    For the purpose of inferring the state of the stack, ret and jump can be
+    //    considered the same.
+    //
+    //    ret 0
+    //        or
+    //    jmp imm
+    //        or
+    //    jmp [target]
+    //
 
-    int instrTillRet = 1;
+    // if we are in an epilogue, there will be at least one instruction left.
+    int trailingEpilogueInstructions = 1;
     uint8_t* NextByte = (uint8_t*)pvAddress;
 
     //
@@ -372,12 +406,12 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
         if ((NextByte[0] & 0xf8) == POP_OP)
         {
             NextByte += 1;
-            instrTillRet++;
+            trailingEpilogueInstructions++;
         }
         else if (IS_REX_PREFIX(NextByte[0]) && ((NextByte[1] & 0xf8) == POP_OP))
         {
             NextByte += 2;
-            instrTillRet++;
+            trailingEpilogueInstructions++;
         }
         else
         {
@@ -402,8 +436,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
         //
         // A return is an unambiguous indication of an epilogue.
         //
-
-        return false;
+        return trailingEpilogueInstructions;
     }
 
     if ((NextByte[0] == JMP_IMM8_OP) ||
@@ -417,13 +450,17 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
         size_t BranchTarget = (size_t)NextByte;
         if (NextByte[0] == JMP_IMM8_OP)
         {
-            BranchTarget += 2 + NextByte[1];
+            BranchTarget += 2 + (int8_t)NextByte[1];
         }
         else
         {
-            int delta = NextByte[1] | (NextByte[2] << 8) |
-                (NextByte[3] << 16) | (NextByte[4] << 24);
-            BranchTarget += 5 + delta;
+            uint32_t delta =
+                (uint32_t)NextByte[1] |
+                ((uint32_t)NextByte[2] << 8) |
+                ((uint32_t)NextByte[3] << 16) |
+                ((uint32_t)NextByte[4] << 24);
+
+            BranchTarget += 5 + (int32_t)delta;
         }
 
         //
@@ -443,7 +480,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 
         if (BranchTarget < startAddress || BranchTarget >= endAddress)
         {
-            return false;
+            return trailingEpilogueInstructions;
         }
     }
     else if ((NextByte[0] == JMP_IND_OP) && (NextByte[1] == 0x25))
@@ -455,7 +492,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
         // to an import function.
         //
 
-        return false;
+        return trailingEpilogueInstructions;
     }
     else if (((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
         (NextByte[1] == 0xff) &&
@@ -470,13 +507,11 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
         // Such an opcode is an unambiguous epilogue indication.
         //
 
-        return false;
+        return trailingEpilogueInstructions;
     }
-   
-    return true;
-#else
-    return false;
 #endif
+
+    return 0;
 }
 
 // Convert the return kind that was encoded by RyuJIT to the
@@ -522,6 +557,13 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     GcInfoDecoder decoder(GCInfoToken(p), flags);
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
+
+    int epilogueInstructions = TrailingEpilogueInstructionsCount((PTR_VOID)pRegisterSet->IP);
+    if (epilogueInstructions > 0)
+    {
+        *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
+        return true;
+    }
 
     ASSERT(IsUnwindable((PTR_VOID)pRegisterSet->IP));
 

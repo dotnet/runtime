@@ -53,6 +53,8 @@ public:
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
+    int TrailingEpilogueInstructionsCount(PTR_VOID pvAddress); 
+
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out

@@ -668,15 +668,11 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     }
 
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
-    if (!codeManager->IsUnwindable(pvAddress))
-    {
-        // VirtualUnwind can't handle some cases in prologs/epilogs.
-        // We cannot suspend as the thread would be useless to stackwalks.
-        // We will have to try again.
-        return;
-    }
 
-    if (codeManager->IsSafePoint(pvAddress))
+    // we may be able to do GC stack walk right where the threads is now,
+    // as long as it is on a GC safe point and if we can unwind the stack at that location.
+    if (codeManager->IsSafePoint(pvAddress) &&
+        codeManager->IsUnwindable(pvAddress))
     {
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
