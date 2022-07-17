@@ -14,8 +14,6 @@ namespace System.Net.Security
     {
         public static SslClientAuthenticationOptions ShallowClone(this SslClientAuthenticationOptions options)
         {
-            var cc = options.ClientCertificates;
-
             var clone = new SslClientAuthenticationOptions()
             {
                 AllowRenegotiation = options.AllowRenegotiation,
@@ -72,7 +70,6 @@ namespace System.Net.Security
                 }
             }
 #endif
-            Debug.Assert(cc == options.ClientCertificates);
 
             return clone;
         }
