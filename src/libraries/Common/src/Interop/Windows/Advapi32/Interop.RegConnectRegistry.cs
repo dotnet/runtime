@@ -17,7 +17,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegConnectRegistryW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegConnectRegistry(
             string machineName,
-            SafeRegistryHandle key,
+            IntPtr key,
             out SafeRegistryHandle result);
     }
 }
