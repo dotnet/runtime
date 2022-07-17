@@ -14,11 +14,14 @@ namespace System.Net.Security
     {
         public static SslClientAuthenticationOptions ShallowClone(this SslClientAuthenticationOptions options)
         {
+            var cc = options.ClientCertificates;
+
             var clone = new SslClientAuthenticationOptions()
             {
                 AllowRenegotiation = options.AllowRenegotiation,
                 ApplicationProtocols = options.ApplicationProtocols != null ? new List<SslApplicationProtocol>(options.ApplicationProtocols) : null,
                 CertificateRevocationCheckMode = options.CertificateRevocationCheckMode,
+                CertificateChainPolicy = options.CertificateChainPolicy,
                 CipherSuitesPolicy = options.CipherSuitesPolicy,
                 ClientCertificates = options.ClientCertificates,
                 EnabledSslProtocols = options.EnabledSslProtocols,
@@ -69,6 +72,7 @@ namespace System.Net.Security
                 }
             }
 #endif
+            Debug.Assert(cc == options.ClientCertificates);
 
             return clone;
         }
