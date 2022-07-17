@@ -2704,7 +2704,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 if (1 < modes.Count)
                 {
-                    ReportNYI("Multipe modes");
+                    ReportNYI("Multiple modes");
                     return nullMode;
                 }
                 if (modes.Count == 0)
@@ -3086,7 +3086,7 @@ namespace System.Xml.Xsl.Xslt
         // NOTE! We inverting namespace order that is irelevant for namespace of the same node, but
         // for included styleseets we don't keep stylesheet as a node and adding it's namespaces to
         // each toplevel element by MergeNamespaces().
-        // Namespaces of stylesheet can be overriden in template and to make this works correclety we
+        // Namespaces of stylesheet can be overridden in template and to make this works correclety we
         // should attache them after NsDec of top level elements.
         // Toplevel element almost never contais NsDecl and in practice node duplication will not happened, but if they have
         // we should copy NsDecls of stylesheet locally in toplevel elements.

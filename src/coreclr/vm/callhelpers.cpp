@@ -448,7 +448,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
             UINT32 stackSize = m_argIt.GetArgSize();
             // We need to pass in a pointer, but be careful of the ARG_SLOT calling convention. We might already have a pointer in the ARG_SLOT.
-            PVOID pSrc = stackSize > sizeof(ARG_SLOT) ? (LPVOID)ArgSlotToPtr(pArguments[arg]) : (LPVOID)ArgSlotEndianessFixup((ARG_SLOT*)&pArguments[arg], stackSize);
+            PVOID pSrc = stackSize > sizeof(ARG_SLOT) ? (LPVOID)ArgSlotToPtr(pArguments[arg]) : (LPVOID)ArgSlotEndiannessFixup((ARG_SLOT*)&pArguments[arg], stackSize);
 
 #if defined(UNIX_AMD64_ABI)
             if (argDest.IsStructPassedInRegs())

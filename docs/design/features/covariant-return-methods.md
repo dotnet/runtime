@@ -6,7 +6,7 @@ This feature allows an overriding method to have a return type that is different
 
 Covariant return methods can only be described through MethodImpl records, and as an initial implementation will only be applicable to methods on reference types. Methods on interfaces and value types will not be supported (may be supported later in the future).
 
-MethodImpl checking will allow a return type to vary as long as the override is compatible with the return type of the method overriden (ECMA I.8.7.1).
+MethodImpl checking will allow a return type to vary as long as the override is compatible with the return type of the method overridden (ECMA I.8.7.1).
 
 If a language wishes for the override to be semantically visible such that users of the more derived type may rely on the covariant return type it shall make the override a newslot method with appropriate visibility AND name to be used outside of the class.
 

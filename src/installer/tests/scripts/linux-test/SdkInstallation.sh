@@ -209,15 +209,15 @@ run_app(){
 		project_output=$(dotnet run)
 		if [[ "$project_output" == 'Hello World!' ]];
 		then
-			sucess_install=1;
+			success_install=1;
 		else
-			sucess_install=0;
+			success_install=0;
 		fi
 	fi
 }
 test_result_install(){
 	if [ -e $result_file ]; then
-		if [ $sucess_install -eq 1 ]; then
+		if [ $success_install -eq 1 ]; then
 			echo "$distro:$version install  ->  passed" >> $result_file
 		else
 			echo "$distro:$version install  ->  failed" >> $result_file
@@ -227,13 +227,13 @@ test_result_install(){
 test_result_uninstall(){
 
 	if [[ -z "$dotnet_installed_packages" ]]; then
-		sucess_uninstall=1;
+		success_uninstall=1;
 	else
-		sucess_uninstall=0;
+		success_uninstall=0;
 	fi
 
 	if [ -e $result_file ]; then
-		if [ $sucess_uninstall -eq 1 ]; then
+		if [ $success_uninstall -eq 1 ]; then
                		echo "$distro:$version uninstall  ->  passed" >> $result_file
 		else
 	                echo "$distro:$version uninstall  ->  failed" >> $result_file
@@ -289,7 +289,7 @@ if [[ "$distro" == "ubuntu" || "$distro" == "debian" ]]; then
 
 	fi
 
-	if [[ "$3" == "uninstall" && "$sucess_install" == 1 || "$2" == "uninstall" ]]; then
+	if [[ "$3" == "uninstall" && "$success_install" == 1 || "$2" == "uninstall" ]]; then
 		uninstall_dotnet_deb
 		test_result_uninstall
 	fi
@@ -339,7 +339,7 @@ elif [[ "$distro" == "fedora" || "$distro" == "centos" || "$distro" == "oracleli
                 echo $runtime_aspnet
 
 	fi
-	if [[ "$3" == "uninstall" && "$sucess_install" == 1 || "$2" == "uninstall" ]]; then
+	if [[ "$3" == "uninstall" && "$success_install" == 1 || "$2" == "uninstall" ]]; then
 		uninstall_dotnet_yum
 		test_result_uninstall
 	fi
@@ -392,7 +392,7 @@ elif [[ "$distro" == "opensuse" || "$distro" == "sles" ]]; then
 
 	fi
 
-	if [[ "$3" == "uninstall" && "$sucess_install" == 1 || "$2" == "uninstall" ]]; then
+	if [[ "$3" == "uninstall" && "$success_install" == 1 || "$2" == "uninstall" ]]; then
 		uninstall_dotnet_zypper
 		test_result_uninstall
 	fi

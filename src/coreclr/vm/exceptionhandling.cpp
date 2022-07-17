@@ -4559,7 +4559,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // the exception to be thrown
         *ex.GetContextRecord() = *frameContext;
 
-        // Move the exception address to the first managed frame on the stack except for the hardware exceptions 
+        // Move the exception address to the first managed frame on the stack except for the hardware exceptions
         // stemming from from a native code out of the well known runtime helpers
         if (!ex.IsExternal)
         {
@@ -4846,7 +4846,7 @@ Parameters:
     UINT index :        index of the register (Rax=0 .. R15=15)
 
 Return value :
-    Pointer to the context member represeting the register
+    Pointer to the context member represetting the register
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
@@ -4864,7 +4864,7 @@ Parameters:
     UINT index :        index of the register (Rax=0 .. R15=15)
 
 Return value :
-    Value of the context member represeting the register
+    Value of the context member represetting the register
 --*/
 DWORD64 GetRegisterValueByIndex(PCONTEXT pContext, UINT index)
 {
@@ -4886,7 +4886,7 @@ Parameters:
     bool hasOpSizePrefix :  true if the instruction has op size prefix (0x66)
 
 Return value :
-    Value of the context member represeting the register
+    Value of the context member represetting the register
 --*/
 DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit, bool hasOpSizePrefix)
 {

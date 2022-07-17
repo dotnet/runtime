@@ -209,7 +209,7 @@ namespace System.Reflection.Emit
                     if (!(fi.FieldType is TypeBuilder) && !fi.FieldType.IsEnum && !fi.FieldType.IsInstanceOfType(fieldValues[i]))
                     {
                         //
-                        // mcs allways uses object[] for array types and
+                        // mcs always uses object[] for array types and
                         // MS.NET allows this
                         //
                         if (!fi.FieldType.IsArray)

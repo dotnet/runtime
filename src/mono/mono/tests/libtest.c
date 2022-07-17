@@ -7725,7 +7725,7 @@ StringParameterRef(/*ref*/ char **s, int index)
     {
        marshal_free (*s);
     }
-    // overwrite the orginal
+    // overwrite the original
     *s = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
     memcpy(*s, pszTextutf8, strLength);
     (*s)[strLength] = '\0';

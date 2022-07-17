@@ -972,7 +972,7 @@ namespace System.Data
                             }
                         }
                         else
-                        { // we are proccessing current datarow
+                        { // we are processing current datarow
                             _currentRowRemoved = true;
                             if (_rowCounter > 0)
                             {

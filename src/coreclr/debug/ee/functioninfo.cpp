@@ -952,7 +952,7 @@ void DebuggerJitInfo::LazyInitBounds()
     EX_CATCH
     {
         LOG((LF_CORDB,LL_WARNING, "DJI::LazyInitBounds: this=0x%x Exception was thrown and caught\n", this));
-        // Just catch the exception. The DJI maps may or may-not be intialized,
+        // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
     EX_END_CATCH(SwallowAllExceptions)

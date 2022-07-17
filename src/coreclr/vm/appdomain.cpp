@@ -190,12 +190,12 @@ OBJECTREF *PinnedHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
     }
     CONTRACTL_END;
 
-    OBJECTREF pPreallocatedSentinalObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinalObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
+    _ASSERTE(pPreallocatedSentinelObject  != NULL);
 
     for (int  i = m_CurrentEmbeddedFreePos; i < m_CurrentPos; i++)
     {
-        if (m_pArrayDataPtr[i] == pPreallocatedSentinalObject)
+        if (m_pArrayDataPtr[i] == pPreallocatedSentinelObject)
         {
             m_CurrentEmbeddedFreePos = i;
             m_pArrayDataPtr[i] = NULL;
@@ -462,14 +462,14 @@ void PinnedHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
     _ASSERTE(m_pCrstDebug->OwnedByCurrentThread());
 #endif
 
-    OBJECTREF pPreallocatedSentinalObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinalObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
+    _ASSERTE(pPreallocatedSentinelObject  != NULL);
 
 
     // Add the released handles to the list of available handles.
     for (DWORD i = 0; i < nReleased; i++)
     {
-        SetObjectReference(&pObjRef[i], pPreallocatedSentinalObject);
+        SetObjectReference(&pObjRef[i], pPreallocatedSentinelObject);
     }
 
     m_cEmbeddedFree += nReleased;
@@ -1105,8 +1105,8 @@ void SystemDomain::PreallocateSpecialObjects()
 
     _ASSERTE(g_pPreallocatedSentinelObject == NULL);
 
-    OBJECTREF pPreallocatedSentinalObject = AllocateObject(g_pObjectClass);
-    g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinalObject );
+    OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
+    g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinelObject );
 }
 
 void SystemDomain::CreatePreallocatedExceptions()

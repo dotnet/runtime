@@ -1320,7 +1320,7 @@ EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DO
 // Special Handling of Startup events
 //
 
-// "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
+// "mc.exe -MOF" already generates this block for XP-supported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
 ETW_INLINE
@@ -1386,7 +1386,7 @@ public:
         }
     }
 };
-// "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
+// "mc.exe -MOF" already generates this block for XP-supported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
 FORCEINLINE

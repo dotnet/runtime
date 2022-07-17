@@ -12980,14 +12980,14 @@ uint32_t gc_heap::adjust_heaps_hard_limit (uint32_t nhp)
 
 size_t gc_heap::adjust_segment_size_hard_limit_va (size_t seg_size)
 {
-    return (use_large_pages_p ? 
-            align_on_segment_hard_limit (seg_size) : 
+    return (use_large_pages_p ?
+            align_on_segment_hard_limit (seg_size) :
             round_up_power2 (seg_size));
 }
 
 size_t gc_heap::adjust_segment_size_hard_limit (size_t limit, uint32_t nhp)
 {
-    if (!limit) 
+    if (!limit)
     {
         limit = min_segment_size_hard_limit;
     }
@@ -15414,7 +15414,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #endif //USE_REGIONS
             {
                 size_t pad_size = aligned_min_obj_size;
-                dprintf (3, ("contigous ac: making min obj gap %Ix->%Ix(%Id)",
+                dprintf (3, ("contiguous ac: making min obj gap %Ix->%Ix(%Id)",
                     acontext->alloc_ptr, (acontext->alloc_ptr + pad_size), pad_size));
                 make_unused_array (acontext->alloc_ptr, pad_size);
                 acontext->alloc_ptr += pad_size;
@@ -20273,7 +20273,7 @@ int gc_heap::generation_to_condemn (int n_initial,
                     // For background GC we want to do blocking collections more eagerly because we don't
                     // want to get into the situation where the memory load becomes high while we are in
                     // a background GC and we'd have to wait for the background GC to finish to start
-                    // a blocking collection (right now the implemenation doesn't handle converting
+                    // a blocking collection (right now the implementation doesn't handle converting
                     // a background GC to a blocking collection midway.
                     dprintf (GTC_LOG, ("h%d: bgc - BLOCK", heap_number));
                     *blocking_collection_p = TRUE;
@@ -33790,7 +33790,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
             }
         }
 
-        dprintf (GC_TABLE_LOG, ("decommited [%Ix for address [%Ix", beg_word, seg));
+        dprintf (GC_TABLE_LOG, ("decommitted [%Ix for address [%Ix", beg_word, seg));
     }
 }
 
@@ -44075,7 +44075,7 @@ HRESULT GCHeap::Initialize()
     seg_size = gc_heap::soh_segment_size;
 
 #ifndef USE_REGIONS
-    
+
     if (gc_heap::heap_hard_limit)
     {
         if (gc_heap::heap_hard_limit_oh[soh])

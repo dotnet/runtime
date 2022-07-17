@@ -1499,7 +1499,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 			continue;
 		MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
 			/*
-			 * Try to move instructions out of loop headers into the preceeding bblock.
+			 * Try to move instructions out of loop headers into the preceding bblock.
 			 */
 			if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS || ins->opcode == OP_AOTCONST || ins->opcode == OP_GENERIC_CLASS_INIT) {
 				MonoInst *tins;

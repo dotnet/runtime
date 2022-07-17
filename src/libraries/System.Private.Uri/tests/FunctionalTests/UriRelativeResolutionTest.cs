@@ -288,9 +288,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSingleDotSlashStartingCompressPath_ReturnsMergedPathsWithoutSingleDot()
         {
-            string compressable = "./";
+            string compressible = "./";
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
-            Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
+            Uri resolved = new Uri(_fullBaseUri, compressible + partialPath);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
             string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
@@ -300,9 +300,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsDoubleDotSlashStartingCompressPath_ReturnsBasePathBacksteppedOncePlusRelativePath()
         {
-            string compressable = "../";
+            string compressible = "../";
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
-            Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
+            Uri resolved = new Uri(_fullBaseUri, compressible + partialPath);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
             baseUri = baseUri.Substring(0, baseUri.LastIndexOf("/"));
@@ -313,9 +313,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsDoubleDoubleDotSlashStartingCompressPath_ReturnsBasePathBacksteppedTwicePlusRelativePath()
         {
-            string compressable = "../../";
+            string compressible = "../../";
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
-            Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
+            Uri resolved = new Uri(_fullBaseUri, compressible + partialPath);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
             baseUri = baseUri.Substring(0, baseUri.LastIndexOf("/"));
@@ -327,9 +327,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsTrippleDoubleDotSlashStartingCompressPath_ReturnsBaseWithoutPathPlusRelativePath()
         {
-            string compressable = "../../../";
+            string compressible = "../../../";
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
-            Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
+            Uri resolved = new Uri(_fullBaseUri, compressible + partialPath);
 
             string baseUri = FullBaseUriGetLeftPart_Authority;
             string expectedResult = baseUri + "/" + partialPath;
@@ -339,9 +339,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsTooManyDoubleDotSlashStartingCompressPath_ReturnsBaseWithoutPathPlusRelativePath()
         {
-            string compressable = "../../../../";
+            string compressible = "../../../../";
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
-            Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
+            Uri resolved = new Uri(_fullBaseUri, compressible + partialPath);
 
             string baseUri = FullBaseUriGetLeftPart_Authority;
             string expectedResult = baseUri + "/" + partialPath;
@@ -351,9 +351,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSingleDotSlashEndingCompressPath_ReturnsMergedPathsWithoutSingleDot()
         {
-            string compressable = "./";
+            string compressible = "./";
             string partialPath = "p1/p2/p3/p4/";
-            Uri resolved = new Uri(_fullBaseUri, partialPath + compressable);
+            Uri resolved = new Uri(_fullBaseUri, partialPath + compressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
             string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
@@ -363,9 +363,9 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSingleDotEndingCompressPath_ReturnsMergedPathsWithoutSingleDot()
         {
-            string compressable = ".";
+            string compressible = ".";
             string partialPath = "p1/p2/p3/p4/";
-            Uri resolved = new Uri(_fullBaseUri, partialPath + compressable);
+            Uri resolved = new Uri(_fullBaseUri, partialPath + compressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
             string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
@@ -375,8 +375,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSingleDot_ReturnsBasePathMinusFileWithoutSingleDot()
         {
-            string compressable = ".";
-            Uri resolved = new Uri(_fullBaseUri, compressable);
+            string compressible = ".";
+            Uri resolved = new Uri(_fullBaseUri, compressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
             string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1);
@@ -386,8 +386,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSlashDot_ReturnsBaseMinusPath()
         {
-            string compressable = "/.";
-            Uri resolved = new Uri(_fullBaseUri, compressable);
+            string compressible = "/.";
+            Uri resolved = new Uri(_fullBaseUri, compressible);
 
             string expectedResult = FullBaseUriGetLeftPart_Authority + "/";
             Assert.Equal(expectedResult, resolved.ToString());
@@ -396,8 +396,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSlashDotSlashFile_ReturnsBasePlusRelativeFile()
         {
-            string compressable = "/./file";
-            Uri resolved = new Uri(_fullBaseUri, compressable);
+            string compressible = "/./file";
+            Uri resolved = new Uri(_fullBaseUri, compressible);
 
             string expectedResult = FullBaseUriGetLeftPart_Authority + "/file";
             Assert.Equal(expectedResult, resolved.ToString());
@@ -406,8 +406,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsSlashDoubleDotSlashFile_ReturnsBasePlusRelativeFile()
         {
-            string compressable = "/../file";
-            Uri resolved = new Uri(_fullBaseUri, compressable);
+            string compressible = "/../file";
+            Uri resolved = new Uri(_fullBaseUri, compressible);
 
             string expectedResult = FullBaseUriGetLeftPart_Authority + "/file";
             Assert.Equal(expectedResult, resolved.ToString());
@@ -416,105 +416,105 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsCharDot_ReturnsBasePathPlusCharDot()
         {
-            string nonCompressable = "f.";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "f.";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
-            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsDotChar_ReturnsBasePathPlusDotChar()
         {
-            string nonCompressable = ".f";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = ".f";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
-            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsCharDoubleDot_ReturnsBasePathPlusCharDoubleDot()
         {
-            string nonCompressable = "f..";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "f..";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
-            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsDoubleDotChar_ReturnsBasePathPlusDoubleDotChar()
         {
-            string nonCompressable = "..f";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "..f";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
-            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsTrippleDot_ReturnsBasePathPlusTrippleDot()
         {
-            string nonCompressable = "...";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "...";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
             string baseUri = FullBaseUriGetLeftPart_Path;
-            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsCharDotSlash_ReturnsCharDotSlash()
         {
-            string nonCompressable = "/f./";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "/f./";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
-            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressable;
+            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsSlashDotCharSlash_ReturnsSlashDotCharSlash()
         {
-            string nonCompressable = "/.f/";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "/.f/";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
-            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressable;
+            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsCharDoubleDotSlash_ReturnsCharDoubleDotSlash()
         {
-            string nonCompressable = "/f../";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "/f../";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
-            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressable;
+            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsSlashDoubleDotCharSlash_ReturnsSlashDoubleDotCharSlash()
         {
-            string nonCompressable = "/..f/";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "/..f/";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
-            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressable;
+            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
         [Fact]
         public void Uri_Relative_BaseVsSlashTrippleDotSlash_ReturnsSlashTrippleDotSlash()
         {
-            string nonCompressable = "/.../";
-            Uri resolved = new Uri(_fullBaseUri, nonCompressable);
+            string nonCompressible = "/.../";
+            Uri resolved = new Uri(_fullBaseUri, nonCompressible);
 
-            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressable;
+            string expectedResult = FullBaseUriGetLeftPart_Authority + nonCompressible;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 

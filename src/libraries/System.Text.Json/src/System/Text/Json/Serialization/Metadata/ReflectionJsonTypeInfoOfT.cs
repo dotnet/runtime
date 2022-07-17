@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                     // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                     if (propertyInfo.GetIndexParameters().Length > 0 ||
-                        PropertyIsOverridenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
+                        PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
                     {
                         continue;
                     }
@@ -109,7 +109,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     string fieldName = fieldInfo.Name;
 
-                    if (PropertyIsOverridenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                    if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                     {
                         continue;
                     }
@@ -208,7 +208,7 @@ namespace System.Text.Json.Serialization.Metadata
             return numberHandlingAttribute?.Handling;
         }
 
-        private static bool PropertyIsOverridenAndIgnored(
+        private static bool PropertyIsOverriddenAndIgnored(
             string currentMemberName,
             Type currentMemberType,
             bool currentMemberIsVirtual,

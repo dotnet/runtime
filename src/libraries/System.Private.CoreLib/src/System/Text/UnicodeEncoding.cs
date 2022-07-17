@@ -389,7 +389,7 @@ namespace System.Text
                 {
                     // No fallback, maybe we can do it fast
 #if FASTLOOP
-                    // If endianess is backwards then each pair of bytes would be backwards.
+                    // If endianness is backwards then each pair of bytes would be backwards.
                     if ((bigEndian ^ BitConverter.IsLittleEndian) &&
 #if TARGET_64BIT
                         (unchecked((long)chars) & 7) == 0 &&
@@ -672,7 +672,7 @@ namespace System.Text
                 {
                     // No fallback, maybe we can do it fast
 #if FASTLOOP
-                    // If endianess is backwards then each pair of bytes would be backwards.
+                    // If endianness is backwards then each pair of bytes would be backwards.
                     if ((bigEndian ^ BitConverter.IsLittleEndian) &&
 #if TARGET_64BIT
                         (unchecked((long)chars) & 7) == 0 &&

@@ -804,8 +804,8 @@ public:
 
 // #ThreadClass
 //
-// A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
-// structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more
+// A code:Thread contains all the per-thread information needed by the runtime.  We can get this
+// structure through the OS TLS slot see code:#RuntimeThreadLocals for more information.
 class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
@@ -2536,7 +2536,7 @@ public:
     }
 
     PTR_CONTEXT m_OSContext;    // ptr to a Context structure used to record the OS specific ThreadContext for a thread
-                                // this is used for thread stop/abort and is intialized on demand
+                                // this is used for thread stop/abort and is initialized on demand
 
     PT_CONTEXT GetAbortContext ();
 
@@ -5114,7 +5114,7 @@ protected:
         {
             // Either we initialized m_Thread explicitly with GetThread() in the
             // constructor, or our caller (instantiator of GCHolder) called our constructor
-            // with GetThread() (which we already asserted in the constuctor)
+            // with GetThread() (which we already asserted in the constructor)
             // (i.e., m_Thread == GetThread()).  Also, note that if THREAD_EXISTS,
             // then m_Thread must be non-null (as it's == GetThread()).  So the
             // "if" below looks a little hokey since we're checking for either condition.

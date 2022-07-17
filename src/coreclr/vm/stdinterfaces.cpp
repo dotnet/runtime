@@ -556,7 +556,7 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     ITypeLib *pTlb = pAssembly->GetTypeLib();
     if (pTlb != nullptr)
     {
-        // If the cached value is the invalid sentinal, an attempt was already made but failed.
+        // If the cached value is the invalid sentinel, an attempt was already made but failed.
         if (pTlb == Assembly::InvalidTypeLib)
             return TLBX_E_LIBNOTREGISTERED;
 

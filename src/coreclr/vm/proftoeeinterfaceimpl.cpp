@@ -90,7 +90,7 @@
 //             on startup). If a profiler later attaches and calls these functions, then the
 //             ObjectAllocated notifications will call into the profiler's ObjectAllocated callback.
 //    * COMPlus_TestOnlyEnableICorProfilerInfo:
-//         * If nonzero, then attaching profilers allows to call ICorProfilerInfo inteface,
+//         * If nonzero, then attaching profilers allows to call ICorProfilerInfo interface,
 //             which would otherwise be disallowed for attaching profilers
 //    * COMPlus_TestOnlyAllowedEventMask
 //         * If a profiler needs to work around the restrictions of either
@@ -4338,7 +4338,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     // Don't return rewritten IL, use the new API to get that.
     pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId, FALSE);
 
-    // Method not overriden - get the original copy of the IL by going to metadata
+    // Method not overridden - get the original copy of the IL by going to metadata
     if (pbMethod == NULL)
     {
         HRESULT hr = S_OK;
@@ -8029,7 +8029,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
 //---------------------------------------------------------------------------------------
 // Normally, calling GetFunction() on the frame is sufficient to ensure
-// HelperMethodFrames are intialized. However, sometimes we need to be able to specify
+// HelperMethodFrames are initialized. However, sometimes we need to be able to specify
 // that we should not enter the host while initializing, so we need to initialize such
 // frames more directly. This small helper function directly forces the initialization,
 // and ensures we don't enter the host as a result if we're executing in an asynchronous

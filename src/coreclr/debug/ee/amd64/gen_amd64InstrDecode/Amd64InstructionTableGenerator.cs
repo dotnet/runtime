@@ -29,7 +29,7 @@ namespace Amd64InstructionTableGenerator
         MOp = 0x1, // Instruction supports modrm RIP memory operations
         M1st = 0x3, // Memory op is first operand normally src/dst
         MOnly = 0x7, // Memory op is only operand.  May not be a write...
-        MUnknown = 0x8, // Memory op size is unknown.  Size not included in disassemby
+        MUnknown = 0x8, // Memory op size is unknown.  Size not included in disassembly
         MAddr = 0x10, // Memory op is address load effective address
         M1B = 0x20, // Memory op is 1  byte
         M2B = 0x40, // Memory op is 2  bytes
@@ -190,10 +190,10 @@ namespace Amd64InstructionTableGenerator
             return encoding;
         }
 
-        private static List<string> parseOperands(string operandDisassemby)
+        private static List<string> parseOperands(string operandDisassembly)
         {
             var operands = new List<string>();
-            string rest = operandDisassemby;
+            string rest = operandDisassembly;
 
             while (rest?.Length != 0)
             {
@@ -790,7 +790,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    //      MOp      // Instruction supports modrm RIP memory operations");
             Console.WriteLine("    //      M1st     // Memory op is first operand normally src/dst");
             Console.WriteLine("    //      MOnly    // Memory op is only operand.  May not be a write...");
-            Console.WriteLine("    //      MUnknown // Memory op size is unknown.  Size not included in disassemby");
+            Console.WriteLine("    //      MUnknown // Memory op size is unknown.  Size not included in disassembly");
             Console.WriteLine("    //      MAddr    // Memory op is address load effective address");
             Console.WriteLine("    //      M1B      // Memory op is 1  byte");
             Console.WriteLine("    //      M2B      // Memory op is 2  bytes");

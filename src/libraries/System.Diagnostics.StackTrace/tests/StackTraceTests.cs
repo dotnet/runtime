@@ -77,7 +77,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Ctor_LargeSkipFrames_GetFramesReturnsEmtpy()
+        public void Ctor_LargeSkipFrames_GetFramesReturnsEmpty()
         {
             var stackTrace = new StackTrace(int.MaxValue);
             Assert.Equal(0, stackTrace.FrameCount);

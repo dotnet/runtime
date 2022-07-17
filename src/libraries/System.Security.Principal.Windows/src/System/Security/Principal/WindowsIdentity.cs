@@ -1249,7 +1249,7 @@ namespace System.Security.Principal
 
                 Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION claimAttributes = *(Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION*)(safeAllocHandle!.DangerousGetHandle());
                 // An attribute represents a collection of claims.  Inside each attribute a claim can be multivalued, we create a claim for each value.
-                // It is a ragged multi-dimentional array, where each cell can be of different lenghts.
+                // It is a ragged multi-dimentional array, where each cell can be of different lengths.
 
                 for (int attribute = 0; attribute < claimAttributes.AttributeCount; attribute++)
                 {

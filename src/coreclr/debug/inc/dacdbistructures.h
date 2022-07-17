@@ -550,7 +550,7 @@ public:
     void SetStaticAddress( TADDR addr );
 
     // If this is an instance field, return its offset
-    // Note that this offset is allways a real offset (possibly larger than 22 bits), which isn't
+    // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field which can have
     // some special FIELD_OFFSET tokens.
     SIZE_T  GetInstanceOffset();

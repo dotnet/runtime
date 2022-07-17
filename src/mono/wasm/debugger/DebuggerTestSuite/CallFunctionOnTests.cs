@@ -833,11 +833,11 @@ namespace DebuggerTests
             var ptd = GetAndAssertObjectWithName(frame_locals, "ptd");
             var ptd_id = ptd["value"]["objectId"].Value<string>();
 
-            var invalid_args = new object[] { "NonExistant", String.Empty, null, 12310 };
+            var invalid_args = new object[] { "NonExistent", String.Empty, null, 12310 };
             foreach (var invalid_arg in invalid_args)
             {
                 var getter_res = await InvokeGetter(JObject.FromObject(new { value = new { objectId = ptd_id } }), invalid_arg);
-                AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existant accessor - {invalid_arg}");
+                AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existent accessor - {invalid_arg}");
             }
         }
 

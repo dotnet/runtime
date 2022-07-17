@@ -1093,7 +1093,7 @@ MemberLoader::FindMethod(
         MODE_ANY;
     } CONTRACT_END;
 
-    // Retrieve the right comparition function to use.
+    // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
 
     SString targetName(SString::Utf8Literal, pszName);
@@ -1327,7 +1327,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
         // There is no need to check virtuals for parent types, since by definition they have the same name.
         //
-        // Warning: This is not entirely true as virtuals can be overriden explicitly regardless of their name.
+        // Warning: This is not entirely true as virtuals can be overridden explicitly regardless of their name.
         // We should be fine though as long as we do not use this code to find arbitrary user-defined methods.
         flags = (FM_Flags)(flags | FM_ExcludeVirtual);
     }
@@ -1487,7 +1487,7 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
 
     CONSISTENCY_CHECK(pMT->CheckLoadLevel(CLASS_LOAD_APPROXPARENTS));
 
-    // Retrieve the right comparition function to use.
+    // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = bCaseSensitive ? strcmp : stricmpUTF8;
 
     // Array classes don't have fields, and don't have metadata

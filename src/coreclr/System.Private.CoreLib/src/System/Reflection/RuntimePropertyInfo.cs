@@ -83,7 +83,7 @@ namespace System.Reflection
             //             when an interfaces declare properies with the same signature.
             //             Note that we intentionally don't resolve generic arguments so that we don't treat
             //             signatures that only match in certain instantiations as duplicates. This has the
-            //             down side of treating overriding and overriden properties as different properties
+            //             down side of treating overriding and overridden properties as different properties
             //             in some cases. But PopulateProperties in rttype.cs should have taken care of that
             //             by comparing VTable slots.
             //

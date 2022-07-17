@@ -235,7 +235,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void UseEnvironmentIsNotOverriden()
+        public void UseEnvironmentIsNotOverridden()
         {
             var vals = new Dictionary<string, string>
             {

@@ -24,7 +24,7 @@
 static gboolean
 mono_bb_is_fall_through (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	return  bb->next_bb && bb->next_bb->region == bb->region && /*fall throught between regions is not really interesting or useful*/
+	return  bb->next_bb && bb->next_bb->region == bb->region && /*fallthrough between regions is not really interesting or useful*/
 			(bb->last_ins == NULL || !MONO_IS_BRANCH_OP (bb->last_ins)); /*and the last op can't be a branch too*/
 }
 

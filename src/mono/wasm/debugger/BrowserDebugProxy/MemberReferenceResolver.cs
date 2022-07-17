@@ -443,7 +443,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<(JObject, string)> ResolveInvokationInfo(InvocationExpressionSyntax method, CancellationToken token)
+        public async Task<(JObject, string)> ResolveInvocationInfo(InvocationExpressionSyntax method, CancellationToken token)
         {
             var methodName = "";
             try
@@ -475,7 +475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
-            (JObject rootObject, string methodName) = await ResolveInvokationInfo(method, token);
+            (JObject rootObject, string methodName) = await ResolveInvocationInfo(method, token);
             if (rootObject == null)
                 throw new ReturnAsErrorException($"Failed to resolve root object for {method}", "ReferenceError");
 

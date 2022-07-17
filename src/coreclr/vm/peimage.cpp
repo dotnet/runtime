@@ -609,12 +609,12 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                         else
                             fileName = pCvInfo->path;
 
-                        size_t fileNameLenght = strlen(fileName);
-                        size_t fullPathLenght = strlen(pCvInfo->path);
-                        memmove(pCvInfo->path, fileName, fileNameLenght);
+                        size_t fileNameLength = strlen(fileName);
+                        size_t fullPathLength = strlen(pCvInfo->path);
+                        memmove(pCvInfo->path, fileName, fileNameLength);
 
                         // NULL out the rest of the path buffer.
-                        for (size_t i = fileNameLenght; i < MAX_PATH_FNAME - 1; i++)
+                        for (size_t i = fileNameLength; i < MAX_PATH_FNAME - 1; i++)
                         {
                             pCvInfo->path[i] = '\0';
                         }

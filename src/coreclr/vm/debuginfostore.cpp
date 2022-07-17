@@ -68,7 +68,7 @@ public:
     }
 
 
-    // Some U32 may have a few sentinal negative values .
+    // Some U32 may have a few sentinel negative values .
     // We adjust it to be a real U32 and then encode that.
     // dwAdjust should be the lower bound on the enum.
     void DoEncodedAdjustedU32(uint32_t dw, uint32_t dwAdjust)
