@@ -12131,6 +12131,11 @@ namespace System.Runtime
         public AssemblyTargetedPatchBandAttribute(string targetedPatchBand) { }
         public string TargetedPatchBand { get { throw null; } }
     }
+    public static partial class ControlledExecution
+    {
+        [System.ObsoleteAttribute("ControlledExecution.Run method may corrupt the process and should not be used in production code.", DiagnosticId = "SYSLIB0046", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public static void Run(System.Action action, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
     public partial struct DependentHandle : System.IDisposable
     {
         private object _dummy;

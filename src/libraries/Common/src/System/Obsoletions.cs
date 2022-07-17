@@ -147,5 +147,8 @@ namespace System
 
         internal const string CryptoStringFactoryMessage = "Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.";
         internal const string CryptoStringFactoryDiagId = "SYSLIB0045";
+
+        internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
+        internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
     }
 }

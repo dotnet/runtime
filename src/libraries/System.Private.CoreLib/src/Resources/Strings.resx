@@ -2500,6 +2500,10 @@
   <data name="InvalidOperation_NativeOverlappedReused" xml:space="preserve">
     <value>NativeOverlapped cannot be reused for multiple operations.</value>
   </data>
+  <data name="InvalidOperation_NestedControlledExecutionRun" xml:space="preserve">
+    <value>The thread is already executing the ControlledExecution.Run method.</value>
+    <comment>{Locked="ControlledExecution.Run"}</comment>
+  </data>
   <data name="InvalidOperation_NoMultiModuleAssembly" xml:space="preserve">
     <value>You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.</value>
   </data>

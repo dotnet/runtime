@@ -1149,6 +1149,36 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
     return ret;
 }
 
+extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL
+
+    thread->UserAbort(EEPolicy::TA_Safe, INFINITE);
+
+    END_QCALL
+}
+
+// Unmarks the current thread for abort.
+// Returns true if the thread had the TS_AbortRequested flag set.
+FCIMPL0(FC_BOOL_RET, ThreadNative::ResetAbort)
+{
+    FCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    Thread *pThread = GetThreadNULLOk();
+    if (pThread != NULL && pThread->IsAbortRequested())
+    {
+        pThread->UnmarkThreadForAbort();
+        ret = TRUE;
+    }
+
+    FC_RETURN_BOOL(ret);
+}
+FCIMPLEND
+
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {
     FCALL_CONTRACT;

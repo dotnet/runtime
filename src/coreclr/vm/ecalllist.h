@@ -715,6 +715,10 @@ FCFuncStart(gWeakReferenceOfTFuncs)
     FCFuncElement("IsTrackResurrection", WeakReferenceOfTNative::IsTrackResurrection)
 FCFuncEnd()
 
+FCFuncStart(gControlledExecutionFuncs)
+    FCFuncElement("ResetAbortThread", ThreadNative::ResetAbort)
+FCFuncEnd()
+
 #ifdef FEATURE_COMINTEROP
 
 //
@@ -753,6 +757,7 @@ FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadCont
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
+FCClassElement("ControlledExecution", "System.Runtime", gControlledExecutionFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
