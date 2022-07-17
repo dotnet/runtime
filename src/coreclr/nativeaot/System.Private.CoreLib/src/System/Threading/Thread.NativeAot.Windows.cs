@@ -253,6 +253,13 @@ namespace System.Threading
                 {
                     if (HasStarted())
                         throw new ThreadStateException();
+
+                    // Compat: Disallow resetting the initial apartment state
+                    if (_initialApartmentState == state)
+                        return true;
+                    if (_initialApartmentState != ApartmentState.Unknown)
+                        return false;
+
                     _initialApartmentState = state;
                     return true;
                 }

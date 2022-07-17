@@ -2654,7 +2654,9 @@ public:
     // undecided. The last state may indicate that the apartment has not been set at
     // all (nobody has called CoInitializeEx) or that the EE does not know the
     // current state (EE has not called CoInitializeEx).
+    // Keep in sync with System.Threading.ApartmentState
     enum ApartmentState { AS_InSTA, AS_InMTA, AS_Unknown };
+
     ApartmentState GetApartment();
     ApartmentState GetApartmentRare(Thread::ApartmentState as);
     ApartmentState GetExplicitApartment();
