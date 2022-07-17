@@ -633,6 +633,12 @@ void Thread::Hijack()
 
 void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack)
 {
+    // If we are no longer trying to suspend, no need to do anything.
+    // This is just an optimization. It is ok to race with the setting the trap flag here.
+    // If we need to suspend, we will be called again.
+    if (!ThreadStore::IsTrapThreadsRequested())
+        return;
+
     Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
     {
