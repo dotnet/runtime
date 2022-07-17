@@ -63,10 +63,10 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     }
 
     UnixNativeMethodInfo * pMethodInfo = (UnixNativeMethodInfo *)pMethodInfoOut;
-    uintptr_t startAddress;
+    uintptr_t startAddress, endAddress;
     uintptr_t lsda;
 
-    if (!FindProcInfo((uintptr_t)ControlPC, &startAddress, &lsda))
+    if (!FindProcInfo((uintptr_t)ControlPC, &startAddress, &endAddress, &lsda))
     {
         return false;
     }
@@ -327,129 +327,156 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+#define SIZE64_PREFIX 0x48
+#define ADD_IMM8_OP 0x83
+#define ADD_IMM32_OP 0x81
+#define JMP_IMM8_OP 0xeb
+#define JMP_IMM32_OP 0xe9
+#define JMP_IND_OP 0xff
+#define LEA_OP 0x8d
+#define REPNE_PREFIX 0xf2
+#define REP_PREFIX 0xf3
+#define POP_OP 0x58
+#define RET_OP 0xc3
+#define RET_OP_2 0xc2
+
+#define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
+
 bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 {
 #ifdef TARGET_AMD64
-    MethodInfo pMethodInfo;
-    FindMethodInfo(pvAddress, &pMethodInfo);
 
-    PTR_UInt8 gcInfo;
-    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
+//
+//
+// <NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE>
+//
+// Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
+// 
+// For details see similar code in OOPStackUnwinderAMD64::UnwindEpilogue
+//
+// <NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE>
+//
+//
 
-    GcInfoDecoder decoder(
-        GCInfoToken(gcInfo),
-        GcInfoDecoderFlags(GC_INFO_HAS_STACK_BASE_REGISTER),
-        0
-    );
+    int instrTillRet = 1;
+    uint8_t* NextByte = (uint8_t*)pvAddress;
 
-    // detect if the IP is in a location that VirtualUnwind will have problem with.
+    //
+    // Check for any number of:
+    //
+    //   pop nonvolatile-integer-register[0..15].
+    //
 
-    if (decoder.GetStackBaseRegister() == NO_STACK_BASE_REGISTER)
+    while (true)
     {
-        // TODO: can we detect not unwindable ranges in RSP based code or we need extra info for epilogues?
-        return false;
-    }
-    else
-    {
-        // we are looking for prologue pattern like the following. If IP falls on these instructions, we cannot unwind.
-        //     push  rbp
-        //     push  ??
-        //     push  ??
-        //     . . .
-        //     sub   rsp, ??                // optional
-        //     lea   rbp, [rsp + 0x??]      // also could be "mov, rbp, rsp"
-
-
-        uint8_t* start = (uint8_t*)pvAddress - codeOffset;
-
-        // RBP based methods not starting with "push rbp".
-        //       assume these are not unwindable for now.
-        if (*start != 0x55)
-            return false;
-
-        const int maxPushLength = 11; // pushing all callee saved registers takes up to 11 bytes.
-        int prologueSize;
-        for (prologueSize = 1; prologueSize < maxPushLength + 1; prologueSize++)
+        if ((NextByte[0] & 0xf8) == POP_OP)
         {
-            if ((start[prologueSize] & 0x48) == 0x48)  // REX.W means we are done with pushes
-                break;
+            NextByte += 1;
+            instrTillRet++;
         }
-
-        ASSERT(prologueSize < maxPushLength + 1);
-
-        // skip optional sub rsp
-        if (start[prologueSize + 1] == 0x83)
+        else if (IS_REX_PREFIX(NextByte[0]) && ((NextByte[1] & 0xf8) == POP_OP))
         {
-            prologueSize += 4; // skip "sub    rsp, 0x??"  // B operand
-        }
-        else if (start[prologueSize + 1] == 0x81)
-        {
-            prologueSize += 7; // skip "sub    rsp, 0x??"  // W operand
-        }
-
-        ASSERT((start[prologueSize] & 0x48) == 0x48);
-
-        // mov or lea rbp concludes the un-unwindable prologue.
-        if(start[prologueSize + 1] == 0x8b)   // mov
-        {
-            ASSERT(start[prologueSize + 2] == 0xec); // mov, rbp, rsp
-            prologueSize += 3;                       // skip 
+            NextByte += 2;
+            instrTillRet++;
         }
         else
         {
-            ASSERT(start[prologueSize + 1] == 0x8d);  // lea
-
-            if (start[prologueSize + 2] == 0xac)
-            {
-                prologueSize += 8;     // skip "lea    rbp, [rsp + 0x??]"  W operand
-            }
-            else
-            {
-                prologueSize += 5;     // skip "lea    rbp, [rsp + 0x??]"  B operand
-            }
-        }
-
-        if (codeOffset < prologueSize)
-        {
-            // in prologue
-            return false;
-        }
-
-
-        // now check if we are in un-unwindable epilogue that looks like:
-        //      pop rbx
-        //      pop r12
-        //      . . .
-        //      pop rbp
-        //      ret            // can also be a jmp
-        //
-        if (((uint8_t*)pvAddress)[-1] == 0x5d)
-        {
-            // right after "pop   rbp". This could be "ret" or "jmp" 
-            return false;
-        }
-
-        // we see a bunch of push/pop instructions in finallies and VirtualUnwind cannot handle them.
-        // same issue with pops in epilogs
-        // just reject any kind of push or pop
-        //
-        {
-            uint8_t opcode = *(uint8_t*)pvAddress;
-            if (opcode == 0x41)
-                opcode = ((uint8_t*)pvAddress)[1];
-
-            // pop rax through r15.
-            if (opcode >= 0x58 && opcode <= 0x5f)
-                return false;
-
-            // push rax through r15.
-            if (opcode >= 0x50 && opcode <= 0x57)
-                return false;
+            break;
         }
     }
-#endif
 
+    //
+    // A REPNE prefix may optionally precede a control transfer
+    // instruction with no effect on unwinding.
+    //
+
+    if (NextByte[0] == REPNE_PREFIX)
+    {
+        NextByte += 1;
+    }
+
+    if (((NextByte[0] == RET_OP) ||
+        (NextByte[0] == RET_OP_2)) ||
+        (((NextByte[0] == REP_PREFIX) && (NextByte[1] == RET_OP))))
+    {
+        //
+        // A return is an unambiguous indication of an epilogue.
+        //
+
+        return false;
+    }
+
+    if ((NextByte[0] == JMP_IMM8_OP) ||
+        (NextByte[0] == JMP_IMM32_OP))
+    {
+        //
+        // An unconditional branch to a target that is equal to the start of
+        // or outside of this routine is logically a call to another function.
+        //
+
+        size_t BranchTarget = (size_t)NextByte;
+        if (NextByte[0] == JMP_IMM8_OP)
+        {
+            BranchTarget += 2 + NextByte[1];
+        }
+        else
+        {
+            int delta = NextByte[1] | (NextByte[2] << 8) |
+                (NextByte[3] << 16) | (NextByte[4] << 24);
+            BranchTarget += 5 + delta;
+        }
+
+        //
+        // Determine whether the branch target refers to code within this
+        // function. If not, then it is an epilogue indicator.
+        //
+        // A branch to the start of self implies a recursive call, so
+        // is treated as an epilogue.
+        //
+
+        size_t startAddress;
+        size_t endAddress;
+        uintptr_t lsda;
+
+        bool result = FindProcInfo((uintptr_t)pvAddress, &startAddress, &endAddress, &lsda);
+        ASSERT(result);
+
+        if (BranchTarget < startAddress || BranchTarget >= endAddress)
+        {
+            return false;
+        }
+    }
+    else if ((NextByte[0] == JMP_IND_OP) && (NextByte[1] == 0x25))
+    {
+        //
+        // An unconditional jump indirect.
+        //
+        // This is a jmp outside of the function, probably a tail call
+        // to an import function.
+        //
+
+        return false;
+    }
+    else if (((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
+        (NextByte[1] == 0xff) &&
+        (NextByte[2] & 0x38) == 0x20)
+    {
+        //
+        // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
+        // flag (REX.W) is always redundant here, so its presence is
+        // overloaded to indicate a branch out of the function - a tail
+        // call.
+        //
+        // Such an opcode is an unambiguous epilogue indication.
+        //
+
+        return false;
+    }
+   
     return true;
+#else
+    return false;
+#endif
 }
 
 // Convert the return kind that was encoded by RyuJIT to the
@@ -468,7 +495,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 {
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 

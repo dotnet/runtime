@@ -664,7 +664,7 @@ uint64_t GetPC(void* context)
 #endif // HOST_AMD64
 
 // Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* lsda)
+bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
 {
     unw_proc_info_t procInfo;
 
@@ -682,6 +682,7 @@ bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* lsda)
     *lsda = procInfo.lsda;
 #endif
     *startAddress = procInfo.start_ip;
+    *endAddress = procInfo.end_ip;
 
     return true;
 }

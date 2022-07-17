@@ -58,6 +58,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
         switch (regNum)
         {
         case UNW_REG_IP:
+        case UNW_X86_64_RIP:
             return IP;
         case UNW_REG_SP:
             return SP;
@@ -104,6 +105,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
         switch (regNum)
         {
         case UNW_REG_IP:
+        case UNW_X86_64_RIP:
             IP = value;
             pIP = (PTR_PCODE)location;
             return;
@@ -178,7 +180,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
             return true;
         if (regNum < 0)
             return false;
-        if (regNum > 15)
+        if (regNum > 16)
             return false;
         return true;
     }
