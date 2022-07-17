@@ -66,20 +66,13 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
     return returnKind;
 }
 
-// Extract individual GCRefKind components from a composite return kind
-inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
-{
-    ASSERT(returnKind <= GCRK_LastValid);
-    return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
-}
-
 inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
 {
     ASSERT(returnKind <= GCRK_LastValid);
     return (GCRefKind)(returnKind >> 2);
 }
 
-#else 
+#elif defined(TARGET_AMD64) 
 
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
 C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
@@ -98,19 +91,12 @@ inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
 {
     GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF | PTFF_RDX_IS_GCREF | PTFF_RDX_IS_BYREF)) >> 16);
-#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
+#if defined(TARGET_UNIX)
     ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_RAX) && (transFrameFlags & PTFF_SAVE_RDX)));
 #else
     ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
 #endif
     return returnKind;
-}
-
-// Extract individual GCRefKind components from a composite return kind
-inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
-{
-    ASSERT(returnKind <= GCRK_LastValid);
-    return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
 }
 
 inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
@@ -120,6 +106,13 @@ inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
 }
 
 #endif // TARGET_ARM64
+
+// Extract individual GCRefKind components from a composite return kind
+inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
+{
+    ASSERT(returnKind <= GCRK_LastValid);
+    return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
+}
 
 //
 // MethodInfo is placeholder type used to allocate space for MethodInfo. Maximum size
