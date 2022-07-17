@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
