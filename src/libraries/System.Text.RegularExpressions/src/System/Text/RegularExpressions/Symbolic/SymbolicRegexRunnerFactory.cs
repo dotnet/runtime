@@ -2,18 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary><see cref="RegexRunnerFactory"/> for symbolic regexes.</summary>
-    internal sealed class SymbolicRegexRunnerFactory : RegexRunnerFactory
+    internal abstract class SymbolicRegexRunnerFactory : RegexRunnerFactory
     {
-        /// <summary>A SymbolicRegexMatcher of either ulong or <see cref="BitVector"/> depending on the number of minterms.</summary>
-        internal readonly SymbolicRegexMatcher _matcher;
+#if DEBUG
+        /// <summary>The <see cref="SymbolicRegexMatcher"/> that will be used in the matching.</summary>
+        /// <remarks>This property is used for debug purposes.</remarks>
+        internal abstract SymbolicRegexMatcher Matcher { get; }
+#endif
 
-        /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout)
+        /// <summary>Creates a factory.</summary>
+        public static SymbolicRegexRunnerFactory Create(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout)
         {
             Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
@@ -40,15 +42,35 @@ namespace System.Text.RegularExpressions.Symbolic
             rootNode = rootNode.AddFixedLengthMarkers(bddBuilder);
             BDD[] minterms = rootNode.ComputeMinterms(bddBuilder);
 
-            _matcher = minterms.Length > 64 ?
-                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :
-                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Solver(minterms, charSetSolver), matchTimeout);
+            if (minterms.Length > 64)
+            {
+                SymbolicRegexMatcher<BitVector> matcher = SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout);
+                return new SymbolicRegexRunnerFactory<BitVector>(matcher);
+            }
+            else
+            {
+                SymbolicRegexMatcher<ulong> matcher = SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Solver(minterms, charSetSolver), matchTimeout);
+                return new SymbolicRegexRunnerFactory<ulong>(matcher);
+            }
         }
+    }
+
+    /// <summary>A concrete implementation of <see cref="SymbolicRegexRunnerFactory"/> with a varying minterm set type.</summary>
+    /// <typeparam name="TSet">A type that represents a set of minterms. It is either
+    /// <see cref="ulong"/> or <see cref="BitVector"/> depending on their count.</typeparam>
+    internal sealed class SymbolicRegexRunnerFactory<TSet> : SymbolicRegexRunnerFactory where TSet : IComparable<TSet>, IEquatable<TSet>
+    {
+        /// <summary>A SymbolicRegexMatcher of either ulong or <see cref="BitVector"/> depending on the number of minterms.</summary>
+        internal readonly SymbolicRegexMatcher<TSet> _matcher;
+
+#if DEBUG
+        internal override SymbolicRegexMatcher Matcher => _matcher;
+#endif
+
+        public SymbolicRegexRunnerFactory(SymbolicRegexMatcher<TSet> matcher) => _matcher = matcher;
 
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>
-        protected internal override RegexRunner CreateInstance() => _matcher is SymbolicRegexMatcher<ulong> srmUInt64 ?
-            new Runner<ulong>(srmUInt64) :
-            new Runner<BitVector>((SymbolicRegexMatcher<BitVector>)_matcher);
+        protected internal override RegexRunner CreateInstance() => new Runner(_matcher);
 
         /// <summary>Runner type produced by this factory.</summary>
         /// <remarks>
@@ -56,7 +78,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
-        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>, IEquatable<TSet>
+        private sealed class Runner : RegexRunner
         {
             /// <summary>The matching engine.</summary>
             /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>

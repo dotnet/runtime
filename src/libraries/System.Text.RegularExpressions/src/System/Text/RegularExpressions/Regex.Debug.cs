@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            srmFactory._matcher.SaveDGML(writer, maxLabelLength);
+            srmFactory.Matcher.SaveDGML(writer, maxLabelLength);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            return srmFactory._matcher.SampleMatches(k, randomseed);
+            return srmFactory.Matcher.SampleMatches(k, randomseed);
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            srmFactory._matcher.Explore(includeDotStarred, includeReverse, includeOriginal, exploreDfa, exploreNfa);
+            srmFactory.Matcher.Explore(includeDotStarred, includeReverse, includeOriginal, exploreDfa, exploreNfa);
         }
     }
 }
