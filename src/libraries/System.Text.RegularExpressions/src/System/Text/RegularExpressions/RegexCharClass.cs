@@ -995,13 +995,22 @@ namespace System.Text.RegularExpressions
             (uint)((c | 0x20) - 'a') <= 'z' - 'a';
 
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
-        /// <remarks>This may enumerate negated characters if the set is negated.</remarks>
+        /// <remarks>This may enumerate negated characters if the set is negated.  This will return false if the set has subtraction.</remarks>
         private static bool CanEasilyEnumerateSetContents(string set) =>
-            set.Length > SetStartIndex &&
-            set[SetLengthIndex] > 0 &&
-            set[SetLengthIndex] % 2 == 0 &&
-            set[CategoryLengthIndex] == 0 &&
-            !IsSubtraction(set);
+            CanEasilyEnumerateSetContents(set, out bool hasSubtraction) &&
+            !hasSubtraction;
+
+        /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
+        /// <remarks>This may enumerate negated characters if the set is negated, and it may be an overestimate if the set contains subtraction.</remarks>
+        private static bool CanEasilyEnumerateSetContents(string set, out bool hasSubtraction)
+        {
+            hasSubtraction = IsSubtraction(set);
+            return
+                set.Length > SetStartIndex &&
+                set[SetLengthIndex] > 0 &&
+                set[SetLengthIndex] % 2 == 0 &&
+                set[CategoryLengthIndex] == 0;
+        }
 
         /// <summary>Provides results from <see cref="Analyze"/>.</summary>
         internal struct CharClassAnalysisResults
@@ -1031,20 +1040,29 @@ namespace System.Text.RegularExpressions
         /// <summary>Analyzes the set to determine some basic properties that can be used to optimize usage.</summary>
         internal static CharClassAnalysisResults Analyze(string set)
         {
-            if (!CanEasilyEnumerateSetContents(set))
+            bool isNegated = IsNegated(set);
+
+            // The analysis is performed based entirely on ranges contained within the set.
+            // Thus, we require that it can be "easily enumerated", meaning it contains only
+            // ranges (and more specifically those with both the lower inclusive and upper
+            // exclusive bounds specified). We also permit the set to contain a subtracted
+            // character class, as for non-negated sets, that can only narrow what's permitted,
+            // and the analysis can be performed on the overestimate of the set prior to subtraction.
+            // However, negation is performed before subtraction, which means we can't trust
+            // the ranges to inform AllNonAsciiContained and AllAsciiContained, as the subtraction
+            // could create holes in those.  As such, while we can permit subtraciton for non-negated
+            // sets, for negated sets, we need to bail.
+            if (!CanEasilyEnumerateSetContents(set, out bool hasSubtraction) ||
+                (isNegated && hasSubtraction))
             {
                 // We can't make any strong claims about the set.
                 return default;
             }
 
-#if DEBUG
-            for (int i = SetStartIndex; i < set.Length - 1; i += 2)
-            {
-                Debug.Assert(set[i] < set[i + 1]);
-            }
-#endif
+            char firstValueInclusive = set[SetStartIndex];
+            char lastValueExclusive = set[SetStartIndex + set[SetLengthIndex] - 1];
 
-            if (IsNegated(set))
+            if (isNegated)
             {
                 // We're negated: if the upper bound of the range is ASCII, that means everything
                 // above it is actually included, meaning all non-ASCII are in the class.
@@ -1053,12 +1071,12 @@ namespace System.Text.RegularExpressions
                 return new CharClassAnalysisResults
                 {
                     OnlyRanges = true,
-                    AllNonAsciiContained = set[set.Length - 1] < 128,
-                    AllAsciiContained = set[SetStartIndex] >= 128,
+                    AllNonAsciiContained = lastValueExclusive <= 128,
+                    AllAsciiContained = firstValueInclusive >= 128,
                     ContainsNoAscii = false,
                     ContainsOnlyAscii = false,
-                    LowerBoundInclusiveIfOnlyRanges = set[SetStartIndex],
-                    UpperBoundExclusiveIfOnlyRanges = set[set.Length - 1],
+                    LowerBoundInclusiveIfOnlyRanges = firstValueInclusive,
+                    UpperBoundExclusiveIfOnlyRanges = lastValueExclusive,
                 };
             }
 
@@ -1069,10 +1087,10 @@ namespace System.Text.RegularExpressions
                 OnlyRanges = true,
                 AllNonAsciiContained = false,
                 AllAsciiContained = false,
-                ContainsOnlyAscii = set[set.Length - 1] <= 128,
-                ContainsNoAscii = set[SetStartIndex] >= 128,
-                LowerBoundInclusiveIfOnlyRanges = set[SetStartIndex],
-                UpperBoundExclusiveIfOnlyRanges = set[set.Length - 1],
+                ContainsOnlyAscii = lastValueExclusive <= 128,
+                ContainsNoAscii = firstValueInclusive >= 128,
+                LowerBoundInclusiveIfOnlyRanges = firstValueInclusive,
+                UpperBoundExclusiveIfOnlyRanges = lastValueExclusive,
             };
         }
 
