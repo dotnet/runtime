@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -18,8 +19,6 @@ namespace System.Xml
         private bool _ownsStream;
         private const int bufferLength = 512;
         private const int maxBytesPerChar = 3;
-        private const int CharsPerLong = 4;
-        private const ulong LongNonAsciiMask = 0xff80ff80ff80ff80;
         private Encoding? _encoding;
         private static readonly UTF8Encoding s_UTF8Encoding = new UTF8Encoding(false, true);
 
@@ -362,42 +361,23 @@ namespace System.Xml
             // This method is only called from 2 places and will use length of at least (128/3 and 256/3) respectivly
             // AVX is faster for at least 2048 chars, probably more
             // for other cases the encoding path is better optimized than any fast path done here.
-            if (Avx.IsSupported)
+            if (Vector.IsHardwareAccelerated
+                && Vector<short>.Count > Vector128<short>.Count
+                && Vector<short>.Count < charCount && charCount <= 2048)
             {
-                char* simdMax = charsMax - (Vector256<ushort>.Count - 1);
-                char* longMax = charsMax - (CharsPerLong - 1);
+                char* lastSimd = chars + charCount - Vector<short>.Count;
+                var mask = new Vector<short>(unchecked((short)0xff80));
 
-                var mask = Vector256.Create((ushort)0xff80);
-                while (chars < simdMax)
+                while (chars < lastSimd)
                 {
-                    var l = Vector256.Load((ushort*)chars);
-                    if (!Avx.TestZ(l, mask))
-                    {
-                        if (Sse41.TestZ(l.GetLower(), mask.GetLower()))
-                            chars += Vector128<ushort>.Count;
-                        goto NonAscii;
-                    }
-
-                    chars += Vector256<ushort>.Count;
-                }
-
-                while (chars < longMax)
-                {
-                    if ((*(ulong*)chars & LongNonAsciiMask) != 0)
+                    if (((*(Vector<short>*)chars) & mask) != Vector<short>.Zero)
                         goto NonAscii;
 
-                    chars += CharsPerLong;
+                    chars += Vector<short>.Count;
                 }
 
-                while (chars < charsMax)
-                {
-                    if (*chars >= 0x80)
-                        goto NonAscii;
-
-                    chars++;
-                }
-
-                return charCount;
+                if ((*(Vector<short>*)lastSimd & mask) == Vector<short>.Zero)
+                    return charCount;
             }
 
         NonAscii:
@@ -416,62 +396,47 @@ namespace System.Xml
                     byte* bytes = _bytes;
                     byte* bytesMax = &bytes[buffer.Length - offset];
                     char* charsMax = &chars[charCount];
-                    char* simdMax = &chars[charCount - (Vector128<ushort>.Count - 1)];
-                    char* longMax = &chars[charCount - (CharsPerLong - 1)];
+                    char* simdLast = chars + charCount - Vector128<ushort>.Count;
 
-                    if (Sse41.IsSupported)
+                    if (Sse41.IsSupported && charCount >= Vector128<ushort>.Count)
                     {
-                        if (chars < simdMax)
+                        var mask = Vector128.Create(unchecked((short)0xff80));
+
+                        while (chars < simdLast)
                         {
-                            var mask = Vector128.Create(unchecked((short)0xff80));
-                            do
-                            {
-                                var v = Sse2.LoadVector128((short*)chars);
-                                if (!Sse41.TestZ(v, mask))
-                                    goto NonAscii;
-
-                                Sse2.StoreScalar((long*)bytes, Sse2.PackUnsignedSaturate(v, v).AsInt64());
-                                bytes += Vector128<ushort>.Count;
-                                chars += Vector128<ushort>.Count;
-                            } while (chars < simdMax);
-                        }
-                    }
-                    // Directly jump to system encoding for larger strings, since it is faster even for the all Ascii case
-                    else if ((BitConverter.IsLittleEndian && charCount > 60)
-                        || (!BitConverter.IsLittleEndian && charCount > 16))
-                    {
-                        goto NonAscii;
-                    }
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        while (chars < longMax)
-                        {
-                            ulong l = *(ulong*)chars;
-                            if ((l & LongNonAsciiMask) != 0)
+                            var v = Sse2.LoadVector128((short*)chars);
+                            if (!Sse41.TestZ(v, mask))
                                 goto NonAscii;
 
-                            // 0x00dd00cc_00bb00aa => 0x00ddddcc_ccbbbbaa
-                            l |= (l >> 8);
-                            *(ushort*)bytes = (ushort)l;
-                            *(ushort*)(bytes + 2) = (ushort)(l >> 32);
-                            bytes += CharsPerLong;
-                            chars += CharsPerLong;
+                            Sse2.StoreScalar((long*)bytes, Sse2.PackUnsignedSaturate(v, v).AsInt64());
+                            bytes += Vector128<ushort>.Count;
+                            chars += Vector128<ushort>.Count;
                         }
-                    }
 
-                    while (chars < charsMax)
-                    {
-                        char t = *chars;
-                        if (t >= 0x80)
+                        var v2 = Sse2.LoadVector128((short*)simdLast);
+                        if (!Sse41.TestZ(v2, mask))
                             goto NonAscii;
 
-                        *bytes = (byte)t;
-                        bytes++;
-                        chars++;
+                        Sse2.StoreScalar((long*)(bytesMax - sizeof(long)), Sse2.PackUnsignedSaturate(v2, v2).AsInt64());
+                        return charCount;
+                    }
+                    // Directly jump to system encoding for larger strings, since it is faster even for the all Ascii case
+                    else if (charCount < 16)
+                    {
+                        while (chars < charsMax)
+                        {
+                            char t = *chars;
+                            if (t >= 0x80)
+                                goto NonAscii;
+
+                            *bytes = (byte)t;
+                            bytes++;
+                            chars++;
+                        }
+
+                        return charCount;
                     }
 
-                    return (int)(bytes - _bytes);
                 NonAscii:
                     return (int)(bytes - _bytes) + (_encoding ?? s_UTF8Encoding).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
                 }
