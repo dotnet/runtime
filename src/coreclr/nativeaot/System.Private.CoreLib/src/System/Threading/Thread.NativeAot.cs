@@ -27,6 +27,7 @@ namespace System.Threading
         private ManagedThreadId _managedThreadId;
         private string? _name;
         private StartHelper? _startHelper;
+        private Exception? _startException;
 
         // Protects starting the thread and setting its priority
         private Lock _lock = new Lock();
@@ -367,9 +368,13 @@ namespace System.Threading
 
                 if (GetThreadStateBit(ThreadState.Unstarted))
                 {
-                    // Lack of memory is the only expected reason for thread creation failure
-                    throw new ThreadStartException(new OutOfMemoryException());
+                    Exception? startException = _startException;
+                    startException = null;
+
+                    throw new ThreadStartException(startException ?? new OutOfMemoryException());
                 }
+
+                Debug.Assert(_startException == null);
             }
         }
 
@@ -384,8 +389,10 @@ namespace System.Threading
                 System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
                 thread.InitializeComOnNewThread();
             }
-            catch (OutOfMemoryException)
+            catch (Exception e)
             {
+                thread._startException = e;
+
 #if TARGET_UNIX
                 // This should go away once OnThreadExit stops using t_currentThread to signal
                 // shutdown of the thread on Unix.
