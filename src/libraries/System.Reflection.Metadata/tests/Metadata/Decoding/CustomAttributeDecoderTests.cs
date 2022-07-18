@@ -12,6 +12,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
     public class CustomAttributeDecoderTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoder()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
