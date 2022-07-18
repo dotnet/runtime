@@ -66,12 +66,6 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
     return returnKind;
 }
 
-inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
-{
-    ASSERT(returnKind <= GCRK_LastValid);
-    return (GCRefKind)(returnKind >> 2);
-}
-
 #elif defined(TARGET_AMD64) 
 
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
@@ -99,12 +93,6 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
     return returnKind;
 }
 
-inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
-{
-    ASSERT(returnKind <= GCRK_LastValid);
-    return (GCRefKind)(returnKind >> 2);
-}
-
 #endif
 
 // Extract individual GCRefKind components from a composite return kind
@@ -112,6 +100,12 @@ inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
 {
     ASSERT(returnKind <= GCRK_LastValid);
     return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
+}
+
+inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
+{
+    ASSERT(returnKind <= GCRK_LastValid);
+    return (GCRefKind)(returnKind >> 2);
 }
 
 //

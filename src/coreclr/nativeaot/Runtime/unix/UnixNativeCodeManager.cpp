@@ -393,7 +393,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 
     // if we are in an epilogue, there will be at least one instruction left.
     int trailingEpilogueInstructions = 1;
-    uint8_t* NextByte = (uint8_t*)pvAddress;
+    uint8_t* pNextByte = (uint8_t*)pvAddress;
 
     //
     // Check for any number of:
@@ -403,14 +403,14 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 
     while (true)
     {
-        if ((NextByte[0] & 0xf8) == POP_OP)
+        if ((pNextByte[0] & 0xf8) == POP_OP)
         {
-            NextByte += 1;
+            pNextByte += 1;
             trailingEpilogueInstructions++;
         }
-        else if (IS_REX_PREFIX(NextByte[0]) && ((NextByte[1] & 0xf8) == POP_OP))
+        else if (IS_REX_PREFIX(pNextByte[0]) && ((pNextByte[1] & 0xf8) == POP_OP))
         {
-            NextByte += 2;
+            pNextByte += 2;
             trailingEpilogueInstructions++;
         }
         else
@@ -424,14 +424,14 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
     // instruction with no effect on unwinding.
     //
 
-    if (NextByte[0] == REPNE_PREFIX)
+    if (pNextByte[0] == REPNE_PREFIX)
     {
-        NextByte += 1;
+        pNextByte += 1;
     }
 
-    if (((NextByte[0] == RET_OP) ||
-        (NextByte[0] == RET_OP_2)) ||
-        (((NextByte[0] == REP_PREFIX) && (NextByte[1] == RET_OP))))
+    if (((pNextByte[0] == RET_OP) ||
+        (pNextByte[0] == RET_OP_2)) ||
+        (((pNextByte[0] == REP_PREFIX) && (pNextByte[1] == RET_OP))))
     {
         //
         // A return is an unambiguous indication of an epilogue.
@@ -439,28 +439,28 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
         return trailingEpilogueInstructions;
     }
 
-    if ((NextByte[0] == JMP_IMM8_OP) ||
-        (NextByte[0] == JMP_IMM32_OP))
+    if ((pNextByte[0] == JMP_IMM8_OP) ||
+        (pNextByte[0] == JMP_IMM32_OP))
     {
         //
         // An unconditional branch to a target that is equal to the start of
         // or outside of this routine is logically a call to another function.
         //
 
-        size_t BranchTarget = (size_t)NextByte;
-        if (NextByte[0] == JMP_IMM8_OP)
+        size_t branchTarget = (size_t)pNextByte;
+        if (pNextByte[0] == JMP_IMM8_OP)
         {
-            BranchTarget += 2 + (int8_t)NextByte[1];
+            branchTarget += 2 + (int8_t)pNextByte[1];
         }
         else
         {
             uint32_t delta =
-                (uint32_t)NextByte[1] |
-                ((uint32_t)NextByte[2] << 8) |
-                ((uint32_t)NextByte[3] << 16) |
-                ((uint32_t)NextByte[4] << 24);
+                (uint32_t)pNextByte[1] |
+                ((uint32_t)pNextByte[2] << 8) |
+                ((uint32_t)pNextByte[3] << 16) |
+                ((uint32_t)pNextByte[4] << 24);
 
-            BranchTarget += 5 + (int32_t)delta;
+            branchTarget += 5 + (int32_t)delta;
         }
 
         //
@@ -478,12 +478,12 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
         bool result = FindProcInfo((uintptr_t)pvAddress, &startAddress, &endAddress, &lsda);
         ASSERT(result);
 
-        if (BranchTarget < startAddress || BranchTarget >= endAddress)
+        if (branchTarget < startAddress || branchTarget >= endAddress)
         {
             return trailingEpilogueInstructions;
         }
     }
-    else if ((NextByte[0] == JMP_IND_OP) && (NextByte[1] == 0x25))
+    else if ((pNextByte[0] == JMP_IND_OP) && (pNextByte[1] == 0x25))
     {
         //
         // An unconditional jump indirect.
@@ -494,9 +494,9 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 
         return trailingEpilogueInstructions;
     }
-    else if (((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
-        (NextByte[1] == 0xff) &&
-        (NextByte[2] & 0x38) == 0x20)
+    else if (((pNextByte[0] & 0xf8) == SIZE64_PREFIX) &&
+        (pNextByte[1] == 0xff) &&
+        (pNextByte[2] & 0x38) == 0x20)
     {
         //
         // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
