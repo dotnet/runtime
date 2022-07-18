@@ -812,7 +812,7 @@ bool GenTree::IsMultiRegNode() const
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
-        return true;
+        return AsMultiRegOp()->GetRegCount() > 1;
     }
 #endif
 
