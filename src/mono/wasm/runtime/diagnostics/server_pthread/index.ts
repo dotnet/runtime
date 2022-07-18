@@ -121,6 +121,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
             return mockScript.open();
         } else {
             const sock = new WebSocket(this.websocketUrl);
+            // TODO: add an "error" handler here - if we get readyState === 3, the connection failed.
             await addOneShotOpenEventListenr(sock);
             return sock;
         }
