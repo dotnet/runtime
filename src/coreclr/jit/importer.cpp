@@ -22791,19 +22791,39 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
+    const int            maxExactClasses               = 1;
+    CORINFO_CLASS_HANDLE exactClasses[maxExactClasses] = {0};
+    int                  exactClassesCount             = 0;
+
+    // This is currently only targets NativeAOT
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // NativeAOT is able to tell us the exact list of classes which implement this baseClass (class/interface)
+        // so if we have just one (TODO: add multiple guesses) we can omit fallback
+        exactClassesCount = info.compCompHnd->getExactClasses(baseClass, maxExactClasses, exactClasses);
+    }
+
     // We currently only get likely class guesses when there is PGO data
-    // with class profiles.
+    // with class profiles or we have exact list of classes from VM
     //
-    if ((fgPgoClassProfiles == 0) && (fgPgoMethodProfiles == 0))
+    if ((fgPgoClassProfiles == 0) && (fgPgoMethodProfiles == 0) && (exactClassesCount == 0))
     {
         JITDUMP("Not guessing for class or method: no GDV profile pgo data, or pgo disabled\n");
         return;
     }
 
-    CORINFO_CLASS_HANDLE  likelyClass;
-    CORINFO_METHOD_HANDLE likelyMethod;
-    unsigned              likelihood;
-    pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
+    CORINFO_CLASS_HANDLE  likelyClass  = NO_CLASS_HANDLE;
+    CORINFO_METHOD_HANDLE likelyMethod = NO_METHOD_HANDLE;
+    unsigned              likelihood   = 0;
+    if (exactClassesCount == 0)
+    {
+        pickGDV(call, ilOffset, isInterface, &likelyClass, &likelyMethod, &likelihood);
+    }
+    else
+    {
+        likelyClass = exactClasses[0];
+        likelihood  = 100;
+    }
 
     if ((likelyClass == NO_CLASS_HANDLE) && (likelyMethod == NO_METHOD_HANDLE))
     {
@@ -22899,6 +22919,11 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     JITDUMP("%s call would invoke method %s\n",
             isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual",
             eeGetMethodName(likelyMethod, nullptr));
+
+    if (exactClassesCount > 0)
+    {
+        call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+    }
 
     // Add this as a potential candidate.
     //
