@@ -4,9 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -533,11 +533,25 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
+            return CreateCustomJsonTypeInfo<T>(options);
+        }
+
+        [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
+        [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
+        private static JsonTypeInfo<T> CreateCustomJsonTypeInfo<T>(JsonSerializerOptions options)
+        {
             JsonConverter converter = DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options, resolveJsonConverterAttribute: false);
             return new CustomJsonTypeInfo<T>(converter, options);
         }
 
-        private static MethodInfo? s_createJsonTypeInfo;
+        [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
+        [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
+        private sealed class CustomJsonTypeInfoBuilder : ITypeVisitor<JsonSerializerOptions, JsonTypeInfo>
+        {
+            public static CustomJsonTypeInfoBuilder Instance { get; } = new();
+            public JsonTypeInfo Visit<T>(JsonSerializerOptions options)
+                => CreateCustomJsonTypeInfo<T>(options);
+        }
 
         /// <summary>
         /// Creates a blank <see cref="JsonTypeInfo"/> instance.
@@ -576,9 +590,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            s_createJsonTypeInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonTypeInfo), new Type[] { typeof(JsonSerializerOptions) })!;
-            return (JsonTypeInfo)s_createJsonTypeInfo.MakeGenericMethod(type)
-                .Invoke(null, new object[] { options })!;
+            return CustomJsonTypeInfoBuilder.Instance.Visit(type, options);
         }
 
         /// <summary>
