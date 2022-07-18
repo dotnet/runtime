@@ -58,8 +58,10 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
         let sessions = MONO.diagnostics.getStartupSessions();
 
-        if (typeof (sessions) !== "object" || sessions.length === "undefined" || sessions.length == 0)
+        if (typeof (sessions) !== "object" || sessions.length === "undefined")
             console.error("expected an array of sessions, got ", sessions);
+        if (sessions.length === 0)
+            return; // assume no sessions means they were turned off in the csproj file
         if (sessions.length != 1)
             console.error("expected one startup session, got ", sessions);
         let eventSession = sessions[0];

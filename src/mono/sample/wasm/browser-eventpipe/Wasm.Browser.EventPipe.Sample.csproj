@@ -22,7 +22,10 @@
 }' />
     <WasmExtraConfig Condition="true" Include="diagnostic_options" Value='
 {
-  "server": { "suspend": false, "connect_url": "mock:ws://localhost:8088/diagnostics" },
+  "server": { "suspend": false, "connect_url": "ws://localhost:8088/diagnostics" }
+}' />
+    <WasmExtraConfig Condition="false" Include="diagnostic_options" Value='
+{
   "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
 }' />
   </ItemGroup>
