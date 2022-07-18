@@ -924,7 +924,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58584", TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
         public void TokenForEmptyFilter()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
