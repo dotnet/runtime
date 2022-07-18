@@ -942,8 +942,8 @@ namespace System.Net.Http.Functional.Tests
             await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using var handler = new SocketsHttpHandler { ActivityHeadersPropagator = propagator };
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    handler.ActivityHeadersPropagator = propagator;
                     using var client = new HttpClient(handler);
                     var request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
                     await client.SendAsync(TestAsync, request);

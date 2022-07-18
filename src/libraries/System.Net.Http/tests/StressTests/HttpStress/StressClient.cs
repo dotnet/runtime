@@ -54,14 +54,9 @@ namespace HttpStress
                 }
                 else
                 {
-                    return new SocketsHttpHandler()
-                    {
-                        PooledConnectionLifetime = _config.ConnectionLifetime.GetValueOrDefault(Timeout.InfiniteTimeSpan),
-                        SslOptions = new SslClientAuthenticationOptions
-                        {
-                            RemoteCertificateValidationCallback = delegate { return true; }
-                        }
-                    };
+                    SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    handler.PooledConnectionLifetime = _config.ConnectionLifetime.GetValueOrDefault(Timeout.InfiniteTimeSpan);
+                    return handler;
                 }
             }
 
