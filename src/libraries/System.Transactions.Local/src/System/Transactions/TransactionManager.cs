@@ -278,7 +278,7 @@ namespace System.Transactions
         private static MachineSettingsSection? s_machineSettings;
         private static MachineSettingsSection MachineSettings => s_machineSettings ??= MachineSettingsSection.GetSection();
 
-        private static bool s_defaultTimeoutValidated;
+        private static volatile bool s_defaultTimeoutValidated;
         private static long s_defaultTimeoutTicks;
         public static TimeSpan DefaultTimeout
         {
