@@ -298,7 +298,7 @@ jobs:
         - Windows_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ] # TODO: Get net6.0 version
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: AndroidMobileNet6
@@ -318,7 +318,7 @@ jobs:
         - OSX_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ] # TODO: Get net6.0 version
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMobileNet6
