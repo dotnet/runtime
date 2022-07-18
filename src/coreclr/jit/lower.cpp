@@ -3175,7 +3175,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //     It's the caller's responsibility to change `node` such that it only
 //     sets the condition flags, without producing a boolean value.
 //
-GenTree* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
+GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 {
     // Skip over a chain of EQ/NE(x, 0) relops. This may be present either
     // because `node` is not a relop and so it cannot be used directly by a
@@ -3209,7 +3209,7 @@ GenTree* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
         }
     }
 
-    GenTree* cc = nullptr;
+    GenTreeCC* cc = nullptr;
 
     // Next may be null if `node` is not used. In that case we don't need to generate a SETCC node.
     if (next != nullptr)
@@ -3226,8 +3226,8 @@ GenTree* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
                 assert(relop->OperIsCompare());
 
                 next->ChangeOper(GT_JCC);
-                cc                      = next;
-                cc->AsCC()->gtCondition = condition;
+                cc              = next->AsCC();
+                cc->gtCondition = condition;
             }
         }
         else
@@ -3238,18 +3238,8 @@ GenTree* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 
             if (BlockRange().TryGetUse(relop, &use))
             {
-                if (use.User()->OperIsConditional())
-                {
-                    // Don't replace if the use is a conditional (Ideally GTF_SET_FLAGS
-                    // would have been set on the node).
-                    cc           = (GenTreeCC*)node;
-                    node->gtType = TYP_VOID;
-                }
-                else
-                {
-                    cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
-                    BlockRange().InsertAfter(node, cc);
-                }
+                cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
+                BlockRange().InsertAfter(node, cc);
                 use.ReplaceWith(cc);
             }
         }

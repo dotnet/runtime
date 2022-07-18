@@ -134,7 +134,7 @@ private:
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
-    GenTree* LowerNodeCC(GenTree* node, GenCondition condition);
+    GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
