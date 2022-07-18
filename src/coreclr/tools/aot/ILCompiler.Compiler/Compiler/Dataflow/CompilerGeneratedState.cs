@@ -573,5 +573,29 @@ namespace ILCompiler.Dataflow
 
             return false;
         }
+
+        public bool TryGetUserMethodForCompilerGeneratedMember(TypeSystemEntity sourceMember, [NotNullWhen(true)] out MethodDesc? userMethod)
+        {
+            userMethod = null;
+            if (sourceMember == null)
+                return false;
+
+            TypeSystemEntity member = sourceMember;
+            MethodDesc? userMethodCandidate = null;
+            while (TryGetOwningMethodForCompilerGeneratedMember(member, out userMethodCandidate))
+            {
+                Debug.Assert(userMethodCandidate != member);
+                member = userMethodCandidate;
+                userMethod = userMethodCandidate;
+            }
+
+            if (userMethod != null)
+            {
+                Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(userMethod));
+                return true;
+            }
+
+            return false;
+        }
     }
 }

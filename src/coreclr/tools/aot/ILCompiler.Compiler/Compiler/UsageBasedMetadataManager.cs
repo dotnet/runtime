@@ -512,7 +512,7 @@ namespace ILCompiler
             {
                 if (FlowAnnotations.RequiresDataflowAnalysis(method))
                 {
-                    AddDataflowDependencyIfNeeded(ref dependencies, factory, methodIL, "Method has annotated parameters");
+                    AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
 
                 if ((method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any)))
@@ -628,7 +628,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, writtenField))
             {
-                AddDataflowDependencyIfNeeded(ref dependencies, factory, methodIL, "Access to interesting field");
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting field");
             }
 
             string reason = "Use of a field";
@@ -691,7 +691,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations, calledMethod))
             {
-                AddDataflowDependencyIfNeeded(ref dependencies, factory, methodIL, "Call to interesting method");
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Call to interesting method");
             }
         }
 
@@ -904,14 +904,20 @@ namespace ILCompiler
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts);
         }
 
-        private void AddDataflowDependencyIfNeeded(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
+        private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
         {
             MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
-            if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+            if (FlowAnnotations.CompilerGeneratedState.TryGetUserMethodForCompilerGeneratedMember(methodILDefinition.OwningMethod, out var userMethod))
             {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
+                Debug.Assert(userMethod != methodILDefinition.OwningMethod);
+
+                // It is possible that this will try to add the DatadlowAnalyzedMethod node multiple times for the same method
+                // but that's OK since the node factory will only add actually one node.
+                methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
             }
+
+            dependencies = dependencies ?? new DependencyList();
+            dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
         }
 
         private struct ReflectableEntityBuilder<T>
