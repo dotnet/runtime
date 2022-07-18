@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
         <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
+        <target state="translated">관리되는 형식 '{0}'의 마샬러 형식 '{1}'은(는) 정적 클래스 또는 구조체여야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
