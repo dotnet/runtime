@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices.JavaScript;
 
-Console.WriteLine("Hello, Console");
+Console.WriteLine("Hello, Console!");
 
 public partial class MyClass
 {
@@ -9,7 +9,6 @@ public partial class MyClass
     internal static string Greeting()
     {
         var text = $"Hello, World! Greetings from node version: {GetNodeVersion()}";
-        Console.WriteLine(text);
         return text;
     }
 
