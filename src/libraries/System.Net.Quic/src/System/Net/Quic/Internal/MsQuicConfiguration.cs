@@ -23,7 +23,7 @@ internal static class MsQuicConfiguration
         flags |= QUIC_CREDENTIAL_FLAGS.CLIENT;
         flags |= QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED;
         flags |= QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
-        if (OperatingSystem.IsWindows())
+        if (MsQuicApi.UsesSChannelBackend)
         {
             flags |= QUIC_CREDENTIAL_FLAGS.USE_SUPPLIED_CREDENTIALS;
         }
@@ -131,7 +131,7 @@ internal static class MsQuicConfiguration
         try
         {
             QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG { Flags = flags };
-            config.Flags |= (OperatingSystem.IsWindows() ? QUIC_CREDENTIAL_FLAGS.NONE : QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES);
+            config.Flags |= (MsQuicApi.UsesSChannelBackend ? QUIC_CREDENTIAL_FLAGS.NONE : QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES);
 
             if (cipherSuitesPolicy != null)
             {
@@ -145,7 +145,7 @@ internal static class MsQuicConfiguration
                 config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                 status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
             }
-            else if (OperatingSystem.IsWindows())
+            else if (MsQuicApi.UsesSChannelBackend)
             {
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_CONTEXT;
                 config.CertificateContext = (void*)certificate.Handle;
