@@ -17496,10 +17496,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
             }
-            if (call->IsInlineCandidate())
+            if (call->IsInlineCandidate() && !call->IsGuardedDevirtualizationCandidate())
             {
                 // For inline candidates, we've already cached the return
-                // type class handle in the inline info.
+                // type class handle in the inline info (for GDV candidates,
+                // this data is valid only for a correct guess, so we cannot
+                // use it).
                 InlineCandidateInfo* inlInfo = call->gtInlineCandidateInfo;
                 assert(inlInfo != nullptr);
 
