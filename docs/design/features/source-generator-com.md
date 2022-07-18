@@ -67,7 +67,7 @@ To implement this support, we would need to introduce a strong contract to be ab
 
 Basic support for this feature would naturally fall out from supporting the scenario described in open question 1. Depending on implementation, we may be able to make this more or less efficient.
 
-3. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should `A`'s `IComFoo` be implicitly convertable to `B`'s `IComFoo`?
+3. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should `A`'s `IComFoo` be implicitly convertible to `B`'s `IComFoo`?
 
 Supporting this would require either some form of type equivalence, which exists in a limited form in the runtime, or assembly-independent types, for which a C# proposal exists that has not been planned for any release. Since a solution here would require solutions for questions 1 and 2, we can likely require users to use explicit casts and avoid having any issues.
 

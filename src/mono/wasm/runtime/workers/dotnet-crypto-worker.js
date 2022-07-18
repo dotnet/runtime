@@ -73,7 +73,7 @@ var ChannelWorker = {
                         if (state === this.STATE_SHUTDOWN)
                             break;
                         if (state === this.STATE_RESET)
-                            console.debug(`caller failed, reseting worker`);
+                            console.debug(`caller failed, resetting worker`);
                     } else {
                         console.error(`Worker failed to handle the request: ${_stringify_err(err)}`);
                         this._change_state_locked(this.STATE_REQ_FAILED);
@@ -360,7 +360,7 @@ async function handle_req_async(msg) {
 
     if (req.func === "digest") {
         return await call_digest(req.type, new Uint8Array(req.data));
-    } 
+    }
     else if (req.func === "sign") {
         return await sign(req.type, new Uint8Array(req.key), new Uint8Array(req.data));
     }

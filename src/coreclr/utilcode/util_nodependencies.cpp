@@ -758,7 +758,7 @@ void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
 #endif // !TARGET_UNIX
 }
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack)
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack)
 {
     // We need to make sure there will be a reserved but never committed page at the end
     // of the stack. We do here the check NT does when it creates the user stack to decide
@@ -769,7 +769,7 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
     // If we are not it will bomb out. We will also bomb out if we touch the hard guard
     // page.
     //
-    // For situation B, teb->StackLimit is at the beggining of the user stack (ie
+    // For situation B, teb->StackLimit is at the beginning of the user stack (ie
     // before updating StackLimit it checks if it was able to create a new guard page,
     // in this case, it can't), which makes the check fail in RtlUnwind.
     //
@@ -790,12 +790,12 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
 
     // OS rounds up sizes the following way to decide if it marks a guard page
     sizeReservedStack = ALIGN(sizeReservedStack, ((size_t)sysInfo.dwAllocationGranularity));   // Allocation granularity
-    sizeCommitedStack = ALIGN(sizeCommitedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
+    sizeCommittedStack = ALIGN(sizeCommittedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
 
     // OS wont create guard page, we can't execute managed code safely.
     // We also have to make sure we have a 'hard' guard, thus we add another
     // page to the memory we would need comitted.
     // That is, the following code will check if sizeReservedStack is at least 2 pages
-    // more than sizeCommitedStack.
-    return (sizeReservedStack > sizeCommitedStack + ((size_t)sysInfo.dwPageSize));
+    // more than sizeCommittedStack.
+    return (sizeReservedStack > sizeCommittedStack + ((size_t)sysInfo.dwPageSize));
 } // ThreadWillCreateGuardPage

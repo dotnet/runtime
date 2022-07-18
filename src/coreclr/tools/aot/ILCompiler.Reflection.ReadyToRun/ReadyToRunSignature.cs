@@ -1393,14 +1393,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     ParseMethod(builder);
                     builder.Append($" ImplType :");
                     ParseType(builder);
-                    if (flags.HasFlag(ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverriden))
+                    if (flags.HasFlag(ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverridden))
                     {
                         builder.Append($" ImplMethod :");
                         ParseMethod(builder);
                     }
                     else
                     {
-                        builder.Append("Not Overriden");
+                        builder.Append("Not Overridden");
                     }
 
                     if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)

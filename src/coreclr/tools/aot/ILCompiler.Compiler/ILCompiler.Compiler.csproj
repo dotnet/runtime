@@ -235,6 +235,7 @@
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StreamIntrinsics.cs" Link="IL\Stubs\StreamIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
       <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>
     </Compile>
@@ -310,7 +311,7 @@
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.IntefaceThunks.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.InterfaceThunks.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.DelegateInfo.cs" />

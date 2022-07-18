@@ -47,7 +47,7 @@ namespace System.Text.Json
                 // number of characters, and the slow encoding loop typically ends up running for the last few
                 // characters anyway since the fast encoding loop needs 5 characters on input at least.
                 // Thus don't use the fast decoding loop at all if we don't have enough characters. The threashold
-                // was choosen based on performance testing.
+                // was chosen based on performance testing.
                 // Note that if we don't have enough bytes, pStop will prevent us from entering the fast loop.
                 while (pEnd - pSrc > 13)
                 {
@@ -102,7 +102,7 @@ namespace System.Text.Json
                                 goto LongCodeWithMask;
                             }
 
-                            // Unfortunately, this is endianess sensitive
+                            // Unfortunately, this is endianness sensitive
                             if (!BitConverter.IsLittleEndian)
                             {
                                 *pTarget = (byte)(ch >> 16);

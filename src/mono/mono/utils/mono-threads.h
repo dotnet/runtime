@@ -98,7 +98,7 @@ typedef struct {
 } MonoThreadHandle;
 
 /*
-THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
+THREAD_INFO_TYPE is a way to make the mono-threads module parameteric - or sort of.
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
 data, this avoid a pointer indirection on what is on a lot of hot paths.
 

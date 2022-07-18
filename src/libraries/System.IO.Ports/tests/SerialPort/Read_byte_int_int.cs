@@ -366,7 +366,7 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying read method throws {0} buffer.Lenght={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
+                Debug.WriteLine("Verifying read method throws {0} buffer.Length={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
                 com.Open();
 
                 Assert.Throws(expectedException, () => com.Read(buffer, offset, count));
@@ -407,7 +407,7 @@ namespace System.IO.Ports.Tests
                     buffer[i] = randByte;
                 }
 
-                Debug.WriteLine("Verifying read method buffer.Lenght={0}, offset={1}, count={2} with {3} random chars",
+                Debug.WriteLine("Verifying read method buffer.Length={0}, offset={1}, count={2} with {3} random chars",
                     buffer.Length, offset, count, bytesToWrite.Length);
 
                 com1.ReadTimeout = 500;

@@ -1633,7 +1633,7 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    // This helper returns to offsets for the slots/bytes/handles. They return the offset in bytes from the beggining
+    // This helper returns to offsets for the slots/bytes/handles. They return the offset in bytes from the beginning
     // of the 1st GC pointer in the statics block for the module.
     void        GetOffsetsForRegularStaticData(
                     mdTypeDef cl,
@@ -1826,7 +1826,7 @@ private:
                                                 // this map *always* overrides the Metadata RVA
         PTR_DynamicILBlobTable   m_pDynamicILBlobTable;
 
-                                                // maps tokens for to their corresponding overriden IL blobs
+                                                // maps tokens for to their corresponding overridden IL blobs
                                                 // this map conditionally overrides the Metadata RVA and the DynamicILBlobTable
         PTR_DynamicILBlobTable   m_pTemporaryILBlobTable;
 
@@ -1907,10 +1907,6 @@ private:
     // the debugger to get metadata of dynamic modules from out of process.
     // A dynamic module will eagerly serialize its metadata to this buffer.
     PTR_SBuffer m_pDynamicMetadata;
-
-    // If true, does not eagerly serialize metadata in code:ReflectionModule.CaptureModuleMetaDataToMemory.
-    // This is used to allow bulk emitting types without re-emitting the metadata between each type.
-    bool m_fSuppressMetadataCapture;
 
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);

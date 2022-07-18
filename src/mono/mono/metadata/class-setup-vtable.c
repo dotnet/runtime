@@ -1573,7 +1573,7 @@ signature_is_subsumed (MonoMethod *impl_method, MonoMethod *decl_method, MonoErr
 static gboolean
 check_signature_covariant (MonoClass *klass, MonoMethod *impl, MonoMethod *decl)
 {
-	TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatability on behalf of %s: '%s' overriding '%s'\n", mono_type_full_name (m_class_get_byval_arg (klass)), mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
+	TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatibility on behalf of %s: '%s' overriding '%s'\n", mono_type_full_name (m_class_get_byval_arg (klass)), mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
 	ERROR_DECL (local_error);
 	gboolean subsumed = signature_is_subsumed (impl, decl, local_error);
 	if (!is_ok (local_error) || !subsumed) {
@@ -2099,7 +2099,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 	/*
 	 * If a method occupies more than one place in the vtable, and it is
-	 * overriden, then change the other occurrences too.
+	 * overridden, then change the other occurrences too.
 	 */
 	if (override_map) {
 		MonoMethod *cm;

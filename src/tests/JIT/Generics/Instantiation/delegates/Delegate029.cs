@@ -25,7 +25,7 @@ internal class Test_Delegate029
 
         if ((i != 10) || (j != 10))
         {
-            Console.WriteLine("Failed Sync Invokation");
+            Console.WriteLine("Failed Sync Invocation");
             return 1;
         }
 

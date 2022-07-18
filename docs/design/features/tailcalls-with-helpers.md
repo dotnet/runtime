@@ -232,7 +232,7 @@ Note that we take care to zero out PortableTailCallFrame.NextCall from the
 CallTailCallTarget stub instead of doing it in the dispatcher before calling
 the stub. This is because GC will use NextCall to keep collectible assemblies
 alive in the event that there is a GC inside the dispatcher. Once control has
-been transfered to CallTailCallTarget we can safely reset the field.
+been transferred to CallTailCallTarget we can safely reset the field.
 
 ## The JIT's transformation
 Based on these functions the JIT needs to do a relatively simple transformation

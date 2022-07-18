@@ -241,7 +241,7 @@ The death of a variable is handled at the end of the last `BasicBlock` as variab
 
 ### Reporting Information
 
-We just iterate throught all the `VariableLiveRange`s of all the variables that are tracked in `CodeGen::genSetScopeInfoUsingVariableRanges()`.
+We just iterate through all the `VariableLiveRange`s of all the variables that are tracked in `CodeGen::genSetScopeInfoUsingVariableRanges()`.
 
 Turning On Debug Info
 --------

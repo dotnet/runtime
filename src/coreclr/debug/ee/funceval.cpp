@@ -904,7 +904,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
 #endif // TARGET_AMD64
                    )
                 {
-                    memcpyNoGCRefs(ArgSlotEndianessFixup(pArgument, sizeof(LPVOID)), pAddr, size);
+                    memcpyNoGCRefs(ArgSlotEndiannessFixup(pArgument, sizeof(LPVOID)), pAddr, size);
                 }
                 else
                 {
@@ -1126,7 +1126,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     if (size <= sizeof(ARG_SLOT))
                     {
                         // Its not ByRef, so we need to copy the value class onto the ARG_SLOT.
-                        CopyValueClass(ArgSlotEndianessFixup(pArgument, sizeof(LPVOID)), pData, o1->GetMethodTable());
+                        CopyValueClass(ArgSlotEndiannessFixup(pArgument, sizeof(LPVOID)), pData, o1->GetMethodTable());
                     }
                     else
                     {
@@ -3783,7 +3783,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
 
 //
 // FuncEvalHijackWorker is the function that managed threads start executing in order to perform a function
-// evaluation. Control is transfered here on the proper thread by hijacking that that's IP to this method in
+// evaluation. Control is transferred here on the proper thread by hijacking that that's IP to this method in
 // Debugger::FuncEvalSetup. This function can also be called directly by a Runtime thread that is stopped sending a
 // first or second chance exception to the Right Side.
 //

@@ -1935,7 +1935,7 @@ namespace System.Diagnostics.Tracing
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
                         // Maintain old behavior - object identity is preserved
-                        if (!LocalAppContextSwitches.PreserveEventListnerObjectIdentity)
+                        if (!LocalAppContextSwitches.PreserveEventListenerObjectIdentity)
                         {
                             args = SerializeEventArgs(eventId, args);
                         }
@@ -3721,7 +3721,7 @@ namespace System.Diagnostics.Tracing
                             goto default;
                         break;
                     default:
-                        /* Debug.Fail("Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
+                        /* Debug.Fail("Warning: User validation code sub-optimial: Unsupported opcode " + instrs[idx] +
                             " at " + idx + " in method " + method.Name); */
                         return -1;
                 }

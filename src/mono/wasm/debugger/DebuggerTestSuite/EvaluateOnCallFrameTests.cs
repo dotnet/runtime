@@ -453,7 +453,7 @@ namespace DebuggerTests
 
                   ("me.foo", "ReferenceError"),
 
-                  ("this.a + non_existant", "ReferenceError"),
+                  ("this.a + non_existent", "ReferenceError"),
 
                   ("this.NullIfAIsNotZero.foo", "ReferenceError"),
                   ("NullIfAIsNotZero.foo", "ReferenceError"));
@@ -1162,7 +1162,7 @@ namespace DebuggerTests
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
-                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", 
+                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.",
                     res.Error["result"]["description"]?.Value<string>(), "wrong error message");
             });
 
@@ -1186,7 +1186,7 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                // we have no way of returning int? for null values, 
+                // we have no way of returning int? for null values,
                 // so we return the last non-null class name
                 await EvaluateOnCallFrameAndCheck(id,
                    ("list.Count", TNumber(1)),
@@ -1263,7 +1263,7 @@ namespace DebuggerTests
              });
 
         [Fact]
-        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitivesCultureDependant() =>  
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitivesCultureDependant() =>
             await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "DebuggerTests.PrimitiveTypeMethods.Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
@@ -1275,7 +1275,7 @@ namespace DebuggerTests
                 var (floatLocalVal, _) = await EvaluateOnCallFrame(id, "localFloat");
                 var (doubleLocalVal, _) = await EvaluateOnCallFrame(id, "localDouble");
 
-                // expected value depends on the debugger's user culture and is equal to 
+                // expected value depends on the debugger's user culture and is equal to
                 // description of the number that also respects user's culture settings
                 await EvaluateOnCallFrameAndCheck(id,
                     ("test.propFloat.ToString()", TString(floatMemberVal["description"]?.Value<string>())),

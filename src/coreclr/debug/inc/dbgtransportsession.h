@@ -747,7 +747,7 @@ private:
 
 #ifndef RIGHT_SIDE_COMPILE
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
-    // These are provided by the runtime at intialization time.
+    // These are provided by the runtime at initialization time.
     DebuggerIPCControlBlock *m_pDCB;
     AppDomainEnumerationIPCBlock *m_pADB;
 #endif // !RIGHT_SIDE_COMPILE

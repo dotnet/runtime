@@ -69,7 +69,7 @@ internal static partial class Interop
                 pPrevCertContext = pCertContext.Disconnect();
             }
 
-            pCertContext.SetHandle((IntPtr)Crypt32.CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
+            Marshal.InitHandle(pCertContext, (IntPtr)Crypt32.CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
 
             if (!pCertContext.IsInvalid)
             {

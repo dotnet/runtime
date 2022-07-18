@@ -720,7 +720,7 @@ ErrExit:
 
     return hr;
 #else //!FEATURE_METADATA_IN_VM
-    // Calls to fusion are not suported outside VM
+    // Calls to fusion are not supported outside VM
     return E_NOTIMPL;
 #endif //!FEATURE_METADATA_IN_VM
 } // RegMeta::FindAssembliesByName

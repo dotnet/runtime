@@ -3091,7 +3091,7 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
 //
 // Notes:
 //   This is very brittle because the OS can lazily allocates storage for TLS slots.
-//   In order to gaurantee the storage is available, it must have been written to by the debuggee.
+//   In order to guarantee the storage is available, it must have been written to by the debuggee.
 //   For managed threads, that's easy because the Thread* is already written to the slot.
 //   But for pure native threads where GetThread() == NULL, the storage may not yet be allocated.
 //

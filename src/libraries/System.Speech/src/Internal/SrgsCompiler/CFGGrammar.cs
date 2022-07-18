@@ -65,7 +65,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #pragma warning disable 56518 // The Binary reader cannot be disposed or it would close the underlying stream
 
             // Initializes a CfgSerializedHeader from a Stream.
-            // If the data does not represent a cfg then UnsuportedFormatException is thrown.
+            // If the data does not represent a cfg then UnsupportedFormatException is thrown.
             // This isn't a conclusive validity check, but is enough to determine if it's a CFG or not.
             // For a complete check CheckValidCfgFormat is used.
             internal CfgSerializedHeader(Stream stream)

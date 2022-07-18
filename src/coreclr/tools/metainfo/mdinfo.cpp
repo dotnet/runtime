@@ -2608,7 +2608,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
         {
             ULONG       ulDataTemp;
 
-            // Handle the sentinal for varargs because it isn't counted in the args.
+            // Handle the sentinel for varargs because it isn't counted in the args.
             CorSigUncompressData(&pbSigBlob[cbCur], &ulDataTemp);
             ++i;
 

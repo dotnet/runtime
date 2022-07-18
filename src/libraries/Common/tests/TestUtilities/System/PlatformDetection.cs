@@ -292,17 +292,8 @@ namespace System
             }
         }
 
-        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.Globalization.GlobalizationMode", "Invariant"));
-
-        private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
-        {
-            if (Type.GetType(typeName)?.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod is MethodInfo mi)
-            {
-                return (bool)mi.Invoke(null, null);
-            }
-
-            return false;
-        }
+        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(()
+            => (bool?)Type.GetType("System.Globalization.GlobalizationMode")?.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
 
         private static readonly Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
@@ -357,7 +348,8 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
+        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(()
+            => (bool?)Type.GetType("Microsoft.Win32.SafeHandles.SafeFileHandle")?.GetProperty("DisableFileLocking", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
 
         public static bool IsFileLockingEnabled => IsWindows || !s_fileLockingDisabled.Value;
 

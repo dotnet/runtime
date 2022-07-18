@@ -1584,7 +1584,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestIsAllDataRequested()
         {
-            // Activity constructor allways set IsAllDataRequested to true for compatability.
+            // Activity constructor always set IsAllDataRequested to true for compatibility.
             Activity a1 = new Activity("a1");
             Assert.True(a1.IsAllDataRequested);
             Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
@@ -1626,7 +1626,7 @@ namespace System.Diagnostics.Tests
             tagObjects = activity.TagObjects.ToArray();
             Assert.Equal(5, tagObjects[4].Value);
 
-            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatability reason
+            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatibility reason
             Assert.Equal(5, activity.Tags.Count());
             Assert.Equal(6, activity.TagObjects.Count());
 

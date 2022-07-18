@@ -5177,7 +5177,7 @@ BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
     // 32-bit platforms, this should be fine.
     _ASSERTE(sizeof(DWORD) == sizeof(void*));
 
-    // There are cases where the ESP is just decremented but the page is not touched, thus the page is not commited or
+    // There are cases where the ESP is just decremented but the page is not touched, thus the page is not committed or
     // still has page guard bit set. We can't hit the race in such case so we just leave. Besides, we can't access the
     // memory with page guard flag or not committed.
     MEMORY_BASIC_INFORMATION mbi;

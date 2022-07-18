@@ -902,19 +902,19 @@ namespace System.Xml
 
             public void Sort()
             {
-                object[] indeces = new object[_writer._attributeCount];
+                object[] indices = new object[_writer._attributeCount];
 
-                for (int i = 0; i < indeces.Length; i++)
+                for (int i = 0; i < indices.Length; i++)
                 {
-                    indeces[i] = i;
+                    indices[i] = i;
                 }
 
-                Array.Sort(indeces, this);
+                Array.Sort(indices, this);
 
                 Attribute[] attributes = new Attribute[_writer._attributes!.Length];
-                for (int i = 0; i < indeces.Length; i++)
+                for (int i = 0; i < indices.Length; i++)
                 {
-                    attributes[i] = _writer._attributes[(int)indeces[i]];
+                    attributes[i] = _writer._attributes[(int)indices[i]];
                 }
 
                 _writer._attributes = attributes;

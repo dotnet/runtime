@@ -79,7 +79,7 @@ void DacDbiArrayList<T>::Dealloc()
 }
 
 // Alloc and Init are very similar.  Both preallocate the array; but Alloc leaves the
-// contents unintialized while Init provides initial values. The array contents are always
+// contents uninitialized while Init provides initial values. The array contents are always
 // mutable.
 
 // allocate space for the list--in some instances, we'll know the count first, and then

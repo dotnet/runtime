@@ -285,7 +285,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 }
                 m_argDescs[k].m_typeStackNormal = m_argDescs[k].m_type;
                 m_argDescs[k].m_nativeOffset = argOffsets_[k];
-                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
                 k++;
             }
@@ -308,18 +308,18 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 #endif // defined(HOST_ARM)
                 )
             {
-                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
-                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
             if (GetFlag<Flag_hasGenericsContextArg>())
             {
-                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #endif
@@ -349,11 +349,11 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
                 {
-                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 }
                 else
                 {
-                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp))));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, it.Size(comp))));
                 }
                 argPtr = comp->getArgNext(argPtr);
                 directOffset++;
@@ -1830,7 +1830,7 @@ HCIMPL3(float, InterpretMethodFloat, struct InterpreterMethodInfo* interpMethInf
     retVal = (ARG_SLOT)Interpreter::InterpretMethodBody(interpMethInfo, false, ilArgs, stubContext);
     HELPER_METHOD_FRAME_END();
 
-    return *reinterpret_cast<float*>(ArgSlotEndianessFixup(&retVal, sizeof(float)));
+    return *reinterpret_cast<float*>(ArgSlotEndiannessFixup(&retVal, sizeof(float)));
 }
 HCIMPLEND
 
@@ -1845,7 +1845,7 @@ HCIMPL3(double, InterpretMethodDouble, struct InterpreterMethodInfo* interpMethI
     retVal = Interpreter::InterpretMethodBody(interpMethInfo, false, ilArgs, stubContext);
     HELPER_METHOD_FRAME_END();
 
-    return *reinterpret_cast<double*>(ArgSlotEndianessFixup(&retVal, sizeof(double)));
+    return *reinterpret_cast<double*>(ArgSlotEndiannessFixup(&retVal, sizeof(double)));
 }
 HCIMPLEND
 
@@ -3784,12 +3784,12 @@ void Interpreter::GCScanRoots(promote_func* pf, ScanContext* sc)
         void* localPtr = NULL;
         if (it.IsLargeStruct(&m_interpCeeInfo))
         {
-            void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+            void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
             localPtr = *reinterpret_cast<void**>(structPtr);
         }
         else
         {
-            localPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
+            localPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
         }
         GCScanRootAtLoc(reinterpret_cast<Object**>(localPtr), it, pf, sc, m_methInfo->GetPinningBit(i));
     }
@@ -3824,7 +3824,7 @@ void Interpreter::GCScanRoots(promote_func* pf, ScanContext* sc)
         InterpreterType it = m_argTypes[i];
         if (it != undef && !it.IsLargeStruct(&m_interpCeeInfo))
         {
-            BYTE* argPtr = ArgSlotEndianessFixup(&m_args[i], it.Size(&m_interpCeeInfo));
+            BYTE* argPtr = ArgSlotEndiannessFixup(&m_args[i], it.Size(&m_interpCeeInfo));
             GCScanRootAtLoc(reinterpret_cast<Object**>(argPtr), it, pf, sc);
         }
     }
@@ -4253,12 +4253,12 @@ void Interpreter::LdLocA(int locNum)
     void* addr;
     if (tp.IsLargeStruct(&m_interpCeeInfo))
     {
-        void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), sizeof(void**));
+        void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), sizeof(void**));
         addr = *reinterpret_cast<void**>(structPtr);
     }
     else
     {
-        addr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), tp.Size(&m_interpCeeInfo));
+        addr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), tp.Size(&m_interpCeeInfo));
     }
     // The "addr" above, while a byref, is never a heap pointer, so we're robust if
     // any of these were to cause a GC.
@@ -11809,12 +11809,12 @@ void Interpreter::PrintLocals()
             void* localPtr = NULL;
             if (it.IsLargeStruct(&m_interpCeeInfo))
             {
-                void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+                void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
                 localPtr = *reinterpret_cast<void**>(structPtr);
             }
             else
             {
-                localPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
+                localPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
             }
             fprintf(GetLogFile(), "      loc%-4d: %10s: ", i, CorInfoTypeNames[cit]);
             PrintValue(it, reinterpret_cast<BYTE*>(localPtr));

@@ -19,7 +19,7 @@
 //  http://mswikis/clr/dev/Pages/CLR%20Team%20Commenting.aspx for more information
 //
 //  There is a bug associated with Visual Studio where it does not recognise the hyperlink if there is a ::
-//  preceeding it on the same line. Since C++ uses :: as a namespace separator, this can often mean that the
+//  preceding it on the same line. Since C++ uses :: as a namespace separator, this can often mean that the
 //  second hyperlink on a line does not work. To work around this it is better to use '.' instead of :: as
 //  the namespace separators in code: hyperlinks.
 //
@@ -814,7 +814,7 @@ void EEStartupHelper()
         BaseDomain::Attach();
         SystemDomain::Attach();
 
-        // Start up the EE intializing all the global variables
+        // Start up the EE initializing all the global variables
         ECall::Init();
 
         COMDelegate::Init();
@@ -1047,7 +1047,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-// EEStartup is responsible for all the one time intialization of the runtime.  Some of the highlights of
+// EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
 //     * Creates the default and shared, appdomains.
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)

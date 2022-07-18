@@ -253,7 +253,6 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72232", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows(
@@ -278,7 +277,6 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72232", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -688,7 +686,6 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72231", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadStateTest()
         {

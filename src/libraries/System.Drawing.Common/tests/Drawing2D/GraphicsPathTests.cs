@@ -41,7 +41,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath gp = new GraphicsPath())
             {
                 Assert.Equal(FillMode.Alternate, gp.FillMode);
-                AssertEmptyGrahicsPath(gp);
+                AssertEmptyGraphicsPath(gp);
             }
         }
 
@@ -52,9 +52,9 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath gpw = new GraphicsPath(FillMode.Winding))
             {
                 Assert.Equal(FillMode.Alternate, gpa.FillMode);
-                AssertEmptyGrahicsPath(gpa);
+                AssertEmptyGraphicsPath(gpa);
                 Assert.Equal(FillMode.Winding, gpw.FillMode);
-                AssertEmptyGrahicsPath(gpw);
+                AssertEmptyGraphicsPath(gpw);
             }
         }
 
@@ -116,7 +116,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (GraphicsPath clone = Assert.IsType<GraphicsPath>(gp.Clone()))
             {
                 Assert.Equal(FillMode.Alternate, clone.FillMode);
-                AssertEmptyGrahicsPath(clone);
+                AssertEmptyGraphicsPath(clone);
             }
         }
 
@@ -128,7 +128,7 @@ namespace System.Drawing.Drawing2D.Tests
                 gp.Reset();
 
                 Assert.Equal(FillMode.Alternate, gp.FillMode);
-                AssertEmptyGrahicsPath(gp);
+                AssertEmptyGraphicsPath(gp);
             }
         }
 
@@ -1189,16 +1189,16 @@ namespace System.Drawing.Drawing2D.Tests
                 gpi.AddString("mono", FontFamily.GenericMonospace, 0, -10, new Point(10, 10), StringFormat.GenericDefault);
                 AssertExtensions.GreaterThan(gpi.PointCount, 0);
 
-                int gpiLenghtOld = gpi.PathPoints.Length;
+                int gpiLengthOld = gpi.PathPoints.Length;
                 gpi.AddString("mono", FontFamily.GenericMonospace, 0, -10, new Rectangle(10, 10, 10, 10), StringFormat.GenericDefault);
-                AssertExtensions.GreaterThan(gpi.PointCount, gpiLenghtOld);
+                AssertExtensions.GreaterThan(gpi.PointCount, gpiLengthOld);
 
                 gpf.AddString("mono", FontFamily.GenericMonospace, 0, -10, new PointF(10f, 10f), StringFormat.GenericDefault);
                 AssertExtensions.GreaterThan(gpf.PointCount, 0);
 
-                int pgfLenghtOld = gpf.PathPoints.Length;
+                int pgfLengthOld = gpf.PathPoints.Length;
                 gpf.AddString("mono", FontFamily.GenericMonospace, 0, -10, new RectangleF(10f, 10f, 10f, 10f), StringFormat.GenericDefault);
-                AssertExtensions.GreaterThan(gpf.PointCount, pgfLenghtOld);
+                AssertExtensions.GreaterThan(gpf.PointCount, pgfLengthOld);
             }
         }
 
@@ -1284,7 +1284,7 @@ namespace System.Drawing.Drawing2D.Tests
             {
                 gp.Transform(matrix);
                 Assert.Equal(new float[] { 1f, 1f, 2f, 2f, 3f, 3f }, matrix.Elements);
-                AssertEmptyGrahicsPath(gp);
+                AssertEmptyGraphicsPath(gp);
             }
         }
 
@@ -2397,7 +2397,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        private void AssertEmptyGrahicsPath(GraphicsPath gp)
+        private void AssertEmptyGraphicsPath(GraphicsPath gp)
         {
             Assert.Equal(0, gp.PathData.Points.Length);
             Assert.Equal(0, gp.PathData.Types.Length);

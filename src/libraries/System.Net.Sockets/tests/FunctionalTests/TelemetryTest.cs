@@ -345,7 +345,7 @@ namespace System.Net.Sockets.Tests
                     });
 
                     VerifyEvents(events, connect: true, expectedCount: 10);
-                    VerifyEventCounters(events, connectCount: 10, shouldHaveTransferedBytes: true, shouldHaveDatagrams: true);
+                    VerifyEventCounters(events, connectCount: 10, shouldHaveTransferredBytes: true, shouldHaveDatagrams: true);
                 }
             }).Dispose();
         }
@@ -456,7 +456,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static void VerifyEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int connectCount, bool hasCurrentConnectCounter = false, bool connectOnly = false, bool shouldHaveTransferedBytes = false, bool shouldHaveDatagrams = false)
+        private static void VerifyEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int connectCount, bool hasCurrentConnectCounter = false, bool connectOnly = false, bool shouldHaveTransferredBytes = false, bool shouldHaveDatagrams = false)
         {
             Dictionary<string, double[]> eventCounters = events
                 .Where(e => e.Event.EventName == "EventCounters")
@@ -478,13 +478,13 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, currentOutgoingConnectAttempts[^1]);
 
             Assert.True(eventCounters.TryGetValue("bytes-received", out double[] bytesReceived));
-            if (shouldHaveTransferedBytes)
+            if (shouldHaveTransferredBytes)
             {
                 Assert.True(bytesReceived[^1] > 0);
             }
 
             Assert.True(eventCounters.TryGetValue("bytes-sent", out double[] bytesSent));
-            if (shouldHaveTransferedBytes)
+            if (shouldHaveTransferredBytes)
             {
                 Assert.True(bytesSent[^1] > 0);
             }

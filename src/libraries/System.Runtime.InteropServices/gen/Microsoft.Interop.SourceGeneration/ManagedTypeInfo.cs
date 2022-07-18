@@ -20,22 +20,22 @@ namespace Microsoft.Interop
         public static ManagedTypeInfo CreateTypeInfoForTypeSymbol(ITypeSymbol type)
         {
             string typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            string diagonsticFormattedName = type.ToDisplayString();
+            string diagnosticFormattedName = type.ToDisplayString();
             if (type.SpecialType != SpecialType.None)
             {
-                return new SpecialTypeInfo(typeName, diagonsticFormattedName, type.SpecialType);
+                return new SpecialTypeInfo(typeName, diagnosticFormattedName, type.SpecialType);
             }
             if (type.TypeKind == TypeKind.Enum)
             {
-                return new EnumTypeInfo(typeName, diagonsticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType);
+                return new EnumTypeInfo(typeName, diagnosticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType);
             }
             if (type.TypeKind == TypeKind.Pointer)
             {
-                return new PointerTypeInfo(typeName, diagonsticFormattedName, IsFunctionPointer: false);
+                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: false);
             }
             if (type.TypeKind == TypeKind.FunctionPointer)
             {
-                return new PointerTypeInfo(typeName, diagonsticFormattedName, IsFunctionPointer: true);
+                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: true);
             }
             if (type.TypeKind == TypeKind.Array && type is IArrayTypeSymbol { IsSZArray: true } arraySymbol)
             {
@@ -43,17 +43,17 @@ namespace Microsoft.Interop
             }
             if (type.TypeKind == TypeKind.Delegate)
             {
-                return new DelegateTypeInfo(typeName, diagonsticFormattedName);
+                return new DelegateTypeInfo(typeName, diagnosticFormattedName);
             }
             if (type.TypeKind == TypeKind.TypeParameter)
             {
-                return new TypeParameterTypeInfo(typeName, diagonsticFormattedName);
+                return new TypeParameterTypeInfo(typeName, diagnosticFormattedName);
             }
             if (type.IsValueType)
             {
-                return new ValueTypeInfo(typeName, diagonsticFormattedName, type.IsRefLikeType);
+                return new ValueTypeInfo(typeName, diagnosticFormattedName, type.IsRefLikeType);
             }
-            return new ReferenceTypeInfo(typeName, diagonsticFormattedName);
+            return new ReferenceTypeInfo(typeName, diagnosticFormattedName);
         }
     }
 

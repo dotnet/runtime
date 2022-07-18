@@ -2462,11 +2462,11 @@ CHECK PEDecoder::CheckWillCreateGuardPage() const
     if (!IsDll())
     {
         SIZE_T sizeReservedStack = 0;
-        SIZE_T sizeCommitedStack = 0;
+        SIZE_T sizeCommittedStack = 0;
 
-        GetEXEStackSizes(&sizeReservedStack, &sizeCommitedStack);
+        GetEXEStackSizes(&sizeReservedStack, &sizeCommittedStack);
 
-        CHECK(ThreadWillCreateGuardPage(sizeReservedStack, sizeCommitedStack));
+        CHECK(ThreadWillCreateGuardPage(sizeReservedStack, sizeCommittedStack));
 
     }
 

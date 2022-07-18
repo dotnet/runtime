@@ -192,7 +192,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -214,7 +214,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -238,7 +238,7 @@ jobs:
       testGroup: innerloop
       timeoutInMinutes: 120
       nameSuffix: NativeAOT
-      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs -rc $(_BuildConfig) -lc Release
+      buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release
       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
       condition: >-
         or(
@@ -262,7 +262,7 @@ jobs:
       testGroup: innerloop
       isSingleFile: true
       nameSuffix: NativeAOT
-      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
+      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

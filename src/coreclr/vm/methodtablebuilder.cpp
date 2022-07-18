@@ -6087,7 +6087,7 @@ MethodTableBuilder::InitMethodDesc(
             BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
         }
 
-        // StoredSig specific intialization
+        // StoredSig specific initialization
         {
             StoredSigMethodDesc *pNewSMD = (StoredSigMethodDesc*) pNewMD;;
             DWORD cSig;
@@ -8677,7 +8677,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
         if (clstotalsize != 0)
         {
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
+            // size must be large enough to accommodate layout. If not, we use the layout size instead.
             if (!numInstanceFieldBytes.IsOverflow() && clstotalsize >= numInstanceFieldBytes.Value())
             {
                 numInstanceFieldBytes = S_UINT32(clstotalsize);
@@ -11791,7 +11791,7 @@ BOOL MethodTableBuilder::ChangesImplementationOfVirtualSlot(SLOT_INDEX idx)
             // the fact that we get some false positives and end up sharing less vtable chunks.
 
             // Search the previous slots in the parent vtable for the same implementation. If it exists and it was
-            // overriden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
+            // overridden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
             // slot (idx), so the implementation of it will change.
             MethodDesc* pParentMD = ParentImpl.GetMethodDesc();
             for (SLOT_INDEX i = 0; i < idx; i++)

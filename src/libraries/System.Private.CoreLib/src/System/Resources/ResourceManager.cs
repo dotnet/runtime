@@ -317,7 +317,7 @@ namespace System.Resources
         // passing to the ResourceReader constructor) or a manifest resource file
         // name should look like.
         //
-        // This method can be overriden to look for a different extension,
+        // This method can be overridden to look for a different extension,
         // such as ".ResX", or a completely different format for naming files.
         protected virtual string GetResourceFileName(CultureInfo culture)
         {

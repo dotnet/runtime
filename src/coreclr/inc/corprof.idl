@@ -836,6 +836,15 @@ typedef struct
     UINT32 reserved;
 } COR_PRF_EVENT_DATA;
 
+typedef enum _COR_PRF_HANDLE_TYPE
+{
+    COR_PRF_HANDLE_TYPE_WEAK    = 0x1,
+    COR_PRF_HANDLE_TYPE_STRONG  = 0x2,
+    COR_PRF_HANDLE_TYPE_PINNED  = 0x3,
+} COR_PRF_HANDLE_TYPE;
+
+typedef void** ObjectHandleID;
+
 /* -------------------------------------------------------------------------- *
  * Forward declarations
  * -------------------------------------------------------------------------- */
@@ -4213,6 +4222,27 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
                      COR_PRF_EVENT_DATA data[],
                 [in] LPCGUID            pActivityId,
                 [in] LPCGUID            pRelatedActivityId);
+}
+
+[
+    object,
+    uuid(6E6C7EE2-0701-4EC2-9D29-2E8733B66934),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo13 : ICorProfilerInfo12
+{
+    HRESULT CreateHandle(
+        [in]  ObjectID object,
+        [in]  COR_PRF_HANDLE_TYPE type,
+        [out] ObjectHandleID* pHandle);
+
+    HRESULT DestroyHandle(
+        [in] ObjectHandleID handle);
+
+    HRESULT GetObjectIDFromHandle(
+        [in] ObjectHandleID handle,
+        [out] ObjectID* pObject);
 }
 
 /*

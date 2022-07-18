@@ -1364,9 +1364,9 @@ namespace System.Globalization
                 Console.Write($"0x{(GeoId >> 24) & 0xff:x2}, 0x{(GeoId >> 16) & 0xff:x2},  0x{(GeoId >> 8) & 0xff:x2}, 0x{GeoId & 0xff:x2}, ");
                 Console.Write($"0x{DigitList & 0xff:x2}, ");
 
-                var Indicies = SpecificCultureIndex << 12 | ConsoleLocaleIndex;
+                var Indices = SpecificCultureIndex << 12 | ConsoleLocaleIndex;
 
-                Console.Write($"0x{(Indicies >> 16) & 0xff:x2},  0x{(Indicies >> 8) & 0xff:x2}, 0x{Indicies & 0xff:x2}, ");
+                Console.Write($"0x{(Indices >> 16) & 0xff:x2},  0x{(Indices >> 8) & 0xff:x2}, 0x{Indices & 0xff:x2}, ");
                 Console.Write($" // {i / NUMERIC_LOCALE_DATA_COUNT_PER_ROW,-4} - {cultures[i / NUMERIC_LOCALE_DATA_COUNT_PER_ROW]}");
                 Console.WriteLine();
             }

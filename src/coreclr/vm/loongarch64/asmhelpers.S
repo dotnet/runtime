@@ -672,7 +672,7 @@ LOCAL_LABEL(Success):
     blt $t4, $zero, LOCAL_LABEL(Promote)
 
     ld.d  $t4, $t1, ResolveCacheElem__target    // get the ImplTarget
-    jirl  $r0, $t4, 0                // branch to interface implemenation target
+    jirl  $r0, $t4, 0                // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
                           // Move this entry to head postion of the chain

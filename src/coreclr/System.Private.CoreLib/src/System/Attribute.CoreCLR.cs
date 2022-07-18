@@ -607,7 +607,7 @@ namespace System
 
         public static Attribute? GetCustomAttribute(ParameterInfo element, Type attributeType, bool inherit)
         {
-            // Returns an Attribute of base class/inteface attributeType on the ParameterInfo or null if none exists.
+            // Returns an Attribute of base class/interface attributeType on the ParameterInfo or null if none exists.
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 
@@ -679,7 +679,7 @@ namespace System
 
         public static Attribute? GetCustomAttribute(Module element, Type attributeType, bool inherit)
         {
-            // Returns an Attribute of base class/inteface attributeType on the Module or null if none exists.
+            // Returns an Attribute of base class/interface attributeType on the Module or null if none exists.
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 
@@ -748,7 +748,7 @@ namespace System
 
         public static Attribute? GetCustomAttribute(Assembly element, Type attributeType, bool inherit)
         {
-            // Returns an Attribute of base class/inteface attributeType on the Assembly or null if none exists.
+            // Returns an Attribute of base class/interface attributeType on the Assembly or null if none exists.
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 

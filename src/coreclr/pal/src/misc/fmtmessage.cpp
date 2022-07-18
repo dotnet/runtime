@@ -91,7 +91,7 @@ Function :
     FMTMSG__watoi
 
     Converts a wide string repersentation of an integer number
-    into a interger number.
+    into a integer number.
 
     Returns a integer number, or 0 on failure. 0 is not a valid number
     for FormatMessage inserts.

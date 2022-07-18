@@ -2331,7 +2331,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
         assert(asgNode->OperIs(GT_ASG));
 
-        // We are now commited to removing the store.
+        // We are now committed to removing the store.
         *pStoreRemoved = true;
 
         // Check for side effects

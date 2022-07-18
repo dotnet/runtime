@@ -556,7 +556,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     }
 
 #ifndef TARGET_X86
-    // Note: the EH subsystem will handle reseting the frame chain and setting
+    // Note: the EH subsystem will handle resetting the frame chain and setting
     // the correct GC mode on exception.
     pFrame->Pop(pThread);
     pThread->EnablePreemptiveGC();

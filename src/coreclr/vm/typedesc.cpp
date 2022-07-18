@@ -594,7 +594,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
 //                 dependencies - the root caller must handle this.
 //
 //
-//   pfBailed - if we or one of our depedencies bails early due to cyclic dependencies, we
+//   pfBailed - if we or one of our dependencies bails early due to cyclic dependencies, we
 //              must set *pfBailed to TRUE. Otherwise, we must *leave it unchanged* (thus, the
 //              boolean acts as a cumulative OR.)
 //

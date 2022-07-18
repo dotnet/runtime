@@ -151,7 +151,7 @@ Some parts of our build process need some native components that are built for t
 - Crossgen2 JIT tools
 - Diagnostic libraries
 
-The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the current build, such as during the clr.nativecorelib stage. These tools are automatically built when using the `./build.cmd` or `./build.sh` scripts at the root of the repo to build any of the CoreCLR native files, but they are not automatically built when using the `build-runtime.cmd/sh` scripts. To build these tools, you need to pass the `-hostarch` flag with the architecture of the host machine and the `-component crosscomponents` flag to specify that you only want to build the cross-targetting tools. For example:
+The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the current build, such as during the clr.nativecorelib stage. These tools are automatically built when using the `./build.cmd` or `./build.sh` scripts at the root of the repo to build any of the CoreCLR native files, but they are not automatically built when using the `build-runtime.cmd/sh` scripts. To build these tools, you need to pass the `-hostarch` flag with the architecture of the host machine and the `-component crosscomponents` flag to specify that you only want to build the cross-targeting tools. For example:
 
 ```
 ./src/coreclr/build-runtime.sh -arm -hostarch x64 -component crosscomponents -cmakeargs  -DCLR_CROSS_COMPONENTS_BUILD=1

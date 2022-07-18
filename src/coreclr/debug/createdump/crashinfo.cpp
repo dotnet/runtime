@@ -241,7 +241,7 @@ GetHResultString(HRESULT hr)
             return "Invalid argument";
         case E_OUTOFMEMORY:
             return "Out of memory";
-        case CORDBG_E_UNCOMPATIBLE_PLATFORMS:
+        case CORDBG_E_INCOMPATIBLE_PLATFORMS:
             return "The operation failed because debuggee and debugger are on incompatible platforms";
         case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
             return "The debuggee memory space does not have the expected debugging export table";
@@ -856,7 +856,7 @@ GetDirectory(const std::string& fileName)
 }
 
 //
-// Formats a std::string with printf syntax. The final formated string is limited
+// Formats a std::string with printf syntax. The final formatted string is limited
 // to MAX_LONGPATH (1024) chars. Returns an empty string on any error.
 //
 std::string

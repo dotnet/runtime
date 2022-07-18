@@ -1274,7 +1274,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void UnintializedArgumentList()
+        public void UninitializedArgumentList()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             Assert.Equal(0, psi.ArgumentList.Count);

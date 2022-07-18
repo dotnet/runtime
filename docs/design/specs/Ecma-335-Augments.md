@@ -725,7 +725,7 @@ operations.
 T Exponential<T, TFloat>(T exponent) where
     T : IArithmetic<T>,
     T : IMultiplicationBy<T, TFloat>
-        
+
 {
     T result = T.One();
     T powerOfValue = exponent;
@@ -852,7 +852,7 @@ class Base
 
 class Derived : Base
 {
-  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the 
+  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the
   // return types are not the same. However, the return types are compatible in a covariant fashion.
   public override string VirtualMethod() { return null;}
 }
@@ -881,7 +881,7 @@ Edit the first paragraph "The .override directive specifies that a virtual metho
 
 ### II.10.3.4 Impact of overrides on derived classes
 Add a third bullet
-"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overriden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
+"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overridden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
 
 
 ```
@@ -890,8 +890,8 @@ Add a third bullet
 }
 .class B extends A {
   .method virtual DerivedRetType VirtualFunction() {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
-    .override A.VirtualFuncion 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFuncion
     ...
   }
 }
@@ -905,8 +905,8 @@ Add a third bullet
 .class D extends C
 {
   .method virtual DerivedRetTypeNotDerivedFromMoreDerivedRetType VirtualFunction() {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
-    .override A.VirtualFuncion 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFuncion
     ...
   }
 }
