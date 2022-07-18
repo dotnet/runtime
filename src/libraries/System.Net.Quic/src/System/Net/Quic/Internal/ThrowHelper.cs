@@ -3,6 +3,7 @@
 
 using Microsoft.Quic;
 using System.Security.Authentication;
+using System.Net.Security;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
@@ -89,7 +90,7 @@ internal static class ThrowHelper
             //
             if ((uint)status >= (uint)QUIC_STATUS_CLOSE_NOTIFY && (uint)status < (uint)QUIC_STATUS_CLOSE_NOTIFY + 256)
             {
-                int alert = status - QUIC_STATUS_CLOSE_NOTIFY;
+                TlsAlertMessage alert = (TlsAlertMessage)(status - QUIC_STATUS_CLOSE_NOTIFY);
                 return new AuthenticationException(SR.Format(SR.net_auth_tls_alert, alert));
             }
 
