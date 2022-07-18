@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -292,6 +293,57 @@ namespace System.Net.Quic.Tests
                     await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverStream.ReadAsync(new byte[1]));
                     await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverStream.WriteAsync(new byte[1]));
                 }, listenerOptions: listenerOptions);
+        }
+
+        [Fact]
+        public async Task AcceptAsync_NoCapacity_Throws()
+        {
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientConnection.AcceptInboundStreamAsync());
+                },
+                _ => Task.CompletedTask);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Connect_PeerCertificateDisposed(bool useGetter)
+        {
+            await using QuicListener listener = await CreateQuicListener();
+
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            X509Certificate? peerCertificate = null;
+            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                peerCertificate = certificate;
+                return true;
+            };
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+            ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
+
+            await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            await using QuicConnection serverConnection = acceptTask.Result;
+            QuicConnection clientConnection = connectTask.Result;
+
+            Assert.NotNull(peerCertificate);
+            if (useGetter)
+            {
+                Assert.Equal(peerCertificate, clientConnection.RemoteCertificate);
+            }
+            // Dispose connection, if we touched RemoteCertificate (useGetter), the cert should not be disposed; otherwise, it should be disposed.
+            await clientConnection.DisposeAsync();
+            if (useGetter)
+            {
+                Assert.NotEqual(IntPtr.Zero, peerCertificate.Handle);
+            }
+            else
+            {
+                Assert.Equal(IntPtr.Zero, peerCertificate.Handle);
+            }
+            peerCertificate.Dispose();
         }
     }
 }
