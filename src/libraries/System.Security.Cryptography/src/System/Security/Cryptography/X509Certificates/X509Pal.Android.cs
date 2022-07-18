@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
@@ -43,7 +44,8 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.Dsa:
                         if (certificatePal != null)
                         {
-                            var handle = new SafeDsaHandle(GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.DSA));
+                            var handle = new SafeDsaHandle();
+                            Marshal.InitHandle(handle, GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.DSA));
                             return new DSAImplementation.DSAAndroid(handle);
                         }
                         else
@@ -53,7 +55,8 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.Rsa:
                         if (certificatePal != null)
                         {
-                            var handle = new SafeRsaHandle(GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.RSA));
+                            var handle = new SafeRsaHandle();
+                            Marshal.InitHandle(handle, GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.RSA));
                             return new RSAImplementation.RSAAndroid(handle);
                         }
                         else
@@ -111,7 +114,9 @@ namespace System.Security.Cryptography.X509Certificates
 
             private static SafeEcKeyHandle DecodeECPublicKey(ICertificatePal pal)
             {
-                return new SafeEcKeyHandle(GetPublicKey(pal, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC));
+                var handle = new SafeEcKeyHandle();
+                Marshal.InitHandle(handle, GetPublicKey(pal, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC));
+                return handle;
             }
 
             private static IntPtr GetPublicKey(ICertificatePal pal, Interop.AndroidCrypto.PAL_KeyAlgorithm algorithm)
