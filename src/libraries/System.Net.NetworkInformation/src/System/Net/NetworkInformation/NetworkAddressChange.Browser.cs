@@ -22,6 +22,9 @@ namespace System.Net.NetworkInformation
         {
             add
             {
+                if (!BrowserNetworkInterfaceInterop.IsApiAvailable())
+                    throw new System.PlatformNotSupportedException(System.SR.SystemNetNetworkInformation_PlatformNotSupported);
+
                 if (s_networkAvailabilityChanged == null)
                     BrowserNetworkInterfaceInterop.SetChangeListener(OnNetworkAvailabilityChanged);
 
@@ -29,6 +32,9 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
+                if (!BrowserNetworkInterfaceInterop.IsApiAvailable())
+                    throw new System.PlatformNotSupportedException(System.SR.SystemNetNetworkInformation_PlatformNotSupported);
+
                 s_networkAvailabilityChanged -= value;
 
                 if (s_networkAvailabilityChanged == null)

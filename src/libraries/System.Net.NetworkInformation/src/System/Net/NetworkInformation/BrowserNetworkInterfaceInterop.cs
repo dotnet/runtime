@@ -7,6 +7,9 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class BrowserNetworkInterfaceInterop
     {
+        [JSImport("INTERNAL.network_wasm_is_online_api_available")]
+        public static partial bool IsApiAvailable();
+
         [JSImport("INTERNAL.network_wasm_is_online")]
         public static partial bool IsOnline();
 

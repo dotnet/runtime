@@ -9,6 +9,12 @@ namespace System.Net.NetworkInformation
         public static int IPv6LoopbackInterfaceIndex => throw new PlatformNotSupportedException();
         public static int LoopbackInterfaceIndex => throw new PlatformNotSupportedException();
 
-        public static bool GetIsNetworkAvailable() => BrowserNetworkInterfaceInterop.IsOnline();
+        public static bool GetIsNetworkAvailable()
+        {
+            if (!BrowserNetworkInterfaceInterop.IsApiAvailable())
+                throw new System.PlatformNotSupportedException(System.SR.SystemNetNetworkInformation_PlatformNotSupported);
+
+            return BrowserNetworkInterfaceInterop.IsOnline();
+        }
     }
 }

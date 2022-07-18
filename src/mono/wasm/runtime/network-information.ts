@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 export function network_wasm_is_online(): boolean {
-    return globalThis.navigator && globalThis.navigator.onLine;
+    return globalThis.navigator.onLine;
 }
 
 let change_listener: ((onLine: boolean) => void) | null = null;
@@ -33,4 +33,11 @@ function network_wasm_available_changed() {
     if (change_listener) {
         change_listener(network_wasm_is_online());
     }
+}
+
+export function network_wasm_is_online_api_available(): boolean {
+    return globalThis.navigator 
+        && globalThis.window 
+        && "onLine" in globalThis.navigator 
+        && "addEventListener" in globalThis.window;
 }

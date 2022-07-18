@@ -18,6 +18,16 @@ namespace System.Net.NetworkInformation.Tests
             NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        public void NetworkAvailabilityChanged_FailsOnNotSupportedPlatform()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
+                NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
+            });
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         public void NetworkAvailabilityChanged_JustRemove_Success()
         {
