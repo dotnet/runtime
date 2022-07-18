@@ -10985,12 +10985,6 @@ public:
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
             case GT_SELECT:
-            case GT_CEQ:
-            case GT_CNE:
-            case GT_CLT:
-            case GT_CLE:
-            case GT_CGE:
-            case GT_CGT:
             {
                 GenTreeConditional* const conditional = node->AsConditional();
 

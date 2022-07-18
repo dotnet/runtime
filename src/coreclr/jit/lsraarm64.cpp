@@ -794,13 +794,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_SELECT:
             assert(dstCount == 1);
-            FALLTHROUGH;
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             srcCount = BuildOperandUses(tree->AsConditional()->gtCond);
             srcCount += BuildOperandUses(tree->AsConditional()->gtOp1);
             srcCount += BuildOperandUses(tree->AsConditional()->gtOp2);

@@ -1088,7 +1088,7 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsConditionalCompare() || OperIsLong() ||
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() ||
                    OperIsSimdOrHWintrinsic() || IsCnsVec());
             return false;
         }
@@ -1355,24 +1355,12 @@ public:
 
     static bool OperIsConditional(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_SELECT, GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
-        return (GT_SELECT <= gtOper) && (gtOper <= GT_CGT);
+        return (GT_SELECT == gtOper);
     }
 
     bool OperIsConditional() const
     {
         return OperIsConditional(OperGet());
-    }
-
-    static bool OperIsConditionalCompare(genTreeOps gtOper)
-    {
-        static_assert_no_msg(AreContiguous(GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
-        return (GT_CEQ <= gtOper) && (gtOper <= GT_CGT);
-    }
-
-    bool OperIsConditionalCompare() const
-    {
-        return OperIsConditionalCompare(OperGet());
     }
 
     static bool OperIsCC(genTreeOps gtOper)
@@ -8232,9 +8220,9 @@ public:
 
     static GenCondition FromRelop(GenTree* relop)
     {
-        assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
+        assert(relop->OperIsCompare());
 
-        if (relop->OperIsCompare() && varTypeIsFloating(relop->gtGetOp1()))
+        if (varTypeIsFloating(relop->gtGetOp1()))
         {
             return FromFloatRelop(relop);
         }
@@ -8269,30 +8257,17 @@ public:
 
     static GenCondition FromIntegralRelop(GenTree* relop)
     {
-        if (relop->OperIsConditionalCompare())
-        {
-            assert(!varTypeIsFloating(relop->AsConditional()->gtOp1) &&
-                   !varTypeIsFloating(relop->AsConditional()->gtOp2));
-        }
-        else
-        {
-            assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
-        }
-
+        assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
         return FromIntegralRelop(relop->OperGet(), relop->IsUnsigned());
     }
 
     static GenCondition FromIntegralRelop(genTreeOps oper, bool isUnsigned)
     {
-        assert(GenTree::OperIsCompare(oper) || GenTree::OperIsConditionalCompare(oper));
+        assert(GenTree::OperIsCompare(oper));
 
         // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
         unsigned code;
-        if (oper >= GT_CEQ)
-        {
-            code = oper - GT_CEQ;
-        }
-        else if (oper >= GT_TEST_EQ)
+        if (oper >= GT_TEST_EQ)
         {
             code = oper - GT_TEST_EQ;
         }

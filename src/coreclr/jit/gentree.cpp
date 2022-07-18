@@ -5791,12 +5791,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             break;
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             level  = gtSetEvalOrder(tree->AsConditional()->gtCond);
             costEx = tree->AsConditional()->gtCond->GetCostEx();
             costSz = tree->AsConditional()->gtCond->GetCostSz();
@@ -6205,12 +6199,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         }
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
         {
             GenTreeConditional* const conditional = this->AsConditional();
             if (operand == conditional->gtCond)
@@ -8760,12 +8748,6 @@ GenTree* Compiler::gtCloneExpr(
             break;
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             copy = new (this, oper)
                 GenTreeConditional(oper, tree->TypeGet(),
                                    gtCloneExpr(tree->AsConditional()->gtCond, addFlags, deepVarNum, deepVarVal),
@@ -9432,12 +9414,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             m_edge = &m_node->AsConditional()->gtCond;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
@@ -10470,12 +10446,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_TEST_EQ:
             case GT_TEST_NE:
             case GT_SELECT:
-            case GT_CEQ:
-            case GT_CNE:
-            case GT_CLT:
-            case GT_CLE:
-            case GT_CGE:
-            case GT_CGT:
                 if (tree->gtFlags & GTF_RELOP_NAN_UN)
                 {
                     printf("N");
@@ -12122,12 +12092,6 @@ void Compiler::gtDispTree(GenTree*     tree,
             break;
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             gtDispCommonEndLine(tree);
 
             if (!topOnly)

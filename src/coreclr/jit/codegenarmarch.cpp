@@ -369,12 +369,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef TARGET_ARM64
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             genCodeForSelect(treeNode->AsConditional());
             break;
 #endif

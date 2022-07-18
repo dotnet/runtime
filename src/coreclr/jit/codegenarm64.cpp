@@ -10539,51 +10539,27 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
 //
 insCond CodeGen::InsCondForCompareOp(GenTree* tree)
 {
-    assert(tree->OperIsCompare() || tree->OperIsConditionalCompare());
+    assert(tree->OperIsCompare());
 
-    if (tree->OperIsCompare())
+    switch (tree->AsOp()->OperGet())
     {
-        switch (tree->AsOp()->OperGet())
-        {
-            case GT_EQ:
-            case GT_TEST_EQ:
-                return INS_COND_EQ;
-            case GT_NE:
-            case GT_TEST_NE:
-                return INS_COND_NE;
-            case GT_GE:
-                return INS_COND_GE;
-            case GT_GT:
-                return INS_COND_GT;
-            case GT_LT:
-                return INS_COND_LT;
-            case GT_LE:
-                return INS_COND_LE;
-            default:
-                assert(false && "Invalid condition");
-                return INS_COND_EQ;
-        }
-    }
-    else
-    {
-        switch (tree->AsConditional()->OperGet())
-        {
-            case GT_CEQ:
-                return INS_COND_EQ;
-            case GT_CNE:
-                return INS_COND_NE;
-            case GT_CGE:
-                return INS_COND_GE;
-            case GT_CGT:
-                return INS_COND_GT;
-            case GT_CLT:
-                return INS_COND_LT;
-            case GT_CLE:
-                return INS_COND_LE;
-            default:
-                assert(false && "Invalid condition");
-                return INS_COND_EQ;
-        }
+        case GT_EQ:
+        case GT_TEST_EQ:
+            return INS_COND_EQ;
+        case GT_NE:
+        case GT_TEST_NE:
+            return INS_COND_NE;
+        case GT_GE:
+            return INS_COND_GE;
+        case GT_GT:
+            return INS_COND_GT;
+        case GT_LT:
+            return INS_COND_LT;
+        case GT_LE:
+            return INS_COND_LE;
+        default:
+            assert(false && "Invalid condition");
+            return INS_COND_EQ;
     }
 }
 

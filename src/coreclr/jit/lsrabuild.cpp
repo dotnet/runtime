@@ -3154,14 +3154,6 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // GT_CAST and GT_LSH for ADD with sign/zero extension
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
-    if (node->OperIsConditionalCompare())
-    {
-        // A conditional compare may be contained due to If Conversion.
-        int uses = BuildOperandUses(node->AsConditional()->gtCond, candidates);
-        uses += BuildOperandUses(node->AsConditional()->gtOp1, candidates);
-        uses += BuildOperandUses(node->AsConditional()->gtOp2, candidates);
-        return uses;
-    }
 #endif
 
     return 0;

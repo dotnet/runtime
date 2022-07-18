@@ -4394,12 +4394,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         }
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
         {
             GenTreeConditional* const cond = this->AsConditional();
             if (visitor(cond->gtCond) == VisitResult::Abort)

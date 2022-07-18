@@ -239,12 +239,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerJTrue(node->AsOp());
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             ContainCheckSelect(node->AsConditional());
             break;
 
@@ -6826,12 +6820,6 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
 
         case GT_SELECT:
-        case GT_CEQ:
-        case GT_CNE:
-        case GT_CLT:
-        case GT_CLE:
-        case GT_CGE:
-        case GT_CGT:
             ContainCheckSelect(node->AsConditional());
             break;
 
