@@ -219,7 +219,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NonBlittableStructPinnableMarshalerPassByRef()
+        public void NonBlittableStructPinnableMarshallerPassByRef()
         {
             string str = "Hello world!";
             string expected = ReverseChars(str);
