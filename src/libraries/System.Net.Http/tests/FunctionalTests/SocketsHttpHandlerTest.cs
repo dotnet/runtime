@@ -2307,10 +2307,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static bool IsAndroidX64OrX86 => PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
-
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", typeof(SocketsHttpHandler_Http2_TrailingHeaders_Test), nameof(IsAndroidX64OrX86))]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             const int MaxConcurrentStreams = 2;
