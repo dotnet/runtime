@@ -531,3 +531,47 @@ function parseProcessResumeRuntime(cmd: BinaryProtocolCommand & { commandSet: Co
     const command: ProcessCommandResumeRuntime = { command_set: "Process", command: "ResumeRuntime" };
     return { success: true, result: command };
 }
+
+const enum ServerCommandId {
+    OK = 0,
+    Error = 0xFF,
+}
+
+const Serializer = {
+    advancePos(pos: { pos: number }, count: number): void {
+        pos.pos += count;
+    },
+    serializeMagic(buf: Uint8Array, pos: { pos: number }): void {
+        buf.set(Parser.DOTNET_IPC_V1, pos.pos);
+        Serializer.advancePos(pos, Parser.DOTNET_IPC_V1.byteLength);
+    },
+    serializeUint8(buf: Uint8Array, pos: { pos: number }, value: number): void {
+        buf[pos.pos++] = value;
+    },
+    serializeUint16(buf: Uint8Array, pos: { pos: number }, value: number): void {
+        buf[pos.pos++] = value & 0xFF;
+        buf[pos.pos++] = (value >> 8) & 0xFF;
+    },
+    serializeHeader(buf: Uint8Array, pos: { pos: number }, commandSet: CommandSetId, command: ServerCommandId, len: number): void {
+        Serializer.serializeMagic(buf, pos);
+        Serializer.serializeUint16(buf, pos, len);
+        Serializer.serializeUint8(buf, pos, commandSet);
+        Serializer.serializeUint8(buf, pos, command);
+        Serializer.serializeUint16(buf, pos, 0); // reserved
+    }
+};
+
+export function createBinaryCommandOKReply(payload?: Uint8Array): Uint8Array {
+    const fullHeaderSize = Parser.MinimalHeaderSize // magic, len
+        + 2 // commandSet, command
+        + 2; // reserved ;
+    const len = fullHeaderSize + (payload !== undefined ? payload.byteLength : 0); // magic, size, commandSet, command, reserved
+    const buf = new Uint8Array(len);
+    const pos = { pos: 0 };
+    Serializer.serializeHeader(buf, pos, CommandSetId.Server, ServerCommandId.OK, len);
+    if (payload !== undefined) {
+        buf.set(payload, pos.pos);
+        Serializer.advancePos(pos, payload.byteLength);
+    }
+    return buf;
+}

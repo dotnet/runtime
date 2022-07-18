@@ -25,6 +25,7 @@ import {
     isEventPipeCommandCollectTracing2,
     isEventPipeCommandStopTracing,
     isProcessCommandResumeRuntime,
+    EventPipeCommandCollectTracing2,
 } from "./protocol-client-commands";
 import { makeEventPipeStreamingSession } from "./streaming-session";
 import parseMockCommand from "./mock-command-parser";
@@ -36,6 +37,7 @@ import {
     isBinaryProtocolCommand,
     parseBinaryProtocolCommand,
     ParseClientCommandResult,
+    createBinaryCommandOKReply,
 } from "./protocol-socket";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
@@ -239,33 +241,52 @@ class DiagnosticServerImpl implements DiagnosticServer {
     // dispatch EventPipe commands received from the diagnostic client
     async dispatchEventPipeCommand(ws: WebSocket | MockRemoteSocket, cmd: EventPipeClientCommandBase): Promise<void> {
         if (isEventPipeCommandCollectTracing2(cmd)) {
-            const session = await makeEventPipeStreamingSession(ws, cmd);
-            this.postClientReply(ws, "OK", session.sessionID);
-            console.debug("created session, now streaming: ", session);
-            cwraps.mono_wasm_event_pipe_session_start_streaming(session.sessionID);
+            await this.collectTracingEventPipe(ws, cmd);
         } else if (isEventPipeCommandStopTracing(cmd)) {
-            await this.stopEventPipe(cmd.sessionID);
+            await this.stopEventPipe(ws, cmd.sessionID);
         } else {
             console.warn("unknown EventPipe command: ", cmd);
         }
     }
 
-    postClientReply(ws: WebSocket | MockRemoteSocket, status: "OK", rest?: string | number): void {
-        ws.send(JSON.stringify([status, rest]));
+    postClientReplyOK(ws: WebSocket | MockRemoteSocket, payload?: Uint8Array): void {
+        // FIXME: send a binary response for non-mock sessions!
+        ws.send(createBinaryCommandOKReply(payload));
     }
 
-    async stopEventPipe(sessionID: EventPipeSessionIDImpl): Promise<void> {
+    async stopEventPipe(ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
         console.debug("stopEventPipe", sessionID);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
+        // we might send OK before the session is actually stopped since the websocket is async
+        // but the client end should be robust to that.
+        this.postClientReplyOK(ws);
+    }
+
+    async collectTracingEventPipe(ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<void> {
+        const session = await makeEventPipeStreamingSession(ws, cmd);
+        const sessionIDbuf = new Uint8Array(8); // 64 bit
+        sessionIDbuf[0] = session.sessionID & 0xFF;
+        sessionIDbuf[1] = (session.sessionID >> 8) & 0xFF;
+        sessionIDbuf[2] = (session.sessionID >> 16) & 0xFF;
+        sessionIDbuf[3] = (session.sessionID >> 24) & 0xFF;
+        // sessionIDbuf[4..7] is 0 because all our session IDs are 32-bit
+        this.postClientReplyOK(ws, sessionIDbuf);
+        console.debug("created session, now streaming: ", session);
+        cwraps.mono_wasm_event_pipe_session_start_streaming(session.sessionID);
     }
 
     // dispatch Process commands received from the diagnostic client
     async dispatchProcessCommand(ws: WebSocket | MockRemoteSocket, cmd: ProcessClientCommandBase): Promise<void> {
         if (isProcessCommandResumeRuntime(cmd)) {
-            this.resumeRuntime();
+            this.processResumeRuntime(ws);
         } else {
             console.warn("unknown Process command", cmd);
         }
+    }
+
+    processResumeRuntime(ws: WebSocket | MockRemoteSocket): void {
+        this.postClientReplyOK(ws);
+        this.resumeRuntime();
     }
 
     resumeRuntime(): void {
