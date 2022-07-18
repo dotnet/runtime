@@ -88,58 +88,6 @@ NoAbort:
 
     NESTED_END RhpWaitForGC, _TEXT
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// RhpReversePInvokeAttachOrTrapThread -- rare path for RhpPInvoke
-//
-//
-// INPUT: x9: address of reverse pinvoke frame
-//
-// PRESERVES: x0-x8 -- need to preserve these because the caller assumes they are not trashed
-//
-// TRASHES: none
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    NESTED_ENTRY RhpReversePInvokeAttachOrTrapThread, _TEXT, NoHandler
-
-        // FP and LR registers
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -0xA0            // Push down stack pointer and store FP and LR
-
-        // Need to save argument registers x0-x7 and the return buffer register x8 (twice for 16B alignment)
-        stp         x0, x1, [sp, #0x10]
-        stp         x2, x3, [sp, #0x20]
-        stp         x4, x5, [sp, #0x30]
-        stp         x6, x7, [sp, #0x40]
-        stp         x8, x8, [sp, #0x50]
-
-        // Save float argument registers as well since they are volatile
-        stp         d0, d1, [sp, #0x60]
-        stp         d2, d3, [sp, #0x70]
-        stp         d4, d5, [sp, #0x80]
-        stp         d6, d7, [sp, #0x90]
-
-        mov         x0, x9         // passing reverse pinvoke frame pointer in x0
-        bl          RhpReversePInvokeAttachOrTrapThread2
-
-        // Restore floating point registers
-        ldp         d0, d1, [sp, #0x60]
-        ldp         d2, d3, [sp, #0x70]
-        ldp         d4, d5, [sp, #0x80]
-        ldp         d6, d7, [sp, #0x90]
-
-        // Restore the argument registers
-        ldp         x0, x1, [sp, #0x10]
-        ldp         x2, x3, [sp, #0x20]
-        ldp         x4, x5, [sp, #0x30]
-        ldp         x6, x7, [sp, #0x40]
-        ldr         x8, [sp, #0x50]
-
-        // Restore FP and LR registers, and free the allocated stack block
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0xA0
-        EPILOG_RETURN
-
-    NESTED_END RhpReversePInvokeAttachOrTrapThread, _TEXT
-
 //
 // RhpPInvoke
 //

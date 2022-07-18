@@ -1395,12 +1395,6 @@ COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
     return PalGetCurrentThreadIdForLogging();
 }
 
-// Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
-EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)
-{
-    ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
-    pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
-}
 
 //
 // PInvoke
@@ -1413,7 +1407,7 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvoke, (ReversePInvokeFrame * pFrame))
     if (pCurThread->InlineTryFastReversePInvoke(pFrame))
         return;
 
-    RhpReversePInvokeAttachOrTrapThread2(pFrame);
+    pCurThread->ReversePInvokeAttachOrTrapThread(pFrame);
 }
 
 COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame * pFrame))

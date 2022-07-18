@@ -69,30 +69,3 @@ NoAbort
         NESTED_END RhpWaitForGC
 
         INLINE_GETTHREAD_CONSTANT_POOL
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpReversePInvokeAttachOrTrapThread -- rare path for RhpPInvoke
-;;
-;;
-;; INPUT: r4: address of reverse pinvoke frame
-;;
-;; TRASHES: none
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        NESTED_ENTRY RhpReversePInvokeAttachOrTrapThread
-
-        PROLOG_PUSH {r0-r4,lr}     ; Need to save argument registers r0-r3 and lr, r4 is just for alignment
-        PROLOG_VPUSH {d0-d7}       ; Save float argument registers as well since they're volatile
-
-        mov         r0, r4         ; passing reverse pinvoke frame pointer in r0
-        bl          RhpReversePInvokeAttachOrTrapThread2
-
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP  {r0-r4,pc}
-
-        NESTED_END RhpReversePInvokeTrapThread
-
-
-        end

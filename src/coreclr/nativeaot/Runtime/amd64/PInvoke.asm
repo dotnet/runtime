@@ -76,55 +76,6 @@ NESTED_END RhpWaitForGC, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpReversePInvokeAttachOrTrapThread
-;;
-;;
-;; INCOMING:  RAX -- address of reverse pinvoke frame
-;;
-;; PRESERVES: RCX, RDX, R8, R9 -- need to preserve these because the caller assumes they aren't trashed
-;;
-;; TRASHES:   RAX, R10, R11
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpReversePInvokeAttachOrTrapThread, _TEXT
-        alloc_stack     88h     ; alloc scratch area and frame
-
-        ; save the integer arg regs
-        save_reg_postrsp        rcx, (20h + 0*8)
-        save_reg_postrsp        rdx, (20h + 1*8)
-        save_reg_postrsp        r8,  (20h + 2*8)
-        save_reg_postrsp        r9,  (20h + 3*8)
-
-        ; save the FP arg regs
-        save_xmm128_postrsp     xmm0, (20h + 4*8 + 0*10h)
-        save_xmm128_postrsp     xmm1, (20h + 4*8 + 1*10h)
-        save_xmm128_postrsp     xmm2, (20h + 4*8 + 2*10h)
-        save_xmm128_postrsp     xmm3, (20h + 4*8 + 3*10h)
-
-        END_PROLOGUE
-
-        mov         rcx, rax        ; rcx <- reverse pinvoke frame
-        call        RhpReversePInvokeAttachOrTrapThread2
-
-        movdqa      xmm0, [rsp + (20h + 4*8 + 0*10h)]
-        movdqa      xmm1, [rsp + (20h + 4*8 + 1*10h)]
-        movdqa      xmm2, [rsp + (20h + 4*8 + 2*10h)]
-        movdqa      xmm3, [rsp + (20h + 4*8 + 3*10h)]
-
-        mov         rcx, [rsp + (20h + 0*8)]
-        mov         rdx, [rsp + (20h + 1*8)]
-        mov         r8,  [rsp + (20h + 2*8)]
-        mov         r9,  [rsp + (20h + 3*8)]
-
-        ;; epilog
-        add         rsp, 88h
-        ret
-
-NESTED_END RhpReversePInvokeAttachOrTrapThread, _TEXT
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; RhpPInvoke
 ;;
 ;; IN:  RCX: address of pinvoke frame
