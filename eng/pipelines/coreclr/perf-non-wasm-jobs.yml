@@ -392,7 +392,7 @@ jobs:
   #      extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
   #      extraStepsParameters:
   #        name: MonoRuntimePacks
-  
+
   # build maui app net7.0
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:

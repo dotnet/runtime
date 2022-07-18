@@ -155,21 +155,22 @@ jobs:
           displayName: 'Mono runtime'
 
     # Download wasm
-    - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
-       - template: /eng/pipelines/common/download-artifact-step.yml
-         parameters:
-           unpackFolder: $(librariesDownloadDir)/BrowserWasm
-           artifactFileName: BrowserWasm.zip
-           artifactName: BrowserWasm
-           displayName: BrowserWasm
-     - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
-       - template: /eng/pipelines/common/download-specific-artifact-step.yml
-         parameters:
-           unpackFolder: $(librariesDownloadDir)/BrowserWasm
-           artifactFileName: BrowserWasm.zip
-           artifactName: BrowserWasm
-           displayName: BrowserWasm
-           ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)/BrowserWasm
+            artifactFileName: BrowserWasm.zip
+            artifactName: BrowserWasm
+            displayName: BrowserWasm
+      - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
+        - template: /eng/pipelines/common/download-specific-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)/BrowserWasm
+            artifactFileName: BrowserWasm.zip
+            artifactName: BrowserWasm
+            displayName: BrowserWasm
+            ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
 
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
