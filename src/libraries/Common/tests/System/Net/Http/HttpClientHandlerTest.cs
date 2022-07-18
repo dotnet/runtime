@@ -201,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
             // browser doesn't support the server certificate custom validation callback
             var allowAllCertificates = PlatformDetection.IsNotBrowser;
 
-            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates);
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: allowAllCertificates);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };
