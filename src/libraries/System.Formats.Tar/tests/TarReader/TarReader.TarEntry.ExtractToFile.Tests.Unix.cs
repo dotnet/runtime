@@ -9,8 +9,8 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarReader_TarEntry_ExtractToFile_Tests : TarTestsBase
     {
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.tvOS & ~TestPlatforms.LinuxBionic)] // https://github.com/dotnet/runtime/issues/68360
-        [ConditionalFact(nameof(IsUnixButNotSuperUser))]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.tvOS)] // https://github.com/dotnet/runtime/issues/68360
+        [ConditionalFact(nameof(IsUnixButNotSuperUser), nameof(IsNotLinuxBionic))]
         public void SpecialFile_Unelevated_Throws()
         {
             using TempDirectory root = new TempDirectory();
