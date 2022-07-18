@@ -1456,6 +1456,16 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
     public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanaged, int numElements) => throw null;
 }
 ";
+                public const string OutGuaranteed = @"
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller<,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+{
+    public static TestCollection<T> AllocateContainerForManagedElementsFinally(byte* unmanaged, int length) => throw null;
+    public static System.Span<T> GetManagedValuesDestination(TestCollection<T> managed) => throw null;
+    public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanaged, int numElements) => throw null;
+}
+";
                 public const string DefaultIn = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>))]
 [ContiguousCollectionMarshaller]
@@ -1511,10 +1521,20 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
                     + TestCollection()
                     + Out;
 
+                public static string NativeToManagedFinallyOnlyOutParameter<T>() => NativeToManagedFinallyOnlyOutParameter(typeof(T).ToString());
+                public static string NativeToManagedFinallyOnlyOutParameter(string elementType) => CollectionOutParameter($"TestCollection<{elementType}>")
+                    + TestCollection()
+                    + OutGuaranteed;
+
                 public static string NativeToManagedOnlyReturnValue<T>() => NativeToManagedOnlyReturnValue(typeof(T).ToString());
                 public static string NativeToManagedOnlyReturnValue(string elementType) => CollectionReturnType($"TestCollection<{elementType}>")
                     + TestCollection()
                     + Out;
+
+                public static string NativeToManagedFinallyOnlyReturnValue<T>() => NativeToManagedFinallyOnlyReturnValue(typeof(T).ToString());
+                public static string NativeToManagedFinallyOnlyReturnValue(string elementType) => CollectionReturnType($"TestCollection<{elementType}>")
+                    + TestCollection()
+                    + OutGuaranteed;
 
                 public static string NestedMarshallerParametersAndModifiers<T>() => NestedMarshallerParametersAndModifiers(typeof(T).ToString());
                 public static string NestedMarshallerParametersAndModifiers(string elementType) => MarshalUsingCollectionCountInfoParametersAndModifiers($"TestCollection<{elementType}>")
@@ -1533,7 +1553,15 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
                     + NonBlittableElement
                     + ElementOut;
 
+                public static string NonBlittableElementNativeToManagedFinallyOnlyOutParameter => NativeToManagedFinallyOnlyOutParameter("Element")
+                    + NonBlittableElement
+                    + ElementOut;
+
                 public static string NonBlittableElementNativeToManagedOnlyReturnValue => NativeToManagedOnlyOutParameter("Element")
+                    + NonBlittableElement
+                    + ElementOut;
+
+                public static string NonBlittableElementNativeToManagedFinallyOnlyReturnValue => NativeToManagedFinallyOnlyOutParameter("Element")
                     + NonBlittableElement
                     + ElementOut;
 
@@ -1630,7 +1658,7 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
         public void FromManaged(TestCollection<T> managed) => throw null;
         public byte* ToUnmanaged() => throw null;
         public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;        
+        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;
     }
 }
 ";
@@ -1644,7 +1672,7 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
         public void FromManaged(TestCollection<T> managed) => throw null;
         public byte* ToUnmanaged() => throw null;
         public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;        
+        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;
         public ref byte GetPinnableReference() => throw null;
     }
 }
@@ -1659,7 +1687,7 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
         public void FromManaged(TestCollection<T> managed) => throw null;
         public byte* ToUnmanaged() => throw null;
         public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;        
+        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;
         public static ref byte GetPinnableReference(TestCollection<T> managed) => throw null;
     }
 }
@@ -1675,7 +1703,7 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
         public void FromManaged(TestCollection<T> managed, System.Span<TUnmanagedElement> buffer) => throw null;
         public byte* ToUnmanaged() => throw null;
         public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;        
+        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;
     }
 }
 ";
@@ -1712,6 +1740,20 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
     }
 }
 ";
+                public const string OutGuaranteed = @"
+[ContiguousCollectionMarshaller]
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller<,>.Out))]
+static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+{
+    public ref struct Out
+    {
+        public void FromUnmanaged(byte* value) => throw null;
+        public TestCollection<T> ToManagedFinally() => throw null;
+        public System.Span<T> GetManagedValuesDestination(int numElements) => throw null;
+        public System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) => throw null;
+    }
+}
+";
                 public const string DefaultIn = @"
 [ContiguousCollectionMarshaller]
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>.In))]
@@ -1722,7 +1764,7 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
         public void FromManaged(TestCollection<T> managed) => throw null;
         public byte* ToUnmanaged() => throw null;
         public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;        
+        public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() => throw null;
     }
 }
 ";
@@ -1780,10 +1822,20 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
                     + TestCollection()
                     + Out;
 
+                public static string NativeToManagedFinallyOnlyOutParameter<T>() => NativeToManagedFinallyOnlyOutParameter(typeof(T).ToString());
+                public static string NativeToManagedFinallyOnlyOutParameter(string elementType) => CollectionOutParameter($"TestCollection<{elementType}>")
+                    + TestCollection()
+                    + OutGuaranteed;
+
                 public static string NativeToManagedOnlyReturnValue<T>() => NativeToManagedOnlyReturnValue(typeof(T).ToString());
                 public static string NativeToManagedOnlyReturnValue(string elementType) => CollectionReturnType($"TestCollection<{elementType}>")
                     + TestCollection()
                     + Out;
+
+                public static string NativeToManagedFinallyOnlyReturnValue<T>() => NativeToManagedFinallyOnlyReturnValue(typeof(T).ToString());
+                public static string NativeToManagedFinallyOnlyReturnValue(string elementType) => CollectionReturnType($"TestCollection<{elementType}>")
+                    + TestCollection()
+                    + OutGuaranteed;
 
                 public static string NonBlittableElementParametersAndModifiers => DefaultMarshallerParametersAndModifiers("Element")
                     + NonBlittableElement
@@ -1797,7 +1849,15 @@ static unsafe class Marshaller<T, TUnmanagedElement> where TUnmanagedElement : u
                     + NonBlittableElement
                     + ElementOut;
 
+                public static string NonBlittableElementNativeToManagedFinallyOnlyOutParameter => NativeToManagedOnlyOutParameter("Element")
+                    + NonBlittableElement
+                    + ElementOut;
+
                 public static string NonBlittableElementNativeToManagedOnlyReturnValue => NativeToManagedOnlyOutParameter("Element")
+                    + NonBlittableElement
+                    + ElementOut;
+
+                public static string NonBlittableElementNativeToManagedFinallyOnlyReturnValue => NativeToManagedOnlyOutParameter("Element")
                     + NonBlittableElement
                     + ElementOut;
 

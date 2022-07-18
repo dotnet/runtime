@@ -69,6 +69,29 @@ namespace LibraryImportGenerator.IntegrationTests
                 public static partial List<BoolStruct> NegateBools(
                     [MarshalUsing(typeof(ListMarshaller<,>))] List<BoolStruct> boolStruct,
                     int numValues);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+                [return: MarshalUsing(typeof(ExceptionOnUnmarshal))]
+                public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ListGuaranteedUnmarshal<,>), ConstantElementCount = 1)] out List<int> ret);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+                [return: MarshalUsing(typeof(ExceptionOnUnmarshal))]
+                public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ListGuaranteedUnmarshal<,>), ConstantElementCount = 1)] out List<BoolStruct> ret);
+
+                [ContiguousCollectionMarshaller]
+                [CustomMarshaller(typeof(List<>), MarshalMode.ManagedToUnmanagedOut, typeof(ListGuaranteedUnmarshal<,>))]
+                public unsafe static class ListGuaranteedUnmarshal<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+                {
+                    public static bool AllocateContainerForManagedElementsFinallyCalled = false;
+                    public static List<T> AllocateContainerForManagedElementsFinally(byte* unmanaged, int length)
+                    {
+                        AllocateContainerForManagedElementsFinallyCalled = true;
+                        return null;
+                    }
+
+                    public static Span<T> GetManagedValuesDestination(List<T> managed) => default;
+                    public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* nativeValue, int numElements) => default;
+                }
             }
 
             public partial class Stateful
@@ -117,6 +140,33 @@ namespace LibraryImportGenerator.IntegrationTests
                 public static partial List<BoolStruct> NegateBools(
                     [MarshalUsing(typeof(ListMarshallerStateful<,>))] List<BoolStruct> boolStruct,
                     int numValues);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+                [return: MarshalUsing(typeof(ExceptionOnUnmarshal))]
+                public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ListGuaranteedUnmarshal<,>), ConstantElementCount = 1)] out List<int> ret);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+                [return: MarshalUsing(typeof(ExceptionOnUnmarshal))]
+                public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ListGuaranteedUnmarshal<,>), ConstantElementCount = 1)] out List<BoolStruct> ret);
+
+                [ContiguousCollectionMarshaller]
+                [CustomMarshaller(typeof(List<>), MarshalMode.ManagedToUnmanagedOut, typeof(ListGuaranteedUnmarshal<,>.Marshaller))]
+                public unsafe static class ListGuaranteedUnmarshal<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+                {
+                    public struct Marshaller
+                    {
+                        public static bool ToManagedFinallyCalled = false;
+                        public List<T> ToManagedFinally()
+                        {
+                            ToManagedFinallyCalled = true;
+                            return null;
+                        }
+
+                        public Span<T> GetManagedValuesDestination(int length) => default;
+                        public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length) => default;
+                        public void FromUnmanaged(byte* value) { }
+                    }
+                }
             }
         }
     }
@@ -213,17 +263,16 @@ namespace LibraryImportGenerator.IntegrationTests
             }
         }
 
-        private static List<string> GetStringList()
+        [Fact]
+        public void BlittableElementCollection_GuaranteedUnmarshal()
         {
-            return new()
-            {
-                "ABCdef 123$%^",
-                "🍜 !! 🍜 !!",
-                "🌲 木 🔥 火 🌾 土 🛡 金 🌊 水" ,
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae posuere mauris, sed ultrices leo. Suspendisse potenti. Mauris enim enim, blandit tincidunt consequat in, varius sit amet neque. Morbi eget porttitor ex. Duis mattis aliquet ante quis imperdiet. Duis sit.",
-                string.Empty,
-                null
-            };
+            NativeExportsNE.Collections.Stateless.ListGuaranteedUnmarshal<int, int>.AllocateContainerForManagedElementsFinallyCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Collections.Stateless.GuaranteedUnmarshal(out List<int> _));
+            Assert.True(NativeExportsNE.Collections.Stateless.ListGuaranteedUnmarshal<int, int>.AllocateContainerForManagedElementsFinallyCalled);
+
+            NativeExportsNE.Collections.Stateful.ListGuaranteedUnmarshal<int, int>.Marshaller.ToManagedFinallyCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Collections.Stateful.GuaranteedUnmarshal(out List<int> _));
+            Assert.True(NativeExportsNE.Collections.Stateful.ListGuaranteedUnmarshal<int, int>.Marshaller.ToManagedFinallyCalled);
         }
 
         [Fact]
@@ -305,6 +354,18 @@ namespace LibraryImportGenerator.IntegrationTests
                 List<BoolStruct> result = NativeExportsNE.Collections.Stateful.NegateBools(list, list.Count);
                 Assert.Equal(expected, result);
             }
+        }
+
+        [Fact]
+        public void NonBlittableElementCollection_GuaranteedUnmarshal()
+        {
+            NativeExportsNE.Collections.Stateless.ListGuaranteedUnmarshal<BoolStruct, BoolStructMarshaller.BoolStructNative>.AllocateContainerForManagedElementsFinallyCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Collections.Stateless.GuaranteedUnmarshal(out List<BoolStruct> _));
+            Assert.True(NativeExportsNE.Collections.Stateless.ListGuaranteedUnmarshal<BoolStruct, BoolStructMarshaller.BoolStructNative>.AllocateContainerForManagedElementsFinallyCalled);
+
+            NativeExportsNE.Collections.Stateful.ListGuaranteedUnmarshal<BoolStruct, BoolStructMarshaller.BoolStructNative>.Marshaller.ToManagedFinallyCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Collections.Stateful.GuaranteedUnmarshal(out List<BoolStruct> _));
+            Assert.True(NativeExportsNE.Collections.Stateful.ListGuaranteedUnmarshal<BoolStruct, BoolStructMarshaller.BoolStructNative>.Marshaller.ToManagedFinallyCalled);
         }
 
         private static List<BoolStruct> GetBoolStructsToAnd(bool result) => new List<BoolStruct>

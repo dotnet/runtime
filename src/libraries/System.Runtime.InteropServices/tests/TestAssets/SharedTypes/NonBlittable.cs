@@ -98,6 +98,12 @@ namespace SharedTypes
         }
     }
 
+    [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(ExceptionOnUnmarshal))]
+    public static class ExceptionOnUnmarshal
+    {
+        public static int ConvertToManaged(int unmanaged) => throw new Exception();
+    }
+
     [NativeMarshalling(typeof(BoolStructMarshaller))]
     public struct BoolStruct
     {
