@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -14,18 +14,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NetTraceToMibcConverter.cs" />
-    <Compile Include="..\Common\CompilerCache.cs" />
-    <Compile Include="..\Common\ProxyFile.cs" />
-    <Compile Include="..\Common\FileCache.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
   
-  <!-- GetFilesToPackage assists to place `MonoAOTCompiler.dll` in a NuGet package in Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj for external use -->
+  <!-- GetFilesToPackage assists to place the task dlls in a pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
 
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />

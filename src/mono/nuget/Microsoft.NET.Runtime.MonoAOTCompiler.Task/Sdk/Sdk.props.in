@@ -2,6 +2,9 @@
   <PropertyGroup>
     <MonoAOTCompilerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <NetTraceToMibcConverterTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\NetTraceToMibcConverter.dll</NetTraceToMibcConverterTasksAssemblyPath>
+    <NetTraceToMibcConverterTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\NetTraceToMibcConverter.dll</NetTraceToMibcConverterTasksAssemblyPath>
   </PropertyGroup>
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="NetTraceToMibcConverter" AssemblyFile="$(NetTraceToMibcConverterTasksAssemblyPath)" />
 </Project>

@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)NetTraceToMibcConverterTask\NetTraceToMibcConverter.csproj" />
 
     <PackageFile Include="build\$(MSBuildProjectName).props" TargetPath="build" />
   </ItemGroup>

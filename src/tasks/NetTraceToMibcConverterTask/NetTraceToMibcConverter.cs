@@ -7,14 +7,12 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using System.Reflection.PortableExecutable;
 using System.Text.Json.Serialization;
 
 public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
@@ -55,8 +53,6 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
     /// </summary>
     [Output]
     public string? MibcProfilePath { get; set; }
-
-    private FileCache? _cache;
 
     private bool ProcessAndValidateArguments()
     {
@@ -99,21 +95,12 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
             Log.LogError(laee.Message);
             return false;
         }
-        /*finally
-        {
-             //if (_cache != null)
-             //{
-             //   _cache.Save(CacheFilePath!);
-             //}
-        }*/
     }
 
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
             return false;
-
-        _cache = new FileCache(CacheFilePath, Log);
 
         if (!ProcessNettrace(NetTracePath))
             return false;
@@ -124,20 +111,6 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
     private bool ProcessNettrace(string netTraceFile)
     {
         var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
-
-        if (_cache!.Enabled)
-        {
-            string hash = Utils.ComputeHash(netTraceFile);
-            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
-            {
-                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
-                return true;
-            }
-            else
-            {
-                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
-            }
-        }
 
         StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
         pgoArgsStr.Append($"create-mibc");

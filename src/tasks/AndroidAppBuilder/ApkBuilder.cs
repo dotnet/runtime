@@ -27,6 +27,7 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public bool ProfileAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
@@ -320,6 +321,11 @@ public class ApkBuilder
             {
                 defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
             }
+        }
+
+        if (ProfileAOT)
+        {
+            defines.AppendLine("add_definitions(-DPROFILE_AOT=1)");
         }
 
         if (!string.IsNullOrEmpty(DiagnosticPorts))
