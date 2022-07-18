@@ -844,18 +844,6 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-            Type[] interfaces = actual.GetInterfaces();
-            foreach (Type interfaceType in interfaces)
-            {
-                if (interfaceType.IsGenericType &&
-                    interfaceType.GetGenericTypeDefinition() == expected)
-                {
-                    return interfaceType;
-                }
-            }
-            return null;
-        }
-
         private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             var allProperties = new List<PropertyInfo>();
