@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <WasmMainJSPath>main.mjs</WasmMainJSPath>
+    <OutputType>Exe</OutputType>
+    <PublishTrimmed>true</PublishTrimmed>
+    <WasmEmitSymbolMap Condition="'$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_SampleProject>console.csproj</_SampleProject>
+  </PropertyGroup>
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="app-support.mjs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemTe="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferencutputAssembly="false" />
+  </ItemGroup>
+</Project>

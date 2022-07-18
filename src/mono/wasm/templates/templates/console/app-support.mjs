@@ -131,7 +131,7 @@ try {
     initRunArgs();
     mergeArguments();
 
-    createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+    createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
@@ -166,7 +166,7 @@ try {
             if (runArgs.runtimeArgs.length > 0)
                 INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
 
-            Object.assign(App, { MONO, BINDING, Module, runArgs });
+            Object.assign(App, { MONO, BINDING, IMPORTS, Module, runArgs });
 
             try {
                 if (App.main) {
@@ -190,4 +190,3 @@ try {
 catch (err) {
     set_exit_code(2, err);
 }
-
