@@ -26,7 +26,7 @@ export async function makeEventPipeStreamingSession(ws: WebSocket | MockRemoteSo
     // then take over the websocket connection
     const conn = takeOverSocket(ws);
     // and set up queue notifications
-    const queue = allocateQueue(queueAddr, conn.write.bind(conn));
+    const queue = allocateQueue(queueAddr, conn.write.bind(conn), conn.close.bind(conn));
     const options = {
         rundownRequested: cmd.requestRundown,
         bufferSizeInMB: cmd.circularBufferMB,

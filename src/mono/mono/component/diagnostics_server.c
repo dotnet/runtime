@@ -318,9 +318,6 @@ wasm_ipc_stream_read (void *self, uint8_t *buffer, uint32_t bytes_to_read, uint3
 static bool
 wasm_ipc_stream_write (void *self, const uint8_t *buffer, uint32_t bytes_to_write, uint32_t *bytes_written, uint32_t timeout_ms)
 {
-	EM_ASM({
-			console.log ("wasm_ipc_stream_write");
-		});
 	WasmIpcStream *stream = (WasmIpcStream *)self;
 	g_assert (timeout_ms == EP_INFINITE_WAIT); // pass it down to the queue if the timeout param starts being used
 	int r = queue_push_sync (&stream->queue, buffer, bytes_to_write, bytes_written);
@@ -330,19 +327,15 @@ wasm_ipc_stream_write (void *self, const uint8_t *buffer, uint32_t bytes_to_writ
 static bool
 wasm_ipc_stream_flush (void *self)
 {
-	EM_ASM({
-			console.log ("wasm_ipc_stream_flush");
-		});
 	return true;
 }
 static bool
 wasm_ipc_stream_close (void *self)
 {
-	// TODO: signal the writer to close
-	EM_ASM({
-			console.log ("wasm_ipc_stream_close");
-		});
-	return true;
+	WasmIpcStream *stream = (WasmIpcStream*)self;
+	// push the special buf value -1 to signal stream close.
+	int r = queue_push_sync (&stream->queue, (void*)(intptr_t)-1, 0, NULL);
+	return r == 0;
 }
 
 

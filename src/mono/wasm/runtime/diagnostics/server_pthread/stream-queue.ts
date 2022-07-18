@@ -10,7 +10,7 @@ import * as Memory from "../../memory";
 
 // EventPipeStreamQueue has 3 memory words that are used to communicate with the streaming thread:
 // struct MonoWasmEventPipeStreamQueue {
-//    void* buf;
+//    union { void* buf; intptr_t close_msg; /* -1 */ };
 //    int32_t count;
 //    volatile int32_t write_done;
 // }
@@ -34,18 +34,20 @@ import * as Memory from "../../memory";
 //  This would be a lot less hacky if more browsers implemented Atomics.waitAsync.
 //  Then we wouldn't have to use emscripten_dispatch_to_thread, and instead the diagnostic server could
 //  just call Atomics.waitAsync to wait for the streaming thread to write.
+//
 
 const BUF_OFFSET = 0;
 const COUNT_OFFSET = 4;
 const WRITE_DONE_OFFSET = 8;
 
 type SyncSendBuffer = (buf: VoidPtr, len: number) => void;
+type SyncSendClose = () => void;
 
 export class StreamQueue {
     readonly workAvailable: EventTarget = new EventTarget();
     readonly signalWorkAvailable = this.signalWorkAvailableImpl.bind(this);
 
-    constructor(readonly queue_addr: VoidPtr, readonly syncSendBuffer: SyncSendBuffer) {
+    constructor(readonly queue_addr: VoidPtr, readonly syncSendBuffer: SyncSendBuffer, readonly syncSendClose: SyncSendClose) {
         this.workAvailable.addEventListener("workAvailable", this.onWorkAvailable.bind(this));
     }
 
@@ -75,11 +77,17 @@ export class StreamQueue {
     }
 
     private onWorkAvailable(this: StreamQueue /*,event: Event */): void {
-        const buf = Memory.getI32(this.buf_addr) as unknown as VoidPtr;
-        const count = Memory.getI32(this.count_addr);
-        Memory.setI32(this.buf_addr, 0);
-        if (count > 0) {
-            this.syncSendBuffer(buf, count);
+        const intptr_buf = this.buf_addr as unknown as number;
+        if (intptr_buf === -1) {
+            // special value signaling that the streaming thread closed the queue.
+            this.syncSendClose();
+        } else {
+            const buf = Memory.getI32(this.buf_addr) as unknown as VoidPtr;
+            const count = Memory.getI32(this.count_addr);
+            Memory.setI32(this.buf_addr, 0);
+            if (count > 0) {
+                this.syncSendBuffer(buf, count);
+            }
         }
         /* buffer is now not full */
         Memory.Atomics.storeI32(this.buf_full_addr, 0);
@@ -91,8 +99,8 @@ export class StreamQueue {
 // maps stream queue addresses to StreamQueue instances
 const streamQueueMap = new Map<VoidPtr, StreamQueue>();
 
-export function allocateQueue(nativeQueueAddr: VoidPtr, syncSendBuffer: SyncSendBuffer): StreamQueue {
-    const queue = new StreamQueue(nativeQueueAddr, syncSendBuffer);
+export function allocateQueue(nativeQueueAddr: VoidPtr, syncSendBuffer: SyncSendBuffer, syncSendClose: SyncSendClose): StreamQueue {
+    const queue = new StreamQueue(nativeQueueAddr, syncSendBuffer, syncSendClose);
     streamQueueMap.set(nativeQueueAddr, queue);
     return queue;
 }
