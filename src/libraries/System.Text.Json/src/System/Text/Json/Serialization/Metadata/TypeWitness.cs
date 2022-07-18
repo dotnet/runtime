@@ -8,7 +8,7 @@ namespace System.Text.Json.Reflection
     /// <summary>
     /// Encapsulates a generic type parameter that can be unpacked on-demand using a generic visitor,
     /// encoding an existential type. Can use reflection to instantiate type parameters that are not known at compile time.
-    /// Uses concepts taken from https://www.microsoft.com/en-us/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/
+    /// Uses concepts taken from https://www.microsoft.com/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/
     /// </summary>
     internal abstract class TypeWitness
     {
