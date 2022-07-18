@@ -4469,7 +4469,7 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
 // Return:
 //    The last compare node generated.
 //
-void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool *inchain, insCond *prevcond)
+void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, insCond* prevcond)
 {
     if (tree->OperIs(GT_AND))
     {
@@ -4498,10 +4498,10 @@ void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool *inchain, in
                 emitter* emit = GetEmitter();
                 emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 1);
                 *prevcond = INS_COND_EQ;
-                *inchain = true;
+                *inchain  = true;
             }
 
-            //Generate Op2 based on Op1.
+            // Generate Op2 based on Op1.
             genCodeForContainedCompareChain(op2, inchain, prevcond);
             assert(*inchain);
         }
@@ -4524,7 +4524,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool *inchain, in
                 genCodeForConditionalCompare(tree, *prevcond);
             }
 
-            *inchain = true;
+            *inchain  = true;
             *prevcond = InsCondForCompareOp(tree);
         }
         else
@@ -4555,8 +4555,8 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     // Generate the condition.
-    bool chain = false;
-    insCond cond = INS_COND_EQ; // Dummy value.
+    bool    chain = false;
+    insCond cond  = INS_COND_EQ; // Dummy value.
     genCodeForContainedCompareChain(opcond->AsOp(), &chain, &cond);
     assert(chain == opcond->isContained());
     if (!opcond->isContained())

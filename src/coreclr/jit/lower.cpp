@@ -7064,7 +7064,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree*
     else if (tree->OperIsCompare())
     {
         // Can the compare be contained.
-        if(IsSafeToContainMem(parent, tree))
+        if (IsSafeToContainMem(parent, tree))
         {
             tree->AsOp()->SetContained();
 
@@ -7077,7 +7077,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree*
         }
     }
 
-    //Not a valid compare chain
+    // Not a valid compare chain
     return false;
 }
 
