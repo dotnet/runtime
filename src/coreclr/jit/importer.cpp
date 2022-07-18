@@ -431,12 +431,12 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
     return;
 #else
 
-    if (chkLevel == CHECK_SPILL_ALL)
+    if (chkLevel == (unsigned)CHECK_SPILL_ALL)
     {
         chkLevel = verCurrentState.esStackDepth;
     }
 
-    if (verCurrentState.esStackDepth == 0 || chkLevel == 0 || chkLevel == CHECK_SPILL_NONE)
+    if (verCurrentState.esStackDepth == 0 || chkLevel == 0 || chkLevel == (unsigned)CHECK_SPILL_NONE)
     {
         return;
     }
@@ -498,12 +498,12 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 //
 void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsumedDebugInfo)
 {
-    if (chkLevel == CHECK_SPILL_ALL)
+    if (chkLevel == (unsigned)CHECK_SPILL_ALL)
     {
         chkLevel = verCurrentState.esStackDepth;
     }
 
-    if ((chkLevel != 0) && (chkLevel != CHECK_SPILL_NONE))
+    if ((chkLevel != 0) && (chkLevel != (unsigned)CHECK_SPILL_NONE))
     {
         assert(chkLevel <= verCurrentState.esStackDepth);
 
@@ -2180,7 +2180,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     if (pRuntimeLookup->testForNull)
     {
-        slotPtrTree = impCloneExpr(ctxTree, &ctxTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+        slotPtrTree = impCloneExpr(ctxTree, &ctxTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("impRuntimeLookup slot"));
     }
 
@@ -2192,7 +2192,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     {
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
         {
-            indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+            indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                       nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
@@ -2219,7 +2219,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         {
             if (isLastIndirectionWithSizeCheck)
             {
-                lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
             }
 
@@ -2247,7 +2247,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
 
         unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
-        impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
+        impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr, impCurStmtDI);
 
         GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
         // downcast the pointer to a TYP_INT on 64-bit targets
@@ -2267,7 +2267,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         GenTree*      asg   = gtNewAssignNode(slot, indir);
         GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
         GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
-        impAppendTree(qmark, CHECK_SPILL_NONE, impCurStmtDI);
+        impAppendTree(qmark, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
         return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
     }
@@ -2328,7 +2328,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
 
-    impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+    impAssignTempGen(tmp, result, (unsigned)CHECK_SPILL_NONE);
     return gtNewLclvNode(tmp, TYP_I_IMPL);
 }
 
@@ -2467,7 +2467,7 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
 
 inline void Compiler::impEvalSideEffects()
 {
-    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("impEvalSideEffects"));
+    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG("impEvalSideEffects"));
     verCurrentState.esStackDepth = 0;
 }
 
@@ -2504,14 +2504,14 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
 
 inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason))
 {
-    assert(chkLevel != CHECK_SPILL_NONE);
+    assert(chkLevel != (unsigned)CHECK_SPILL_NONE);
 
     /* Before we make any appends to the tree list we must spill the
      * "special" side effects (GTF_ORDER_SIDEEFF on a GT_CATCH_ARG) */
 
     impSpillSpecialSideEff();
 
-    if (chkLevel == CHECK_SPILL_ALL)
+    if (chkLevel == (unsigned)CHECK_SPILL_ALL)
     {
         chkLevel = verCurrentState.esStackDepth;
     }
@@ -2842,7 +2842,7 @@ void Compiler::impNoteBranchOffs()
 {
     if (opts.compDbgCode)
     {
-        impAppendTree(gtNewNothingNode(), CHECK_SPILL_NONE, impCurStmtDI);
+        impAppendTree(gtNewNothingNode(), (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
     }
 }
 
@@ -3558,8 +3558,8 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree*       lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
 
     // Now append a few statements the initialize the span
-    impAppendTree(lengthFieldAsg, CHECK_SPILL_NONE, impCurStmtDI);
-    impAppendTree(pointerFieldAsg, CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(lengthFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(pointerFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
     // And finally create a tree that points at the span.
     return impCreateLocalNode(spanTempNum DEBUGARG(0));
@@ -3877,7 +3877,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 noway_assert(genTypeSize(rawHandle->TypeGet()) == genTypeSize(TYP_I_IMPL));
 
                 unsigned rawHandleSlot = lvaGrabTemp(true DEBUGARG("rawHandle"));
-                impAssignTempGen(rawHandleSlot, rawHandle, clsHnd, CHECK_SPILL_NONE);
+                impAssignTempGen(rawHandleSlot, rawHandle, clsHnd, (unsigned)CHECK_SPILL_NONE);
 
                 GenTree*  lclVar     = gtNewLclvNode(rawHandleSlot, TYP_I_IMPL);
                 GenTree*  lclVarAddr = gtNewOperNode(GT_ADDR, TYP_I_IMPL, lclVar);
@@ -3930,9 +3930,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // defined(DEBUG)
 
                 // We need to use both index and ptr-to-span twice, so clone or spill.
-                index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                      nullptr DEBUGARG("Span.get_Item index"));
-                ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                          nullptr DEBUGARG("Span.get_Item ptrToSpan"));
 
                 // Bounds check
@@ -4424,7 +4424,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (cnsNode->IsFloatNaN())
                 {
-                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spill side effects before propagating NaN"));
+                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                   "spill side effects before propagating NaN"));
 
                     // maxsd, maxss, minsd, and minss all return op2 if either is NaN
                     // we require NaN to be propagated so ensure the known NaN is op2
@@ -4675,7 +4676,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 GenTree* gtArrClone = nullptr;
                                 if (((gtArr->gtFlags & GTF_GLOB_EFFECT) != 0) || (ni == NI_System_Array_GetUpperBound))
                                 {
-                                    gtArr = impCloneExpr(gtArr, &gtArrClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                    gtArr = impCloneExpr(gtArr, &gtArrClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                                          nullptr DEBUGARG("MD intrinsics array"));
                                 }
 
@@ -6561,7 +6562,7 @@ void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGA
 
     GenTree* op1 = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION, TYP_VOID, gtNewIconNode(block->bbCodeOffs));
     // verCurrentState.esStackDepth = 0;
-    impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
     // The inliner is not able to handle methods that require throw block, so
     // make sure this methods never gets inlined.
@@ -7797,7 +7798,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
-                                        objToBox = impGetStructAddr(objToBox, nullableCls, CHECK_SPILL_ALL, true);
+                                        objToBox =
+                                            impGetStructAddr(objToBox, nullableCls, (unsigned)CHECK_SPILL_ALL, true);
 
                                         impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
                                                        typeInfo(TI_INT));
@@ -7995,7 +7997,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // Assign the boxed object to the box temp.
         //
         GenTree*   asg     = gtNewTempAssign(impBoxTemp, op1);
-        Statement* asgStmt = impAppendTree(asg, CHECK_SPILL_NONE, impCurStmtDI);
+        Statement* asgStmt = impAppendTree(asg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
         // If the exprToBox is a call that returns its value via a ret buf arg,
         // move the assignment statement(s) before the call (which must be a top level tree).
@@ -8077,7 +8079,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         if (varTypeIsStruct(exprToBox))
         {
             assert(info.compCompHnd->getClassSize(pResolvedToken->hClass) == info.compCompHnd->getClassSize(operCls));
-            op1 = impAssignStructPtr(op1, exprToBox, operCls, CHECK_SPILL_ALL);
+            op1 = impAssignStructPtr(op1, exprToBox, operCls, (unsigned)CHECK_SPILL_ALL);
         }
         else
         {
@@ -8114,10 +8116,10 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         }
 
         // Spill eval stack to flush out any pending side effects.
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportAndPushBox"));
+        impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportAndPushBox"));
 
         // Set up this copy as a second assignment.
-        Statement* copyStmt = impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
+        Statement* copyStmt = impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
 
@@ -8149,7 +8151,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetStructAddr(exprToBox, operCls, CHECK_SPILL_ALL, true));
+        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2,
+                                  impGetStructAddr(exprToBox, operCls, (unsigned)CHECK_SPILL_ALL, true));
     }
 
     /* Push the result back on the stack, */
@@ -8205,7 +8208,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
     // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
     // to one allocation at a time.
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
+    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
 
     //
     // The arguments of the CORINFO_HELP_NEW_MDARR helper are:
@@ -9161,7 +9164,7 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
         callout->gtArgs.PushFront(this, NewCallArg::Primitive(currentArg));
     }
 
-    impAppendTree(callout, CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(callout, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 }
 
 //------------------------------------------------------------------------
@@ -9642,7 +9645,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // it may cause registered args to be spilled. Simply spill it.
 
                     unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    impAssignTempGen(lclNum, stubAddr, CHECK_SPILL_NONE);
+                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
@@ -9729,7 +9732,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
-                thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
@@ -9741,7 +9744,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                impAssignTempGen(lclNum, fptr, CHECK_SPILL_ALL);
+                impAssignTempGen(lclNum, fptr, (unsigned)CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
@@ -9812,7 +9815,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("Indirect call through function pointer"));
-                impAssignTempGen(lclNum, fptr, CHECK_SPILL_ALL);
+                impAssignTempGen(lclNum, fptr, (unsigned)CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
@@ -10332,7 +10335,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
 
             // append the call node.
-            impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+            impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
 
             // Now push the value of the 'new onto the stack
 
@@ -10649,7 +10652,7 @@ DONE_CALL:
         }
         else
         {
-            impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+            impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
         }
     }
     else
@@ -10702,7 +10705,7 @@ DONE_CALL:
                 // important if we give up on the inline, in which case the
                 // call will typically end up in the statement that contains
                 // the GT_RET_EXPR that we leave on the stack.
-                impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI, false);
+                impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtDI, false);
 
                 // TODO: Still using the widened type.
                 GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
@@ -10743,7 +10746,7 @@ DONE_CALL:
                         unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc     = lvaGetDesc(calliSlot);
                         varDsc->lvVerTypeInfo = tiRetVal;
-                        impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), CHECK_SPILL_NONE);
+                        impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
@@ -11128,7 +11131,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("pseudo return buffer"));
 
     // No need to spill anything as we're about to return.
-    impAssignTempGen(tmpNum, op, info.compMethodInfo->args.retTypeClass, CHECK_SPILL_NONE);
+    impAssignTempGen(tmpNum, op, info.compMethodInfo->args.retTypeClass, (unsigned)CHECK_SPILL_NONE);
 
     op = gtNewLclvNode(tmpNum, info.compRetType);
     JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer for a special helper\n");
@@ -11169,7 +11172,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
     // LEAVE clears the stack, spill side effects, and set stack to 0
 
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
+    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
     verCurrentState.esStackDepth = 0;
 
     assert(block->bbJumpKind == BBJ_LEAVE);
@@ -11243,7 +11246,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock->bbJumpKind = BBJ_CALLFINALLY; // convert the BBJ_LEAVE to BBJ_CALLFINALLY
 
                 if (endCatches)
-                    impAppendTree(endCatches, CHECK_SPILL_NONE, impCurStmtDI);
+                    impAppendTree(endCatches, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
 #ifdef DEBUG
                 if (verbose)
@@ -11330,7 +11333,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         block->bbJumpKind = BBJ_ALWAYS; // convert the BBJ_LEAVE to a BBJ_ALWAYS
 
         if (endCatches)
-            impAppendTree(endCatches, CHECK_SPILL_NONE, impCurStmtDI);
+            impAppendTree(endCatches, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
 #ifdef DEBUG
         if (verbose)
@@ -11429,7 +11432,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
     // LEAVE clears the stack, spill side effects, and set stack to 0
 
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
+    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
     verCurrentState.esStackDepth = 0;
 
     assert(block->bbJumpKind == BBJ_LEAVE);
@@ -12425,7 +12428,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // This can replace op1 with a GT_COMMA that evaluates op1 into a local
     //
-    op1 = impCloneExpr(op1, &temp, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("CASTCLASS eval op1"));
+    op1 = impCloneExpr(op1, &temp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("CASTCLASS eval op1"));
     //
     // op1 is now known to be a non-complex tree
     // thus we can use gtClone(op1) from now on
@@ -12509,7 +12512,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // Make QMark node a top level node by spilling it.
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
-    impAssignTempGen(tmp, qmarkNull, CHECK_SPILL_NONE);
+    impAssignTempGen(tmp, qmarkNull, (unsigned)CHECK_SPILL_NONE);
 
     // TODO-CQ: Is it possible op1 has a better type?
     //
@@ -12964,7 +12967,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (impCurStmtDI.IsValid() && opts.compDbgCode)
                 {
                     GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
-                    impAppendTree(placeHolder, CHECK_SPILL_NONE, impCurStmtDI);
+                    impAppendTree(placeHolder, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
                     assert(!impCurStmtDI.IsValid());
                 }
@@ -13131,11 +13134,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
-                impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                 goto DONE_APPEND;
 
             APPEND:
-                impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
+                impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
                 goto DONE_APPEND;
 
             DONE_APPEND:
@@ -13930,8 +13933,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (impStackTop().val->gtFlags & GTF_SIDE_EFFECT)
                 {
-                    impSpillSideEffects(false,
-                                        CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for Array store"));
+                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                   "Strict ordering of exceptions for Array store"));
                 }
 
                 // Pull the new value from the stack.
@@ -13959,7 +13962,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Create the assignment node and append it.
                 if (varTypeIsStruct(op1))
                 {
-                    op1 = impAssignStruct(op1, op2, stelemClsHnd, CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op1, op2, stelemClsHnd, (unsigned)CHECK_SPILL_ALL);
                 }
                 else
                 {
@@ -14494,15 +14497,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)
                     {
-                        impSpillSideEffects(false,
-                                            CHECK_SPILL_ALL DEBUGARG("Branch to next Optimization, op1 side effect"));
-                        impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_NONE, impCurStmtDI);
+                        impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                       "Branch to next Optimization, op1 side effect"));
+                        impAppendTree(gtUnusedValNode(op1), (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
                     }
                     if (op2->gtFlags & GTF_GLOB_EFFECT)
                     {
-                        impSpillSideEffects(false,
-                                            CHECK_SPILL_ALL DEBUGARG("Branch to next Optimization, op2 side effect"));
-                        impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_NONE, impCurStmtDI);
+                        impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                       "Branch to next Optimization, op2 side effect"));
+                        impAppendTree(gtUnusedValNode(op2), (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
                     }
 
 #ifdef DEBUG
@@ -14868,7 +14871,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                             else
                             {
-                                op1 = impGetStructAddr(op1, clsHnd, CHECK_SPILL_ALL, false);
+                                op1 = impGetStructAddr(op1, clsHnd, (unsigned)CHECK_SPILL_ALL, false);
                             }
 
                             JITDUMP("\n ... optimized to ...\n");
@@ -14946,7 +14949,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!cloneExpr)
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
-                    impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), CHECK_SPILL_ALL);
+                    impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
                     var_types type = genActualType(lvaTable[tmpNum].TypeGet());
                     op1            = gtNewLclvNode(tmpNum, type);
 
@@ -14960,7 +14963,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), CHECK_SPILL_ALL,
+                op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("DUP instruction"));
 
                 assert(!(op1->gtFlags & GTF_GLOB_EFFECT) && !(op2->gtFlags & GTF_GLOB_EFFECT));
@@ -15260,7 +15263,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (op1->gtFlags & GTF_SIDE_EFFECT)
                         {
                             op1 = gtUnusedValNode(op1);
-                            impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                            impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                         }
                         goto DO_LDFTN;
                     }
@@ -15270,7 +15273,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (op1->gtFlags & GTF_SIDE_EFFECT)
                     {
                         op1 = gtUnusedValNode(op1);
-                        impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                     }
                     goto DO_LDFTN;
                 }
@@ -15488,7 +15491,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                            gtNewIconNode(0), // Value
                                                            false,            // isVolatile
                                                            false);           // not copyBlock
-                            impAppendTree(newObjThisPtr, CHECK_SPILL_NONE, impCurStmtDI);
+                            impAppendTree(newObjThisPtr, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
                         }
                         else
                         {
@@ -15512,7 +15515,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (hasSideEffects)
                         {
                             JITDUMP("\nSpilling stack for finalizable newobj\n");
-                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("finalizable newobj spill"));
+                            impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("finalizable newobj spill"));
                         }
 
                         const bool useParent = true;
@@ -15535,7 +15538,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // by ObjectAllocator phase to be able to determine GT_ALLOCOBJ nodes
                         // without exhaustive walk over all expressions.
 
-                        impAssignTempGen(lclNum, op1, CHECK_SPILL_NONE);
+                        impAssignTempGen(lclNum, op1, (unsigned)CHECK_SPILL_NONE);
 
                         assert(lvaTable[lclNum].lvSingleDef == 0);
                         lvaTable[lclNum].lvSingleDef = 1;
@@ -15839,7 +15842,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (obj->gtFlags & GTF_SIDE_EFFECT)
                     {
                         obj = gtUnusedValNode(obj);
-                        impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(obj, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                     }
                     obj = nullptr;
                 }
@@ -15865,7 +15868,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             assert(opcode == CEE_LDFLD && objType != nullptr);
 
-                            obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
+                            obj = impGetStructAddr(obj, objType, (unsigned)CHECK_SPILL_ALL, true);
                         }
 
                         /* Create the data member node */
@@ -16148,7 +16151,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (obj->gtFlags & GTF_SIDE_EFFECT)
                     {
                         obj = gtUnusedValNode(obj);
-                        impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(obj, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                     }
                     obj = nullptr;
                 }
@@ -16337,7 +16340,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op1 = impAssignStruct(op1, op2, clsHnd, CHECK_SPILL_ALL);
                 }
-
                 goto SPILL_APPEND;
             }
 
@@ -16636,7 +16638,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impPopStack().val;
                 // make certain it is normalized;
-                op1 = impNormStructVal(op1, impGetRefAnyClass(), CHECK_SPILL_ALL);
+                op1 = impNormStructVal(op1, impGetRefAnyClass(), (unsigned)CHECK_SPILL_ALL);
 
                 // Call helper GETREFANY(classHandle, op1);
                 GenTreeCall* helperCall   = gtNewHelperCallNode(CORINFO_HELP_GETREFANY, TYP_BYREF);
@@ -16654,7 +16656,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
 
                 // make certain it is normalized;
-                op1 = impNormStructVal(op1, impGetRefAnyClass(), CHECK_SPILL_ALL);
+                op1 = impNormStructVal(op1, impGetRefAnyClass(), (unsigned)CHECK_SPILL_ALL);
 
                 if (op1->gtOper == GT_OBJ)
                 {
@@ -16673,7 +16675,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // The pointer may have side-effects
                     if (op1->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT)
                     {
-                        impAppendTree(op1->AsOp()->gtOp1, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(op1->AsOp()->gtOp1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
 #ifdef DEBUG
                         impNoteLastILoffs();
 #endif
@@ -16813,7 +16815,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (opcode == CEE_UNBOX)
                             {
                                 GenTree* cloneOperand;
-                                op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                                    nullptr DEBUGARG("optimized unbox clone"));
 
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
@@ -16854,13 +16856,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // push(clone + TARGET_POINTER_SIZE)
                     //
                     GenTree* cloneOperand;
-                    op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("inline UNBOX clone1"));
                     op1 = gtNewMethodTableLookup(op1);
 
                     GenTree* condBox = gtNewOperNode(GT_EQ, TYP_INT, op1, op2);
 
-                    op1 = impCloneExpr(cloneOperand, &cloneOperand, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(cloneOperand, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("inline UNBOX clone2"));
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
@@ -16876,7 +16878,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // may be other trees on the evaluation stack that side-effect the
                     // sources of the UNBOX operation we must spill the stack.
 
-                    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                    impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
 
                     // Create the address-expression to reference past the object header
                     // to the beginning of the value-type. Today this means adjusting
@@ -16938,7 +16940,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, CHECK_SPILL_ALL);
+                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -16976,7 +16978,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, CHECK_SPILL_ALL);
+                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -17360,7 +17362,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(varTypeIsStruct(op2));
 
-                op1 = impAssignStructPtr(op1, op2, resolvedToken.hClass, CHECK_SPILL_ALL);
+                op1 = impAssignStructPtr(op1, op2, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
 
                 if (op1->OperIsBlkOp() && (prefixFlags & PREFIX_UNALIGNED))
                 {
@@ -17709,7 +17711,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
                                               CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv))
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
-    impAssignTempGen(tmpNum, op, hClass, CHECK_SPILL_ALL);
+    impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
@@ -17904,7 +17906,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         }
                     }
 
-                    impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(), CHECK_SPILL_ALL);
+                    impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
+                                     (unsigned)CHECK_SPILL_ALL);
 
                     var_types lclRetType = lvaGetDesc(lvaInlineeReturnSpillTemp)->lvType;
                     GenTree*  tmpOp2     = gtNewLclvNode(lvaInlineeReturnSpillTemp, lclRetType);
@@ -17949,7 +17952,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     assert(info.compRetNativeType != TYP_VOID);
                     assert(fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals());
 
-                    impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(), CHECK_SPILL_ALL);
+                    impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
+                                     (unsigned)CHECK_SPILL_ALL);
                 }
 
 #if defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
@@ -18054,12 +18058,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         {
                             impInlineInfo->retExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
-                                                   retClsHnd, CHECK_SPILL_ALL);
+                                                   retClsHnd, (unsigned)CHECK_SPILL_ALL);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, CHECK_SPILL_ALL);
+                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
                     }
                 }
             }
@@ -18087,8 +18091,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         GenTree* retBuffAddr =
             gtNewLclvNode(info.compRetBuffArg, TYP_BYREF DEBUGARG(impCurStmtDI.GetLocation().GetOffset()));
 
-        op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, CHECK_SPILL_ALL);
-        impAppendTree(op2, CHECK_SPILL_NONE, impCurStmtDI);
+        op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
+        impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
         // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -18160,7 +18164,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         }
     }
 
-    impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 #ifdef DEBUG
     // Remember at which BC offset the tree was finished
     impNoteLastILoffs();
@@ -18723,7 +18727,7 @@ SPILLSTACK:
 
         if (addStmt != nullptr)
         {
-            impAppendStmt(addStmt, CHECK_SPILL_NONE);
+            impAppendStmt(addStmt, (unsigned)CHECK_SPILL_NONE);
         }
     }
 
