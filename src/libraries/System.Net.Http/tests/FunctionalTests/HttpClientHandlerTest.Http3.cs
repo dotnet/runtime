@@ -757,10 +757,23 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotEmpty(content);
         }
 
-        [OuterLoop]
         [Theory]
+        [OuterLoop]
         [MemberData(nameof(InteropUris))]
-        public async Task Public_Interop_Upgrade_Success(string uri)
+        public Task Public_Interop_Upgrade_Request3OrLower_Success(string uri)
+        {
+            return Public_Interop_Upgrade_Core(uri, HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower);
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(InteropUris))]
+        public Task Public_Interop_Upgrade_Request2OrHigher_Success(string uri)
+        {
+            return Public_Interop_Upgrade_Core(uri, HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher);
+        }
+
+        private async Task Public_Interop_Upgrade_Core(string uri, Version requestVersion, HttpVersionPolicy policy)
         {
             // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
             // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
@@ -772,8 +785,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                Version = requestVersion,
+                VersionPolicy = policy
             })
             {
                 try
@@ -797,8 +810,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                Version = requestVersion,
+                VersionPolicy = policy
             })
             {
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));
