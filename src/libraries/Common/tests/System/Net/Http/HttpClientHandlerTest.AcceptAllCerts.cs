@@ -96,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate before the .NET custom validation callback is reached")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
