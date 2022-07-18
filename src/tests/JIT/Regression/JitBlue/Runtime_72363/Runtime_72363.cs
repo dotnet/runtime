@@ -44,7 +44,7 @@ public class Runtime_72363
 
 public interface IFace<out T>
 {
-    abstract T Foo();
+    T Foo();
 }
 
 public class ListImpl : IFace<List<int>>
