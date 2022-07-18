@@ -329,7 +329,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
 bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 {
-    // VirtualUnwind can't unwind prologues.
+    // VirtualUnwind can't unwind epilogues.
     return TrailingEpilogueInstructionsCount(pvAddress) == 0;
 }
 
@@ -345,11 +345,14 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 #define POP_OP 0x58
 #define RET_OP 0xc3
 #define RET_OP_2 0xc2
+#define INT3_OP 0xcc
 
 #define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
 
 // when stopped in an epilogue, returns the count of remaining stack-consuming instructions
-// otherwise returns 0
+// otherwise returns
+//  0 - not in epilogue,
+// -1 - unknown.
 int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 {
 #ifdef TARGET_AMD64
@@ -389,6 +392,11 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
     //    jmp imm
     //        or
     //    jmp [target]
+    //
+    // 5. Occasionally we may see a breakpoint, possibly placed by the debugger.
+    //    In such case we do not know what instruction it was and return -1 (unknown)
+    //
+    //    int 3
     //
 
     // if we are in an epilogue, there will be at least one instruction left.
@@ -509,6 +517,14 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 
         return trailingEpilogueInstructions;
     }
+    else if (pNextByte[0] == INT3_OP)
+    {
+        //
+        // A breakpoint, possibly placed by the debugger - we do not know what was here.
+        //
+        return -1;
+    }
+
 #endif
 
     return 0;
@@ -559,7 +575,12 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
     int epilogueInstructions = TrailingEpilogueInstructionsCount((PTR_VOID)pRegisterSet->IP);
-    if (epilogueInstructions > 0)
+    if (epilogueInstructions < 0)
+    {
+        // can't figure, possibly a breakpoint instruction
+        return false;
+    }
+    else if (epilogueInstructions > 0)
     {
         *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
         return true;
