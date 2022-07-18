@@ -17,14 +17,15 @@ namespace System.Text.Json.Serialization.Metadata
         private Func<T>? _typedCreateObject;
 
         /// <summary>
-        /// Gets or sets a parameterless constructor to be used on deserialization.
+        /// Gets or sets a parameterless factory to be used on deserialization.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
         ///
         /// -or-
         ///
-        /// A parameterless constructor is not supported for the current metadata <see cref="JsonTypeInfo.Kind"/>.</exception>
+        /// A parameterless factory is not supported for the current metadata <see cref="JsonTypeInfo.Kind"/>.
+        /// </exception>
         /// <remarks>
         /// If set to <see langword="null" />, any attempt to deserialize instances of the given type will fail at runtime.
         ///

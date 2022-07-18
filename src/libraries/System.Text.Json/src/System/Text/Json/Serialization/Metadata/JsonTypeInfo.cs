@@ -32,14 +32,14 @@ namespace System.Text.Json.Serialization.Metadata
         private Action<object>? _onDeserialized;
 
         /// <summary>
-        /// Gets or sets a parameterless constructor to be used on deserialization.
+        /// Gets or sets a parameterless factory to be used on deserialization.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
         ///
         /// -or-
         ///
-        /// A parameterless constructor is not supported for the current metadata <see cref="Kind"/>.
+        /// A parameterless factory is not supported for the current metadata <see cref="Kind"/>.
         /// </exception>
         /// <remarks>
         /// If set to <see langword="null" />, any attempt to deserialize instances of the given type will result in an exception.
@@ -214,6 +214,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// Polymorphic serialization is not supported for the current metadata <see cref="Kind"/>.
         /// </exception>
         /// <remarks>
         /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
