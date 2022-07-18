@@ -35,45 +35,6 @@ Done:
 
 NESTED_END RhpWaitForGCNoAbort, _TEXT
 
-EXTERN RhpThrowHwEx : PROC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpWaitForGC -- rare path for RhpPInvokeReturn
-;;
-;;
-;; INPUT: RCX: transition frame
-;;
-;; TRASHES: RCX, RDX, R8, R9, R10, R11
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpWaitForGC, _TEXT
-        push_nonvol_reg rbx
-        END_PROLOGUE
-
-        mov         rbx, rcx
-
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
-        jz          NoWait
-
-        call        RhpWaitForGCNoAbort
-NoWait:
-        test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
-        jz          Done
-        test        dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
-        jz          Done
-
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
-        pop         rbx
-        pop         rdx                 ; return address as exception RIP
-        jmp         RhpThrowHwEx        ; Throw the ThreadAbortException as a special kind of hardware exception
-
-Done:
-        pop         rbx
-        ret
-
-NESTED_END RhpWaitForGC, _TEXT
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpPInvoke
@@ -122,7 +83,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         ret
 @@:
         ; passing transition frame pointer in rcx
-        jmp         RhpWaitForGC
+        jmp         RhpWaitForGC2
 LEAF_END RhpPInvokeReturn, _TEXT
 
 

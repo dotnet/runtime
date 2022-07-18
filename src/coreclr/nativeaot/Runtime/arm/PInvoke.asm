@@ -35,37 +35,4 @@ Done
 
         NESTED_END RhpWaitForGCNoAbort
 
-        EXTERN RhpThrowHwEx
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpWaitForGC
-;;
-;;
-;; INPUT: r2: transition frame
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        NESTED_ENTRY RhpWaitForGC
-        PROLOG_PUSH  {r0,lr}
-
-        ldr         r0, =RhpTrapThreads
-        ldr         r0, [r0]
-        tst         r0, #TrapThreadsFlags_TrapThreads
-        beq         NoWait
-        bl          RhpWaitForGCNoAbort
-NoWait
-        tst         r0, #TrapThreadsFlags_AbortInProgress
-        beq         NoAbort
-        ldr         r0, [r2, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
-        tst         r0, #PTFF_THREAD_ABORT
-        beq         NoAbort
-        EPILOG_POP  {r0,r1}         ; hijack target address as exception PC
-        EPILOG_NOP  mov r0, #STATUS_REDHAWK_THREAD_ABORT
-        EPILOG_BRANCH RhpThrowHwEx
-NoAbort
-        EPILOG_POP  {r0,pc}
-        NESTED_END RhpWaitForGC
-
         INLINE_GETTHREAD_CONSTANT_POOL

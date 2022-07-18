@@ -44,45 +44,4 @@ Done:
         ret
 _RhpWaitForGCNoAbort endp
 
-RhpThrowHwEx equ @RhpThrowHwEx@0
-EXTERN RhpThrowHwEx : PROC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpWaitForGC
-;;
-;;
-;; INPUT: ECX: transition frame
-;;
-;; OUTPUT:
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-_RhpWaitForGC proc public
-        push        ebp
-        mov         ebp, esp
-        push        ebx
-
-        mov         ebx, ecx
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
-        jz          NoWait
-
-        call        _RhpWaitForGCNoAbort
-NoWait:
-        test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
-        jz          Done
-        test        dword ptr [ebx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
-        jz          Done
-
-        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
-        pop         ebx
-        pop         ebp
-        pop         edx                 ; return address as exception RIP
-        jmp         RhpThrowHwEx        ; Throw the ThreadAbortException as a special kind of hardware exception
-Done:
-        pop         ebx
-        pop         ebp
-        ret
-_RhpWaitForGC endp
-
-
         end
