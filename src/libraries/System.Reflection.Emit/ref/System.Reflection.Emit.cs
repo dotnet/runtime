@@ -109,7 +109,7 @@ namespace System.Reflection.Emit
         public System.Reflection.Emit.FieldBuilder UnderlyingField { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
-        public System.Type? CreateType() { throw null; }
+        public System.Type CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Reflection.TypeInfo? CreateTypeInfo() { throw null; }
         public System.Reflection.Emit.FieldBuilder DefineLiteral(string literalName, object? literalValue) { throw null; }

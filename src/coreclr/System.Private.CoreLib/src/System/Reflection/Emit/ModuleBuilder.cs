@@ -852,7 +852,7 @@ namespace System.Reflection.Emit
                 // cannot create globals twice
                 throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
             }
-            _globalTypeBuilder.CreateGlobalModuleType();
+            _globalTypeBuilder.CreateTypeImpl();
             _hasGlobalBeenCreated = true;
         }
 

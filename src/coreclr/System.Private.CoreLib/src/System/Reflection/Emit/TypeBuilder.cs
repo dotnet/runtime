@@ -695,16 +695,6 @@ namespace System.Reflection.Emit
             m_ca.Add(ca);
         }
 
-        internal void CreateGlobalModuleType()
-        {
-            if (!m_isHiddenGlobalType)
-            {
-                throw new NotSupportedException(SR.NotSupported_DynamicModule);
-            }
-
-            Debug.Assert(CreateTypeImpl() == null);
-        }
-
         #endregion
 
         #region Object Overrides
@@ -1705,7 +1695,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        private Type? CreateTypeImpl()
+        internal Type? CreateTypeImpl()
         {
             lock (SyncRoot)
             {

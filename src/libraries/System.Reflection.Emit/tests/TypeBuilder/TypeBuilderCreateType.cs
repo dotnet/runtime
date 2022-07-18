@@ -28,6 +28,7 @@ namespace System.Reflection.Emit.Tests
 
             TypeInfo typeInfo = type.CreateTypeInfo();
             Assert.Equal(typeInfo, createdType.GetTypeInfo());
+            Assert.NotNull(createdType);
 
             // Verify MetadataToken
             Assert.Equal(type.MetadataToken, typeInfo.MetadataToken);
