@@ -278,7 +278,7 @@ namespace System.Transactions
         private static MachineSettingsSection? s_machineSettings;
         private static MachineSettingsSection MachineSettings => s_machineSettings ??= MachineSettingsSection.GetSection();
 
-        private static volatile bool s_defaultTimeoutValidated;
+        private static bool s_defaultTimeoutValidated;
         private static long s_defaultTimeoutTicks;
         public static TimeSpan DefaultTimeout
         {
@@ -294,7 +294,7 @@ namespace System.Transactions
                 {
                     Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(DefaultSettingsSection.Timeout).Ticks);
                     // If the timeout value got adjusted, it must have been greater than MaximumTimeout.
-                    if (s_defaultTimeoutTicks != DefaultSettingsSection.Timeout.Ticks)
+                    if (Interlocked.Read(ref s_defaultTimeoutTicks) != DefaultSettingsSection.Timeout.Ticks)
                     {
                         if (etwLog.IsEnabled())
                         {
@@ -308,7 +308,7 @@ namespace System.Transactions
                 {
                     etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
                 }
-                return new TimeSpan(s_defaultTimeoutTicks);
+                return new TimeSpan(Interlocked.Read(ref s_defaultTimeoutTicks));
             }
             set
             {
@@ -319,7 +319,7 @@ namespace System.Transactions
                 }
 
                 Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(value).Ticks);
-                if (s_defaultTimeoutTicks != value.Ticks)
+                if (Interlocked.Read(ref s_defaultTimeoutTicks) != value.Ticks)
                 {
                     if (etwLog.IsEnabled())
                     {
@@ -379,9 +379,9 @@ namespace System.Transactions
                     Interlocked.Exchange(ref s_defaultTimeoutTicks, DefaultSettingsSection.Timeout.Ticks);
                 }
 
-                long defaultTimeoutTicks = s_defaultTimeoutTicks;
+                long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
                 Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(s_defaultTimeoutTicks)).Ticks);
-                if (s_defaultTimeoutTicks != defaultTimeoutTicks)
+                if (Interlocked.Read(ref s_defaultTimeoutTicks) != defaultTimeoutTicks)
                 {
                     if (etwLog.IsEnabled())
                     {
