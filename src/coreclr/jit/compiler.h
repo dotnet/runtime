@@ -529,10 +529,9 @@ public:
                                   // 32-bit target.  For implicit byref parameters, this gets hijacked between
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
-    unsigned char lvIsStructField : 1;     // Is this local var a field of a promoted struct local?
-    unsigned char lvOverlappingFields : 1; // True when we have a struct with possibly overlapping fields
-    unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
+    unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
+    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
+    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
