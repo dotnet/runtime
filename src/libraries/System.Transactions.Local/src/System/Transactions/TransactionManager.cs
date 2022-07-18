@@ -278,7 +278,7 @@ namespace System.Transactions
         private static MachineSettingsSection? s_machineSettings;
         private static MachineSettingsSection MachineSettings => s_machineSettings ??= MachineSettingsSection.GetSection();
 
-        private static bool s_defaultTimeoutValidated;
+        private static volatile bool s_defaultTimeoutValidated;
         private static long s_defaultTimeoutTicks;
         public static TimeSpan DefaultTimeout
         {
@@ -380,7 +380,7 @@ namespace System.Transactions
                 }
 
                 long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
-                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(s_defaultTimeoutTicks)).Ticks);
+                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(Interlocked.Read(ref s_defaultTimeoutTicks))).Ticks);
                 if (Interlocked.Read(ref s_defaultTimeoutTicks) != defaultTimeoutTicks)
                 {
                     if (etwLog.IsEnabled())
