@@ -740,7 +740,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         // enum test
         [InlineData("Constructor", typeof(AttributeTargets))]
         [InlineData("CA761232-ED42-11CE-BACD-00AA0057B223", typeof(Guid))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void CanReadAllSupportedTypes(string value, Type type)
         {
             // arrange
@@ -787,7 +786,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         [InlineData(typeof(TimeSpan))]
         [InlineData(typeof(AttributeTargets))]
         [InlineData(typeof(Guid))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void ConsistentExceptionOnFailedBinding(Type type)
         {
             // arrange
