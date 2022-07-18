@@ -90,15 +90,15 @@ _LIBUNWIND_WEAK_ALIAS(__unw_get_reg, unw_get_reg)
 
 /// Set value of specified register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
-                                    unw_word_t value) {
+                                    unw_word_t value, unw_word_t *pos) {
   _LIBUNWIND_TRACE_API("__unw_set_reg(cursor=%p, regNum=%d, value=0x%" PRIxPTR
                        ")",
                        static_cast<void *>(cursor), regNum, value);
   typedef LocalAddressSpace::pint_t pint_t;
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   if (co->validReg(regNum)) {
-    co->setReg(regNum, (pint_t)value);
-    // specical case altering IP to re-find info (being called by personality
+    co->setReg(regNum, (pint_t)value, (pint_t)pos);
+    // special case altering IP to re-find info (being called by personality
     // function)
     if (regNum == UNW_REG_IP) {
       unw_proc_info_t info;
@@ -112,7 +112,7 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
       // this should actually be - info.gp. LLVM doesn't currently support
       // any such platforms and Clang doesn't export a macro for them.
       if (info.gp)
-        co->setReg(UNW_REG_SP, co->getReg(UNW_REG_SP) + info.gp);
+        co->setReg(UNW_REG_SP, co->getReg(UNW_REG_SP) + info.gp, 0);
     }
     return UNW_ESUCCESS;
   }
@@ -153,6 +153,21 @@ _LIBUNWIND_HIDDEN int __unw_set_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
   return UNW_EBADREG;
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_set_fpreg, unw_set_fpreg)
+
+/// Get location of specified register at cursor position in stack frame.
+_LIBUNWIND_HIDDEN int __unw_get_save_loc(unw_cursor_t *cursor, int regNum,
+                                       unw_save_loc_t* location)
+{
+  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
+  if (co->validReg(regNum)) {
+    // We only support memory locations, not register locations
+    location->u.addr = co->getRegLocation(regNum);
+    location->type = (location->u.addr == 0) ? UNW_SLT_NONE : UNW_SLT_MEMORY;
+    return UNW_ESUCCESS;
+  }
+  return UNW_EBADREG;
+}
+_LIBUNWIND_WEAK_ALIAS(__unw_get_save_loc, unw_get_save_loc)
 
 /// Move cursor to next frame.
 _LIBUNWIND_HIDDEN int __unw_step(unw_cursor_t *cursor) {
