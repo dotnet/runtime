@@ -671,5 +671,11 @@ namespace ILCompiler
                 result = comparer.Compare(Method, other.Method);
             return result;
         }
+        public override bool Equals(object obj) =>
+            obj is ConstrainedCallInfo other
+            && ConstrainedType == other.ConstrainedType
+            && Method == other.Method;
+
+        public override int GetHashCode() => HashCode.Combine(ConstrainedType, Method);
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -145,6 +146,8 @@ namespace System.Threading
 
         private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
         {
+            var safeWaitHandle = new SafeWaitHandle();
+
             IntPtr handle = IntPtr.Zero;
             try
             {
@@ -158,19 +161,8 @@ namespace System.Threading
                 }
             }
 
-            SafeWaitHandle? safeWaitHandle = null;
-            try
-            {
-                safeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
-                return safeWaitHandle;
-            }
-            finally
-            {
-                if (safeWaitHandle == null)
-                {
-                    HandleManager.DeleteHandle(handle);
-                }
-            }
+            Marshal.InitHandle(safeWaitHandle, handle);
+            return safeWaitHandle;
         }
 
         public static SafeWaitHandle NewEvent(bool initiallySignaled, EventResetMode resetMode)

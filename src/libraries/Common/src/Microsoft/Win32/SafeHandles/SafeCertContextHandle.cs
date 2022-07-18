@@ -33,8 +33,6 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(_parent.handle);
         }
 
-        internal new void SetHandle(IntPtr handle) => base.SetHandle(handle);
-
         protected override bool ReleaseHandle()
         {
             if (_parent != null)

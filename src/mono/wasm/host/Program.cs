@@ -30,15 +30,12 @@ public class WasmAppHost
 
         using CancellationTokenSource cts = new();
         ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-            builder.AddSimpleConsole(options =>
-            {
-                options.SingleLine = true;
-                options.TimestampFormat = "[HH:mm:ss] ";
-            })
-            .AddFilter("DevToolsProxy", LogLevel.Information)
-            .AddFilter("FirefoxMonoProxy", LogLevel.Information)
-            .AddFilter("host", LogLevel.Trace)
-            .AddFilter(null, LogLevel.Warning));
+            builder
+                .AddPassThroughConsole()
+                .AddFilter("DevToolsProxy", LogLevel.Information)
+                .AddFilter("FirefoxMonoProxy", LogLevel.Information)
+                .AddFilter("host", LogLevel.Trace)
+                .AddFilter(null, LogLevel.Warning));
 
         ILogger logger = loggerFactory.CreateLogger("host");
         try

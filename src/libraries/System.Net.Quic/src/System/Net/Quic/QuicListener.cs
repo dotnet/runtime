@@ -93,6 +93,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// </summary>
     public IPEndPoint LocalEndPoint { get; }
 
+    /// <inheritdoc cref="ToString"/>
     public override string ToString() => _handle.ToString();
 
     /// <summary>

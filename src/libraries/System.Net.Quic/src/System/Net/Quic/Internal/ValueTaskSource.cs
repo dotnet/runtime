@@ -35,9 +35,22 @@ internal sealed class ValueTaskSource : IValueTaskSource
         _keepAlive = default;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> is this task source was completed, i.e. <see cref="TrySetResult"/> or <see cref="TrySetException(Exception)"/> was called.
+    /// </summary>
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
+    /// <summary>
+    /// Returns <c>true</c> is this task source was completed successfully, i.e. <see cref="TrySetResult"/> was called and set the result.
+    /// </summary>
     public bool IsCompletedSuccessfully => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Succeeded;
 
+    /// <summary>
+    /// Tries to transition from <see cref="State.None"/> to <see cref="State.Awaiting"/>. Only the first call is able to do that so the result can be used to determine whether to invoke an operation or not.
+    /// </summary>
+    /// <param name="valueTask">A value task representing the result. In case this method returns <c>false</c>, it'll still contain a value task that'll get set with the original operation.</param>
+    /// <param name="keepAlive">An object to hold during a P/Invoke call. It'll get release with setting the result/exception.</param>
+    /// <param name="cancellationToken">A cancellation token which might cancel the value task.</param>
+    /// <returns><c>true</c> if this is the first call; otherwise, <c>false</c>.</returns>
     public bool TryInitialize(out ValueTask valueTask, object? keepAlive = null, CancellationToken cancellationToken = default)
     {
         lock (this)
@@ -53,8 +66,8 @@ internal sealed class ValueTaskSource : IValueTaskSource
                 {
                     _cancellationRegistration = cancellationToken.UnsafeRegister(static (obj, cancellationToken) =>
                     {
-                        ValueTaskSource parent = (ValueTaskSource)obj!;
-                        parent.TrySetException(new OperationCanceledException(cancellationToken));
+                        ValueTaskSource thisRef = (ValueTaskSource)obj!;
+                        thisRef.TrySetException(new OperationCanceledException(cancellationToken));
                     }, this);
                 }
             }
@@ -134,11 +147,20 @@ internal sealed class ValueTaskSource : IValueTaskSource
         }
     }
 
+    /// <summary>
+    /// Tries to transition from <see cref="State.Awaiting"/> to <see cref="State.Completed"/>. Only the first call is able to do that.
+    /// </summary>
+    /// <returns><c>true</c> if this is the first call that set the result; otherwise, <c>false</c>.</returns>
     public bool TrySetResult()
     {
         return TryComplete(null);
     }
 
+    /// <summary>
+    /// Tries to transition from <see cref="State.Awaiting"/> to <see cref="State.Completed"/>. Only the first call is able to do that.
+    /// </summary>
+    /// <param name="exception">The exception to set as a result of the value task.</param>
+    /// <returns><c>true</c> if this is the first call that set the result; otherwise, <c>false</c>.</returns>
     public bool TrySetException(Exception exception)
     {
         return TryComplete(exception);

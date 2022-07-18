@@ -862,6 +862,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _method = method;
             Debug.Assert(method.HasInstantiation);
+            Debug.Assert(!method.IsGenericMethodDefinition);
             Debug.Assert(method.IsCanonicalMethod(CanonicalFormKind.Any));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method, "Assert that the canonical method passed in is in standard canonical form");
         }

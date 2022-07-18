@@ -108,7 +108,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
-                Log.LogError($"workload install failed: {output}");
+                Log.LogError($"workload install failed with exit code {exitCode}: {output}");
 
                 foreach (string dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "sdk-manifests"), "*", SearchOption.AllDirectories))
                     Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(SdkDir, "sdk-manifests", dir)}");
