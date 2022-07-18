@@ -105,7 +105,7 @@ inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
     return (GCRefKind)(returnKind >> 2);
 }
 
-#endif // TARGET_ARM64
+#endif
 
 // Extract individual GCRefKind components from a composite return kind
 inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)

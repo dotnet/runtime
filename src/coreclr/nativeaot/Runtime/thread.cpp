@@ -439,7 +439,6 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
-#ifdef TARGET_64BIT
         GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
         if (reg0Kind != GCRK_Scalar)
         {
@@ -455,9 +454,6 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
         }
 #endif  // TARGET_ARM64 || TARGET_UNIX
 
-#else
-        RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, returnValueKind, pfnEnumCallback, pvCallbackData);
-#endif
     }
 
 #ifndef DACCESS_COMPILE
