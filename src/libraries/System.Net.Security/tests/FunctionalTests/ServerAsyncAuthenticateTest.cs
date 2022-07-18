@@ -45,6 +45,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
             SslProtocols serverProtocol)
@@ -59,18 +60,7 @@ namespace System.Net.Security.Tests
                 });
 
             Assert.NotNull(e);
-
-            if (PlatformDetection.IsAndroid)
-            {
-                Assert.True(
-                    e is AuthenticationException || e is System.IO.IOException,
-                    $"the exception should be either AuthenticationException or IOException and not {e.GetType().FullName}"
-                );
-            }
-            else
-            {
-                Assert.IsType<AuthenticationException>(e);
-            }
+            Assert.IsType<AuthenticationException>(e);
         }
 
         [Theory]
