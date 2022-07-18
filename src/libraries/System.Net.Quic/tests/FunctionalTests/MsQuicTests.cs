@@ -132,12 +132,11 @@ namespace System.Net.Quic.Tests
             clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
             Task<QuicConnection> clientTask = CreateQuicConnection(clientOptions).AsTask();
 
-            using CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(500); //Some delay to see if we would get failed connection.
-            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            // This will propagate the AuthenticationException since the client certificate is not trusted.
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
 
             Assert.True(clientTask.Wait(PassingTestTimeout));
-            await Assert.ThrowsAsync<OperationCanceledException>(() => serverTask);
+            await Assert.ThrowsAsync<AuthenticationException>(() => serverTask);
             // The task will likely succeed but we don't really care.
             // It may fail if the server aborts quickly.
             try
@@ -179,6 +178,7 @@ namespace System.Net.Quic.Tests
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
 
             await Assert.ThrowsAsync<ArithmeticException>(() => CreateQuicConnection(clientOptions).AsTask());
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
 
             // Make sure the listener is still usable and there is no lingering bad connection
             validationResult = true;
@@ -245,8 +245,9 @@ namespace System.Net.Quic.Tests
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar3";
             Task clientTask = CreateQuicConnection(clientOptions).AsTask();
 
-            await Assert.ThrowsAnyAsync<QuicException>(() => clientTask);
+            await Assert.ThrowsAsync<QuicException>(() => clientTask);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
+            await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
 
             // Do this last to make sure Listener is still functional.
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar2";
