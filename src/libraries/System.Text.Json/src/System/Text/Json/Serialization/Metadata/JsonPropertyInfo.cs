@@ -23,23 +23,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal ConverterStrategy ConverterStrategy { get; private protected set; }
 
         /// <summary>
-        /// Converter resolved from PropertyType and not taking in consideration any custom attributes or custom settings.
-        /// - for reflection we store the original value since we need it in order to construct typed JsonPropertyInfo
-        /// - for source gen it remains null, we will initialize it only if someone used resolver to remove CustomConverter
-        /// </summary>
-        internal JsonConverter? DefaultConverterForType
-        {
-            get => _defaultConverterForType;
-            set
-            {
-                _defaultConverterForType = value;
-                ConverterStrategy = value?.ConverterStrategy ?? default;
-            }
-        }
-
-        private JsonConverter? _defaultConverterForType;
-
-        /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
         /// </summary>
         internal abstract JsonConverter EffectiveConverter { get; }
@@ -255,7 +238,8 @@ namespace System.Text.Json.Serialization.Metadata
                 CacheNameAsUtf8BytesAndEscapedNameSection();
             }
 
-            DetermineEffectiveConverter();
+            _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType, ensureConfigured: false);
+            DetermineEffectiveConverter(_jsonTypeInfo);
 
             if (IsForTypeInfo)
             {
@@ -269,7 +253,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private protected abstract void DetermineEffectiveConverter();
+        private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
         private protected abstract void DetermineMemberAccessors(MemberInfo memberInfo);
 
         private void DeterminePoliciesFromMember(MemberInfo memberInfo)
@@ -406,12 +390,15 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForProperty()
         {
+            Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
+            Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
+
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
-                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling ?? JsonTypeInfo.NumberHandling;
+                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling ?? _jsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -563,7 +550,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public string Name
         {
-            get => _name;
+            get
+            {
+                Debug.Assert(_name != null);
+                return _name;
+            }
             set
             {
                 VerifyMutable();
@@ -577,7 +568,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private string _name = null!;
+        private string? _name;
 
         /// <summary>
         /// Utf8 version of Name.
@@ -664,7 +655,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Slower path for non-generic types that implement IDictionary<,>.
                     // It is possible to cache this converter on JsonTypeInfo if we assume the property value
                     // will always be the same type for all instances.
-                    converter = Options.GetConverterFromTypeInfo(dictionaryValueType);
+                    converter = Options.GetConverterInternal(dictionaryValueType);
                 }
 
                 Debug.Assert(converter != null);
@@ -686,7 +677,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
-            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverterFromTypeInfo(typeof(JsonElement));
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverterInternal(typeof(JsonElement));
             if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
             {
                 // JsonElement is a struct that must be read in full.
@@ -717,26 +708,17 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                if (_jsonTypeInfo != null)
-                {
-                    // We should not call it on set as it's usually called during initialization
-                    // which is too early to `lock` the JsonTypeInfo
-                    // If this property ever becomes public we should move this to callsites
-                    _jsonTypeInfo.EnsureConfigured();
-                }
-                else
-                {
-                    // GetOrAddJsonTypeInfo already ensures it's configured.
-                    _jsonTypeInfo = Options.GetTypeInfoCached(PropertyType);
-                }
-
+                Debug.Assert(IsConfigured);
+                Debug.Assert(_jsonTypeInfo != null);
+                _jsonTypeInfo.EnsureConfigured();
                 return _jsonTypeInfo;
             }
             set
             {
-                // Used by JsonMetadataServices.
                 // This could potentially be double initialized
                 Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
+                // Ensure the right strategy is surfaced in PropertyInfoForTypeInfo early
+                ConverterStrategy = value?.Converter.ConverterStrategy ?? default;
                 _jsonTypeInfo = value;
             }
         }

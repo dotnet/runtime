@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
@@ -241,7 +240,7 @@ namespace System.Text.Json.Serialization.Tests
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
-                using (Utf8JsonWriter writer = new(stream))
+                using (Utf8JsonWriter writer = new(stream, OptionsHelpers.GetWriterOptions(options)))
                 {
                     JsonSerializer.Serialize(writer, value, inputType, options);
                 }
@@ -252,7 +251,7 @@ namespace System.Text.Json.Serialization.Tests
             public override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
-                using (Utf8JsonWriter writer = new(stream))
+                using (Utf8JsonWriter writer = new(stream, OptionsHelpers.GetWriterOptions(options)))
                 {
                     JsonSerializer.Serialize<T>(writer, value, options);
                 }
@@ -263,7 +262,7 @@ namespace System.Text.Json.Serialization.Tests
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             {
                 using MemoryStream stream = new MemoryStream();
-                using (Utf8JsonWriter writer = new(stream))
+                using (Utf8JsonWriter writer = new(stream, OptionsHelpers.GetWriterOptions(context?.Options)))
                 {
                     JsonSerializer.Serialize(writer, value, inputType, context);
                 }
@@ -274,7 +273,7 @@ namespace System.Text.Json.Serialization.Tests
             public override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
             {
                 using MemoryStream stream = new MemoryStream();
-                using (Utf8JsonWriter writer = new(stream))
+                using (Utf8JsonWriter writer = new(stream, OptionsHelpers.GetWriterOptions(jsonTypeInfo?.Options)))
                 {
                     JsonSerializer.Serialize(writer, value, jsonTypeInfo);
                 }
@@ -284,25 +283,25 @@ namespace System.Text.Json.Serialization.Tests
 
             public override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
-                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json), OptionsHelpers.GetReaderOptions(options));
                 return Task.FromResult(JsonSerializer.Deserialize<T>(ref reader, options));
             }
 
             public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
-                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json), OptionsHelpers.GetReaderOptions(options));
                 return Task.FromResult(JsonSerializer.Deserialize(ref reader, type, options));
             }
 
             public override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
             {
-                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json), OptionsHelpers.GetReaderOptions(jsonTypeInfo?.Options));
                 return Task.FromResult(JsonSerializer.Deserialize(ref reader, jsonTypeInfo));
             }
 
             public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
             {
-                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+                Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json), OptionsHelpers.GetReaderOptions(context?.Options));
                 return Task.FromResult(JsonSerializer.Deserialize(ref reader, type, context));
             }
         }
@@ -355,10 +354,10 @@ namespace System.Text.Json.Serialization.Tests
                 if (json is null)
                 {
                     // Emulate a null document for API validation tests.
-                    return Task.FromResult(JsonSerializer.Deserialize<T>(document: null));
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(document: null, options));
                 }
 
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(options));
                 return Task.FromResult(document.Deserialize<T>(options));
             }
 
@@ -367,10 +366,10 @@ namespace System.Text.Json.Serialization.Tests
                 if (json is null)
                 {
                     // Emulate a null document for API validation tests.
-                    return Task.FromResult(JsonSerializer.Deserialize(document: null, type));
+                    return Task.FromResult(JsonSerializer.Deserialize(document: null, type, options));
                 }
 
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(options));
                 return Task.FromResult(document.Deserialize(type, options));
             }
 
@@ -382,8 +381,8 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize<T>(document: null, jsonTypeInfo));
                 }
 
-                using JsonDocument document = JsonDocument.Parse(json);
-                return Task.FromResult(document.Deserialize<T>(jsonTypeInfo));
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(jsonTypeInfo?.Options));
+                return Task.FromResult(document.Deserialize(jsonTypeInfo));
             }
 
             public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
@@ -394,7 +393,7 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize(document: null, type, context));
                 }
 
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(context?.Options));
                 return Task.FromResult(document.Deserialize(type, context));
             }
         }
@@ -404,31 +403,31 @@ namespace System.Text.Json.Serialization.Tests
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, inputType, options);
-                return Task.FromResult(GetStringFromElement(element));
+                return Task.FromResult(GetStringFromElement(element, options));
             }
 
             public override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, options);
-                return Task.FromResult(GetStringFromElement(element));
+                return Task.FromResult(GetStringFromElement(element, options));
             }
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, inputType, context);
-                return Task.FromResult(GetStringFromElement(element));
+                return Task.FromResult(GetStringFromElement(element, context?.Options));
             }
 
             public override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, jsonTypeInfo);
-                return Task.FromResult(GetStringFromElement(element));
+                return Task.FromResult(GetStringFromElement(element, jsonTypeInfo?.Options));
             }
 
-            private string GetStringFromElement(JsonElement element)
+            private string GetStringFromElement(JsonElement element, JsonSerializerOptions options)
             {
                 using MemoryStream stream = new MemoryStream();
-                using (Utf8JsonWriter writer = new(stream))
+                using (Utf8JsonWriter writer = new(stream, OptionsHelpers.GetWriterOptions(options)))
                 {
                     element.WriteTo(writer);
                 }
@@ -437,25 +436,25 @@ namespace System.Text.Json.Serialization.Tests
 
             public override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(options));
                 return Task.FromResult(document.RootElement.Deserialize<T>(options));
             }
 
             public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(options));
                 return Task.FromResult(document.RootElement.Deserialize(type, options));
             }
 
             public override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
             {
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(jsonTypeInfo?.Options));
                 return Task.FromResult(document.RootElement.Deserialize<T>(jsonTypeInfo));
             }
 
             public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
             {
-                using JsonDocument document = JsonDocument.Parse(json);
+                using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(context?.Options));
                 return Task.FromResult(document.RootElement.Deserialize(type, context));
             }
         }
@@ -521,10 +520,10 @@ namespace System.Text.Json.Serialization.Tests
                 if (json is null)
                 {
                     // Emulate a null node for API validation tests.
-                    return Task.FromResult(JsonSerializer.Deserialize<T>(node: null));
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(node: null, options));
                 }
 
-                JsonNode node = JsonNode.Parse(json);
+                JsonNode node = JsonNode.Parse(json, OptionsHelpers.GetNodeOptions(options), OptionsHelpers.GetDocumentOptions(options));
                 return Task.FromResult(node.Deserialize<T>(options));
             }
 
@@ -533,10 +532,10 @@ namespace System.Text.Json.Serialization.Tests
                 if (json is null)
                 {
                     // Emulate a null node for API validation tests.
-                    return Task.FromResult(JsonSerializer.Deserialize(node: null, type));
+                    return Task.FromResult(JsonSerializer.Deserialize(node: null, type, options));
                 }
 
-                JsonNode node = JsonNode.Parse(json);
+                JsonNode node = JsonNode.Parse(json, OptionsHelpers.GetNodeOptions(options), OptionsHelpers.GetDocumentOptions(options));
                 return Task.FromResult(node.Deserialize(type, options));
             }
 
@@ -548,7 +547,7 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize(node: null, jsonTypeInfo));
                 }
 
-                JsonNode node = JsonNode.Parse(json);
+                JsonNode node = JsonNode.Parse(json, OptionsHelpers.GetNodeOptions(jsonTypeInfo?.Options), OptionsHelpers.GetDocumentOptions(jsonTypeInfo?.Options));
                 return Task.FromResult(node.Deserialize<T>(jsonTypeInfo));
             }
 
@@ -557,12 +556,66 @@ namespace System.Text.Json.Serialization.Tests
                 if (json is null)
                 {
                     // Emulate a null document for API validation tests.
-                    return Task.FromResult(JsonSerializer.Deserialize(node: null, type));
+                    return Task.FromResult(JsonSerializer.Deserialize(node: null, type, context?.Options));
                 }
 
-                JsonNode node = JsonNode.Parse(json);
+                JsonNode node = JsonNode.Parse(json, OptionsHelpers.GetNodeOptions(context?.Options), OptionsHelpers.GetDocumentOptions(context?.Options));
                 return Task.FromResult(node.Deserialize(type, context));
             }
+        }
+
+        private static class OptionsHelpers
+        {
+            public static JsonWriterOptions GetWriterOptions(JsonSerializerOptions? options)
+            {
+                return options is null
+                    ? default
+                    : new JsonWriterOptions
+                    {
+                        Encoder = options.Encoder,
+                        Indented = options.WriteIndented,
+                        MaxDepth = GetEffectiveMaxDepth(options),
+    #if !DEBUG
+                            SkipValidation = true
+    #endif
+                    };
+            }
+
+            public static JsonReaderOptions GetReaderOptions(JsonSerializerOptions? options)
+            {
+                return options is null
+                    ? default
+                    : new JsonReaderOptions
+                    {
+                        AllowTrailingCommas = options.AllowTrailingCommas,
+                        CommentHandling = options.ReadCommentHandling,
+                        MaxDepth = GetEffectiveMaxDepth(options),
+                    };
+            }
+
+            public static JsonDocumentOptions GetDocumentOptions(JsonSerializerOptions? options)
+            {
+                return options is null
+                    ? default
+                    : new JsonDocumentOptions
+                    {
+                        MaxDepth = GetEffectiveMaxDepth(options),
+                        AllowTrailingCommas = options.AllowTrailingCommas,
+                        CommentHandling = options.ReadCommentHandling
+                    };
+            }
+
+            public static JsonNodeOptions GetNodeOptions(JsonSerializerOptions? options)
+            {
+                return options is null
+                    ? default
+                    : new JsonNodeOptions
+                    {
+                        PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive
+                    };
+            }
+
+            private static int GetEffectiveMaxDepth(JsonSerializerOptions options) => options.MaxDepth == 0 ? 64 : options.MaxDepth;
         }
 
         /// <summary>

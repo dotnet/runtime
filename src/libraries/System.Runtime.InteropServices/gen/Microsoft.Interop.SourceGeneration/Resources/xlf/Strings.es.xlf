@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
         <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
+        <target state="translated">El tipo de serializador "{0}" para el tipo administrado "{1}" debe ser una clase estática o un struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

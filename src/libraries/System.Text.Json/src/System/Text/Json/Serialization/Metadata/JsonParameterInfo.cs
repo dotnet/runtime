@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(Options != null);
                 Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetTypeInfoCached(PropertyType);
+                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
             }
             set
             {

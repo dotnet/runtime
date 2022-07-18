@@ -492,7 +492,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var origin = new Dictionary<string, int> { ["a"] = 97 };
 
             config.Bind("ascii", origin);
-            
+
             Assert.Equal(2, origin.Count);
             Assert.Equal(97, origin["a"]);
             Assert.Equal(98, origin["b"]);
@@ -965,7 +965,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var options = new UnintializedCollectionsOptions();
+            var options = new UninitializedCollectionsOptions();
             config.Bind(options);
 
             var array = options.IEnumerable.ToArray();
@@ -1088,7 +1088,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var options = new UnintializedCollectionsOptions();
+            var options = new UninitializedCollectionsOptions();
             config.Bind(options);
 
             var array = options.ICollection.ToArray();
@@ -1116,7 +1116,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var options = new UnintializedCollectionsOptions();
+            var options = new UninitializedCollectionsOptions();
             config.Bind(options);
 
             var array = options.IReadOnlyCollection.ToArray();
@@ -1144,7 +1144,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var options = new UnintializedCollectionsOptions();
+            var options = new UninitializedCollectionsOptions();
             config.Bind(options);
 
             var array = options.IReadOnlyList.ToArray();
@@ -1171,7 +1171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var options = new UnintializedCollectionsOptions();
+            var options = new UninitializedCollectionsOptions();
             config.Bind(options);
 
             Assert.Equal(3, options.IDictionary.Count);
@@ -1195,7 +1195,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var options = new UnintializedCollectionsOptions();
+            var options = new UninitializedCollectionsOptions();
             config.Bind(options);
 
             Assert.Equal(3, options.IReadOnlyDictionary.Count);
@@ -1250,7 +1250,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(new[] { "a", "b" }, options.ListPropertyWithoutSetter);
         }
 
-        private class UnintializedCollectionsOptions
+        private class UninitializedCollectionsOptions
         {
             public IEnumerable<string> IEnumerable { get; set; }
             public IDictionary<string, string> IDictionary { get; set; }

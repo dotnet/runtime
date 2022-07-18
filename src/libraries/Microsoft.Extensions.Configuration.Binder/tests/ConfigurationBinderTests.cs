@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 Age = age;
             }
         }
-        
+
 
         public record RecordTypeOptions(string Color, int Length);
 
@@ -206,7 +206,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public string Color { get; set; }
             public int Length { get; set;  }
         }
-        
+
         public class ImmutableLengthAndColorClass
         {
             public ImmutableLengthAndColorClass(string color, int length)
@@ -454,7 +454,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<ComplexOptions>();
-            
+
             Assert.Equal("Yo", options.NamedProperty);
         }
 
@@ -740,7 +740,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         // enum test
         [InlineData("Constructor", typeof(AttributeTargets))]
         [InlineData("CA761232-ED42-11CE-BACD-00AA0057B223", typeof(Guid))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void CanReadAllSupportedTypes(string value, Type type)
         {
             // arrange
@@ -787,7 +786,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         [InlineData(typeof(TimeSpan))]
         [InlineData(typeof(AttributeTargets))]
         [InlineData(typeof(Guid))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void ConsistentExceptionOnFailedBinding(Type type)
         {
             // arrange
@@ -1495,7 +1493,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<MutableStructWithConstructor>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
-        }        
+        }
 
         // If the immutable type has a public parameterized constructor,
         // then pick it.
@@ -1757,10 +1755,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 { $"{nameof(BaseClassWithVirtualProperty.Test)}:0", "1" },
-                { $"{nameof(BaseClassWithVirtualProperty.TestGetSetOverriden)}", "2" },
-                { $"{nameof(BaseClassWithVirtualProperty.TestGetOverriden)}", "3" },
-                { $"{nameof(BaseClassWithVirtualProperty.TestSetOverriden)}", "4" },
-                { $"{nameof(BaseClassWithVirtualProperty.TestNoOverriden)}", "5" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestGetSetOverridden)}", "2" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestGetOverridden)}", "3" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestSetOverridden)}", "4" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestNoOverridden)}", "5" },
                 { $"{nameof(BaseClassWithVirtualProperty.TestVirtualSet)}", "6" }
             });
             IConfiguration config = configurationBuilder.Build();
@@ -1769,10 +1767,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             config.Bind(test);
 
             Assert.Equal("1", Assert.Single(test.Test));
-            Assert.Equal("2", test.TestGetSetOverriden);
-            Assert.Equal("3", test.TestGetOverriden);
-            Assert.Equal("4", test.TestSetOverriden);
-            Assert.Equal("5", test.TestNoOverriden);
+            Assert.Equal("2", test.TestGetSetOverridden);
+            Assert.Equal("3", test.TestGetOverridden);
+            Assert.Equal("4", test.TestSetOverridden);
+            Assert.Equal("5", test.TestNoOverridden);
             Assert.Null(test.ExposeTestVirtualSet());
         }
 
@@ -1874,9 +1872,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public virtual string[] Test { get; set; } = System.Array.Empty<string>();
 
-            public virtual string? TestGetSetOverriden { get; set; }
-            public virtual string? TestGetOverriden { get; set; }
-            public virtual string? TestSetOverriden { get; set; }
+            public virtual string? TestGetSetOverridden { get; set; }
+            public virtual string? TestGetOverridden { get; set; }
+            public virtual string? TestSetOverridden { get; set; }
 
             private string? _testVirtualSet;
             public virtual string? TestVirtualSet
@@ -1884,7 +1882,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 set => _testVirtualSet = value;
             }
 
-            public virtual string? TestNoOverriden { get; set; }
+            public virtual string? TestNoOverridden { get; set; }
 
             public string? ExposePrivatePropertyValue() => PrivateProperty;
         }
@@ -1893,11 +1891,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public override string[] Test { get => base.Test; set => base.Test = value; }
 
-            public override string? TestGetSetOverriden { get; set; }
-            public override string? TestGetOverriden => base.TestGetOverriden;
-            public override string? TestSetOverriden
+            public override string? TestGetSetOverridden { get; set; }
+            public override string? TestGetOverridden => base.TestGetOverridden;
+            public override string? TestSetOverridden
             {
-                set => base.TestSetOverriden = value;
+                set => base.TestSetOverridden = value;
             }
 
             private string? _testVirtualSet;

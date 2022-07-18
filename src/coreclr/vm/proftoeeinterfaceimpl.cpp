@@ -90,7 +90,7 @@
 //             on startup). If a profiler later attaches and calls these functions, then the
 //             ObjectAllocated notifications will call into the profiler's ObjectAllocated callback.
 //    * COMPlus_TestOnlyEnableICorProfilerInfo:
-//         * If nonzero, then attaching profilers allows to call ICorProfilerInfo inteface,
+//         * If nonzero, then attaching profilers allows to call ICorProfilerInfo interface,
 //             which would otherwise be disallowed for attaching profilers
 //    * COMPlus_TestOnlyAllowedEventMask
 //         * If a profiler needs to work around the restrictions of either
@@ -566,6 +566,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo12)
     {
         *pInterface = static_cast<ICorProfilerInfo12 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo13)
+    {
+        *pInterface = static_cast<ICorProfilerInfo13 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -4334,7 +4338,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     // Don't return rewritten IL, use the new API to get that.
     pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId, FALSE);
 
-    // Method not overriden - get the original copy of the IL by going to metadata
+    // Method not overridden - get the original copy of the IL by going to metadata
     if (pbMethod == NULL)
     {
         HRESULT hr = S_OK;
@@ -7454,6 +7458,131 @@ void ProfToEEInterfaceImpl::EventPipeCallbackHelper(EventPipeProvider *provider,
     }
 };
 
+HRESULT ProfToEEInterfaceImpl::CreateHandle(
+    ObjectID object,
+    COR_PRF_HANDLE_TYPE type,
+    ObjectHandleID* pHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: CreateHandle.\n"));
+
+    if (object == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    AppDomain* appDomain = GetAppDomain();
+    if (appDomain == NULL)
+    {
+        return E_FAIL;
+    }
+
+    OBJECTHANDLE handle;
+    switch(type)
+    {
+        case COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK:
+            handle = appDomain->CreateLongWeakHandle(ObjectToOBJECTREF(object));
+        break;
+
+        case COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_STRONG:
+            handle = appDomain->CreateStrongHandle(ObjectToOBJECTREF(object));
+        break;
+
+        case COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_PINNED:
+            handle = appDomain->CreatePinningHandle(ObjectToOBJECTREF(object));
+        break;
+
+        default:
+        {
+            *pHandle = NULL;
+            return E_INVALIDARG;
+        }
+        break;
+    }
+
+    *pHandle = (ObjectHandleID)handle;
+
+    return (handle == NULL) ? E_FAIL : S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::DestroyHandle(
+    ObjectHandleID handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: DestroyHandle.\n"));
+
+    if (handle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Destroying a given handle seems to require its type...
+    // Would it be possible to call GCHandleManager::DestroyHandleOfUnknownType
+    // or DestroyTypedHandle() without performance penalty?
+    DestroyTypedHandle((OBJECTHANDLE)handle);
+
+    return S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
+    ObjectHandleID handle,
+    ObjectID* pObject)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: GetObjectIDFromHandle.\n"));
+
+    if (handle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pObject == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    *pObject = (ObjectID)OBJECTREFToObject(ObjectFromHandle((OBJECTHANDLE)handle));
+
+    return S_OK;
+}
 
 
 /*
@@ -7900,7 +8029,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
 //---------------------------------------------------------------------------------------
 // Normally, calling GetFunction() on the frame is sufficient to ensure
-// HelperMethodFrames are intialized. However, sometimes we need to be able to specify
+// HelperMethodFrames are initialized. However, sometimes we need to be able to specify
 // that we should not enter the host while initializing, so we need to initialize such
 // frames more directly. This small helper function directly forces the initialization,
 // and ensures we don't enter the host as a result if we're executing in an asynchronous

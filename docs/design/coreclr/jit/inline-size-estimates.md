@@ -348,7 +348,7 @@ there.
 
 So we can now see why this particular case has such extreme
 `SizeImpact`: the un-inlined call triggers frame creation and a fair
-amount of shuffling to accomodate the potential side effects of the
+amount of shuffling to accommodate the potential side effects of the
 call.
 
 #### Case 2: Typical Savings

@@ -84,10 +84,10 @@ namespace System.Configuration
             ConfigurationSaveMode saveMode)
         {
             ProviderSettings parentProviders = parentElement as ProviderSettings;
-            parentProviders?.UpdatePropertyCollection(); // before reseting make sure the bag is filled in
+            parentProviders?.UpdatePropertyCollection(); // before resetting make sure the bag is filled in
 
             ProviderSettings sourceProviders = sourceElement as ProviderSettings;
-            sourceProviders?.UpdatePropertyCollection(); // before reseting make sure the bag is filled in
+            sourceProviders?.UpdatePropertyCollection(); // before resetting make sure the bag is filled in
 
             base.Unmerge(sourceElement, parentElement, saveMode);
             UpdatePropertyCollection();
@@ -96,7 +96,7 @@ namespace System.Configuration
         protected internal override void Reset(ConfigurationElement parentElement)
         {
             ProviderSettings parentProviders = parentElement as ProviderSettings;
-            parentProviders?.UpdatePropertyCollection(); // before reseting make sure the bag is filled in
+            parentProviders?.UpdatePropertyCollection(); // before resetting make sure the bag is filled in
 
             base.Reset(parentElement);
         }

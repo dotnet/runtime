@@ -1137,7 +1137,7 @@
 
 /**************************************************************************
 *  This should go away. It's only for __success which we should split into.
-*  __success and __typdecl_sucess
+*  __success and __typdecl_success
 ***************************************************************************/
 #define __$allowed_on_function_or_typedecl /* empty */
 #if (__SPECSTRINGS_STRICT_LEVEL == 1) || (__SPECSTRINGS_STRICT_LEVEL == 2)

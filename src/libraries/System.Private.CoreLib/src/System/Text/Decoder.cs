@@ -208,7 +208,7 @@ namespace System.Text
         // It will decode until it runs out of bytes, and then it will return
         // true if it the entire input was converted.  In either case it
         // will also return the number of converted bytes and output characters used.
-        // It will only throw a buffer overflow exception if the entire lenght of chars[] is
+        // It will only throw a buffer overflow exception if the entire length of chars[] is
         // too small to store the next char. (like 0 or maybe 1 or 4 for some encodings)
         // We're done processing this buffer only if completed returns true.
         //

@@ -65,7 +65,7 @@ class Program
             // Make sure the constrained call to ToString doesn't box
             var mystruct = new MyStructWithVirtuals();
             mystruct.ToString();
-            Assert.AreEqual(mystruct.X, "Overriden");
+            Assert.AreEqual(mystruct.X, "Overridden");
         }
     }
 

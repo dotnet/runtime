@@ -105,7 +105,7 @@ static MonoCoopMutex pending_done_mutex;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
-static void reference_queue_proccess_all (void);
+static void reference_queue_process_all (void);
 static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
 static void mono_runtime_do_background_work (void);
@@ -862,7 +862,7 @@ mono_runtime_do_background_work (void)
 
 	mono_threads_join_threads ();
 
-	reference_queue_proccess_all ();
+	reference_queue_process_all ();
 
 	hazard_free_queue_pump ();
 }
@@ -1067,7 +1067,7 @@ ref_list_push (RefQueueEntry **head, RefQueueEntry *value)
 }
 
 static void
-reference_queue_proccess (MonoReferenceQueue *queue)
+reference_queue_process (MonoReferenceQueue *queue)
 {
 	RefQueueEntry **iter = &queue->queue;
 	RefQueueEntry *entry;
@@ -1084,12 +1084,12 @@ reference_queue_proccess (MonoReferenceQueue *queue)
 }
 
 static void
-reference_queue_proccess_all (void)
+reference_queue_process_all (void)
 {
 	MonoReferenceQueue **iter;
 	MonoReferenceQueue *queue = ref_queues;
 	for (; queue; queue = queue->next)
-		reference_queue_proccess (queue);
+		reference_queue_process (queue);
 
 restart:
 	mono_coop_mutex_lock (&reference_queue_mutex);
@@ -1101,7 +1101,7 @@ restart:
 		}
 		if (queue->queue) {
 			mono_coop_mutex_unlock (&reference_queue_mutex);
-			reference_queue_proccess (queue);
+			reference_queue_process (queue);
 			goto restart;
 		}
 		*iter = queue->next;
@@ -1116,7 +1116,7 @@ mono_reference_queue_cleanup (void)
 	MonoReferenceQueue *queue = ref_queues;
 	for (; queue; queue = queue->next)
 		queue->should_be_deleted = TRUE;
-	reference_queue_proccess_all ();
+	reference_queue_process_all ();
 }
 
 static void

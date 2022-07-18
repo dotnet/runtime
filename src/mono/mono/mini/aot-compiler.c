@@ -6871,7 +6871,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		guint32 offset;
 
 		/*
-		 * entry->d.klass/method has a lenghtly encoding and multiple rgctx_fetch entries
+		 * entry->d.klass/method has a lengthly encoding and multiple rgctx_fetch entries
 		 * reference the same klass/method, so encode it only once.
 		 * For patches which refer to got entries, this sharing is done by get_got_offset, but
 		 * these are not got entries.
@@ -12289,7 +12289,7 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
  * If a method has at least one generic parameter constrained to a reference type, then REF shared method must be generated.
  * On the other hand, if a method has at least one generic parameter constrained to a value type, then GSHAREDVT method must be generated.
  * A special case, when extra methods are always generated, is for generic methods of generic types.
- * 
+ *
  * Returns: TRUE - extra method should be generated, otherwise FALSE
  */
 static gboolean

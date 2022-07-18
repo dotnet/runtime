@@ -2217,7 +2217,7 @@ BOOL PrettyPrintCustomAttributeBlob(mdToken tkType, BYTE* pBlob, ULONG ulLen, vo
 {
     char* initszptr = szString + strlen(szString);
     PCCOR_SIGNATURE typePtr;            // type to convert,
-    ULONG typeLen;                  // the lenght of 'typePtr'
+    ULONG typeLen;                  // the length of 'typePtr'
     CHECK_LOCAL_STATIC_VAR(static CQuickBytes out); // where to put the pretty printed string
 
     IMDInternalImport *pIMDI = g_pImport; // ptr to IMDInternalImport class with ComSig
@@ -7029,7 +7029,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
+    sprintf_s(szString,SZSTRING_SIZE,"//  .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {

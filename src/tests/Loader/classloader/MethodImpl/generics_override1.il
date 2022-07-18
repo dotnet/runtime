@@ -4,7 +4,7 @@
 // This test covers the scenario of testing overrides of generic methods
 // 1. Test1 covers testing cases where a MethodImpl Decl could
 //    resolve to 2 different methods and the exact signature is needed to represent
-//    which method is overriden.
+//    which method is overridden.
 // 2. Test2 covers testing the substitution chain handling scenario.
 
 // Metadata version: v4.0.30319
@@ -16,12 +16,12 @@
 .assembly extern xunit.core {}
 .assembly 'generics_override1'
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
   // --- The following custom attribute is added automatically, do not uncomment -------
-  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -40,7 +40,7 @@
 .class private abstract auto ansi beforefieldinit Base`2<T,U>
        extends [mscorlib]System.Object
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method([out] class [mscorlib]System.Collections.Generic.List`1<!U>& y,
                                 class [mscorlib]System.Collections.Generic.List`1<!T>& x) cil managed
   {
@@ -54,7 +54,7 @@
     IL_000f:  ret
   } // end of method Base`2::Method
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method(class [mscorlib]System.Collections.Generic.List`1<!T>& x,
                                 [out] class [mscorlib]System.Collections.Generic.List`1<!U>& y) cil managed
   {
@@ -68,7 +68,7 @@
     IL_000f:  ret
   } // end of method Base`2::Method
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method(class [mscorlib]System.Collections.Generic.List`1<!U>& x) cil managed
   {
     // Code size       13 (0xd)
@@ -78,7 +78,7 @@
     IL_000c:  ret
   } // end of method Base`2::Method
 
-  .method family hidebysig specialname rtspecialname 
+  .method family hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -94,7 +94,7 @@
 .class private auto ansi beforefieldinit Base2`2<A,B>
        extends class Base`2<!A,!B>
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method([out] class [mscorlib]System.Collections.Generic.List`1<!A>& x) cil managed
   {
     // Code size       16 (0x10)
@@ -107,7 +107,7 @@
     IL_000f:  ret
   } // end of method Base2`2::Method
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -123,7 +123,7 @@
 .class private auto ansi beforefieldinit Derived
        extends class Base2`2<int32,int32>
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method(class [mscorlib]System.Collections.Generic.List`1<int32>& a,
                                 [out] class [mscorlib]System.Collections.Generic.List`1<int32>& b) cil managed
   {
@@ -139,7 +139,7 @@
     IL_000f:  ret
   } // end of method Derived::Method
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method(class [mscorlib]System.Collections.Generic.List`1<int32>& a) cil managed
   {
     .override  method instance string class Base`2<int32,int32>::Method(class [mscorlib]System.Collections.Generic.List`1<!1>&)
@@ -150,7 +150,7 @@
     IL_000c:  ret
   } // end of method Derived::Method
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -168,7 +168,7 @@
 .class private auto ansi beforefieldinit BaseTestGenericsShape`4<A,B,C,D>
       extends [mscorlib]System.Object
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method(!A a,
                                   !B b) cil managed
   {
@@ -184,7 +184,7 @@
     IL_000a:  ret
   } // end of method BaseTestGenericsShape`4::Method
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance string  Method(!C c,
                                   !D d) cil managed
   {
@@ -200,7 +200,7 @@
     IL_000a:  ret
   } // end of method BaseTestGenericsShape`4::Method
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -216,7 +216,7 @@
 .class private auto ansi beforefieldinit IntermediateGenericsShape`2<E,F>
       extends class BaseTestGenericsShape`4<object,string,!E,!F>
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -232,7 +232,7 @@
 .class private auto ansi beforefieldinit DerivedGenericsShape`1<G>
       extends class IntermediateGenericsShape`2<int32,!G>
 {
-  .method public hidebysig virtual instance string 
+  .method public hidebysig virtual instance string
           MethodOnDerived(int32 e,
                 !G f) cil managed
   {
@@ -249,7 +249,7 @@
     IL_000a:  ret
   } // end of method DerivedGenericsShape`1::Method
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -265,7 +265,7 @@
 .class private auto ansi beforefieldinit DerivedGenericsShapeInvalidSubstitutedOverride
       extends class IntermediateGenericsShape`2<int32,int32>
 {
-  .method public hidebysig virtual instance string 
+  .method public hidebysig virtual instance string
           MethodOnDerived(int32 e,
                 int32 f) cil managed
   {
@@ -282,7 +282,7 @@
     IL_000a:  ret
   } // end of method DerivedGenericsShapeInvalidSubstitutedOverride::Method
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -299,13 +299,13 @@
 // Types for Test4
 .class interface private abstract auto ansi IMultiGeneric`2<T,U>
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance string  Func(!T t1,
                                 !U u2) cil managed
   {
   } // end of method IMultiGeneric`2::Func
 
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance string  Func(!U u1,
                                 !T t2) cil managed
   {
@@ -317,7 +317,7 @@
        extends [mscorlib]System.Object
        implements class IMultiGeneric`2<!A,!B>
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'IMultiGeneric<A,B>.Func'(!A t1,
                                                      !B u2) cil managed
   {
@@ -336,7 +336,7 @@
     IL_000a:  ret
   } // end of method Implementor`2::'IMultiGeneric<A,B>.Func'
 
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'IMultiGeneric<A,B>.Func'(!B u1,
                                                      !A t2) cil managed
   {
@@ -355,7 +355,7 @@
     IL_000a:  ret
   } // end of method Implementor`2::'IMultiGeneric<A,B>.Func'
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -372,7 +372,7 @@
        extends [mscorlib]System.Object
        implements class IMultiGeneric`2<!C,int32>
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'IMultiGeneric<C,System.Int32>.Func'(!C t1,
                                                                 int32 u2) cil managed
   {
@@ -391,7 +391,7 @@
     IL_000a:  ret
   } // end of method PartialIntImplementor`1::'IMultiGeneric<C,System.Int32>.Func'
 
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'IMultiGeneric<C,System.Int32>.Func'(int32 u1,
                                                                 !C t2) cil managed
   {
@@ -410,7 +410,7 @@
     IL_000a:  ret
   } // end of method PartialIntImplementor`1::'IMultiGeneric<C,System.Int32>.Func'
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -427,7 +427,7 @@
        extends [mscorlib]System.Object
        implements class IMultiGeneric`2<int32,int32>
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance string  Func(int32 x,
                                 int32 y) cil managed
   {
@@ -443,7 +443,7 @@
     IL_000a:  ret
   } // end of method IntImplementor::Func
 
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'IMultiGeneric<System.Int32,System.Int32>.Func(!0,!1)'(int32 u1,
                                                                            int32 t2) cil managed
   {
@@ -461,7 +461,7 @@
     IL_000a:  ret
   } // end of method IntImplementor::'IMultiGeneric<System.Int32,System.Int32>.Func(!0,!1)'
 
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'IMultiGeneric<System.Int32,System.Int32>.Func(!1,!0)'(int32 u1,
                                                                            int32 t2) cil managed
   {
@@ -479,7 +479,7 @@
     IL_000a:  ret
   } // end of method IntImplementor::'IMultiGeneric<System.Int32,System.Int32>.Func(!1,!0)'
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -495,7 +495,7 @@
 // Types for Test5
 .class interface private abstract auto ansi ISingleGeneric`1<T>
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance string  Method(!T t) cil managed
   {
   } // end of method ISingleGeneric`1::Method
@@ -506,7 +506,7 @@
        extends [mscorlib]System.Object
        implements class ISingleGeneric`1<int32>
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance string  'ISingleGeneric<System.Int32>.Method'(int32 t) cil managed
   {
     .override  method instance string class ISingleGeneric`1<int32>::Method(int32)
@@ -522,7 +522,7 @@
     IL_000a:  ret
   } // end of method InvalidOverride::'ISingleGeneric<System.Int32>.Method'
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -799,7 +799,7 @@
       IL_0015:  stloc.0
       IL_0016:  leave.s    IL_003c
     }  // end .try
-    catch [mscorlib]System.MissingMethodException 
+    catch [mscorlib]System.MissingMethodException
     {
       IL_0018:  pop
       IL_0019:  nop
@@ -810,7 +810,7 @@
       IL_0027:  stloc.0
       IL_0028:  leave.s    IL_003c
     }  // end handler
-    catch [mscorlib]System.TypeLoadException 
+    catch [mscorlib]System.TypeLoadException
     {
       IL_002a:  pop
       IL_002b:  nop
@@ -860,7 +860,7 @@
     IL_0024:  ret
   } // end of method Program::CallSpecificInterfaceFuncs
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Test4() cil managed
   {
     // Code size       120 (0x78)
@@ -956,7 +956,7 @@
     IL_001d:  ret
   } // end of method Program::Test5Internal
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Test5() cil managed
   {
     // Code size       55 (0x37)
@@ -985,7 +985,7 @@
       IL_0036:  stloc.0
       IL_0037:  leave.s    IL_005d
     }  // end .try
-    catch [mscorlib]System.MissingMethodException 
+    catch [mscorlib]System.MissingMethodException
     {
       IL_0039:  pop
       IL_003a:  nop
@@ -996,7 +996,7 @@
       IL_0048:  stloc.0
       IL_0049:  leave.s    IL_005d
     }  // end handler
-    catch [mscorlib]System.TypeLoadException 
+    catch [mscorlib]System.TypeLoadException
     {
       IL_004b:  pop
       IL_004c:  nop
@@ -1057,7 +1057,7 @@
       IL_001d:  nop
       IL_001e:  leave.s    IL_0035
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0020:  stloc.3
       IL_0021:  nop
@@ -1095,7 +1095,7 @@
       IL_0052:  nop
       IL_0053:  leave.s    IL_006c
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0055:  stloc.s    V_5
       IL_0057:  nop
@@ -1133,7 +1133,7 @@
       IL_0089:  nop
       IL_008a:  leave.s    IL_00a3
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_008c:  stloc.s    V_7
       IL_008e:  nop
@@ -1171,7 +1171,7 @@
       Test4Done:  nop
         leave.s    Test4PostTryCatch
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
         stloc.s    V_10
         nop
@@ -1210,7 +1210,7 @@
       Test5Done:  nop
         leave.s    Test5PostTryCatch
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
         stloc.s    V_12
         nop
@@ -1235,7 +1235,7 @@
     IL_00ad:  ret
   } // end of method Program::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)

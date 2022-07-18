@@ -689,7 +689,7 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public void AcquireForwardsCorrectResourceID()
+        public void AcquireForwardsCorrectResource()
         {
             var limiterFactory = new TrackingRateLimiterFactory<int>();
             using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
@@ -718,7 +718,7 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public async Task WaitAndAcquireAsyncForwardsCorrectResourceID()
+        public async Task WaitAndAcquireAsyncForwardsCorrectResource()
         {
             var limiterFactory = new TrackingRateLimiterFactory<int>();
             using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>

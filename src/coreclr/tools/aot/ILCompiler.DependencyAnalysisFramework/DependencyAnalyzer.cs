@@ -276,7 +276,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                     }
                 }
 
-                // Find new dependencies introduced by dynamic depedencies
+                // Find new dependencies introduced by dynamic dependencies
                 if (_newDynamicDependenciesMayHaveAppeared)
                 {
                     _newDynamicDependenciesMayHaveAppeared = false;

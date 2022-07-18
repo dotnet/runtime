@@ -45,7 +45,7 @@ static
 void
 fast_serializer_write_serialization_type (
 	FastSerializer *fast_serializer,
-	FastSerializableObject *fast_serializable_ojbect);
+	FastSerializableObject *fast_serializable_object);
 
 /*
  * FastSerializableObject.
@@ -71,61 +71,61 @@ ep_fast_serializable_object_init (
 }
 
 void
-ep_fast_serializable_object_fini (FastSerializableObject *fast_serializable_ojbect)
+ep_fast_serializable_object_fini (FastSerializableObject *fast_serializable_object)
 {
 	;
 }
 
 void
-ep_fast_serializable_object_free_vcall (FastSerializableObject *fast_serializable_ojbect)
+ep_fast_serializable_object_free_vcall (FastSerializableObject *fast_serializable_object)
 {
-	ep_return_void_if_nok (fast_serializable_ojbect != NULL);
+	ep_return_void_if_nok (fast_serializable_object != NULL);
 
-	EP_ASSERT (fast_serializable_ojbect->vtable != NULL);
-	FastSerializableObjectVtable *vtable = fast_serializable_ojbect->vtable;
+	EP_ASSERT (fast_serializable_object->vtable != NULL);
+	FastSerializableObjectVtable *vtable = fast_serializable_object->vtable;
 
 	EP_ASSERT (vtable->free_func != NULL);
-	vtable->free_func (fast_serializable_ojbect);
+	vtable->free_func (fast_serializable_object);
 }
 
 void
 ep_fast_serializable_object_fast_serialize_vcall (
-	FastSerializableObject *fast_serializable_ojbect,
+	FastSerializableObject *fast_serializable_object,
 	FastSerializer *fast_serializer)
 {
-	EP_ASSERT (fast_serializable_ojbect != NULL);
-	EP_ASSERT (fast_serializable_ojbect->vtable != NULL);
+	EP_ASSERT (fast_serializable_object != NULL);
+	EP_ASSERT (fast_serializable_object->vtable != NULL);
 
-	FastSerializableObjectVtable *vtable = fast_serializable_ojbect->vtable;
+	FastSerializableObjectVtable *vtable = fast_serializable_object->vtable;
 
 	EP_ASSERT (vtable->fast_serialize_func != NULL);
-	vtable->fast_serialize_func (fast_serializable_ojbect, fast_serializer);
+	vtable->fast_serialize_func (fast_serializable_object, fast_serializer);
 }
 
 const ep_char8_t *
-ep_fast_serializable_object_get_type_name_vcall (FastSerializableObject *fast_serializable_ojbect)
+ep_fast_serializable_object_get_type_name_vcall (FastSerializableObject *fast_serializable_object)
 {
-	EP_ASSERT (fast_serializable_ojbect != NULL);
-	EP_ASSERT (fast_serializable_ojbect->vtable != NULL);
+	EP_ASSERT (fast_serializable_object != NULL);
+	EP_ASSERT (fast_serializable_object->vtable != NULL);
 
-	FastSerializableObjectVtable *vtable = fast_serializable_ojbect->vtable;
+	FastSerializableObjectVtable *vtable = fast_serializable_object->vtable;
 
 	EP_ASSERT (vtable->get_type_name_func != NULL);
-	return vtable->get_type_name_func (fast_serializable_ojbect);
+	return vtable->get_type_name_func (fast_serializable_object);
 }
 
 void
 ep_fast_serializable_object_fast_serialize (
-	FastSerializableObject *fast_serializable_ojbect,
+	FastSerializableObject *fast_serializable_object,
 	FastSerializer *fast_serializer)
 {
-	ep_fast_serializable_object_fast_serialize_vcall (fast_serializable_ojbect, fast_serializer);
+	ep_fast_serializable_object_fast_serialize_vcall (fast_serializable_object, fast_serializer);
 }
 
 const ep_char8_t *
-ep_fast_serializable_object_get_type_name (FastSerializableObject *fast_serializable_ojbect)
+ep_fast_serializable_object_get_type_name (FastSerializableObject *fast_serializable_object)
 {
-	return ep_fast_serializable_object_get_type_name_vcall (fast_serializable_ojbect);
+	return ep_fast_serializable_object_get_type_name_vcall (fast_serializable_object);
 }
 
 /*
@@ -170,7 +170,7 @@ ep_fast_serializer_alloc (StreamWriter *stream_writer)
 	FastSerializer *instance = ep_rt_object_alloc (FastSerializer);
 	ep_raise_error_if_nok (instance != NULL);
 
-	// Ownership transfered.
+	// Ownership transferred.
 	instance->stream_writer = stream_writer;
 	instance->required_padding = 0;
 	instance->write_error_encountered = false;
@@ -247,17 +247,17 @@ ep_fast_serializer_write_system_time (
 void
 ep_fast_serializer_write_object (
 	FastSerializer *fast_serializer,
-	FastSerializableObject *fast_serializable_ojbect)
+	FastSerializableObject *fast_serializable_object)
 {
 	EP_ASSERT (fast_serializer != NULL);
-	EP_ASSERT (fast_serializable_ojbect != NULL);
+	EP_ASSERT (fast_serializable_object != NULL);
 
-	ep_fast_serializer_write_tag (fast_serializer, fast_serializable_ojbect->is_private ? FAST_SERIALIZER_TAGS_BEGIN_PRIVATE_OBJECT : FAST_SERIALIZER_TAGS_BEGIN_OBJECT, NULL, 0);
+	ep_fast_serializer_write_tag (fast_serializer, fast_serializable_object->is_private ? FAST_SERIALIZER_TAGS_BEGIN_PRIVATE_OBJECT : FAST_SERIALIZER_TAGS_BEGIN_OBJECT, NULL, 0);
 
-	fast_serializer_write_serialization_type (fast_serializer, fast_serializable_ojbect);
+	fast_serializer_write_serialization_type (fast_serializer, fast_serializable_object);
 
 	// Ask the object to serialize itself using the current serializer.
-	ep_fast_serializable_object_fast_serialize_vcall (fast_serializable_ojbect, fast_serializer);
+	ep_fast_serializable_object_fast_serialize_vcall (fast_serializable_object, fast_serializer);
 
 	ep_fast_serializer_write_tag (fast_serializer, FAST_SERIALIZER_TAGS_END_OBJECT, NULL, 0);
 }
@@ -582,7 +582,7 @@ ep_ipc_stream_writer_alloc (
 		&instance->stream_writer,
 		&ipc_stream_writer_vtable) != NULL);
 
-	//Ownership transfered.
+	//Ownership transferred.
 	instance->ipc_stream = stream;
 
 ep_on_exit:

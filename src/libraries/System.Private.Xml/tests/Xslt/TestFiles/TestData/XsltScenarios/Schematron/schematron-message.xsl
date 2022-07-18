@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<!-- Implmentation for the Schematron XML Schema Language.
+<!-- Implementation for the Schematron XML Schema Language.
 	http://www.ascc.net/xml/resource/schematron/schematron.html
  
  Copyright (c) 2000,2001 Rick Jelliffe and Academia Sinica Computing Center, Taiwan

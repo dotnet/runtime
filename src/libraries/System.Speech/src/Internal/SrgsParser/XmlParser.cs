@@ -1208,7 +1208,7 @@ namespace System.Speech.Internal.SrgsParser
                                 }
                                 else
                                 {
-                                    ThrowSrgsException(SRID.RuleAttributeDefinedMultipeTimes);
+                                    ThrowSrgsException(SRID.RuleAttributeDefinedMultipleTimes);
                                 }
                                 break;
 
@@ -1871,7 +1871,7 @@ namespace System.Speech.Internal.SrgsParser
             {
                 if (ruleNames.Contains(rule))
                 {
-                    XmlParser.ThrowSrgsException(SRID.RuleAttributeDefinedMultipeTimes, rule);
+                    XmlParser.ThrowSrgsException(SRID.RuleAttributeDefinedMultipleTimes, rule);
                 }
 
                 ruleNames.Add(rule);

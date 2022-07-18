@@ -655,7 +655,7 @@ WFMOExIntReleaseControllers:
         case WaitSucceeded:
             dwRet = WAIT_OBJECT_0; // offset added later
             break;
-        case MutexAbondoned:
+        case MutexAbandoned:
             dwRet =  WAIT_ABANDONED_0; // offset added later
             break;
         case WaitTimeout:
@@ -874,8 +874,8 @@ DWORD CorUnix::InternalSleepEx (
             _ASSERT_MSG(NO_ERROR == palErr, "Awakened for APC, but no APC is pending\n");
 
             break;
-        case MutexAbondoned:
-            ASSERT("Thread %p awakened with reason=MutexAbondoned from a SleepEx\n", pThread);
+        case MutexAbandoned:
+            ASSERT("Thread %p awakened with reason=MutexAbandoned from a SleepEx\n", pThread);
             break;
         case WaitFailed:
         default:

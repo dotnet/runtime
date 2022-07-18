@@ -382,6 +382,48 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task SendAsync_RequestRejected_ClientRetries()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
+                    stream.Abort(0x10B); // H3_REQUEST_REJECTED
+                    await stream.DisposeAsync();
+                    // shutdown the connection gracefully via GOAWAY frame for good measure
+                    await connection1.ShutdownAsync(true);
+                }
+
+                // expect second connection to be established by the client
+                await using (Http3LoopbackConnection connection2 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection2.AcceptRequestStreamAsync();
+                    await stream.HandleRequestAsync();
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+
+        [Fact]
         public async Task ServerClosesConnection_ResponseContentStream_ThrowsHttpProtocolException()
         {
             const long GeneralProtocolError = 0x101;
@@ -715,10 +757,23 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotEmpty(content);
         }
 
-        [OuterLoop]
         [Theory]
+        [OuterLoop]
         [MemberData(nameof(InteropUris))]
-        public async Task Public_Interop_Upgrade_Success(string uri)
+        public Task Public_Interop_Upgrade_Request3OrLower_Success(string uri)
+        {
+            return Public_Interop_Upgrade_Core(uri, HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrLower);
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(InteropUris))]
+        public Task Public_Interop_Upgrade_Request2OrHigher_Success(string uri)
+        {
+            return Public_Interop_Upgrade_Core(uri, HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher);
+        }
+
+        private async Task Public_Interop_Upgrade_Core(string uri, Version requestVersion, HttpVersionPolicy policy)
         {
             // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
             // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
@@ -730,8 +785,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                Version = requestVersion,
+                VersionPolicy = policy
             })
             {
                 try
@@ -755,8 +810,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion.Version30,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+                Version = requestVersion,
+                VersionPolicy = policy
             })
             {
                 using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));

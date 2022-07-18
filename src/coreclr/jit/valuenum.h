@@ -140,7 +140,7 @@
 // And similarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
 //
 // While the above example focuses on fields, the idea is universal to all supported location types. Statics are
-// modeled as straight indicies into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
+// modeled as straight indices into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
 // arrays - like fields, but with the primiary selector being not the first field, but the "equivalence class" of
 // an array, i. e. the type of its elements, taking into account things like "int[]" being legally aliasable as
 // "uint[]". Physical maps are used to number local fields.
@@ -513,7 +513,7 @@ public:
     bool VNCheckAscending(ValueNum item, ValueNum xs1);
 
     // Returns the VN representing the union of the two exception sets "xs0" and "xs1".
-    // These must be VNForEmtpyExcSet() or applications of VNF_ExcSetCons, obeying
+    // These must be VNForEmptyExcSet() or applications of VNF_ExcSetCons, obeying
     // the ascending order invariant. (which is preserved in the result)
     ValueNum VNExcSetUnion(ValueNum xs0, ValueNum xs1);
 

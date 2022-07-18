@@ -61,7 +61,7 @@
 
         /* multi-character punctuation */
 %token DCOLON                   /* :: */
-%token ELIPSIS                  /* ... */
+%token ELLIPSIS                  /* ... */
 
         /* Keywords   Note the undersores are to avoid collisions as these are common names */
 %token VOID_ BOOL_ CHAR_ UNSIGNED_ INT_ INT8_ INT16_ INT32_ INT64_ FLOAT_ FLOAT32_ FLOAT64_ BYTEARRAY_
@@ -1474,7 +1474,7 @@ sigArgs1                : sigArg                             { $$ = $1; }
                         | sigArgs1 ',' sigArg                { $$ = $1; $$->append($3); delete $3; }
                         ;
 
-sigArg                  : ELIPSIS                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_SENTINEL); }
+sigArg                  : ELLIPSIS                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_SENTINEL); }
                         | paramAttr type marshalClause        { $$ = new BinStr(); $$->append($2); PASM->addArgName(NULL, $2, $3, $1); }
                         | paramAttr type marshalClause id     { $$ = new BinStr(); $$->append($2); PASM->addArgName($4, $2, $3, $1);}
                         ;
@@ -1748,7 +1748,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                         | NATIVE_ UNSIGNED_ INT_              { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U); }
                         | NATIVE_ UINT_                       { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_U); }
                         | simpleType                          { $$ = $1; }
-                        | ELIPSIS type                        { $$ = $2; $$->insertInt8(ELEMENT_TYPE_SENTINEL); }
+                        | ELLIPSIS type                        { $$ = $2; $$->insertInt8(ELEMENT_TYPE_SENTINEL); }
                         ;
 
 simpleType              : CHAR_                               { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_CHAR); }
@@ -1776,12 +1776,12 @@ bounds1                 : bound                               { $$ = $1; }
                         ;
 
 bound                   : /* EMPTY */                         { $$ = new BinStr(); $$->appendInt32(0x7FFFFFFF); $$->appendInt32(0x7FFFFFFF);  }
-                        | ELIPSIS                             { $$ = new BinStr(); $$->appendInt32(0x7FFFFFFF); $$->appendInt32(0x7FFFFFFF);  }
+                        | ELLIPSIS                             { $$ = new BinStr(); $$->appendInt32(0x7FFFFFFF); $$->appendInt32(0x7FFFFFFF);  }
                         | int32                               { $$ = new BinStr(); $$->appendInt32(0); $$->appendInt32($1); }
-                        | int32 ELIPSIS int32                 { FAIL_UNLESS($1 <= $3, ("lower bound %d must be <= upper bound %d\n", $1, $3));
+                        | int32 ELLIPSIS int32                 { FAIL_UNLESS($1 <= $3, ("lower bound %d must be <= upper bound %d\n", $1, $3));
                                                                 if ($1 > $3) { YYERROR; };
                                                                 $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32($3-$1+1); }
-                        | int32 ELIPSIS                       { $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32(0x7FFFFFFF); }
+                        | int32 ELLIPSIS                       { $$ = new BinStr(); $$->appendInt32($1); $$->appendInt32(0x7FFFFFFF); }
                         ;
 
 /*  Security declarations  */

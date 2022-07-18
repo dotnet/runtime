@@ -562,8 +562,8 @@ namespace System.Xml.Schema
 
             if (redefinedGroup.SelfReferenceCount == 0)
             {
-                baseGroup.CanonicalParticle ??= CannonicalizeParticle(baseGroup.Particle, true);
-                redefinedGroup.CanonicalParticle ??= CannonicalizeParticle(redefinedGroup.Particle, true);
+                baseGroup.CanonicalParticle ??= CanonicalizeParticle(baseGroup.Particle, true);
+                redefinedGroup.CanonicalParticle ??= CanonicalizeParticle(redefinedGroup.Particle, true);
 
                 CompileParticleElements(redefinedGroup.CanonicalParticle);
                 CompileParticleElements(baseGroup.CanonicalParticle);
@@ -595,9 +595,9 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                group.CanonicalParticle ??= CannonicalizeParticle(group.Particle, true);
+                group.CanonicalParticle ??= CanonicalizeParticle(group.Particle, true);
                 Debug.Assert(group.CanonicalParticle != null);
-                group.IsProcessing = false; //Not enclosung in try -finally as cannonicalizeParticle will not throw exception
+                group.IsProcessing = false; //Not enclosung in try -finally as canonicalizeParticle will not throw exception
             }
         }
 
@@ -1034,7 +1034,7 @@ namespace System.Xml.Schema
             CompileLocalAttributes(baseType, complexType, complexExtension.Attributes, complexExtension.AnyAttribute, XmlSchemaDerivationMethod.Extension);
 
             XmlSchemaParticle baseParticle = baseType.ContentTypeParticle;
-            XmlSchemaParticle extendedParticle = CannonicalizeParticle(complexExtension.Particle, true);
+            XmlSchemaParticle extendedParticle = CanonicalizeParticle(complexExtension.Particle, true);
             if (baseParticle != XmlSchemaParticle.Empty)
             {
                 if (extendedParticle != XmlSchemaParticle.Empty)
@@ -1131,8 +1131,8 @@ namespace System.Xml.Schema
             _restrictionErrorMsg = null;
             if (baseType != null && baseType != XmlSchemaComplexType.AnyType && complexType.DerivedBy == XmlSchemaDerivationMethod.Restriction)
             {
-                XmlSchemaParticle derivedParticle = CannonicalizePointlessRoot(complexType.ContentTypeParticle);
-                XmlSchemaParticle baseParticle = CannonicalizePointlessRoot(baseType.ContentTypeParticle);
+                XmlSchemaParticle derivedParticle = CanonicalizePointlessRoot(complexType.ContentTypeParticle);
+                XmlSchemaParticle baseParticle = CanonicalizePointlessRoot(baseType.ContentTypeParticle);
                 if (!IsValidRestriction(derivedParticle, baseParticle))
                 {
                     if (_restrictionErrorMsg != null)
@@ -1167,8 +1167,8 @@ namespace System.Xml.Schema
         private void CheckParticleDerivation(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             _restrictionErrorMsg = null;
-            derivedParticle = CannonicalizePointlessRoot(derivedParticle);
-            baseParticle = CannonicalizePointlessRoot(baseParticle);
+            derivedParticle = CanonicalizePointlessRoot(derivedParticle);
+            baseParticle = CanonicalizePointlessRoot(baseParticle);
             if (!IsValidRestriction(derivedParticle, baseParticle))
             {
                 if (_restrictionErrorMsg != null)
@@ -1184,7 +1184,7 @@ namespace System.Xml.Schema
 
         private XmlSchemaParticle CompileContentTypeParticle(XmlSchemaParticle? particle)
         {
-            XmlSchemaParticle ctp = CannonicalizeParticle(particle, true);
+            XmlSchemaParticle ctp = CanonicalizeParticle(particle, true);
             XmlSchemaChoice? choice = ctp as XmlSchemaChoice;
             if (choice != null && choice.Items.Count == 0)
             {
@@ -1198,7 +1198,7 @@ namespace System.Xml.Schema
             return ctp;
         }
 
-        private XmlSchemaParticle CannonicalizeParticle(XmlSchemaParticle? particle, bool root)
+        private XmlSchemaParticle CanonicalizeParticle(XmlSchemaParticle? particle, bool root)
         {
             if (particle == null || particle.IsEmpty)
             {
@@ -1206,24 +1206,24 @@ namespace System.Xml.Schema
             }
             else if (particle is XmlSchemaElement)
             {
-                //return CannonicalizeElement((XmlSchemaElement)particle, substitution);
+                //return CanonicalizeElement((XmlSchemaElement)particle, substitution);
                 return particle;
             }
             else if (particle is XmlSchemaGroupRef)
             {
-                return CannonicalizeGroupRef((XmlSchemaGroupRef)particle, root);
+                return CanonicalizeGroupRef((XmlSchemaGroupRef)particle, root);
             }
             else if (particle is XmlSchemaAll)
             {
-                return CannonicalizeAll((XmlSchemaAll)particle, root);
+                return CanonicalizeAll((XmlSchemaAll)particle, root);
             }
             else if (particle is XmlSchemaChoice)
             {
-                return CannonicalizeChoice((XmlSchemaChoice)particle, root);
+                return CanonicalizeChoice((XmlSchemaChoice)particle, root);
             }
             else if (particle is XmlSchemaSequence)
             {
-                return CannonicalizeSequence((XmlSchemaSequence)particle, root);
+                return CanonicalizeSequence((XmlSchemaSequence)particle, root);
             }
             else
             {
@@ -1231,7 +1231,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeElement(XmlSchemaElement element)
+        private XmlSchemaParticle CanonicalizeElement(XmlSchemaElement element)
         {
             if (!element.RefName.IsEmpty && (element.ElementDecl!.Block & XmlSchemaDerivationMethod.Substitution) == 0)
             {
@@ -1259,7 +1259,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeGroupRef(XmlSchemaGroupRef groupRef, bool root)
+        private XmlSchemaParticle CanonicalizeGroupRef(XmlSchemaGroupRef groupRef, bool root)
         {
             XmlSchemaGroup? group;
             if (groupRef.Redefined != null)
@@ -1330,7 +1330,7 @@ namespace System.Xml.Schema
             return groupRefBase;
         }
 
-        private XmlSchemaParticle CannonicalizeAll(XmlSchemaAll all, bool root)
+        private XmlSchemaParticle CanonicalizeAll(XmlSchemaAll all, bool root)
         {
             if (all.Items.Count > 0)
             {
@@ -1340,7 +1340,7 @@ namespace System.Xml.Schema
                 CopyPosition(newAll, all, true);
                 for (int i = 0; i < all.Items.Count; ++i)
                 {
-                    XmlSchemaParticle p = CannonicalizeParticle((XmlSchemaElement)all.Items[i], false);
+                    XmlSchemaParticle p = CanonicalizeParticle((XmlSchemaElement)all.Items[i], false);
                     if (p != XmlSchemaParticle.Empty)
                     {
                         newAll.Items.Add(p);
@@ -1363,7 +1363,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeChoice(XmlSchemaChoice choice, bool root)
+        private XmlSchemaParticle CanonicalizeChoice(XmlSchemaChoice choice, bool root)
         {
             XmlSchemaChoice oldChoice = choice;
             if (choice.Items.Count > 0)
@@ -1374,7 +1374,7 @@ namespace System.Xml.Schema
                 CopyPosition(newChoice, choice, true);
                 for (int i = 0; i < choice.Items.Count; ++i)
                 {
-                    XmlSchemaParticle p1 = CannonicalizeParticle((XmlSchemaParticle)choice.Items[i], false);
+                    XmlSchemaParticle p1 = CanonicalizeParticle((XmlSchemaParticle)choice.Items[i], false);
                     if (p1 != XmlSchemaParticle.Empty)
                     {
                         if (p1.MinOccurs == decimal.One && p1.MaxOccurs == decimal.One && p1 is XmlSchemaChoice)
@@ -1411,7 +1411,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeSequence(XmlSchemaSequence sequence, bool root)
+        private XmlSchemaParticle CanonicalizeSequence(XmlSchemaSequence sequence, bool root)
         {
             if (sequence.Items.Count > 0)
             {
@@ -1421,7 +1421,7 @@ namespace System.Xml.Schema
                 CopyPosition(newSequence, sequence, true);
                 for (int i = 0; i < sequence.Items.Count; ++i)
                 {
-                    XmlSchemaParticle p1 = CannonicalizeParticle((XmlSchemaParticle)sequence.Items[i], false);
+                    XmlSchemaParticle p1 = CanonicalizeParticle((XmlSchemaParticle)sequence.Items[i], false);
                     if (p1 != XmlSchemaParticle.Empty)
                     {
                         XmlSchemaSequence p1Sequence = (p1 as XmlSchemaSequence)!;
@@ -1455,7 +1455,7 @@ namespace System.Xml.Schema
         }
 
         [return: NotNullIfNotNull("particle")]
-        private static XmlSchemaParticle? CannonicalizePointlessRoot(XmlSchemaParticle particle)
+        private static XmlSchemaParticle? CanonicalizePointlessRoot(XmlSchemaParticle particle)
         {
             if (particle == null)
             {
@@ -1529,12 +1529,12 @@ namespace System.Xml.Schema
             }
             if (derivedParticle is XmlSchemaElement derivedElem)
             { //check for derived element being head of substitutionGroup
-                derivedParticle = CannonicalizeElement(derivedElem);
+                derivedParticle = CanonicalizeElement(derivedElem);
             }
             if (baseParticle is XmlSchemaElement baseElem)
             {
                 XmlSchemaParticle newBaseParticle;
-                newBaseParticle = CannonicalizeElement(baseElem);
+                newBaseParticle = CanonicalizeElement(baseElem);
                 if (newBaseParticle is XmlSchemaChoice)
                 { //Base Element is subs grp head.
                     return IsValidRestriction(derivedParticle, newBaseParticle);

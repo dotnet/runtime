@@ -1382,7 +1382,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
 
     //
     // Resolve the unwind operation offsets, and fill in the UNWIND_INFO and
-    // RUNTIME_FUNCTION structs preceeding the stub.  The unwind codes are recorded
+    // RUNTIME_FUNCTION structs preceding the stub.  The unwind codes are recorded
     // in decreasing address order.
     //
 

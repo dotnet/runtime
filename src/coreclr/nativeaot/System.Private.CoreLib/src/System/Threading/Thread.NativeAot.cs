@@ -27,6 +27,7 @@ namespace System.Threading
         private ManagedThreadId _managedThreadId;
         private string? _name;
         private StartHelper? _startHelper;
+        private Exception? _startException;
 
         // Protects starting the thread and setting its priority
         private Lock _lock = new Lock();
@@ -145,7 +146,7 @@ namespace System.Threading
                 {
                     int threadState = SetThreadStateBit(ThreadState.Background);
                     // was foreground and has started
-                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted)) == 0)
+                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == 0)
                     {
                         DecrementRunningForeground();
                     }
@@ -154,7 +155,7 @@ namespace System.Threading
                 {
                     int threadState = ClearThreadStateBit(ThreadState.Background);
                     // was background and has started
-                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted)) == (int)ThreadState.Background)
+                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == (int)ThreadState.Background)
                     {
                         IncrementRunningForeground();
                         _mayNeedResetForThreadPool = true;
@@ -367,9 +368,13 @@ namespace System.Threading
 
                 if (GetThreadStateBit(ThreadState.Unstarted))
                 {
-                    // Lack of memory is the only expected reason for thread creation failure
-                    throw new ThreadStartException(new OutOfMemoryException());
+                    Exception? startException = _startException;
+                    startException = null;
+
+                    throw new ThreadStartException(startException ?? new OutOfMemoryException());
                 }
+
+                Debug.Assert(_startException == null);
             }
         }
 
@@ -384,8 +389,10 @@ namespace System.Threading
                 System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
                 thread.InitializeComOnNewThread();
             }
-            catch (OutOfMemoryException)
+            catch (Exception e)
             {
+                thread._startException = e;
+
 #if TARGET_UNIX
                 // This should go away once OnThreadExit stops using t_currentThread to signal
                 // shutdown of the thread on Unix.
@@ -418,11 +425,12 @@ namespace System.Threading
 
         private static void StopThread(Thread thread)
         {
-            int state = thread._threadState;
-            if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+            if ((thread._threadState & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
             {
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
+
+            int state = thread.ClearThreadStateBit(ThreadState.Background);
             if ((state & (int)ThreadState.Background) == 0)
             {
                 DecrementRunningForeground();

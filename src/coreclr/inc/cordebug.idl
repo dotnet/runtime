@@ -4168,7 +4168,7 @@ interface ICorDebugThread : IUnknown
      * and thereafter not have to worry about it.
      *
      * Suspending threads and resuming the process can cause deadlocks, though it's
-     * usually unlikely. This is an intrinisc quality of threads and processes and is by-design.
+     * usually unlikely. This is an intrinsic quality of threads and processes and is by-design.
      * A debugger can async break and resume the threads to break the deadlock.
      *
      * If the thread's user state includes USER_UNSAFE_POINT, then the thread may block a GC.
@@ -6451,7 +6451,7 @@ interface ICorDebugGenericValue : ICorDebugValue
  * An ICorDebugReference will either cooperate with GCs such that its information is updated
  * after the GC, or it will be implicitly neutered before the GC.
  *
- * The ICorDebugReferenceValue inteface may be implicitly neutered after the debuggee
+ * The ICorDebugReferenceValue interface may be implicitly neutered after the debuggee
  * has been continued. The derived ICorDebugHandleValue is not neutered until explicitly
  * released or exposed.
  *
@@ -6805,20 +6805,20 @@ interface ICorDebugArrayValue : ICorDebugHeapValue
                            length_is(cdim)] ULONG32 dims[]);
 
     /*
-     * HasBaseIndicies returns whether or not the array has base indicies.
+     * HasBaseIndices returns whether or not the array has base indices.
      * If the answer is no, then all dimensions have a base index of 0.
      */
 
-    HRESULT HasBaseIndicies([out] BOOL *pbHasBaseIndicies);
+    HRESULT HasBaseIndices([out] BOOL *pbHasBaseIndices);
 
     /*
-     * GetBaseIndicies returns the base index of each dimension in
+     * GetBaseIndices returns the base index of each dimension in
      * the array
      */
 
-    HRESULT GetBaseIndicies([in] ULONG32 cdim,
+    HRESULT GetBaseIndices([in] ULONG32 cdim,
                             [out, size_is(cdim),
-                            length_is(cdim)] ULONG32 indicies[]);
+                            length_is(cdim)] ULONG32 indices[]);
 
     /*
      * GetElement returns a value representing the given element in the array.

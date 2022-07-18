@@ -2177,7 +2177,7 @@ typedef enum
 } CLRDataExceptionSameFlag;
 
 #pragma warning(push)
-#pragma warning(disable:28718)	/* suppress warning 28718 for inteface IXCLRDataExceptionState */
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataExceptionState */
 [
     object,
     local,

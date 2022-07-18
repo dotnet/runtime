@@ -41,7 +41,7 @@ namespace System.Data.Odbc
         private int _row = -1;
         private int _column = -1;
 
-        // used to track position in field for sucessive reads in case of Sequential Access
+        // used to track position in field for successive reads in case of Sequential Access
         private long _sequentialBytesRead;
 
         private static int s_objectTypeCount; // Bid counter
@@ -1251,7 +1251,7 @@ namespace System.Data.Odbc
                         // SQLBU 266054:
                         // If cbLengthOrIndicator is SQL_NO_TOTAL (-4), this call returns -4 or -2, depending on the type (GetChars=>-2, GetBytes=>-4).
                         // This is the Orcas RTM and SP1 behavior, changing this would be a breaking change.
-                        // SQL_NO_TOTAL means that the driver does not know what is the remained lenght of the data, so we cannot really guess the value here.
+                        // SQL_NO_TOTAL means that the driver does not know what is the remained length of the data, so we cannot really guess the value here.
                         // Reason: while returning different negative values depending on the type seems inconsistent,
                         // this is what we did in Orcas RTM and SP1 and user code might rely on this behavior => changing it would be a breaking change.
                         if (isCharsBuffer)

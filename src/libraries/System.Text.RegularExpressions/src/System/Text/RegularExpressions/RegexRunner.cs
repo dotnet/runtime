@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
                                                    // from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
                                                    // for CompiledToAssembly scenario which works over the original input.
         protected internal int runtextend;         // End of text to search. Because we now pass in a sliced span of the input into Scan,
-                                                   // the runtextend will always match the length of that passed in span except for CompileToAssemby
+                                                   // the runtextend will always match the length of that passed in span except for CompileToAssembly
                                                    // scenario, which still works over the original input.
         protected internal int runtextstart;       // starting point for search
 

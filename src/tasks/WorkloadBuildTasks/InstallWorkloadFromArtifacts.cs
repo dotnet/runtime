@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -84,6 +85,16 @@ namespace Microsoft.Workload.Build.Tasks
             if (OnlyUpdateManifests)
                 return !Log.HasLoggedErrors;
 
+            if (!InstallPacks(workloadId, nugetConfigContents))
+                return false;
+
+            UpdateAppRef(workloadId.GetMetadata("Version"));
+
+            return !Log.HasLoggedErrors;
+        }
+
+        private bool InstallPacks(ITaskItem workloadId, string nugetConfigContents)
+        {
             string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
@@ -97,18 +108,43 @@ namespace Microsoft.Workload.Build.Tasks
                                                     debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
-                Log.LogError($"workload install failed: {output}");
+                Log.LogError($"workload install failed with exit code {exitCode}: {output}");
 
-                foreach (var dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "sdk-manifests"), "*", SearchOption.AllDirectories))
+                foreach (string dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "sdk-manifests"), "*", SearchOption.AllDirectories))
                     Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(SdkDir, "sdk-manifests", dir)}");
 
-                foreach (var dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "packs"), "*", SearchOption.AllDirectories))
+                foreach (string dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "packs"), "*", SearchOption.AllDirectories))
                     Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(SdkDir, "packs", dir)}");
 
                 return false;
             }
 
             return !Log.HasLoggedErrors;
+        }
+
+        private void UpdateAppRef(string version)
+        {
+            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Updating Targeting pack **{Environment.NewLine}");
+
+            string pkgPath = Path.Combine(LocalNuGetsPath, $"Microsoft.NETCore.App.Ref.{version}.nupkg");
+            if (!File.Exists(pkgPath))
+                throw new LogAsErrorException($"Could not find {pkgPath} needed to update the targeting pack to the newly built one." +
+                                                " Make sure to build the subset `packs`, like `./build.sh -os browser -s mono+libs+packs`.");
+
+            string packDir = Path.Combine(SdkDir, "packs", "Microsoft.NETCore.App.Ref");
+            string[] dirs = Directory.EnumerateDirectories(packDir).ToArray();
+            if (dirs.Length != 1)
+                throw new LogAsErrorException($"Expected to find exactly one versioned directory under {packDir}, but got " +
+                                                string.Join(',', dirs));
+
+            string dstDir = dirs[0];
+
+            Directory.Delete(dstDir, recursive: true);
+            Log.LogMessage($"Deleting {dstDir}");
+
+            Directory.CreateDirectory(dstDir);
+            ZipFile.ExtractToDirectory(pkgPath, dstDir);
+            Log.LogMessage($"Extracting {pkgPath} to {dstDir}");
         }
 
         private string GetNuGetConfig()
