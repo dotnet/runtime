@@ -674,6 +674,23 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void CreateJsonTypeInfo_ThrowingConverterFactory_DoesNotWrapException()
+        {
+            var options = new JsonSerializerOptions { Converters = { new ClassWithThrowingConverterFactory.Converter() } };
+            // Should not be wrapped in TargetInvocationException.
+            Assert.Throws<NotFiniteNumberException>(() => JsonTypeInfo.CreateJsonTypeInfo(typeof(ClassWithThrowingConverterFactory), options));
+        }
+
+        public class ClassWithThrowingConverterFactory
+        {
+            public class Converter : JsonConverterFactory
+            {
+                public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(ClassWithThrowingConverterFactory);
+                public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) => throw new NotFiniteNumberException();
+            }
+        }
+
+        [Fact]
         public static void CreateJsonPropertyInfoWithNullArgumentsThrows()
         {
             JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());

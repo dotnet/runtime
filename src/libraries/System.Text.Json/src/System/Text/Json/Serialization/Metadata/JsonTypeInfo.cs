@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -578,7 +579,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             s_createJsonTypeInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonTypeInfo), new Type[] { typeof(JsonSerializerOptions) })!;
             return (JsonTypeInfo)s_createJsonTypeInfo.MakeGenericMethod(type)
-                .Invoke(null, new object[] { options })!;
+                .InvokeNoWrapExceptions(null, new object[] { options })!;
         }
 
         /// <summary>

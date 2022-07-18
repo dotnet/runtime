@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
+using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -36,6 +36,10 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <inheritdoc/>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
         {
             if (type == null)
@@ -64,28 +68,13 @@ namespace System.Text.Json.Serialization.Metadata
             return typeInfo;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
-        private JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
-            MethodInfo methodInfo = typeof(DefaultJsonTypeInfoResolver).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-#if NETCOREAPP
-            return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(null, BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, null, new[] { options }, null)!;
-#else
-            try
-            {
-                return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(null, new[] { options })!;
-            }
-            catch (TargetInvocationException ex)
-            {
-                // Some of the validation is done during construction (i.e. validity of JsonConverter, inner types etc.)
-                // therefore we need to unwrap TargetInvocationException for better user experience
-                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                throw null!;
-            }
-#endif
+            s_createReflectionJsonTypeInfoMethodInfo ??= typeof(DefaultJsonTypeInfoResolver).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
+            return (JsonTypeInfo)s_createReflectionJsonTypeInfoMethodInfo.MakeGenericMethod(type)
+                .InvokeNoWrapExceptions(null, new[] { options })!;
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -95,6 +84,8 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter = GetConverterForType(typeof(T), options);
             return new ReflectionJsonTypeInfo<T>(converter, options);
         }
+
+        private static MethodInfo? s_createReflectionJsonTypeInfoMethodInfo;
 
         /// <summary>
         /// List of JsonTypeInfo modifiers. Modifying callbacks are called consecutively after initial resolution
