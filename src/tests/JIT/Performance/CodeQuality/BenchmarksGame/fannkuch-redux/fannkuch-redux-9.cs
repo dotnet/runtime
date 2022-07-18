@@ -164,7 +164,11 @@ namespace BenchmarksGame
                 fact[i] = fact[i - 1] * i;
             }
 
-            var PC = Environment.ProcessorCount;
+            // For n == 7 and nTasks > 8, the algorithm returns chkSum != 228
+            // Hence, we restrict the processor count to 8 to get consistency on
+            // all the hardwares.
+            // See https://github.com/dotnet/runtime/issues/67157
+            var PC = Math.Min(Environment.ProcessorCount, 8);
             taskCount = n > 11 ? fact[n] / (9 * 8 * 7 * 6 * 5 * 4 * 3 * 2) : PC;
             int taskSize = fact[n] / taskCount;
             chkSums = new int[PC];

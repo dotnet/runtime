@@ -116,7 +116,11 @@ namespace BenchmarksGame
             var factn = 1;
             for (int i = 1; i < fact.Length; i++) { fact[i] = factn *= i; }
 
-            int nTasks = Environment.ProcessorCount;
+            // For n == 7 and nTasks > 8, the algorithm returns chkSum != 228
+            // Hence, we restrict the processor count to 8 to get consistency on
+            // all the hardwares.
+            // See https://github.com/dotnet/runtime/issues/67157
+            int nTasks = Math.Min(Environment.ProcessorCount, 8);
             chkSums = new int[nTasks];
             maxFlips = new int[nTasks];
             int taskSize = factn / nTasks;
