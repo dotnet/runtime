@@ -96,6 +96,26 @@ struct unw_proc_info_t {
 };
 typedef struct unw_proc_info_t unw_proc_info_t;
 
+enum unw_save_loc_type_t
+{
+    UNW_SLT_NONE,       /* register is not saved ("not an l-value") */
+    UNW_SLT_MEMORY,     /* register has been saved in memory */
+    UNW_SLT_REG         /* register has been saved in (another) register */
+};
+typedef enum unw_save_loc_type_t unw_save_loc_type_t;
+
+struct unw_save_loc_t
+{
+    unw_save_loc_type_t type;
+    union
+    {
+        unw_word_t addr;        /* valid if type==UNW_SLT_MEMORY */
+        unw_regnum_t regnum;    /* valid if type==UNW_SLT_REG */
+    }
+    u;
+};
+typedef struct unw_save_loc_t unw_save_loc_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -105,7 +125,7 @@ extern int unw_init_local(unw_cursor_t *, unw_context_t *) LIBUNWIND_AVAIL;
 extern int unw_step(unw_cursor_t *) LIBUNWIND_AVAIL;
 extern int unw_get_reg(unw_cursor_t *, unw_regnum_t, unw_word_t *) LIBUNWIND_AVAIL;
 extern int unw_get_fpreg(unw_cursor_t *, unw_regnum_t, unw_fpreg_t *) LIBUNWIND_AVAIL;
-extern int unw_set_reg(unw_cursor_t *, unw_regnum_t, unw_word_t) LIBUNWIND_AVAIL;
+extern int unw_set_reg(unw_cursor_t *, unw_regnum_t, unw_word_t, unw_word_t *) LIBUNWIND_AVAIL;
 extern int unw_set_fpreg(unw_cursor_t *, unw_regnum_t, unw_fpreg_t)  LIBUNWIND_AVAIL;
 extern int unw_resume(unw_cursor_t *) LIBUNWIND_AVAIL;
 
@@ -120,7 +140,7 @@ extern int unw_get_proc_info(unw_cursor_t *, unw_proc_info_t *) LIBUNWIND_AVAIL;
 extern int unw_is_fpreg(unw_cursor_t *, unw_regnum_t) LIBUNWIND_AVAIL;
 extern int unw_is_signal_frame(unw_cursor_t *) LIBUNWIND_AVAIL;
 extern int unw_get_proc_name(unw_cursor_t *, char *, size_t, unw_word_t *) LIBUNWIND_AVAIL;
-//extern int       unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*);
+extern int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*) LIBUNWIND_AVAIL;
 
 extern unw_addr_space_t unw_local_addr_space;
 

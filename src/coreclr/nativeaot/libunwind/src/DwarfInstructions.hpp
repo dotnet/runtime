@@ -55,7 +55,8 @@ private:
                                    const R &registers,
                                    pint_t initialStackValue);
   static pint_t getSavedRegister(A &addressSpace, const R &registers,
-                                 pint_t cfa, const RegisterLocation &savedReg);
+                                 pint_t cfa, const RegisterLocation &savedReg,
+                                 pint_t& location);
   static double getSavedFloatRegister(A &addressSpace, const R &registers,
                                   pint_t cfa, const RegisterLocation &savedReg);
   static v128 getSavedVectorRegister(A &addressSpace, const R &registers,
@@ -78,20 +79,24 @@ private:
 template <typename A, typename R>
 typename A::pint_t DwarfInstructions<A, R>::getSavedRegister(
     A &addressSpace, const R &registers, pint_t cfa,
-    const RegisterLocation &savedReg) {
+    const RegisterLocation &savedReg,
+    typename A::pint_t& location) {
   switch (savedReg.location) {
   case CFI_Parser<A>::kRegisterInCFA:
-    return (pint_t)addressSpace.getRegister(cfa + (pint_t)savedReg.value);
+    location = cfa + (pint_t)savedReg.value;
+    return (pint_t)addressSpace.getP(location);
 
   case CFI_Parser<A>::kRegisterAtExpression:
-    return (pint_t)addressSpace.getRegister(evaluateExpression(
-        (pint_t)savedReg.value, addressSpace, registers, cfa));
+    location = evaluateExpression((pint_t)savedReg.value, addressSpace,
+                                  registers, cfa);
+    return (pint_t)addressSpace.getP(location);
 
   case CFI_Parser<A>::kRegisterIsExpression:
+    location = 0;
     return evaluateExpression((pint_t)savedReg.value, addressSpace,
                               registers, cfa);
-
   case CFI_Parser<A>::kRegisterInRegister:
+    location = 0;
     return registers.getRegister((int)savedReg.value);
 
   case CFI_Parser<A>::kRegisterUnused:
@@ -164,6 +169,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
        // restore registers that DWARF says were saved
       R newRegisters = registers;
       pint_t returnAddress = 0;
+      pint_t returnAddressLocation = 0;
       const int lastReg = R::lastDwarfRegNum();
       assert(static_cast<int>(CFI_Parser<A>::kMaxRegisterNumber) >= lastReg &&
              "register range too large");
@@ -180,13 +186,23 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
             newRegisters.setVectorRegister(
                 i, getSavedVectorRegister(addressSpace, registers, cfa,
                                           prolog.savedRegisters[i]));
-          else if (i == (int)cieInfo.returnAddressRegister)
+          else if (i == (int)cieInfo.returnAddressRegister) {
             returnAddress = getSavedRegister(addressSpace, registers, cfa,
-                                             prolog.savedRegisters[i]);
-          else if (registers.validRegister(i))
-            newRegisters.setRegister(
-                i, getSavedRegister(addressSpace, registers, cfa,
-                                    prolog.savedRegisters[i]));
+                                             prolog.savedRegisters[i],
+                                             returnAddressLocation);
+            if (registers.validRegister(i)) {
+              newRegisters.setRegister(i, returnAddress, returnAddressLocation);
+            }
+          }
+          else if (registers.validRegister(i)) {
+            pint_t value;
+            pint_t location;
+            value = getSavedRegister(addressSpace, registers, cfa,
+                                     prolog.savedRegisters[i],
+                                     location);
+            
+            newRegisters.setRegister(i, value, location);
+          }
           else
             return UNW_EBADREG;
         }
@@ -194,7 +210,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       // By definition, the CFA is the stack pointer at the call site, so
       // restoring SP means setting it to CFA.
-      newRegisters.setSP(cfa);
+      newRegisters.setSP(cfa, 0);
 
 #if defined(_LIBUNWIND_TARGET_AARCH64)
       // If the target is aarch64 then the return address may have been signed
@@ -259,7 +275,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       // Return address is address after call site instruction, so setting IP to
       // that does simualates a return.
-      newRegisters.setIP(returnAddress);
+      newRegisters.setIP(returnAddress, returnAddressLocation);
 
       // Simulate the step by replacing the register set with the new ones.
       registers = newRegisters;
