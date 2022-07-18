@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
         public async Task ConnectAsync_VersionNotSupported_Throws()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -45,7 +45,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
         public async Task ConnectAsync_VersionSupported_Success()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
