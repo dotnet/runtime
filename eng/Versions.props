@@ -6,7 +6,7 @@
     <MajorVersion>6</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>8</PatchVersion>
-    <SdkBandVersion>6.0.300</SdkBandVersion>
+    <SdkBandVersion>6.0.400</SdkBandVersion>
     <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>
     </PreReleaseVersionIteration>
@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- The bands we want to produce workload manifests for -->
-    <WorkloadSdkBandVersions Include="6.0.100;6.0.200;6.0.300" />
+    <WorkloadSdkBandVersions Include="6.0.100;6.0.200;6.0.300;6.0.400" />
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
