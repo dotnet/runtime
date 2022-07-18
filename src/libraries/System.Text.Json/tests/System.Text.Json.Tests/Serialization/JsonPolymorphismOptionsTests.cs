@@ -53,6 +53,16 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
+        public static void JsonPolymorphismOptions_AssigningOptionsToJsonTypeInfoKindNone_ThrowsInvalidOperationException()
+        {
+            var options = new JsonPolymorphismOptions();
+            JsonTypeInfo jti = JsonTypeInfo.CreateJsonTypeInfo(typeof(int), new());
+            Assert.Equal(JsonTypeInfoKind.None, jti.Kind);
+
+            Assert.Throws<InvalidOperationException>(() => jti.PolymorphismOptions = options);
+        }
+
+        [Fact]
         public static void JsonPolymorphismOptions_AssigningOptionsToSecondJsonTypeInfo_ThrowsInvalidOperationException()
         {
             var options = new JsonPolymorphismOptions();

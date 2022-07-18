@@ -28,6 +28,8 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="type">The type to resolve contract metadata for.</param>
         /// <returns>The contract metadata resolved for <paramref name="type"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is not valid for serialization.</exception>
         /// <remarks>
         /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
         ///
