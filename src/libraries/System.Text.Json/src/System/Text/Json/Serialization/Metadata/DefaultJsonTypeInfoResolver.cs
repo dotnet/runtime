@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             s_createReflectionJsonTypeInfoMethodInfo ??= typeof(DefaultJsonTypeInfoResolver).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
             return (JsonTypeInfo)s_createReflectionJsonTypeInfoMethodInfo.MakeGenericMethod(type)
-                .InvokeNoWrapExceptions(null, new[] { options })!;
+                .InvokeNoWrapExceptions(null, new object[] { options })!;
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
