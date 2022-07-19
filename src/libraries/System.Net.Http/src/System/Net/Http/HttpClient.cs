@@ -606,7 +606,7 @@ namespace System.Net.Http
                 }
                 else if (cts.IsCancellationRequested && !pendingRequestsCts.IsCancellationRequested)
                 {
-                    // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
+                    // If the linked cancellation token source was canceled, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
                     // the only other cause could be a timeout.  Treat it as such.
 
                     // cancellationToken could have been triggered right after we checked it, but before we checked the cts.
