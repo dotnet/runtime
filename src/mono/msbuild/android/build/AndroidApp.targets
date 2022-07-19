@@ -1,8 +1,6 @@
 <Project>
   <UsingTask TaskName="AndroidAppBuilderTask" 
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="NetTraceToMibcConverter" 
-             AssemblyFile="$(NetTraceToMibcConverterTasksAssemblyPath)" />
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
 
@@ -70,11 +68,6 @@
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
     
-      <DebugTestItem Include="@(_AndroidAssembliesInternal)">
-        <_InternalForceInterpret>%(_AndroidAssembliesInternal._InternalForceInterpret)</_InternalForceInterpret>
-        <_IsNative>%(_AndroidAssembliesInternal._IsNative)</_IsNative>
-      </DebugTestItem>
-
       <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)" 
                            Condition="'%(_AndroidAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
@@ -86,6 +79,20 @@
     </ItemGroup>
     
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
+  </Target>
+
+  <Target Name="_AndroidPrepareProfiledAot"
+          Condition="'$(RunProfileAOT)' == 'true'"
+          DependsOnTargets="_AndroidBeforeAotCompileApp">
+
+    <NetTraceToMibcConverter
+      MibcConverterBinaryPath="$(DotnetPgoToolPath)"
+      Assemblies="@(_AotInputAssemblies)"
+      NetTracePath="$(NetTracePath)"
+      CacheFilePath="$(IntermediateOutputPath)netrace_to_mibc_converter_cache.json"
+      OutputDir="$(_MobileIntermediateOutputPath)">
+      <Output TaskParameter="MibcProfilePath" PropertyName="_MibcProfilePath" />
+    </NetTraceToMibcConverter>
   </Target>
 
   <Target Name="_AndroidAotCompileApp"
@@ -109,21 +116,6 @@
     <ItemGroup>
       <_AndroidAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="_AndroidPrepareProfiledAot"
-          Condition="'$(RunProfileAOT)' == 'true'"
-          DependsOnTargets="_AndroidBeforeAotCompileApp">
-
-    <NetTraceToMibcConverter
-      MibcConverterBinaryPath="$(DotnetPgoToolPath)"
-      Assemblies="@(_AotInputAssemblies)"
-      NetTracePath="$(NetTracePath)"
-      CacheFilePath="$(IntermediateOutputPath)netrace_to_mibc_converter_cache.json"
-      OutputDir="$(_MobileIntermediateOutputPath)">
-      <Output TaskParameter="MibcProfilePath" PropertyName="_MibcProfilePath" />
-    </NetTraceToMibcConverter>
-
   </Target>
 
   <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">

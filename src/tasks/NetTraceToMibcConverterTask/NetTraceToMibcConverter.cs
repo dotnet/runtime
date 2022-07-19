@@ -112,18 +112,18 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
     {
         var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
 
-        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
-        pgoArgsStr.Append($"create-mibc");
-        pgoArgsStr.Append($" --trace {netTraceFile} ");
+        StringBuilder mibcConverterArgsStr = new StringBuilder(string.Empty);
+        mibcConverterArgsStr.Append($"create-mibc");
+        mibcConverterArgsStr.Append($" --trace {netTraceFile} ");
         foreach (var refAsmItem in Assemblies)
         {
             string? fullPath = refAsmItem.GetMetadata("FullPath");
-            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
+            mibcConverterArgsStr.Append($" --reference \"{fullPath}\" ");
         }
-        pgoArgsStr.Append($" --output {outputMibcPath} ");
+        mibcConverterArgsStr.Append($" --output {outputMibcPath} ");
         (int exitCode, string output) = Utils.TryRunProcess(Log,
                                                             MibcConverterBinaryPath!,
-                                                            pgoArgsStr.ToString());
+                                                            mibcConverterArgsStr.ToString());
 
         if (exitCode != 0)
         {

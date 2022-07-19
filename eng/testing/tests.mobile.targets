@@ -8,7 +8,6 @@
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <PublishingTestsRun>true</PublishingTestsRun>
-    <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
   </PropertyGroup>
 
@@ -74,10 +73,6 @@
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
   </PropertyGroup>
-
-  <UsingTask TaskName="RuntimeConfigParserTask"
-             AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
-             Condition="'$(MonoTargetsTasksAssemblyPath)' != ''" />
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
@@ -146,7 +141,7 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
+          DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);ArchiveTests" />
 
   <Target Name="PrepareForTestUsingWorkloads"
           BeforeTargets="Test"
