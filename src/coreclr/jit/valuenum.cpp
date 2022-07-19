@@ -2134,6 +2134,16 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         return EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
     }
 
+    if ((genTreeOps(func) == GT_EQ) && (arg0VN == arg1VN))
+    {
+        return VNForIntCon(1);
+    }
+
+    if ((genTreeOps(func) == GT_NE) && (arg0VN == arg1VN))
+    {
+        return VNForIntCon(0);
+    }
+
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
