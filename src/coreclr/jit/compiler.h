@@ -2256,7 +2256,7 @@ public:
     Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications = TRUE);
+    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
