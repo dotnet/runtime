@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _elementTypeInfo = Options.GetTypeInfoCached(ElementType);
+                        _elementTypeInfo = Options.GetTypeInfoInternal(ElementType);
                     }
                 }
                 else
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _keyTypeInfo = Options.GetTypeInfoCached(KeyType);
+                        _keyTypeInfo = Options.GetTypeInfoInternal(KeyType);
                     }
                 }
                 else
@@ -508,11 +508,22 @@ namespace System.Text.Json.Serialization.Metadata
         internal virtual void LateAddProperties() { }
 
         /// <summary>
-        /// Creates JsonTypeInfo
+        /// Creates a blank <see cref="JsonTypeInfo{T}"/> instance.
         /// </summary>
-        /// <typeparam name="T">Type for which JsonTypeInfo stores metadata for</typeparam>
-        /// <param name="options">Options associated with JsonTypeInfo</param>
-        /// <returns>JsonTypeInfo instance</returns>
+        /// <typeparam name="T">The type for which contract metadata is specified.</typeparam>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> instance the metadata is associated with.</param>
+        /// <returns>A blank <see cref="JsonTypeInfo{T}"/> instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+        /// <remarks>
+        /// The returned <see cref="JsonTypeInfo{T}"/> will be blank, with the exception of the
+        /// <see cref="Converter"/> property which will be resolved either from
+        /// <see cref="JsonSerializerOptions.Converters"/> or the built-in converters for the type.
+        /// Any converters specified via <see cref="JsonConverterAttribute"/> on the type declaration
+        /// will not be resolved by this method.
+        ///
+        /// What converter does get resolved influences the value of <see cref="Kind"/>,
+        /// which constrains the type of metadata that can be modified in the <see cref="JsonTypeInfo"/> instance.
+        /// </remarks>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public static JsonTypeInfo<T> CreateJsonTypeInfo<T>(JsonSerializerOptions options)
@@ -522,18 +533,30 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
-            DefaultJsonTypeInfoResolver.RootDefaultInstance();
-            return new CustomJsonTypeInfo<T>(options);
+            JsonConverter converter = DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options, resolveJsonConverterAttribute: false);
+            return new CustomJsonTypeInfo<T>(converter, options);
         }
 
         private static MethodInfo? s_createJsonTypeInfo;
 
         /// <summary>
-        /// Creates JsonTypeInfo
+        /// Creates a blank <see cref="JsonTypeInfo"/> instance.
         /// </summary>
-        /// <param name="type">Type for which JsonTypeInfo stores metadata for</param>
-        /// <param name="options">Options associated with JsonTypeInfo</param>
-        /// <returns>JsonTypeInfo instance</returns>
+        /// <param name="type">The type for which contract metadata is specified.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> instance the metadata is associated with.</param>
+        /// <returns>A blank <see cref="JsonTypeInfo"/> instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="options"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> cannot be used for serialization.</exception>
+        /// <remarks>
+        /// The returned <see cref="JsonTypeInfo"/> will be blank, with the exception of the
+        /// <see cref="Converter"/> property which will be resolved either from
+        /// <see cref="JsonSerializerOptions.Converters"/> or the built-in converters for the type.
+        /// Any converters specified via <see cref="JsonConverterAttribute"/> on the type declaration
+        /// will not be resolved by this method.
+        ///
+        /// What converter does get resolved influences the value of <see cref="Kind"/>,
+        /// which constrains the type of metadata that can be modified in the <see cref="JsonTypeInfo"/> instance.
+        /// </remarks>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
@@ -553,18 +576,19 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            DefaultJsonTypeInfoResolver.RootDefaultInstance();
             s_createJsonTypeInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonTypeInfo), new Type[] { typeof(JsonSerializerOptions) })!;
             return (JsonTypeInfo)s_createJsonTypeInfo.MakeGenericMethod(type)
                 .Invoke(null, new object[] { options })!;
         }
 
         /// <summary>
-        /// Creates JsonPropertyInfo
+        /// Creates a blank <see cref="JsonPropertyInfo"/> instance for the current <see cref="JsonTypeInfo"/>.
         /// </summary>
-        /// <param name="propertyType">Type of the property</param>
-        /// <param name="name">Name of the property</param>
-        /// <returns>JsonPropertyInfo instance</returns>
+        /// <param name="propertyType">The declared type for the property.</param>
+        /// <param name="name">The property name used in JSON serialization and deserialization.</param>
+        /// <returns>A blank <see cref="JsonPropertyInfo"/> instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="propertyType"/> or <paramref name="name"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="propertyType"/> cannot be used for serialization.</exception>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name)
@@ -584,8 +608,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(propertyType), propertyType, Type, name);
             }
 
-            JsonConverter converter = Options.GetConverterFromListOrBuiltInConverter(propertyType);
-            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType, converter);
+            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
             propertyInfo.Name = name;
 
             return propertyInfo;
@@ -885,7 +908,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Avoid a reference to typeof(JsonNode) to support trimming.
                 (memberType.FullName == JsonObjectTypeName && ReferenceEquals(memberType.Assembly, typeof(JsonTypeInfo).Assembly));
 
-            return typeIsValid && jsonPropertyInfo.Options.GetConverterFromTypeInfo(memberType) != null;
+            return typeIsValid;
         }
 
         internal JsonPropertyDictionary<JsonPropertyInfo> CreatePropertyCache(int capacity)

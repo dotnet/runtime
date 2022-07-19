@@ -132,8 +132,7 @@ namespace Microsoft.Interop
     /// </summary>
     public record NativeMarshallingAttributeInfo(
         ManagedTypeInfo EntryPointType,
-        CustomTypeMarshallers Marshallers,
-        bool IsPinnableManagedType) : MarshallingInfo;
+        CustomTypeMarshallers Marshallers) : MarshallingInfo;
 
     /// <summary>
     /// Custom type marshalling via MarshalUsingAttribute or NativeMarshallingAttribute for a linear collection
@@ -141,12 +140,10 @@ namespace Microsoft.Interop
     public sealed record NativeLinearCollectionMarshallingInfo(
         ManagedTypeInfo EntryPointType,
         CustomTypeMarshallers Marshallers,
-        bool IsPinnableManagedType,
         CountInfo ElementCountInfo,
         ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
             EntryPointType,
-            Marshallers,
-            IsPinnableManagedType);
+            Marshallers);
 
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
@@ -558,7 +555,6 @@ namespace Microsoft.Interop
             }
 
             ManagedTypeInfo entryPointTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType);
-            bool isPinnableManagedType = !isMarshalUsingAttribute && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is not null;
 
             bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointType);
             if (isLinearCollectionMarshalling)
@@ -603,14 +599,13 @@ namespace Microsoft.Interop
                     return new NativeLinearCollectionMarshallingInfo(
                         entryPointTypeInfo,
                         marshallers.Value,
-                        isPinnableManagedType,
                         parsedCountInfo,
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()));
                 }
             }
             else if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, _compilation, out CustomTypeMarshallers? marshallers))
             {
-                return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value, isPinnableManagedType);
+                return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
             }
             return NoMarshallingInfo.Instance;
         }
@@ -755,7 +750,6 @@ namespace Microsoft.Interop
                     return new NativeLinearCollectionMarshallingInfo(
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
                         marshallers.Value,
-                        IsPinnableManagedType: false,
                         countInfo,
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller.TypeParameters.Last()));
                 }
@@ -798,8 +792,7 @@ namespace Microsoft.Interop
                 {
                     return new NativeMarshallingAttributeInfo(
                         EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(stringMarshaller),
-                        Marshallers: marshallers.Value,
-                        IsPinnableManagedType: false);
+                        Marshallers: marshallers.Value);
                 }
             }
 

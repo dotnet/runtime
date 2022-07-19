@@ -1339,7 +1339,7 @@ private:
 #endif
 
     static CrstStatic       m_JumpStubCrst;
-    static CrstStatic       m_RangeCrst;        // Aquire before writing into m_CodeRangeList and m_DataRangeList
+    static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
 
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT

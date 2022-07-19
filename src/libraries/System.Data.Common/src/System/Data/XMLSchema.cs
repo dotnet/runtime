@@ -720,7 +720,7 @@ namespace System.Data
             {
                 if (FromInference)
                 {
-                    ds._fTopLevelTable = true; // Backward compatability: for inference, if we do not read DataSet element
+                    ds._fTopLevelTable = true; // Backward compatibility: for inference, if we do not read DataSet element
                 }
                 // we should not write it also
                 setRootNStoDataSet = true;
@@ -828,7 +828,7 @@ namespace System.Data
                 tmpTable._fNestedInDataset = true;
 
 
-            // this fix is for backward compatability with old inference engine
+            // this fix is for backward compatibility with old inference engine
             if (FromInference && ds.Tables.Count == 0 && string.Equals(ds.DataSetName, "NewDataSet", StringComparison.Ordinal))
                 ds.DataSetName = XmlConvert.DecodeName(((XmlSchemaElement)_elements[0]).Name)!;
 
@@ -836,7 +836,7 @@ namespace System.Data
             ds._fIsSchemaLoading = false; //reactivate column computations
 
 
-            //for backward compatability; we need to set NS of Root Element to DataSet, if root already does not mapped to dataSet
+            //for backward compatibility; we need to set NS of Root Element to DataSet, if root already does not mapped to dataSet
             if (setRootNStoDataSet)
             {
                 if (ds.Tables.Count > 0)
@@ -1126,7 +1126,7 @@ namespace System.Data
                 if (FromInference)
                 {
                     HandleAttributes(ct.Attributes, table, isBase);
-                    if (isNillable) // this is for backward compatability to support xsi:Nill=true
+                    if (isNillable) // this is for backward compatibility to support xsi:Nill=true
                         HandleSimpleContentColumn("string", table, isBase, null, isNillable);
                 }
             }
@@ -1476,7 +1476,7 @@ namespace System.Data
             bool isSimpleContent = ((node.ElementSchemaType!.BaseXmlSchemaType != null) || (ct != null && ct.ContentModel is XmlSchemaSimpleContent));
 
             if (!FromInference || (isSimpleContent && table.Columns.Count == 0))
-            {// for inference backward compatability
+            {// for inference backward compatibility
                 HandleElementColumn(node, table, false);
                 string colName;
 
@@ -1738,7 +1738,7 @@ namespace System.Data
                 // foreign key in the child table
                 DataColumn childKey = _tableChild.AddForeignKey(parentKey);
 
-                // when we add  unique key, we do set prefix; but for Fk we do not do . So for backward compatability
+                // when we add  unique key, we do set prefix; but for Fk we do not do . So for backward compatibility
                 if (FromInference)
                     childKey.Prefix = _tableChild.Prefix;
                 //                    childKey.Prefix = GetPrefix(childKey.Namespace);
@@ -1948,7 +1948,7 @@ namespace System.Data
         {
             // disallow multiple simple content columns for the table
             if (FromInference && table.XmlText != null)
-            { // backward compatability for inference
+            { // backward compatibility for inference
                 return;
             }
 
@@ -2086,7 +2086,7 @@ namespace System.Data
             // for Named Simple type support : We should not received anything here other than string.
             // there can not be typed simple content
             // disallow multiple simple content columns for the table
-            if (FromInference && table.XmlText != null) // backward compatability for inference
+            if (FromInference && table.XmlText != null) // backward compatibility for inference
                 return;
 
             Type? type;
@@ -2251,17 +2251,17 @@ namespace System.Data
                 isToAdd = false;
 
                 if (FromInference)
-                { // for backward compatability with old inference
+                { // for backward compatibility with old inference
                   // throw eception if same column is being aded with different mapping
                     if (column.ColumnMapping != MappingType.Attribute)
                         throw ExceptionBuilder.ColumnTypeConflict(column.ColumnName);
                     // in previous inference , if we have incoming column with different NS, we think as different column and
                     //while adding , since there is no NS concept for datacolumn, we used to throw exception
                     // simulate the same behavior.
-                    if ((string.IsNullOrEmpty(attrib.QualifiedName.Namespace) && string.IsNullOrEmpty(column._columnUri)) || // backward compatability :SQL BU DT 310912
+                    if ((string.IsNullOrEmpty(attrib.QualifiedName.Namespace) && string.IsNullOrEmpty(column._columnUri)) || // backward compatibility :SQL BU DT 310912
                         (string.Equals(attrib.QualifiedName.Namespace, column.Namespace, StringComparison.Ordinal)))
                     {
-                        return; // backward compatability
+                        return; // backward compatibility
                     }
                     column = new DataColumn(columnName, type, null, MappingType.Attribute); // this is to fix issue with Exception we used to throw for old inference engine if column
                     //exists with different namespace; while adding it to columncollection
@@ -2437,16 +2437,16 @@ namespace System.Data
                 isToAdd = false;
 
                 if (FromInference)
-                { // for backward compatability with old inference
+                { // for backward compatibility with old inference
                     if (column.ColumnMapping != MappingType.Element)
                         throw ExceptionBuilder.ColumnTypeConflict(column.ColumnName);
                     // in previous inference , if we have incoming column with different NS, we think as different column and
                     //while adding , since there is no NS concept for datacolumn, we used to throw exception
                     // simulate the same behavior.
-                    if ((string.IsNullOrEmpty(elem.QualifiedName.Namespace) && string.IsNullOrEmpty(column._columnUri)) || // backward compatability :SQL BU DT 310912
+                    if ((string.IsNullOrEmpty(elem.QualifiedName.Namespace) && string.IsNullOrEmpty(column._columnUri)) || // backward compatibility :SQL BU DT 310912
                         (string.Equals(elem.QualifiedName.Namespace, column.Namespace, StringComparison.Ordinal)))
                     {
-                        return; // backward compatability
+                        return; // backward compatibility
                     }
                     column = new DataColumn(columnName, type, null, MappingType.Element); // this is to fix issue with Exception we used to throw for old inference engine if column
                     //exists with different namespace; while adding it to columncollection
@@ -2708,7 +2708,7 @@ namespace System.Data
                 {
                     AddTablesToList(_tableList, dt);
                 }
-                _ds.Tables.ReplaceFromInference(_tableList); // replace the list with the one in correct order: BackWard compatability for inference
+                _ds.Tables.ReplaceFromInference(_tableList); // replace the list with the one in correct order: BackWard compatibility for inference
             }
         }
 

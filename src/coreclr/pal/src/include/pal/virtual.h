@@ -224,7 +224,7 @@ private:
 Function :
     ReserveMemoryFromExecutableAllocator
 
-    This function is used to reserve a region of virual memory (not commited)
+    This function is used to reserve a region of virual memory (not committed)
     that is located close to the coreclr library. The memory comes from the virtual
     address range that is managed by ExecutableMemoryAllocator.
 --*/

@@ -4,7 +4,7 @@
 #include "ksarm.h"
 
 ;; Arguments
-;;     input: (in R0) the adress of the ULONGLONG to be converted to a double
+;;     input: (in R0) the address of the ULONGLONG to be converted to a double
 ;;     output: the double corresponding to the ULONGLONG input value
 
     LEAF_ENTRY FPFillR8

@@ -70,15 +70,15 @@ namespace System.Threading.RateLimiting
     public abstract partial class PartitionedRateLimiter<TResource> : System.IAsyncDisposable, System.IDisposable
     {
         protected PartitionedRateLimiter() { }
-        public System.Threading.RateLimiting.RateLimitLease Acquire(TResource resourceID, int permitCount = 1) { throw null; }
-        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(TResource resourceID, int permitCount);
+        public System.Threading.RateLimiting.RateLimitLease Acquire(TResource resource, int permitCount = 1) { throw null; }
+        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(TResource resource, int permitCount);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public abstract int GetAvailablePermits(TResource resourceID);
-        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resourceID, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resourceID, int permitCount, System.Threading.CancellationToken cancellationToken);
+        public abstract int GetAvailablePermits(TResource resource);
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, System.Threading.CancellationToken cancellationToken);
     }
     public enum QueueProcessingOrder
     {

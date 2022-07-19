@@ -14,7 +14,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// A hash table which is lock free for readers and up to 1 writer at a time.
     /// It must be possible to compute the key's hashcode from a value.
-    /// All values must convertable to/from an IntPtr.
+    /// All values must convertible to/from an IntPtr.
     /// It must be possible to perform an equality check between a key and a value.
     /// It must be possible to perform an equality check between a value and a value.
     /// A LockFreeReaderKeyValueComparer must be provided to perform these operations.

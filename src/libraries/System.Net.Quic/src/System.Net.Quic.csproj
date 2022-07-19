@@ -27,6 +27,8 @@
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs" Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs" Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
+             Link="Common\System\Net\Security\TlsAlertMessage.cs" />
   </ItemGroup>
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">

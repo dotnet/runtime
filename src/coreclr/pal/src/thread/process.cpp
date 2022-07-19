@@ -756,7 +756,7 @@ CorUnix::InternalCreateProcess(
 
     if (NO_ERROR != palError)
     {
-        ERROR("Unable to allocate object for new proccess\n");
+        ERROR("Unable to allocate object for new process\n");
         goto InternalCreateProcessExit;
     }
 

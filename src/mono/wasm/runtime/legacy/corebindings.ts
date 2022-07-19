@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject } from "../types";
-import { PromiseControl } from "../cancelable-promise";
 import { mono_bind_method, _create_primitive_converters } from "./method-binding";
 import { WasmRoot } from "../roots";
 import { runtimeHelpers } from "../imports";
 import cwraps from "../cwraps";
+import { PromiseController } from "../promise-controller";
 type SigLine = [lazy: boolean, jsname: string, csname: string, signature: string/*ArgsMarshalString*/];
 const fn_signatures: SigLine[] = [
     [true, "_get_cs_owned_object_by_js_handle_ref", "GetCSOwnedObjectByJSHandleRef", "iim"],
@@ -45,7 +45,7 @@ export interface LegacyExports {
     _set_tcs_result_ref(gcHandle: GCHandle, result: any): void
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
-    _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseControl): void;
+    _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseController): void;
 
     _object_to_string_ref(obj: MonoObjectRef): string;
     _get_date_value_ref(obj: MonoObjectRef): number;

@@ -267,16 +267,16 @@ namespace System.IO.Compression.Tests
                         if (entry == null) //entry not found
                         {
                             string entryNameOtherSlash = FlipSlashes(entryName);
-                            bool isEmtpy = !files.Any(
+                            bool isEmpty = !files.Any(
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if (requireExplicit || isEmtpy)
+                            if (requireExplicit || isEmpty)
                             {
                                 Assert.Contains("emptydir", entryName);
                             }
 
-                            if ((!requireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
+                            if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
                                 count--; //discount this entry
                         }
                         else

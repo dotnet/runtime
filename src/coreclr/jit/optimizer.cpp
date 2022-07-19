@@ -572,14 +572,14 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                  // If we don't want to unmark this loop...
+    if ((skipUnmarkLoop == false) &&                  // If we want to unmark this loop...
         block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        // This block reaches conditionally or always
         block->bbJumpDest->isLoopHead() &&            // to a loop head...
         (fgCurBBEpochSize == fgBBNumMax + 1) &&       // We didn't add new blocks since last renumber...
         (block->bbJumpDest->bbNum <= block->bbNum) && // This is a backedge...
         fgDomsComputed &&                             // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
-        fgReachable(block->bbJumpDest, block))        // Block's destination is reachable from block...
+        fgReachable(block->bbJumpDest, block))        // Block's destination (target of back edge) can reach block...
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block); // Unscale the blocks in such loop.
     }
@@ -9898,7 +9898,7 @@ PhaseStatus Compiler::optOptimizeBools()
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
 
 //------------------------------------------------------------------------------------------
-// optRemoveRedundantZeroInits: Remove redundant zero intializations.
+// optRemoveRedundantZeroInits: Remove redundant zero initializations.
 //
 // Notes:
 //    This phase iterates over basic blocks starting with the first basic block until there is no unique
@@ -10122,7 +10122,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
-                                // the prolog and this explicit intialization. Therefore, it doesn't
+                                // the prolog and this explicit initialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
                                 JITDUMP("Marking V%02u as having an explicit init\n", lclNum);

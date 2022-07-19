@@ -371,6 +371,7 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType (0, "System.Type")
 					&& calledMethod.IsStatic ()
 					=> IntrinsicId.Nullable_GetUnderlyingType,
+
 				_ => IntrinsicId.None,
 			};
 		}

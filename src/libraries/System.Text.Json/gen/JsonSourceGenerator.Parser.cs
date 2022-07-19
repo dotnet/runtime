@@ -1031,7 +1031,7 @@ namespace System.Text.Json.SourceGeneration
                                 bool isVirtual = propertyInfo.IsVirtual();
 
                                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                                    PropertyIsOverridenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
+                                    PropertyIsOverriddenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1042,7 +1042,7 @@ namespace System.Text.Json.SourceGeneration
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                             {
-                                if (PropertyIsOverridenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                                if (PropertyIsOverriddenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1163,7 +1163,7 @@ namespace System.Text.Json.SourceGeneration
             private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
                 => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase));
 
-            private static bool PropertyIsOverridenAndIgnored(
+            private static bool PropertyIsOverriddenAndIgnored(
                 string currentMemberName,
                 Type currentMemberType,
                 bool currentMemberIsVirtual,

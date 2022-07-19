@@ -1,10 +1,11 @@
-import { _are_promises_supported, create_cancelable_promise } from "../cancelable-promise";
+import { _are_promises_supported } from "../cancelable-promise";
 import cwraps from "../cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
 import { runtimeHelpers } from "../imports";
 import { wrap_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
+import { createPromiseController } from "../promise-controller";
 import { WasmRoot, mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
 import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish } from "../types";
@@ -284,7 +285,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
     if (!result) {
         const explicitFinalization = () => teardown_managed_proxy(result, gc_handle);
 
-        const { promise, promise_control } = create_cancelable_promise(explicitFinalization, explicitFinalization);
+        const { promise, promise_control } = createPromiseController(explicitFinalization, explicitFinalization);
 
         // note that we do not implement promise/task roundtrip
         // With more complexity we could recover original instance when this promise is marshaled back to C#.
@@ -339,5 +340,3 @@ export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result
     // this is always strong gc_handle
     legacyManagedExports._get_js_owned_object_by_gc_handle_ref(gc_handle, result);
 }
-
-

@@ -709,9 +709,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if (isHfaArg)
         {
             // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
-            // The orginal struct type is available by using origArgType.
+            // The original struct type is available by using origArgType.
             // We also update the cSlots to be the number of float/double/vector fields in the HFA.
-            argType = hfaType; // TODO-Cleanup: remove this asignment and mark `argType` as const.
+            argType = hfaType; // TODO-Cleanup: remove this assignment and mark `argType` as const.
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
         }
@@ -5971,7 +5971,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance,
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
@@ -6064,7 +6064,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance,
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This implementation for all the platforms but UNIX_AMD64 OSs (System V 64 bit.)
 int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
@@ -6604,7 +6604,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             int offset         = originalFrameStkOffs + originalOffset;
 
             JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor aquired) tier0 FP-rel offset %d tier0 frame offset %d new "
+                "---OSR--- V%02u (on tier0 frame, monitor acquired) tier0 FP-rel offset %d tier0 frame offset %d new "
                 "virt offset %d\n",
                 lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
 

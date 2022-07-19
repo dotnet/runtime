@@ -20,7 +20,7 @@ export function mono_wasm_typed_array_from_ref(pinned_array: MonoArray, begin: n
 }
 
 // Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
-// 	 adress of managed pinned array -> copy from heap -> typed array memory
+// 	 address of managed pinned array -> copy from heap -> typed array memory
 function typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number) {
 
     // typed array

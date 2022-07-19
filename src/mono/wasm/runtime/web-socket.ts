@@ -3,7 +3,7 @@
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { PromiseControl, create_cancelable_promise } from "./cancelable-promise";
+import { PromiseController, createPromiseController } from "./promise-controller";
 import { mono_assert } from "./types";
 import { ArraySegment, IDisposable } from "./marshal";
 
@@ -26,7 +26,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, onCl
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
 
     const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
-    const { promise_control: open_promise_control } = create_cancelable_promise();
+    const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
 
     ws[wasm_ws_pending_receive_event_queue] = new Queue();
     ws[wasm_ws_pending_receive_promise_queue] = new Queue();
@@ -61,11 +61,11 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, onCl
         receive_promise_queue.drain((receive_promise_control) => {
 
             const response = new Int32Array([
-                0,// count 
+                0,// count
                 2, // type:close
                 1]);// end_of_message: true
             receive_promise_control.responseView.set(response);
-            receive_promise_control.resolve(null);
+            receive_promise_control.resolve();
         });
     };
     const local_on_error = (ev: any) => {
@@ -79,7 +79,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, onCl
     return ws;
 }
 
-export function ws_wasm_open(ws: WebSocketExtension): Promise<void> | null {
+export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     return open_promise_control.promise;
@@ -116,7 +116,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, bufferView: ArraySegment
 
         return null;
     }
-    const { promise, promise_control } = create_cancelable_promise(undefined, undefined);
+    const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
     receive_promise_control.bufferView = bufferView;
     receive_promise_control.responseView = responseView;
@@ -134,7 +134,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
     }
 
     if (wait_for_close_received) {
-        const { promise, promise_control } = create_cancelable_promise();
+        const { promise, promise_control } = createPromiseController<void>();
         ws[wasm_ws_pending_close_promises].push(promise_control);
 
         if (typeof reason === "string") {
@@ -195,7 +195,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uin
     }
 
     // block the promise/task until the browser passed the buffer to OS
-    const { promise, promise_control } = create_cancelable_promise();
+    const { promise, promise_control } = createPromiseController<void>();
     const pending = ws[wasm_ws_pending_send_promises];
     pending.push(promise_control);
 
@@ -203,7 +203,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uin
     const polling_check = () => {
         // was it all sent yet ?
         if (ws.bufferedAmount === 0) {
-            promise_control.resolve(null);
+            promise_control.resolve();
         }
         else if (ws.readyState != WebSocket.OPEN) {
             // only reject if the data were not sent
@@ -262,7 +262,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
         const promise_control = promise_queue.dequeue()!;
         _mono_wasm_web_socket_receive_buffering(event_queue,
             promise_control.bufferView, promise_control.responseView);
-        promise_control.resolve(null);
+        promise_control.resolve();
     }
     prevent_timer_throttling();
 }
@@ -357,16 +357,16 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, bufferView
 type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_receive_event_queue]: Queue<Message>;
     [wasm_ws_pending_receive_promise_queue]: Queue<ReceivePromiseControl>;
-    [wasm_ws_pending_open_promise]: PromiseControl
-    [wasm_ws_pending_send_promises]: PromiseControl[]
-    [wasm_ws_pending_close_promises]: PromiseControl[]
+    [wasm_ws_pending_open_promise]: PromiseController<WebSocketExtension>
+    [wasm_ws_pending_send_promises]: PromiseController<void>[]
+    [wasm_ws_pending_close_promises]: PromiseController<void>[]
     [wasm_ws_is_aborted]: boolean
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
 }
 
-type ReceivePromiseControl = PromiseControl & {
+type ReceivePromiseControl = PromiseController<void> & {
     bufferView: ArraySegment,
     responseView: ArraySegment
 }

@@ -247,7 +247,7 @@ class DecoderFallbackBuffer
     friend class UTF8Encoding;
     // Most implimentations will probably need an implimenation-specific constructor
 
-    // internal methods that cannot be overriden that let us do our fallback thing
+    // internal methods that cannot be overridden that let us do our fallback thing
     // These wrap the internal methods so that we can check for people doing stuff that's incorrect
 
 public:
@@ -722,9 +722,9 @@ public:
 class EncoderFallbackBuffer
 {
     friend class UTF8Encoding;
-    // Most implementations will probably need an implemenation-specific constructor
+    // Most implementations will probably need an implementation-specific constructor
 
-    // Public methods that cannot be overriden that let us do our fallback thing
+    // Public methods that cannot be overridden that let us do our fallback thing
     // These wrap the internal methods so that we can check for people doing stuff that is incorrect
 
 public:
@@ -1912,7 +1912,7 @@ public:
                         goto LongCodeWithMask16;
                     }
 
-                    // Unfortunately, this is endianess sensitive
+                    // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
                     *pTarget = (WCHAR)((ch >> 8) & 0x7F);
                     pSrc += 2;
@@ -1934,7 +1934,7 @@ public:
                         goto LongCodeWithMask32;
                     }
 
-                    // Unfortunately, this is endianess sensitive
+                    // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
                     *pTarget = (WCHAR)((ch >> 24) & 0x7F);
                     *(pTarget + 1) = (WCHAR)((ch >> 16) & 0x7F);
@@ -2412,7 +2412,7 @@ public:
                         goto LongCodeWithMask;
                     }
 
-                    // Unfortunately, this is endianess sensitive
+                    // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
                     *pTarget = (BYTE)(ch >> 16);
                     *(pTarget + 1) = (BYTE)ch;

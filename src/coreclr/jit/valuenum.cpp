@@ -1295,7 +1295,7 @@ bool ValueNumStore::VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCand
 // Return Values: - This method signature is void but returns two values using
 //                  the write back parameters.
 //
-// Note: When 'vnWx' does not have an exception set, the orginal value is the
+// Note: When 'vnWx' does not have an exception set, the original value is the
 //       normal value and is written to 'pvn' and VNForEmptyExcSet() is
 //       written to 'pvnx'.
 //       When we have an exception set 'vnWx' will be a VN func with m_func
@@ -1380,7 +1380,7 @@ ValueNumPair ValueNumStore::VNPUnionExcSet(ValueNumPair vnpWx, ValueNumPair vnpE
 //
 // Return Value:
 //               - The Value Number for the expression without the exception set.
-//                 This can be the orginal 'vn', when there are no exceptions.
+//                 This can be the original 'vn', when there are no exceptions.
 //
 // Notes:        - Whenever we have an exception set the Value Number will be
 //                 a VN func with VNF_ValWithExc.
@@ -1510,7 +1510,7 @@ ValueNumPair ValueNumStore::VNPUniqueWithExc(var_types type, ValueNumPair vnpExc
 //
 // Return Value:
 //               - The Value Number for the expression without the exception set.
-//                 This can be the orginal 'vn', when there are no exceptions.
+//                 This can be the original 'vn', when there are no exceptions.
 //
 // Notes:        - Whenever we have an exception set the Value Number will be
 //                 a VN func with VNF_ValWithExc.

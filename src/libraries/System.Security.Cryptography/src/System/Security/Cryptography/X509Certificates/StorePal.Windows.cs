@@ -66,6 +66,8 @@ namespace System.Security.Cryptography.X509Certificates
                     return; // The certificate is not present in the store, simply return.
 
                 Interop.Crypt32.CERT_CONTEXT* pCertContextToDelete = enumCertContext.Disconnect();  // CertDeleteCertificateFromContext always frees the context (even on error)
+                enumCertContext.Dispose();
+
                 if (!Interop.Crypt32.CertDeleteCertificateFromStore(pCertContextToDelete))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }

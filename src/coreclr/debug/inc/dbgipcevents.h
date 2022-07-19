@@ -1283,7 +1283,7 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
 //          the address of the real start address of the native code.
 //          This field will be NULL only if the method hasn't been JITted
 //          yet (and thus no code is available).  Otherwise, it will be
-//          the adress of a CORDB_ADDRESS in the remote memory.  This
+//          the address of a CORDB_ADDRESS in the remote memory.  This
 //          CORDB_ADDRESS may be NULL, in which case the code is unavailable
 //          has been pitched (return CORDBG_E_CODE_NOT_AVAILABLE)
 //
