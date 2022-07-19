@@ -18,14 +18,10 @@
          ReferringTargetFramework is set to $(NetCoreAppCurrent)-windows so that we pack the Windows specific implementation assemblies -->
     <ProjectReference Include="@(WindowsDesktopCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
                                $(LibrariesProjectRoot)System.Diagnostics.EventLog\src\Messages\System.Diagnostics.EventLog.Messages.csproj"
-                      Exclude="$(LibrariesProjectRoot)System.Diagnostics.EventLog.Messages\src\System.Diagnostics.EventLog.Messages.csproj"
                       ReferringTargetFramework="$(NetCoreAppCurrent)-windows"
                       PrivateAssets="all"
                       Pack="true"
                       Private="true"
                       IncludeReferenceAssemblyInPackage="true" />
-    <!-- Messages is an implementation only assembly. -->
-    <ProjectReference Update="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\Messages\System.Diagnostics.EventLog.Messages.csproj"
-                      IncludeReferenceAssemblyInPackage="false" />
   </ItemGroup>
 </Project>
