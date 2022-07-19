@@ -122,7 +122,7 @@ jobs:
       # split traffic for PR's and rolling builds
       - ${{ if eq(variables['isNotExtraPlatformsBuild'], true) }}:
         - OSX.1015.Amd64.AppleTV.Open
-      - ${{ if ne(variables['isExtraPlatformsBuild'], true) }}:
+      - ${{ if eq(variables['isExtraPlatformsBuild'], true) }}:
         - OSX.1100.Amd64.AppleTV.Open
 
     # windows x64
