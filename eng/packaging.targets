@@ -45,10 +45,6 @@
     <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.Compatibility" Version="$(MicrosoftDotNetCompatibilityVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-  </ItemGroup>
-
   <ItemGroup>
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
     <None Include="$(PackageDesignerMarkerFile)"

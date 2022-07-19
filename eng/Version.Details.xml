@@ -286,7 +286,7 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>ca6f78474bad2298b47f2aeea16d5fa74b1d2b0f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Compatibility" Version="2.0.0-alpha.1.21525.11">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="7.0.100-dev">
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>957ae5ca599fdeaee425d23928d42da711373a5e</Sha>
     </Dependency>
