@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Allocate memory for the unmanaged representation of the collection.
         /// </summary>
         /// <param name="managed">A managed array</param>
-        /// <param name="numElements">A unmanaged element count</param>
+        /// <param name="numElements">The unmanaged element count</param>
         /// <returns>An unmanaged pointer to the allocated memory</returns>
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
@@ -44,10 +44,10 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Retrieve a source for the managed elements in the collection.
+        /// Retrieves a source for the managed elements in the collection.
         /// </summary>
         /// <param name="managed">A managed array</param>
-        /// <returns>A <see cref="ReadOnlyMemory{T}"/> containing the managed elements to marshal</returns>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> containing the managed elements to marshal</returns>
         public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed)
             => managed;
 
@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanagedValue">An unmanaged collection</param>
         /// <param name="numElements">The unmanaged element count</param>
-        /// <returns>A <see cref="ReadOnlyMemory{TUnmanagedElement}"/> containing the unmanaged elements to marshal</returns>
+        /// <returns>A <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal</returns>
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
             => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
 
@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public ref struct ManagedToUnmanagedIn
         {
             /// <summary>
-            /// Requested caller allocated buffer size.
+            /// Requested caller-allocated buffer size.
             /// </summary>
             /// <remarks>
             /// Represents a potential optimization for the marshaller.

@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Retrieve a source for the managed elements in the collection.
         /// </summary>
         /// <param name="managed">A managed array</param>
-        /// <returns>A <see cref="ReadOnlyMemory{IntPtr}"/> containing the managed elements to marshal</returns>
+        /// <returns>A <see cref="ReadOnlySpan{IntPtr}"/> containing the managed elements to marshal</returns>
         public static ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed)
             => Unsafe.As<IntPtr[]>(managed);
 
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanagedValue">An unmanaged collection</param>
         /// <param name="numElements">The unmanaged element count</param>
-        /// <returns>A <see cref="ReadOnlyMemory{TUnmanagedElement}"/> containing the unmanaged elements to marshal</returns>
+        /// <returns>A <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal</returns>
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
             => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
 
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public ref struct ManagedToUnmanagedIn
         {
             /// <summary>
-            /// Requested caller allocated buffer size.
+            /// Requested caller-allocated buffer size.
             /// </summary>
             /// <remarks>
             /// Represents a potential optimization for the marshaller.

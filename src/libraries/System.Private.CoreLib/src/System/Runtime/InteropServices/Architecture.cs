@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices
         /// A 32-bit ARMv6 processor architecture.
         /// </summary>
         /// <remarks>
-        /// This value indicates the following configuration, ARMv6 base instructions, VFPv2 floating point support and registers, hard-float ABI, and no compact instruction set.
+        /// This value indicates ARMv6 base instructions, VFPv2 floating point support and registers, hard-float ABI, and no compact instruction set.
         /// </remarks>
         Armv6,
         /// <summary>
