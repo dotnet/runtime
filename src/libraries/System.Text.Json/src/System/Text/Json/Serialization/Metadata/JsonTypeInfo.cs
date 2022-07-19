@@ -1022,7 +1022,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static JsonTypeInfoKind GetTypeInfoKind(Type type, ConverterStrategy converterStrategy)
         {
-            // System.Object is semi-polimorphic and will not respect Properties
+            // System.Object is polymorphic and will not respect Properties
             if (type == typeof(object))
             {
                 return JsonTypeInfoKind.None;

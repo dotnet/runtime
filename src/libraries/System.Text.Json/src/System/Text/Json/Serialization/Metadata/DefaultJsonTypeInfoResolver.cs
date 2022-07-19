@@ -39,12 +39,16 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Resolves a reflection-derived JSON contract for a given <paramref name="type"/> and <paramref name="options"/> configuration.
+        /// Resolves a JSON contract for a given <paramref name="type"/> and <paramref name="options"/> configuration.
         /// </summary>
         /// <param name="type">The type for which to resolve a JSON contract.</param>
         /// <param name="options">A <see cref="JsonSerializerOptions"/> instance used to determine contract configuration.</param>
         /// <returns>A <see cref="JsonTypeInfo"/> defining a reflection-derived JSON contract for <paramref name="type"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// The base implementation of this method will produce a reflection-derived contract
+        /// and apply any callbacks from the <see cref="Modifiers"/> list.
+        /// </remarks>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",

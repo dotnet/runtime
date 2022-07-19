@@ -565,7 +565,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // There are 3 copies of the property name:
         // 1) Name. The unescaped property name.
-        // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during during deserialization for property lookup.
+        // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during deserialization for property lookup.
         // 3) EscapedNameSection. The escaped version of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
