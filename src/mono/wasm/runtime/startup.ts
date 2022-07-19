@@ -31,8 +31,6 @@ export const mono_wasm_runtime_is_initialized = new GuardedPromise<void>((resolv
     runtime_is_initialized_reject = reject;
 });
 
-const IS_WORKER = typeof (self) !== "undefined" && typeof ((<any>self).importScripts) !== "undefined";
-
 let ctx: DownloadAssetsContext | null = null;
 
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
@@ -125,11 +123,6 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
 
 async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as DotnetModule;
-
-    if (IS_WORKER) {
-        console.debug("mono_wasm_pre_init running in a worker");
-
-    }
 
     Module.addRunDependency("mono_wasm_pre_init");
 
