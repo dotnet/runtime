@@ -3285,7 +3285,7 @@ public:
                                                   // cannot add any new exceptions
             }
 
-            cse->CopyReg(exp);  // The cse inheirits any reg num property from the orginal exp node
+            cse->CopyReg(exp);  // The cse inheirits any reg num property from the original exp node
             exp->ClearRegNum(); // The exp node (for a CSE def) no longer has a register requirement
 
             // Walk the statement 'stmt' and find the pointer

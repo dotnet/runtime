@@ -14,10 +14,11 @@ import cwraps from "./cwraps";
 import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy, _lookup_js_owned_object } from "./gc-handles";
 import { mono_method_get_call_signature_ref, call_method_ref, wrap_error_root } from "./method-calls";
 import { js_to_mono_obj_root } from "./js-to-cs";
-import { _are_promises_supported, create_cancelable_promise } from "./cancelable-promise";
+import { _are_promises_supported } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
 import { ManagedObject } from "./marshal";
+import { createPromiseController } from "./promise-controller";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
@@ -297,7 +298,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
     if (!result) {
         const explicitFinalization = () => teardown_managed_proxy(result, gc_handle);
 
-        const { promise, promise_control } = create_cancelable_promise(explicitFinalization, explicitFinalization);
+        const { promise, promise_control } = createPromiseController(explicitFinalization, explicitFinalization);
 
         // note that we do not implement promise/task roundtrip
         // With more complexity we could recover original instance when this promise is marshaled back to C#.

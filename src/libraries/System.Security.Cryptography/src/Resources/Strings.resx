@@ -597,6 +597,9 @@
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
   </data>
+  <data name="Cryptography_X500_MultiValued" xml:space="preserve">
+    <value>Single-element methods are not valid on an X.500 Relative Distinguished Name that has multiple elements.</value>
+  </data>
   <data name="Cryptography_X509_AIA_MustNotBuildEmpty" xml:space="preserve">
     <value>At least one of the ocspUris or caIssuersUris values must be non-empty.</value>
   </data>

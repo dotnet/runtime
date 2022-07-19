@@ -670,7 +670,7 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying read method throws {0} buffer.Lenght={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
+                Debug.WriteLine("Verifying read method throws {0} buffer.Length={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
                 com.Open();
 
                 Assert.Throws(expectedException, () => com.Read(buffer, offset, count));

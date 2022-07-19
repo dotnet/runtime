@@ -1318,7 +1318,7 @@ namespace System
                 // skip the 15 byte reserved field
 
                 // don't use the BitConverter class which parses data
-                // based on the Endianess of the machine architecture.
+                // based on the Endianness of the machine architecture.
                 // this data is expected to always be in "standard byte order",
                 // regardless of the machine it is being processed on.
 

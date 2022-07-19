@@ -686,24 +686,10 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
     if (pThisUNSAFE==NULL)
         FCThrowRes(kNullReferenceException, W("NullReference_This"));
 
-    INT32           retVal  = ApartmentUnknown;
     BOOL    ok = TRUE;
     THREADBASEREF   pThis   = (THREADBASEREF) pThisUNSAFE;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    // Translate state input. ApartmentUnknown is not an acceptable input state.
-    // Throw an exception here rather than pass it through to the internal
-    // routine, which asserts.
-    Thread::ApartmentState state = Thread::AS_Unknown;
-    if (iState == ApartmentSTA)
-        state = Thread::AS_InSTA;
-    else if (iState == ApartmentMTA)
-        state = Thread::AS_InMTA;
-    else if (iState == ApartmentUnknown)
-        state = Thread::AS_Unknown;
-    else
-        COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_Enum"));
 
     Thread  *thread = pThis->GetInternal();
     if (!thread)
@@ -722,7 +708,7 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         {
             EX_TRY
             {
-                state = thread->SetApartment(state);
+                iState = thread->SetApartment((Thread::ApartmentState)iState);
             }
             EX_CATCH
             {
@@ -735,24 +721,13 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         pThis->LeaveObjMonitor();
     }
 
-
     // Now it's safe to throw exceptions again.
     if (!ok)
         COMPlusThrow(kThreadStateException);
 
-    // Translate state back into external form
-    if (state == Thread::AS_InSTA)
-        retVal = ApartmentSTA;
-    else if (state == Thread::AS_InMTA)
-        retVal = ApartmentMTA;
-    else if (state == Thread::AS_Unknown)
-        retVal = ApartmentUnknown;
-    else
-        _ASSERTE(!"Invalid state returned from SetApartment");
-
     HELPER_METHOD_FRAME_END();
 
-    return retVal;
+    return iState;
 }
 FCIMPLEND
 
@@ -780,10 +755,10 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
         COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
     }
 
-    Thread::ApartmentState state = thread->GetApartment();
+    retVal = thread->GetApartment();
 
 #ifdef FEATURE_COMINTEROP
-    if (state == Thread::AS_Unknown)
+    if (retVal == Thread::AS_Unknown)
     {
         // If the CLR hasn't started COM yet, start it up and attempt the call again.
         // We do this in order to minimize the number of situations under which we return
@@ -791,29 +766,10 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
         if (!g_fComStarted)
         {
             EnsureComStarted();
-            state = thread->GetApartment();
+            retVal = thread->GetApartment();
         }
     }
 #endif // FEATURE_COMINTEROP
-
-    // Translate state into external form
-    retVal = ApartmentUnknown;
-    if (state == Thread::AS_InSTA)
-    {
-        retVal = ApartmentSTA;
-    }
-    else if (state == Thread::AS_InMTA)
-    {
-        retVal = ApartmentMTA;
-    }
-    else if (state == Thread::AS_Unknown)
-    {
-        retVal = ApartmentUnknown;
-    }
-    else
-    {
-        _ASSERTE(!"Invalid state returned from GetApartment");
-    }
 
     HELPER_METHOD_FRAME_END();
 

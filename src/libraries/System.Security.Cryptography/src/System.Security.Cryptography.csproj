@@ -441,9 +441,11 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAlternativeNameBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500RelativeDistinguishedName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityInformationAccessExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
@@ -849,7 +851,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
@@ -1041,7 +1042,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Android.cs" />
@@ -1206,7 +1206,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X500DictionaryStringHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.ECKey.cs" />

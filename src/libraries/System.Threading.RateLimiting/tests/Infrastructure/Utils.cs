@@ -37,9 +37,9 @@ namespace System.Threading.RateLimiting.Tests
 
     internal sealed class NotImplementedPartitionedRateLimiter<T> : PartitionedRateLimiter<T>
     {
-        public override int GetAvailablePermits(T resourceID) => throw new NotImplementedException();
-        protected override RateLimitLease AcquireCore(T resourceID, int permitCount) => throw new NotImplementedException();
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(T resourceID, int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public override int GetAvailablePermits(T resource) => throw new NotImplementedException();
+        protected override RateLimitLease AcquireCore(T resource, int permitCount) => throw new NotImplementedException();
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(T resource, int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
 
     internal sealed class TrackingRateLimiter : RateLimiter

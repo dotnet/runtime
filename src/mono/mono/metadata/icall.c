@@ -3246,7 +3246,7 @@ init_io_stream_slots (void)
 
 
 static MonoBoolean
-stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
+stream_has_overridden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
@@ -3261,10 +3261,10 @@ stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slo
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_is_overriden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
-	gboolean end_is_overriden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
+	gboolean begin_is_overridden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
+	gboolean end_is_overridden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
 
-	return begin_is_overriden || end_is_overriden;
+	return begin_is_overridden || end_is_overridden;
 }
 
 MonoBoolean
@@ -3273,8 +3273,8 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, M
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// return true if BeginRead or EndRead were overriden
-	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
+	// return true if BeginRead or EndRead were overridden
+	return stream_has_overridden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
@@ -3283,8 +3283,8 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, 
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// return true if BeginWrite or EndWrite were overriden
-	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
+	// return true if BeginWrite or EndWrite were overridden
+	return stream_has_overridden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
@@ -6221,7 +6221,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 			continue;
 		res->type = iter->sig->params [i];
 		res->klass = mono_class_from_mono_type_internal (res->type);
-		/* FIXME: endianess issue... */
+		/* FIXME: endianness issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
