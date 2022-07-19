@@ -50,7 +50,7 @@ namespace System.Net.Http.Functional.Tests
             return handler;
         }
 
-        protected static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
+        protected static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates)
             => TestHelper.CreateSocketsHttpHandler(allowAllCertificates);
 
         protected Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
