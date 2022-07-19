@@ -88,13 +88,8 @@ namespace System.Formats.Tar
         // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
         internal byte[]? _gnuUnusedBytes;
 
-        internal TarHeader(TarEntryFormat format)
-            : this(format, string.Empty, 0, default, 0)
-        {
-        }
-
         // Constructor called when creating an entry with default common fields.
-        internal TarHeader(TarEntryFormat format, string name, int mode, DateTimeOffset mTime, TarEntryType typeFlag)
+        internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)
         {
             _format = format;
             _name = name;
@@ -108,19 +103,13 @@ namespace System.Formats.Tar
         // Constructor called when creating an entry using the common fields from another entry.
         // The *TarEntry constructor calling this should take care of setting any format-specific fields.
         internal TarHeader(TarEntryFormat format, TarEntryType typeFlag, TarHeader other)
+            : this(format, other._name, other._mode, other._mTime, typeFlag)
         {
-            _format = format;
-            _name = other._name;
-            _mode = other._mode;
             _uid = other._uid;
             _gid = other._gid;
             _size = other._size;
-            _mTime = other._mTime;
             _checksum = other._checksum;
-            _typeFlag = typeFlag;
             _linkName = other._linkName;
-            _magic = GetMagicForFormat(format);
-            _version = GetVersionForFormat(format);
             _dataStream = other._dataStream;
         }
 
