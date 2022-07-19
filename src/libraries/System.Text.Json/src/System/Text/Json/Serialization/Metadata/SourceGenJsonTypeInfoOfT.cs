@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
         public SourceGenJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
-            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
         }
 

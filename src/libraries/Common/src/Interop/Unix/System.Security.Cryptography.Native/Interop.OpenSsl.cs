@@ -740,7 +740,7 @@ internal static partial class Interop
         // We attached GCHandle to the SSL so we can find back SafeSslContextHandle holding the cache.
         // New session has refCount of 1.
         // If this function returns 0, OpenSSL will drop the refCount and discard the session.
-        // If we return 1, the ownership is transfered to us and we will need to call SessionFree().
+        // If we return 1, the ownership is transferred to us and we will need to call SessionFree().
         private static unsafe int NewSessionCallback(IntPtr ssl, IntPtr session)
         {
             Debug.Assert(ssl != IntPtr.Zero);

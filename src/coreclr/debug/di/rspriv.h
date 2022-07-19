@@ -230,7 +230,7 @@ public:
         m_cElements = 0;
     }
 
-    // Is the array emtpy?
+    // Is the array empty?
     bool IsEmpty() const
     {
         return (m_pArray == NULL);
@@ -280,7 +280,7 @@ public:
         m_cElements = 0;
     }
 
-    // Array lookup. Caller gaurantees this is in range.
+    // Array lookup. Caller guarantees this is in range.
     // Used for reading
     T* operator [] (unsigned int index) const
     {
@@ -299,7 +299,7 @@ public:
         m_pArray[index].Assign(pValue);
     }
 
-    // Get lenght of array in elements.
+    // Get length of array in elements.
     unsigned int Length() const
     {
         return m_cElements;
@@ -545,7 +545,7 @@ protected:
 
 
 //-----------------------------------------------------------------------------
-// Simple Holder for RS object intialization to cooperate with Neutering
+// Simple Holder for RS object initialization to cooperate with Neutering
 // semantics.
 // The ctor will do an addref.
 // The dtor (invoked in exception) will neuter and release the object. This
@@ -1221,7 +1221,7 @@ public:
 
     void init(UINT_PTR id, enumCordbDerived type)
     {
-        // To help us track object leaks, we want to log when we create & destory CordbBase objects.
+        // To help us track object leaks, we want to log when we create & destroy CordbBase objects.
 #ifdef _DEBUG
         InterlockedIncrement(&s_TotalObjectCount);
         InterlockedIncrement(&s_CordbObjectUID);
@@ -1262,7 +1262,7 @@ public:
         //    m_sdThis[m_type][m_dwInstance] = NULL;
         //}
 #endif
-        // To help us track object leaks, we want to log when we create & destory CordbBase objects.
+        // To help us track object leaks, we want to log when we create & destroy CordbBase objects.
         LOG((LF_CORDB, LL_EVERYTHING, "Memory: CordbBase object deleted: this=%p, id=%p, Refcount=0x%x\n", this, m_id, m_RefCount));
 
 #ifdef _DEBUG
@@ -3978,7 +3978,7 @@ public:
     ULONG               *m_rgNextPatch;
 
     // This has m_cPatch elements.
-    PRD_TYPE             *m_rgUncommitedOpcode;
+    PRD_TYPE             *m_rgUncommittedOpcode;
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
 #if defined(TARGET_64BIT)
@@ -9729,8 +9729,8 @@ public:
     COM_METHOD GetRank(ULONG32 * pnRank);
     COM_METHOD GetCount(ULONG32 * pnCount);
     COM_METHOD GetDimensions(ULONG32 cdim, ULONG32 dims[]);
-    COM_METHOD HasBaseIndicies(BOOL * pbHasBaseIndices);
-    COM_METHOD GetBaseIndicies(ULONG32 cdim, ULONG32 indices[]);
+    COM_METHOD HasBaseIndices(BOOL * pbHasBaseIndices);
+    COM_METHOD GetBaseIndices(ULONG32 cdim, ULONG32 indices[]);
     COM_METHOD GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue ** ppValue);
     COM_METHOD GetElementAtPosition(ULONG32 nIndex, ICorDebugValue ** ppValue);
 

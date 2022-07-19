@@ -1247,7 +1247,7 @@ namespace Internal.JitInterface
 #if DEBUG
                 if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
                 {
-                    Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targetting type {objType}");
+                    Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targeting type {objType}");
                     Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
                 }
 #endif
@@ -3674,7 +3674,7 @@ namespace Internal.JitInterface
             // and logical field pair then return true. This is needed as the field handle here
             // is used as a key into a hashtable mapping writes to fields to value numbers.
             //
-            // In this implmentation this is made more complex as the JIT is exposed to CORINFO_FIELD_STRUCT
+            // In this implementation this is made more complex as the JIT is exposed to CORINFO_FIELD_STRUCT
             // pointers which represent exact instantions, so performing exact matching is the necessary approach
 
             // BaseType._field, BaseType -> true

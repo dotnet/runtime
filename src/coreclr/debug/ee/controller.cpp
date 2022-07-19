@@ -385,7 +385,7 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
     if (i->m_bottomFP == LEAF_MOST_FRAME)
         i->m_bottomFP = pInfo->fp;
 
-    // This is part of the targetted fix for issue 650903 (see the other
+    // This is part of the targeted fix for issue 650903 (see the other
     // parts in code:TrackUMChain and code:DebuggerStepper::TrapStepOut).
     //
     // pInfo->fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric has been
@@ -665,7 +665,7 @@ void DebuggerPatchTable::BindPatch(DebuggerControllerPatch *patch, CORDB_ADDRESS
     _ASSERTE(!patch->IsBound() );
 
     //Since the actual patch doesn't move, we don't have to worry about
-    //zeroing out the opcode field (see lenghty comment above)
+    //zeroing out the opcode field (see lengthy comment above)
     // Since the patch is double-hashed based off Address, if we change the address,
     // we must remove and reinsert the patch.
     CHashTable::Delete(HashKey(&patch->key), ItemIndex((HASHENTRY*)patch));
@@ -1156,7 +1156,7 @@ void DebuggerController::DisableAll()
 // DebuggerControllers since we no longer have the lock.  So we have to
 // do this reference counting thing to make sure that the controllers
 // don't get toasted as we're trying to invoke SendEvent on them.  We have to
-// reaquire the lock before invoking Dequeue because Dequeue may
+// reacquire the lock before invoking Dequeue because Dequeue may
 // result in the controller being deleted, which would change the global
 // controller list.
 // How: InterlockIncrement( m_eventQueuedCount )
@@ -2374,7 +2374,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
         // Code versioning allows calls to be redirected to alternate code potentially after this trace is complete but before
         // execution reaches the call target. Rather than bind the breakpoint to a specific jitted code instance that is currently
-        // configured to receive execution we need to prepare for that potential retargetting by binding all jitted code instances.
+        // configured to receive execution we need to prepare for that potential retargeting by binding all jitted code instances.
         //
         // Triggering this based of the native offset is a little subtle, but all of the stubmanagers follow a rule that if they
         // trace across a call boundary into jitted code they either stop at offset zero of the new method, or they continue tracing
@@ -2635,7 +2635,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 
         // Annoyingly, TriggerPatch may add patches, which may cause
         // the patch table to move, which may, in turn, invalidate
-        // the patch (and patchNext) pointers.  Store indeces, instead.
+        // the patch (and patchNext) pointers.  Store indices, instead.
         iEvent = g_patches->GetItemIndex( (HASHENTRY *)patch );
 
         if (patchNext != NULL)
@@ -3112,7 +3112,7 @@ void DebuggerController::EnableSingleStep()
 
 #ifdef _DEBUG
     // Some controllers don't need to set the SS to do their job, and if they are setting it, it's likely an issue.
-    // So we assert here to catch them red-handed. This assert can always be updated to accomodate changes
+    // So we assert here to catch them red-handed. This assert can always be updated to accommodate changes
     // in a controller's behavior.
 
     switch(GetDCType())
@@ -6336,7 +6336,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         // stack.
         StackTraceTicket ticket(info);
 
-        // The last parameter here is part of a really targetted (*cough* dirty) fix to
+        // The last parameter here is part of a really targeted (*cough* dirty) fix to
         // disable getting an unwanted UMChain to fix issue 650903 (See
         // code:ControllerStackInfo::WalkStack and code:TrackUMChain for the other
         // parts.) In the case of managed step out we know that we aren't interested in
@@ -8849,7 +8849,7 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     // We're returning then we'll have to re-get this lock. Be careful that we haven't kept any controller/patches
     // in the caller. They can move when we unlock, so when we release the lock and reget it here, things might have
     // changed underneath us.
-    // inverseLock holder will reaquire lock.
+    // inverseLock holder will reacquire lock.
 
     return TPR_IGNORE;
 }

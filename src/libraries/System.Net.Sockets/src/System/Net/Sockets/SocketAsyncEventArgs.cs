@@ -632,7 +632,7 @@ namespace System.Net.Sockets
                     break;
             }
 
-            // Don't log transfered byte count in case of a failure.
+            // Don't log transferred byte count in case of a failure.
 
             Complete();
         }

@@ -165,7 +165,7 @@ typedef-table {
 	invalid offset table-row ( 2 1 ) + 8 set-ushort 0x01
 	invalid offset table-row ( 2 1 ) + 8 set-ushort 0x02
 
-	#make type 1 an inteface but let it remain extending something
+	#make type 1 an interface but let it remain extending something
 	invalid offset table-row ( 2 1 ) or-uint 0x20
 	#interface must extend nothing
 	valid offset table-row ( 2 1 ) or-uint 0xA0 , offset table-row ( 2 1 ) + 8 set-ushort 0x0
@@ -341,7 +341,7 @@ methoddef-table {
 	invalid offset table-row ( 6 2 ) + 8 set-ushort 0x9999
 
 	#Interface cannot have .ctors (15)
-	#method 3 belongs to an inteface
+	#method 3 belongs to an interface
 	invalid offset table-row ( 6 3 ) + 8 set-ushort read.ushort ( table-row ( 6 0 ) + 8 )
 	#Interface methods can't be static
 	invalid offset table-row ( 6 3 ) + 6 or-ushort 0x0010

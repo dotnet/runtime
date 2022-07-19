@@ -311,12 +311,12 @@ additional data determined by the flags.
 
 #### Virtual override signatures
 
-ECMA 335 does not have a natural encoding for describing an overriden method. These signatures are encoded as a ReadyToRunVirtualFunctionOverrideFlags byte, followed by a method signature representing the declaration method, a type signature representing the type which is being devirtualized, and (optionally) a method signature indicating the implementation method.
+ECMA 335 does not have a natural encoding for describing an overridden method. These signatures are encoded as a ReadyToRunVirtualFunctionOverrideFlags byte, followed by a method signature representing the declaration method, a type signature representing the type which is being devirtualized, and (optionally) a method signature indicating the implementation method.
 
 | ReadyToRunVirtualFunctionOverrideFlags                | Value | Description
 |:------------------------------------------------------|------:|:-----------
 | READYTORUN_VIRTUAL_OVERRIDE_None                      |  0x00 | No flags are set
-| READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden  |  0x01 | If set, then the virtual function has an implementation, which is encoded in the optional method implementation signature.
+| READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverridden  |  0x01 | If set, then the virtual function has an implementation, which is encoded in the optional method implementation signature.
 
 #### IL Body signatures
 

@@ -283,7 +283,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
-            JsonConverter<T> underlyingConverter = GetTypedConverter<T>(options.GetConverterFromTypeInfo(typeof(T)));
+            JsonConverter<T> underlyingConverter = GetTypedConverter<T>(options.GetConverterInternal(typeof(T)));
 
             return new NullableConverter<T>(underlyingConverter);
         }

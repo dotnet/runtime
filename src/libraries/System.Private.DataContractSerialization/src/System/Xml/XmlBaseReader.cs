@@ -773,7 +773,7 @@ namespace System.Xml
             if (!_attributeSorter.Sort(attributeNodes, attributeCount))
             {
                 int attribute1, attribute2;
-                _attributeSorter.GetIndeces(out attribute1, out attribute2);
+                _attributeSorter.GetIndices(out attribute1, out attribute2);
                 if (attributeNodes[attribute1].QNameType == QNameType.Xmlns)
                     XmlExceptionHelper.ThrowDuplicateXmlnsAttribute(this, attributeNodes[attribute1].Namespace.Prefix.GetString(), xmlnsNamespace);
                 else
@@ -2571,7 +2571,7 @@ namespace System.Xml
 
         private sealed class AttributeSorter : IComparer
         {
-            private object[]? _indeces;
+            private object[]? _indices;
             private XmlAttributeNode[]? _attributeNodes;
             private int _attributeCount;
             private int _attributeIndex1;
@@ -2589,7 +2589,7 @@ namespace System.Xml
                 return sorted;
             }
 
-            public void GetIndeces(out int attributeIndex1, out int attributeIndex2)
+            public void GetIndices(out int attributeIndex1, out int attributeIndex2)
             {
                 attributeIndex1 = _attributeIndex1;
                 attributeIndex2 = _attributeIndex2;
@@ -2597,9 +2597,9 @@ namespace System.Xml
 
             public void Close()
             {
-                if (_indeces != null && _indeces.Length > 32)
+                if (_indices != null && _indices.Length > 32)
                 {
-                    _indeces = null;
+                    _indices = null;
                 }
             }
 
@@ -2607,25 +2607,25 @@ namespace System.Xml
             {
                 // Optimistically use the last sort order and check to see if that works.  This helps the case
                 // where elements with large numbers of attributes are repeated.
-                if (_indeces != null && _indeces.Length == _attributeCount && IsSorted())
+                if (_indices != null && _indices.Length == _attributeCount && IsSorted())
                     return true;
 
-                object[] newIndeces = new object[_attributeCount];
-                for (int i = 0; i < newIndeces.Length; i++)
-                    newIndeces[i] = i;
-                _indeces = newIndeces;
-                Array.Sort(_indeces, 0, _attributeCount, this);
+                object[] newIndices = new object[_attributeCount];
+                for (int i = 0; i < newIndices.Length; i++)
+                    newIndices[i] = i;
+                _indices = newIndices;
+                Array.Sort(_indices, 0, _attributeCount, this);
                 return IsSorted();
             }
 
             private bool IsSorted()
             {
-                for (int i = 0; i < _indeces!.Length - 1; i++)
+                for (int i = 0; i < _indices!.Length - 1; i++)
                 {
-                    if (Compare(_indeces[i], _indeces[i + 1]) >= 0)
+                    if (Compare(_indices[i], _indices[i + 1]) >= 0)
                     {
-                        _attributeIndex1 = (int)_indeces[i];
-                        _attributeIndex2 = (int)_indeces[i + 1];
+                        _attributeIndex1 = (int)_indices[i];
+                        _attributeIndex2 = (int)_indices[i + 1];
                         return false;
                     }
                 }

@@ -344,7 +344,7 @@ void ShimProcess::TrackFileHandleForDebugEvent(const DEBUG_EVENT * pEvent)
 //
 //    We do this in a new thread proc to avoid thread restrictions:
 //    Can't call this on win32 event thread because that can't send the IPC event to
-//    make the aysnc-break request.
+//    make the async-break request.
 //    Can't call this on the RCET because that can't send an async-break (see SendIPCEvent for details)
 //    So we just spin up a new thread to do the work.
 //---------------------------------------------------------------------------------------

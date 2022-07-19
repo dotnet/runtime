@@ -248,7 +248,7 @@ struct _TableSegmentHeader
     /*
      * Commit Line
      *
-     * Index of the first uncommited block in the segment.
+     * Index of the first uncommitted block in the segment.
      */
     uint8_t bCommitLine;
 

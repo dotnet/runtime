@@ -42,6 +42,13 @@ internal static class MsQuicConfiguration
             {
                 certificate = selectedCertificate;
             }
+            else
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(options, $"'{certificate}' not selected because it doesn't have a private key.");
+                }
+            }
         }
         else if (authenticationOptions.ClientCertificates != null)
         {
@@ -51,6 +58,13 @@ internal static class MsQuicConfiguration
                 {
                     certificate = clientCertificate;
                     break;
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(options, $"'{certificate}' not selected because it doesn't have a private key.");
+                    }
                 }
             }
         }
