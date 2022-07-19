@@ -120,9 +120,9 @@ jobs:
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvOS_arm64') }}:
       # split traffic for PR's and rolling builds
-      - ${{ if and(ne(parameters.jobParameters.isExtraPlatforms, true), ne(parameters.jobParameters.isExtraPlatforms, 'True')) }}:
+      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
         - OSX.1015.Amd64.AppleTV.Open
-      - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.isExtraPlatforms, 'True')) }}:
+      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
         - OSX.1100.Amd64.AppleTV.Open
 
     # windows x64
