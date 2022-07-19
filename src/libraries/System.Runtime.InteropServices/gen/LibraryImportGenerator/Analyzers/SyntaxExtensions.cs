@@ -13,7 +13,7 @@ namespace Microsoft.Interop.Analyzers
 {
     internal static class SyntaxExtensions
     {
-        public static AttributeArgumentSyntax FindArgumentWithArityOrName(this AttributeSyntax attribute, int arity, string name)
+        public static AttributeArgumentSyntax FindArgumentWithNameOrArity(this AttributeSyntax attribute, string name, int arity)
         {
             return attribute.ArgumentList.Arguments.FirstOrDefault(arg => arg.NameColon?.Name.ToString() == name) ?? attribute.ArgumentList.Arguments[arity];
         }

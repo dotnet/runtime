@@ -113,8 +113,8 @@
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullDescription">
-        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="new">An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</target>
+        <source>An entry-point type for marshalling a given type must not be 'null'.</source>
+        <target state="new">An entry-point type for marshalling a given type must not be 'null'.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullMessage">
@@ -280,6 +280,16 @@
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
         <target state="new">The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullDescription">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
+        <target state="new">The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullMessage">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
+        <target state="new">The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">

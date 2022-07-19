@@ -16,8 +16,6 @@ namespace Microsoft.Interop.Analyzers
             _diagnosticFactory = createAndReportDiagnostic;
         }
 
-        public static DiagnosticReporter IgnoreDiagnostics = new DiagnosticReporter((_, _, _) => { });
-
         public static DiagnosticReporter CreateForLocation(Location location, Action<Diagnostic> reportDiagnostic) => new((descriptor, properties, args) => reportDiagnostic(location.CreateDiagnostic(descriptor, properties, args)));
 
         public void CreateAndReportDiagnostic(DiagnosticDescriptor descriptor, params object[] messageArgs) => _diagnosticFactory(descriptor, ImmutableDictionary<string, string>.Empty, messageArgs);

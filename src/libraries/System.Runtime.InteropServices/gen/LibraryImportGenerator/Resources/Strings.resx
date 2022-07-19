@@ -249,7 +249,7 @@
     <value>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</value>
   </data>
   <data name="EntryPointTypeMustBeNonNullDescription" xml:space="preserve">
-    <value>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</value>
+    <value>An entry-point type for marshalling a given type must not be 'null'.</value>
   </data>
   <data name="EntryPointTypeMustBeNonNullMessage" xml:space="preserve">
     <value>The entry-point marshaller type for the type '{0}' must be not 'null'</value>
@@ -368,5 +368,11 @@
   </data>
   <data name="InvalidSignaturesInMarshallerShapeTitle" xml:space="preserve">
     <value>Marshaller type has incompatible method signatures</value>
+  </data>
+  <data name="MarshallerTypeMustBeNonNullDescription" xml:space="preserve">
+    <value>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</value>
+  </data>
+  <data name="MarshallerTypeMustBeNonNullMessage" xml:space="preserve">
+    <value>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</value>
   </data>
 </root>

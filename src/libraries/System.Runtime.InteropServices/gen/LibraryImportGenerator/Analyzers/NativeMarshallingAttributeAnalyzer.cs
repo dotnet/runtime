@@ -93,8 +93,7 @@ namespace Microsoft.Interop.Analyzers
                     INamedTypeSymbol? entryType = (INamedTypeSymbol?)attr.ConstructorArguments[0].Value;
                     AnalyzeManagedTypeMarshallingInfo(
                         GetSymbolType(attributedSymbol),
-                        // NativeMarshalling only has
-                        DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithArityOrName(0, "nativeType").FindTypeExpressionOrNullLocation(), context.ReportDiagnostic),
+                        DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("nativeType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic),
                         entryType);
                 }
             }

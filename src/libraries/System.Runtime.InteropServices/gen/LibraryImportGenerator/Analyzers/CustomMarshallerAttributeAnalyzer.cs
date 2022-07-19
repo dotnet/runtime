@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -156,6 +156,16 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MarshallerTypeMustBeClosedOrMatchArityDescription)));
 
+        public static readonly DiagnosticDescriptor MarshallerTypeMustBeNonNullRule =
+            new DiagnosticDescriptor(
+                Ids.InvalidCustomMarshallerAttributeUsage,
+                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.MarshallerTypeMustBeNonNullMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshallerTypeMustBeNonNullDescription)));
+
         public static readonly DiagnosticDescriptor ToFromUnmanagedTypesMustMatchRule =
             new DiagnosticDescriptor(
                 Ids.InvalidSignaturesInMarshallerShape,
@@ -224,14 +234,9 @@ namespace Microsoft.Interop.Analyzers
 
         private void PrepareForAnalysis(CompilationStartAnalysisContext context)
         {
-            INamedTypeSymbol? spanOfT = context.Compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata);
-            INamedTypeSymbol? spanOfByte = spanOfT?.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
-            INamedTypeSymbol? readOnlySpanOfT = context.Compilation.GetTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata);
-            INamedTypeSymbol? readOnlySpanOfByte = readOnlySpanOfT?.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
-
-            if (spanOfT is not null && readOnlySpanOfT is not null)
+            if (context.Compilation.GetBestTypeByMetadataName(TypeNames.CustomMarshallerAttribute) is not null)
             {
-                var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation, spanOfT, spanOfByte, readOnlySpanOfT, readOnlySpanOfByte);
+                var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation);
 
                 // TODO: Change this from a SyntaxNode action to an operation attribute once attribute application is represented in the
                 // IOperation tree by Roslyn.
@@ -244,16 +249,12 @@ namespace Microsoft.Interop.Analyzers
             private readonly Compilation _compilation;
             private readonly INamedTypeSymbol _spanOfT;
             private readonly INamedTypeSymbol _readOnlySpanOfT;
-            private readonly INamedTypeSymbol _spanOfByte;
-            private readonly INamedTypeSymbol _readOnlySpanOfByte;
 
-            public PerCompilationAnalyzer(Compilation compilation, INamedTypeSymbol spanOfT, INamedTypeSymbol? spanOfByte, INamedTypeSymbol readOnlySpanOfT, INamedTypeSymbol? readOnlySpanOfByte)
+            public PerCompilationAnalyzer(Compilation compilation)
             {
                 _compilation = compilation;
-                _spanOfT = spanOfT;
-                _spanOfByte = spanOfByte;
-                _readOnlySpanOfT = readOnlySpanOfT;
-                _readOnlySpanOfByte = readOnlySpanOfByte;
+                _spanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_Span_Metadata);
+                _readOnlySpanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata);
             }
 
             public void AnalyzeAttribute(SyntaxNodeAnalysisContext context)
@@ -265,7 +266,7 @@ namespace Microsoft.Interop.Analyzers
                 if (attr.AttributeClass?.ToDisplayString() == TypeNames.CustomMarshallerAttribute
                     && attr.AttributeConstructor is not null)
                 {
-                    DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithArityOrName(0, "managedType").FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
+                    DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("managedType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
                     INamedTypeSymbol entryType = (INamedTypeSymbol)attributedSymbol;
 
                     INamedTypeSymbol? managedTypeInAttribute = (INamedTypeSymbol?)attr.ConstructorArguments[0].Value;
@@ -282,10 +283,15 @@ namespace Microsoft.Interop.Analyzers
                     {
                         return;
                     }
-                    DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithArityOrName(2, "marshallerType").FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
+                    DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("marshallerType", 2).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
+                    ITypeSymbol? marshallerTypeInAttribute = (ITypeSymbol?)attr.ConstructorArguments[2].Value;
+                    if (marshallerTypeInAttribute is null)
+                    {
+                        marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeNonNullRule);
+                    }
                     if (!ManualTypeMarshallingHelper.TryResolveMarshallerType(
                         entryType,
-                        (ITypeSymbol?)attr.ConstructorArguments[2].Value,
+                        marshallerTypeInAttribute,
                         (entryType, marshallerType) => marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeClosedOrMatchArityRule, marshallerType, entryType),
                         out ITypeSymbol marshallerType))
                     {

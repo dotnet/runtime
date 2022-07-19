@@ -163,8 +163,13 @@ namespace Microsoft.Interop
                 // Verify the defined marshaller is for the managed type.
                 ITypeSymbol? managedTypeOnAttr = attr.ConstructorArguments[0].Value as ITypeSymbol;
 
-                // Verify any instantiation of Generic parameters is provided by entry point.
-                // TODO: Hard failure based on previous implementation
+                // If there is no managed type on this attribute, then the attribute is invalid.
+                // Skip the entry as it definitely won't match the provided managed type.
+                if (managedTypeOnAttr is null)
+                    continue;
+
+                // Resolve the provided managed type to a specific generic instantiation based on the marshaller type
+                // If we're unable to resolve the instantiation based on our rules, skip this attribute. It is invalid.
                 if (!TryResolveManagedType(entryPointType, ReplaceGenericPlaceholderInType(managedTypeOnAttr, entryPointType, compilation), isLinearCollectionMarshalling, onArityMismatch, out ITypeSymbol managedTypeInst))
                 {
                     continue;
@@ -215,17 +220,11 @@ namespace Microsoft.Interop
             return true;
         }
 
-        public static bool TryResolveEntryPointType(INamedTypeSymbol managedType, ITypeSymbol? attributeType, bool isLinearCollectionMarshalling, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? entryPoint)
+        public static bool TryResolveEntryPointType(INamedTypeSymbol managedType, ITypeSymbol typeInAttribute, bool isLinearCollectionMarshalling, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? entryPoint)
         {
-            if (attributeType is null)
+            if (typeInAttribute is not INamedTypeSymbol entryPointType)
             {
-                entryPoint = null;
-                return false;
-            }
-
-            if (attributeType is not INamedTypeSymbol entryPointType)
-            {
-                entryPoint = attributeType;
+                entryPoint = typeInAttribute;
                 return true;
             }
 
@@ -255,19 +254,13 @@ namespace Microsoft.Interop
         /// Resolve the (possibly unbound generic) type to a fully constructed type based on the entry point type's generic parameters.
         /// </summary>
         /// <param name="entryPointType">The entry point type</param>
-        /// <param name="attributeType">The managed type from the CustomMarshallerAttribute</param>
+        /// <param name="typeInAttribute">The managed type from the CustomMarshallerAttribute</param>
         /// <returns>A fully constructed marshaller type</returns>
-        public static bool TryResolveManagedType(INamedTypeSymbol entryPointType, ITypeSymbol? attributeType, bool isLinearCollectionMarshalling, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? managed)
+        public static bool TryResolveManagedType(INamedTypeSymbol entryPointType, ITypeSymbol typeInAttribute, bool isLinearCollectionMarshalling, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? managed)
         {
-            if (attributeType is null)
+            if (typeInAttribute is not INamedTypeSymbol namedMarshallerType)
             {
-                managed = null;
-                return false;
-            }
-
-            if (attributeType is not INamedTypeSymbol namedMarshallerType)
-            {
-                managed = attributeType;
+                managed = typeInAttribute;
                 return true;
             }
 
@@ -297,19 +290,13 @@ namespace Microsoft.Interop
         /// Resolve the (possibly unbound generic) type to a fully constructed type based on the entry point type's generic parameters.
         /// </summary>
         /// <param name="entryPointType">The entry point type</param>
-        /// <param name="attributeType">The marshaller type from the CustomMarshallerAttribute</param>
+        /// <param name="typeInAttribute">The marshaller type from the CustomMarshallerAttribute</param>
         /// <returns>A fully constructed marshaller type</returns>
-        public static bool TryResolveMarshallerType(INamedTypeSymbol entryPointType, ITypeSymbol? attributeType, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? marshallerType)
+        public static bool TryResolveMarshallerType(INamedTypeSymbol entryPointType, ITypeSymbol typeInAttribute, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? marshallerType)
         {
-            if (attributeType is null)
+            if (typeInAttribute is not INamedTypeSymbol namedMarshallerType)
             {
-                marshallerType = null;
-                return false;
-            }
-
-            if (attributeType is not INamedTypeSymbol namedMarshallerType)
-            {
-                marshallerType = attributeType;
+                marshallerType = typeInAttribute;
                 return true;
             }
 
@@ -335,14 +322,14 @@ namespace Microsoft.Interop
         /// <param name="entryType">The marshaller type.</param>
         /// <param name="compilation">The compilation to use to make new type symbols.</param>
         /// <returns>The resolved managed type, or <paramref name="managedType"/> if the provided type did not have any placeholders.</returns>
-        private static ITypeSymbol? ReplaceGenericPlaceholderInType(ITypeSymbol? managedType, INamedTypeSymbol entryType, Compilation compilation)
+        private static ITypeSymbol ReplaceGenericPlaceholderInType(ITypeSymbol managedType, INamedTypeSymbol entryType, Compilation compilation)
         {
-            if (managedType is null || !entryType.IsGenericType)
+            if (!entryType.IsGenericType)
             {
                 return managedType;
             }
             Stack<ITypeSymbol> typeStack = new();
-            ITypeSymbol? innerType = managedType;
+            ITypeSymbol innerType = managedType;
             while (innerType.TypeKind is TypeKind.Array or TypeKind.Pointer)
             {
                 if (innerType is IArrayTypeSymbol array)
