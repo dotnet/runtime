@@ -23,12 +23,12 @@ internal sealed class IcallTableGenerator
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
     private TaskLoggingHelper Log { get; set; }
-    private bool UnsupportedInteropSignatureAsWarning { get; set; }
+    private Action<string> LogUnsupportedInteropSignature { get; set; }
 
-    public IcallTableGenerator(TaskLoggingHelper log, bool unsupportedInteropSignatureAsWarning)
+    public IcallTableGenerator(TaskLoggingHelper log, Action<string> logUnsupportedInteropSignature)
     {
         Log = log;
-        UnsupportedInteropSignatureAsWarning = unsupportedInteropSignatureAsWarning;
+        LogUnsupportedInteropSignature = logUnsupportedInteropSignature;
     }
 
     //
@@ -157,11 +157,7 @@ internal sealed class IcallTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                if (UnsupportedInteropSignatureAsWarning)
-                    Log.LogWarning($"Could not get icall, or callbacks for method {method.Name}: {ex.Message} To suppress this warning, use WasmUnsupportedInteropSignatureAsWarning=false.");
-                else
-                    Log.LogMessage(MessageImportance.Normal, $"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");
-
+                LogUnsupportedInteropSignature($"Could not get icall, or callbacks for method {method.Name}: {ex.Message} [suppress_placeholder]");
                 continue;
             }
 

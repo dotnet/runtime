@@ -16,12 +16,12 @@ internal sealed class PInvokeTableGenerator
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
 
     private TaskLoggingHelper Log { get; set; }
-    private bool UnsupportedInteropSignatureAsWarning { get; set; }
+    private Action<string> LogUnsupportedInteropSignature { get; set; }
 
-    public PInvokeTableGenerator(TaskLoggingHelper log, bool unsupportedInteropSignatureAsWarning)
+    public PInvokeTableGenerator(TaskLoggingHelper log, Action<string> logUnsupportedInteropSignature)
     {
         Log = log;
-        UnsupportedInteropSignatureAsWarning = unsupportedInteropSignatureAsWarning;
+        LogUnsupportedInteropSignature = logUnsupportedInteropSignature;
     }
 
     public IEnumerable<string> Generate(string[] pinvokeModules, string[] assemblies, string outputPath)
@@ -76,10 +76,7 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                if (UnsupportedInteropSignatureAsWarning)
-                    Log.LogWarning($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message} To suppress this warning, use WasmUnsupportedInteropSignatureAsWarning=false.");
-                else
-                    Log.LogMessage(MessageImportance.Normal, $"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
+                LogUnsupportedInteropSignature($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message} [suppress_placeholder]");
             }
         }
 
@@ -309,7 +306,8 @@ internal sealed class PInvokeTableGenerator
 
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
-            Log.LogWarning($"Skipping the following DllImport because '{reason}'. {Environment.NewLine}  {pinvoke.Method}");
+            LogUnsupportedInteropSignature($"Skipping the following DllImport because '{reason}'. [suppress_placeholder]{Environment.NewLine}  {pinvoke.Method}");
+
             pinvoke.Skip = true;
             return null;
         }
