@@ -17,13 +17,13 @@
 
 // libunwind headers
 #include <libunwind.h>
-#include <src/config.h>
-#include <src/Registers.hpp>
-#include <src/AddressSpace.hpp>
+#include <external/llvm-libunwind/src/config.h>
+#include <external/llvm-libunwind/src/Registers.hpp>
+#include <external/llvm-libunwind/src/AddressSpace.hpp>
 #if defined(TARGET_ARM)
-#include <src/libunwind_ext.h>
+#include <external/llvm-libunwind/src/libunwind_ext.h>
 #endif
-#include <src/UnwindCursor.hpp>
+#include <external/llvm-libunwind/src/UnwindCursor.hpp>
 
 
 #if defined(TARGET_AMD64)
