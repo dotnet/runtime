@@ -3562,10 +3562,10 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
                                false                                                          /* isJump */
                                );
 
-    genDefineTempLabel(skipLabel);
-
     regMaskTP killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
     regSet.verifyRegistersUsed(killMask);
+
+    genDefineTempLabel(skipLabel);
 }
 
 //------------------------------------------------------------------------
@@ -4188,13 +4188,13 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
             {
                 if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
                 {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_RA, regOp1, imm + 1);
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, REG_RA, 1);
+                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
                 else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
                 {
-                    emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, REG_RA, regOp1, imm + 1);
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, REG_RA, 1);
+                    emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm + 1);
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
                 else
                 {
@@ -6692,25 +6692,34 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     emitAttr attr = emitActualTypeSize(node);
     // Can we use a shift instruction for multiply ?
     //
-    if (isPow2(node->gtElemSize) && (node->gtElemSize < 0x10000000u))
+    if (isPow2(node->gtElemSize))
     {
-        regNumber tmpReg;
-        if (node->gtElemSize == 0)
+        DWORD scale;
+        BitScanForward(&scale, node->gtElemSize);
+
+        // dest = base + (index << scale)
+        if (node->gtElemSize <= 64)
         {
-            // dest = base + index
-            tmpReg = index->GetRegNum();
+            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale);
         }
         else
         {
-            DWORD scale;
-            BitScanForward(&scale, node->gtElemSize);
-
-            // tmpReg = base + index << scale
-            // dest = base + tmpReg
-            GetEmitter()->emitIns_R_R_I(INS_slli_d, attr, REG_R21, index->GetRegNum(), scale);
-            tmpReg = REG_R21;
+            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, scale);
+            instruction ins;
+            instruction ins2;
+            if (attr == EA_4BYTE)
+            {
+                ins  = INS_sll_w;
+                ins2 = INS_add_w;
+            }
+            else
+            {
+                ins  = INS_sll_d;
+                ins2 = INS_add_d;
+            }
+            GetEmitter()->emitIns_R_R_R(ins, attr, REG_R21, index->GetRegNum(), REG_R21);
+            GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_R21, base->GetRegNum());
         }
-        GetEmitter()->emitIns_R_R_R(INS_add_d, attr, node->GetRegNum(), base->GetRegNum(), tmpReg);
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
@@ -6718,16 +6727,20 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         CodeGen::genSetRegToIcon(REG_R21, (ssize_t)node->gtElemSize, TYP_INT);
 
         // dest = index * REG_R21 + base
+        instruction ins;
+        instruction ins2;
         if (attr == EA_4BYTE)
         {
-            GetEmitter()->emitIns_R_R_R(INS_mul_w, EA_4BYTE, REG_R21, index->GetRegNum(), REG_R21);
-            GetEmitter()->emitIns_R_R_R(INS_add_w, attr, node->GetRegNum(), REG_R21, base->GetRegNum());
+            ins  = INS_mul_w;
+            ins2 = INS_add_w;
         }
         else
         {
-            GetEmitter()->emitIns_R_R_R(INS_mul_d, EA_PTRSIZE, REG_R21, index->GetRegNum(), REG_R21);
-            GetEmitter()->emitIns_R_R_R(INS_add_d, attr, node->GetRegNum(), REG_R21, base->GetRegNum());
+            ins  = INS_mul_d;
+            ins2 = INS_add_d;
         }
+        GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, REG_R21, index->GetRegNum(), REG_R21);
+        GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_R21, base->GetRegNum());
     }
 
     // dest = dest + elemOffs
@@ -7954,6 +7967,42 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
 }
 
+void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
+{
+    emitter* emit = GetEmitter();
+    if (scale == 0)
+    {
+        instruction ins = attr == EA_4BYTE ? INS_add_w : INS_add_d;
+        // target = base + index
+        emit->emitIns_R_R_R(ins, attr, targetReg, baseReg, indexReg);
+    }
+    else if (scale <= 4)
+    {
+        instruction ins = attr == EA_4BYTE ? INS_alsl_w : INS_alsl_d;
+        // target = base + index<<scale
+        emit->emitIns_R_R_R_I(ins, attr, targetReg, indexReg, baseReg, scale - 1);
+    }
+    else
+    {
+        instruction ins;
+        instruction ins2;
+        if (attr == EA_4BYTE)
+        {
+            ins  = INS_slli_w;
+            ins2 = INS_add_w;
+        }
+        else
+        {
+            ins  = INS_slli_d;
+            ins2 = INS_add_d;
+        }
+
+        // target = base + index<<scale
+        emit->emitIns_R_R_I(ins, attr, REG_R21, indexReg, scale);
+        emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, REG_R21);
+    }
+}
+
 //------------------------------------------------------------------------
 // genLeaInstruction: Produce code for a GT_LEA node.
 //
@@ -7981,44 +8030,45 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
 
-        assert(isPow2(lea->gtScale));
+        DWORD scale;
 
-        regNumber tmpReg;
-        if (lea->gtScale == 0)
+        assert(isPow2(lea->gtScale));
+        BitScanForward(&scale, lea->gtScale);
+        assert(scale <= 4);
+
+        if (offset == 0)
         {
-            tmpReg = index->GetRegNum();
+            // Then compute target reg from [base + index*scale]
+            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
         }
         else
         {
-            DWORD scale;
-            BitScanForward(&scale, lea->gtScale);
-            assert(scale <= 4);
+            // When generating fully interruptible code we have to use the "large offset" sequence
+            // when calculating a EA_BYREF as we can't report a byref that points outside of the object
+            bool useLargeOffsetSeq = compiler->GetInterruptible() && (size == EA_BYREF);
 
-            emit->emitIns_R_R_I(INS_slli_d, EA_PTRSIZE, REG_R21, index->GetRegNum(), scale);
-            tmpReg = REG_R21;
-        }
-
-        if (offset != 0)
-        {
-            if (emitter::isValidSimm12(offset))
+            if (!useLargeOffsetSeq && emitter::isValidSimm12(offset))
             {
-                emit->emitIns_R_R_I(INS_addi_d, size, tmpReg, tmpReg, offset);
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+                instruction ins = size == EA_4BYTE ? INS_addi_w : INS_addi_d;
+                emit->emitIns_R_R_I(ins, size, lea->GetRegNum(), lea->GetRegNum(), offset);
             }
             else
             {
-                regNumber tmpReg2 = lea->GetSingleTempReg();
+                regNumber tmpReg = lea->GetSingleTempReg();
 
-                noway_assert(tmpReg2 != index->GetRegNum());
-                noway_assert(tmpReg2 != memBase->GetRegNum());
-                noway_assert(tmpReg2 != tmpReg);
+                noway_assert(tmpReg != index->GetRegNum());
+                noway_assert(tmpReg != memBase->GetRegNum());
 
                 // compute the large offset.
-                emit->emitIns_I_la(EA_PTRSIZE, tmpReg2, offset);
-                emit->emitIns_R_R_R(INS_add_d, size, tmpReg, tmpReg, tmpReg2);
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+
+                genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->GetRegNum(), scale);
+
+                instruction ins = size == EA_4BYTE ? INS_add_w : INS_add_d;
+                emit->emitIns_R_R_R(ins, size, lea->GetRegNum(), tmpReg, memBase->GetRegNum());
             }
         }
-
-        emit->emitIns_R_R_R(INS_add_d, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
     }
     else if (lea->Base())
     {
@@ -8353,6 +8403,8 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
 
+        BasicBlock* skipLabel = genCreateTempLabel();
+
         emit->emitIns_Call(callType, compiler->eeFindHelper(compiler->acdHelper(codeKind)),
                            INDEBUG_LDISASM_COMMA(nullptr) addr, 0, EA_UNKNOWN, EA_UNKNOWN, gcInfo.gcVarPtrSetCur,
                            gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
@@ -8363,6 +8415,8 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 
         regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         regSet.verifyRegistersUsed(killMask);
+
+        genDefineTempLabel(skipLabel);
     }
 }
 

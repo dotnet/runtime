@@ -210,6 +210,11 @@ INST(rdtimeh_w,     "rdtimeh.w",      0,    0x00006400)
 INST(rdtime_d,      "rdtime.d",       0,    0x00006800)
 INST(cpucfg,        "cpucfg",         0,    0x00006c00)
 
+////R_R, fr---->gr
+INST(movfr2gr_s,    "movfr2gr.s",     0,    0x0114b400)
+INST(movfr2gr_d,    "movfr2gr.d",     0,    0x0114b800)
+INST(movfrh2gr_s,   "movfrh2gr.s",    0,    0x0114bc00)
+
 ////R_R_I_I.
 INST(bstrins_w,     "bstrins.w",      0,    0x00600000)
 INST(bstrins_d,     "bstrins.d",      0,    0x00800000)
@@ -415,9 +420,6 @@ INST(fmov_d,        "fmov.d",         0,    0x01149800)
 INST(movgr2fr_w,    "movgr2fr.w",     0,    0x0114a400)
 INST(movgr2fr_d,    "movgr2fr.d",     0,    0x0114a800)
 INST(movgr2frh_w,   "movgr2frh.w",    0,    0x0114ac00)
-INST(movfr2gr_s,    "movfr2gr.s",     0,    0x0114b400)
-INST(movfr2gr_d,    "movfr2gr.d",     0,    0x0114b800)
-INST(movfrh2gr_s,   "movfrh2gr.s",    0,    0x0114bc00)
 
 ////
 INST(movgr2fcsr,    "movgr2fcsr",     0,    0x0114c000)
