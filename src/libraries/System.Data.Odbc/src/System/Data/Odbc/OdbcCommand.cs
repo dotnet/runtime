@@ -411,10 +411,7 @@ namespace System.Data.Odbc
                 _connection.AddWeakReference(this, OdbcReferenceCollection.CommandTag);
             }
 
-            if (_cmdWrapper._dataReaderBuf == null)
-            {
-                _cmdWrapper._dataReaderBuf = new CNativeBuffer(4096);
-            }
+            _cmdWrapper._dataReaderBuf ??= new CNativeBuffer(4096);
 
             // if there is already a statement handle we need to do some cleanup
             //
@@ -502,10 +499,7 @@ namespace System.Data.Odbc
                 {
                     wrapper.Dispose();
 
-                    if (null != _connection)
-                    {
-                        _connection.RemoveWeakReference(this);
-                    }
+                    _connection?.RemoveWeakReference(this);
                 }
                 finally
                 {
@@ -693,10 +687,7 @@ namespace System.Data.Odbc
 
                         if (null == parameterBuffer || parameterBuffer.Length < parameterBufferSize)
                         {
-                            if (null != parameterBuffer)
-                            {
-                                parameterBuffer.Dispose();
-                            }
+                            parameterBuffer?.Dispose();
                             parameterBuffer = new CNativeBuffer(parameterBufferSize);
                             _cmdWrapper._nativeParameterBuffer = parameterBuffer;
                         }
@@ -838,10 +829,7 @@ namespace System.Data.Odbc
                     if (null != localReader)
                     {
                         // clear bindings so we don't grab output parameters on a failed execute
-                        if (null != _parameterCollection)
-                        {
-                            _parameterCollection.ClearBindings();
-                        }
+                        _parameterCollection?.ClearBindings();
                         ((IDisposable)localReader).Dispose();
                     }
                     if (ConnectionState.Closed != _cmdState)
@@ -1062,10 +1050,7 @@ namespace System.Data.Odbc
 
             CNativeBuffer? buffer = _nativeParameterBuffer;
             _nativeParameterBuffer = null;
-            if (null != buffer)
-            {
-                buffer.Dispose();
-            }
+            buffer?.Dispose();
             _ssKeyInfoModeOn = false;
             _ssKeyInfoModeOff = false;
         }

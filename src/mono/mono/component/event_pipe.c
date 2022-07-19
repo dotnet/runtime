@@ -13,6 +13,9 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+#ifdef HOST_WASM
+#include <emscripten/emscripten.h>
+#endif
 
 extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
@@ -155,7 +158,7 @@ event_pipe_enable (
 	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
 
 	if (config_providers) {
-		for (int i = 0; i < providers_len; ++i) {
+		for (guint32 i = 0; i < providers_len; ++i) {
 			ep_provider_config_init (
 				&config_providers[i],
 				providers[i].provider_name ? mono_utf16_to_utf8 (providers[i].provider_name, g_utf16_len (providers[i].provider_name), error) : NULL,
@@ -178,7 +181,7 @@ event_pipe_enable (
 		NULL);
 
 	if (config_providers) {
-		for (int i = 0; i < providers_len; ++i) {
+		for (guint32 i = 0; i < providers_len; ++i) {
 			ep_provider_config_fini (&config_providers[i]);
 			g_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config_providers[i]));
 			g_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config_providers[i]));

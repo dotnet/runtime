@@ -417,17 +417,13 @@ namespace System.Xml.Schema
             // Note: It used to be true that we only called this if _fValidate was true,
             // but due to the fact that you can now dynamically type somethign as an ID
             // that is no longer true.
-            if (_IDs == null)
-            {
-                _IDs = new Hashtable();
-            }
-
+            _IDs ??= new Hashtable();
             _IDs.Add(name, node);
         }
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private bool GenEntity(XmlQualifiedName qname)
@@ -570,10 +566,7 @@ namespace System.Xml.Schema
         {
             try
             {
-                if (baseUriStr == null)
-                {
-                    baseUriStr = string.Empty;
-                }
+                baseUriStr ??= string.Empty;
                 XmlSchemaDatatype dtype = attdef.Datatype;
                 if (dtype == null)
                 {

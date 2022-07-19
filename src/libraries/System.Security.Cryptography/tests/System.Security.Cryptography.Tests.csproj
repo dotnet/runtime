@@ -284,6 +284,7 @@
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
+    <Compile Include="X509Certificates\ChainPolicyTests.cs" />
     <Compile Include="X509Certificates\X500DistinguishedNameBuilderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -305,6 +306,9 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
     <Compile Include="DefaultECDsaProvider.Android.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <Compile Include="AesTests.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

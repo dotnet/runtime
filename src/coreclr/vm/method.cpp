@@ -353,17 +353,15 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
     PCCOR_SIGNATURE pSig;
 
     SString methodFullName;
-    StackScratchBuffer namespaceNameBuffer, methodNameBuffer;
     methodFullName.AppendPrintf(
         (LPCUTF8)"[%s] %s::%s",
         GetModule()->GetAssembly()->GetSimpleName(),
-        namespaceOrClassName.GetUTF8(namespaceNameBuffer),
-        methodName.GetUTF8(methodNameBuffer));
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
 
     GetSig(&pSig, &cSig);
 
-    StackScratchBuffer buffer;
-    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(buffer), &qbOut, GetMDImport(), NULL);
+    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(), &qbOut, GetMDImport(), NULL);
     fullMethodSigName.AppendUTF8((char *)qbOut.Ptr());
 }
 
@@ -1820,7 +1818,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     MethodTable *pTargetMT = pTargetMDBeforeGenericMethodArgs->GetMethodTable();
 
     // No need to find/create a new generic instantiation if the target is the
-    // same as the static, i.e. the virtual method has not been overriden.
+    // same as the static, i.e. the virtual method has not been overridden.
     if (!pTargetMT->IsSharedByGenericInstantiations() && !pTargetMT->IsValueType() &&
         pTargetMDBeforeGenericMethodArgs == pStaticMDWithoutGenericMethodArgs)
         RETURN(pStaticMD);

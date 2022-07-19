@@ -40,17 +40,7 @@ namespace System.Net.Mime
             ContentType.Boundary = GetNextBoundary();
         }
 
-        internal Collection<MimeBasePart> Parts
-        {
-            get
-            {
-                if (_parts == null)
-                {
-                    _parts = new Collection<MimeBasePart>();
-                }
-                return _parts;
-            }
-        }
+        internal Collection<MimeBasePart> Parts => _parts ??= new Collection<MimeBasePart>();
 
         internal static void Complete(IAsyncResult result, Exception? e)
         {
@@ -71,10 +61,7 @@ namespace System.Net.Mime
             }
             catch (Exception ex)
             {
-                if (e == null)
-                {
-                    e = ex;
-                }
+                e ??= ex;
             }
             context._completed = true;
             context._result.InvokeCallback(e);

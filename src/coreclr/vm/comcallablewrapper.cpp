@@ -426,6 +426,13 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     }
     else
     {
+        if (pThread->PreemptiveGCDisabled())
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                COR_E_EXECUTIONENGINE,
+                W("Invalid Program: attempted to call a COM method from managed code."));
+        }
+
         // Transition to cooperative GC mode before we start setting up the stub.
         GCX_COOP();
 
@@ -665,7 +672,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
         OBJECTHANDLE handle = GetMainWrapper()->GetObjectHandle();
         _UNCHECKED_OBJECTREF obj = NULL;
 
-        // Force retriving the handle without using OBJECTREF and under cooperative mode
+        // Force retrieving the handle without using OBJECTREF and under cooperative mode
         // We only need the value in ETW events and it doesn't matter if it is super accurate
         if (handle != NULL)
             obj = *((_UNCHECKED_OBJECTREF *)(handle));
@@ -727,7 +734,7 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
         EX_TRY
         {
             ssMessage.AppendPrintf(", RefCount=%u\n", dwRefCountToLog);
-            OutputDebugStringUtf8(ssMessage.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssMessage.GetUTF8());
         }
         EX_CATCH
         { }
@@ -1103,7 +1110,7 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
 
     // Finally, we set the connection point list in the simple wrapper. If
     // no other thread already set it, we set pCPList to NULL to indicate
-    // that ownership has been transfered to the simple wrapper.
+    // that ownership has been transferred to the simple wrapper.
     if (InterlockedCompareExchangeT(&m_pCPList, pCPList.GetValue(), NULL) == NULL)
         pCPList.SuppressRelease();
 }
@@ -3619,7 +3626,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         else
         {
             // We need to set the entry points to the Dispatch versions which determine
-            // which implmentation to use at runtime based on the class that implements
+            // which implementation to use at runtime based on the class that implements
             // the interface.
             pDispVtable->m_GetIDsOfNames    = (SLOT)Dispatch_GetIDsOfNames_Wrapper;
             pDispVtable->m_Invoke           = (SLOT)Dispatch_Invoke_Wrapper;

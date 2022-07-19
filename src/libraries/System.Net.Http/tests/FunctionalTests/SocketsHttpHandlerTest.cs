@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -2251,21 +2250,21 @@ namespace System.Net.Http.Functional.Tests
 
             List<(Http2LoopbackConnection connection, int streamId)> acceptedRequests = new List<(Http2LoopbackConnection connection, int streamId)>();
 
-            using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            await using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             for (int i = 0; i < MaxConcurrentStreams; i++)
             {
                 (int streamId, _) = await c1.ReadAndParseRequestHeaderAsync();
                 acceptedRequests.Add((c1, streamId));
             }
 
-            using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            await using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             for (int i = 0; i < MaxConcurrentStreams; i++)
             {
                 (int streamId, _) = await c2.ReadAndParseRequestHeaderAsync();
                 acceptedRequests.Add((c2, streamId));
             }
 
-            using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            await using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
             acceptedRequests.Add((c3, finalStreamId));
 
@@ -2647,7 +2646,7 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
+                await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
                 await loopbackConnection.InitializeConnectionAsync();
 
                 HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
@@ -2709,7 +2708,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
 
                 Socket serverSocket = await listenSocket.AcceptAsync();
-                using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
                 {
                     await loopbackConnection.InitializeConnectionAsync();
 
@@ -2772,7 +2771,7 @@ namespace System.Net.Http.Functional.Tests
 
             await serverStream.WriteAsync(ResponsePrefix);
 
-            using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
+            await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
             await loopbackConnection.InitializeConnectionAsync();
 
             HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
@@ -3194,7 +3193,12 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    HttpRequestData request = await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    if (request.Version == HttpVersion20.Value)
+                    {
+                        HttpHeaderData schemeHeader = Assert.Single(request.Headers, headerData => headerData.Name == ":scheme");
+                        Assert.Equal(useSsl ? "https" : "http", schemeHeader.Value);
+                    }
                 }, options: options);
         }
 
@@ -3267,7 +3271,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await serverStream.WriteAsync(ResponsePrefix);
 
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, new GenericLoopbackOptions() { UseSsl = false });
+                await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, new GenericLoopbackOptions() { UseSsl = false });
                 await loopbackConnection.InitializeConnectionAsync();
 
                 HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
@@ -3505,128 +3509,52 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_Http3_MsQuic : HttpClientHandlerTest_Http3
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
-        public SocketsHttpHandlerTest_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_Http3_Mock : HttpClientHandlerTest_Http3
-    {
-        public SocketsHttpHandlerTest_Http3_Mock(ITestOutputHelper output) : base(output) { }
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_MsQuic : HttpClientHandlerTest
-    {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_Mock : HttpClientHandlerTest
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_Mock(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_Cookies_Http3_MsQuic : HttpClientHandlerTest_Cookies
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
-        public SocketsHttpHandlerTest_Cookies_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_Cookies_Http3_Mock : HttpClientHandlerTest_Cookies
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : SocketsHttpHandler_Cancellation_Test
     {
-        public SocketsHttpHandlerTest_Cookies_Http3_Mock(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_MsQuic : HttpClientHandlerTest_Headers
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_Mock : HttpClientHandlerTest_Headers
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3 : HttpClientHandler_Finalization_Test
     {
-        public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_Mock(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : SocketsHttpHandler_Cancellation_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : SocketsHttpHandler_Cancellation_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_MsQuic : HttpClientHandler_AltSvc_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_Mock : HttpClientHandler_AltSvc_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_Mock(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_MsQuic : HttpClientHandler_Finalization_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Mock : HttpClientHandler_Finalization_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Mock(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -3787,12 +3715,11 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http3 : SocketsHttpHandler_RequestContentLengthMismatchTest
     {
         public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
     public class MySsl : SslStream

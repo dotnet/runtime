@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
             foreach (IConfigurationProvider p in providers)
             {
                 p.Load();
-                _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
+                _changeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
             }
         }
 

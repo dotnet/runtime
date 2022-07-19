@@ -635,6 +635,13 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = *(ULONGLONG*)pContext->Rsp;
     pContext->Rsp += sizeof(ULONGLONG);
+#ifdef TARGET_WINDOWS
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(ULONGLONG));
+    }
+#endif // TARGET_WINDOWS
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 

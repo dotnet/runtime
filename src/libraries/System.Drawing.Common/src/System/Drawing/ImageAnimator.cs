@@ -250,10 +250,7 @@ namespace System.Drawing
                 {
                     // Construct the image array
                     //
-                    if (s_imageInfoList == null)
-                    {
-                        s_imageInfoList = new List<ImageInfo>();
-                    }
+                    s_imageInfoList ??= new List<ImageInfo>();
 
                     // Add the new image
                     //

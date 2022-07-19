@@ -176,5 +176,14 @@ namespace Microsoft.Interop
                     or SpecialType.System_Single
                     or SpecialType.System_Double;
         }
+
+        public static bool IsConstructedFromEqualTypes(this ITypeSymbol type, ITypeSymbol other)
+        {
+            return (type, other) switch
+            {
+                (INamedTypeSymbol namedType, INamedTypeSymbol namedOther) => SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, namedOther.ConstructedFrom),
+                _ => SymbolEqualityComparer.Default.Equals(type, other)
+            };
+        }
     }
 }

@@ -77,21 +77,32 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual 
-        /// method that is not overriding any method on a base type. 
-        /// Given that such methods can never be overridden in any derived type, we can 
-        /// save space in the vtable of a type, and all of its derived types by not emitting these methods in their vtables, 
+        /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
+        /// method that is not overriding any method on a base type.
+        /// Given that such methods can never be overridden in any derived type, we can
+        /// save space in the vtable of a type, and all of its derived types by not emitting these methods in their vtables,
         /// and storing them in a separate table on the side. This is especially beneficial for all array types,
-        /// since all of their collection interface methods are sealed and implemented on the System.Array and 
+        /// since all of their collection interface methods are sealed and implemented on the System.Array and
         /// System.Array&lt;T&gt; base types, and therefore we can minimize the vtable sizes of all derived array types.
         /// </summary>
         public static bool CanMethodBeInSealedVTable(this MethodDesc method)
         {
+            bool isInterfaceMethod = method.OwningType.IsInterface;
+
             // Methods on interfaces never go into sealed vtable
             // We would hit this code path for default implementations of interface methods (they are newslot+final).
-            // Inteface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
+            // Interface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
             // attempt to place final+newslot methods differently.
-            return method.IsFinal && method.IsNewSlot && !method.OwningType.IsInterface;
+            if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
+                return true;
+
+            // Implementations of static virtual method also go into the sealed vtable.
+            // Again, we don't let that happen for interface methods because the slot numbers are only logical,
+            // not physical.
+            if (method.Signature.IsStatic && !isInterfaceMethod)
+                return true;
+
+            return false;
         }
 
         public static bool NotCallableWithoutOwningEEType(this MethodDesc method)

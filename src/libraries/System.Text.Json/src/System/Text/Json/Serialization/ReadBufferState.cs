@@ -4,11 +4,13 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization
 {
+    [StructLayout(LayoutKind.Auto)]
     internal struct ReadBufferState : IDisposable
     {
         private byte[] _buffer;

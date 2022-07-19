@@ -243,15 +243,7 @@ namespace System
             return sb;
         }
 
-        internal string DisplayFullName
-        {
-            get
-            {
-                if (display_fullname == null)
-                    display_fullname = GetDisplayFullName(DisplayNameFormat.Default);
-                return display_fullname;
-            }
-        }
+        internal string DisplayFullName => display_fullname ??= GetDisplayFullName(DisplayNameFormat.Default);
 
         internal static TypeSpec Parse(string typeName)
         {
@@ -312,18 +304,12 @@ namespace System
             }
             else
             {
-                if (nested == null)
-                    nested = new List<ITypeIdentifier>();
+                nested ??= new List<ITypeIdentifier>();
                 nested.Add(ParsedTypeIdentifier(type_name));
             }
         }
 
-        private void AddModifier(IModifierSpec md)
-        {
-            if (modifier_spec == null)
-                modifier_spec = new List<IModifierSpec>();
-            modifier_spec.Add(md);
-        }
+        private void AddModifier(IModifierSpec md) => modifier_spec ??= new List<IModifierSpec>();
 
         private static void SkipSpace(string name, ref int pos)
         {

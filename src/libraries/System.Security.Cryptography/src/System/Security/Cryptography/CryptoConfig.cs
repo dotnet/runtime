@@ -371,6 +371,20 @@ namespace System.Security.Cryptography
                 case "HMACSHA512":
                 case "System.Security.Cryptography.HMACSHA512":
                     return new HMACSHA512();
+
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
+                case "AES":
+                case "System.Security.Cryptography.AesCryptoServiceProvider":
+                    return new AesCryptoServiceProvider();
+                case "AesManaged":
+                case "System.Security.Cryptography.AesManaged":
+                    return new AesManaged();
+                case "Rijndael":
+                case "System.Security.Cryptography.Rijndael":
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+                    return new RijndaelManaged();
+#pragma warning restore SYSLIB0022
+#pragma warning restore SYSLIB0021
             }
 
             return null;
@@ -440,10 +454,7 @@ namespace System.Security.Cryptography
                 return null;
             }
 
-            if (args == null)
-            {
-                args = Array.Empty<object>();
-            }
+            args ??= Array.Empty<object>();
 
             List<MethodBase> candidates = new List<MethodBase>();
             for (int i = 0; i < cons.Length; i++)

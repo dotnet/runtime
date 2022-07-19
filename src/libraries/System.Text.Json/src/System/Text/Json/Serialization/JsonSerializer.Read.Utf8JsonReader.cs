@@ -422,7 +422,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
+                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.EffectiveConverter;
                 TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, jsonTypeInfo.Options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.

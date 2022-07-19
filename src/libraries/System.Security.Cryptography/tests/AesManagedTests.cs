@@ -11,7 +11,6 @@ namespace System.Security.Cryptography.Tests
     /// <summary>
     /// Since AesManaged wraps Aes, we only test minimally here.
     /// </summary>
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class AesManagedTests
     {
         [Fact]
@@ -27,6 +26,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void EncryptDecryptKnownECB192()
         {
             byte[] plainTextBytes =

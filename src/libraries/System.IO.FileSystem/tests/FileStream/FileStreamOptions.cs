@@ -198,5 +198,31 @@ namespace System.IO.Tests
                 }
             }
         }
+
+        [Fact]
+        public void UnixCreateModeDefaultsToNull()
+        {
+            Assert.Null(new FileStreamOptions().UnixCreateMode);
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Fact]
+        public void UnixCreateMode_Unsupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new FileStreamOptions { UnixCreateMode = null });
+            Assert.Throws<PlatformNotSupportedException>(() => new FileStreamOptions { UnixCreateMode = UnixFileMode.None });
+            Assert.Throws<PlatformNotSupportedException>(() => new FileStreamOptions { UnixCreateMode = UnixFileMode.UserRead });
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void UnixCreateMode_Supported()
+        {
+            Assert.Null(new FileStreamOptions { UnixCreateMode = null }.UnixCreateMode);
+            Assert.Equal(UnixFileMode.None, new FileStreamOptions { UnixCreateMode = UnixFileMode.None }.UnixCreateMode);
+            Assert.Equal(UnixFileMode.UserRead, new FileStreamOptions { UnixCreateMode = UnixFileMode.UserRead }.UnixCreateMode);
+
+            Assert.Throws<ArgumentException>(() => new FileStreamOptions { UnixCreateMode = (UnixFileMode)(1 << 12) });
+        }
     }
 }

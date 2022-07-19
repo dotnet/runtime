@@ -352,17 +352,6 @@ const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags =
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-/***************************************************************************/
-// Public enum shared between thread and threadpool
-// These are two kinds of threadpool thread that the threadpool mgr needs
-// to keep track of
-enum ThreadpoolThreadType
-{
-    WorkerThread,
-    CompletionPortThread,
-    WaitThread,
-    TimerMgrThread
-};
 //***************************************************************************
 // Public functions
 //
@@ -815,8 +804,8 @@ public:
 
 // #ThreadClass
 //
-// A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
-// structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more
+// A code:Thread contains all the per-thread information needed by the runtime.  We can get this
+// structure through the OS TLS slot see code:#RuntimeThreadLocals for more information.
 class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
@@ -2547,7 +2536,7 @@ public:
     }
 
     PTR_CONTEXT m_OSContext;    // ptr to a Context structure used to record the OS specific ThreadContext for a thread
-                                // this is used for thread stop/abort and is intialized on demand
+                                // this is used for thread stop/abort and is initialized on demand
 
     PT_CONTEXT GetAbortContext ();
 
@@ -2665,7 +2654,9 @@ public:
     // undecided. The last state may indicate that the apartment has not been set at
     // all (nobody has called CoInitializeEx) or that the EE does not know the
     // current state (EE has not called CoInitializeEx).
+    // Keep in sync with System.Threading.ApartmentState
     enum ApartmentState { AS_InSTA, AS_InMTA, AS_Unknown };
+
     ApartmentState GetApartment();
     ApartmentState GetApartmentRare(Thread::ApartmentState as);
     ApartmentState GetExplicitApartment();
@@ -3826,7 +3817,7 @@ private:
     bool m_RedirectContextInUse;
 #endif
 
-    BOOL IsContextSafeToRedirect(T_CONTEXT* pContext);
+    BOOL IsContextSafeToRedirect(const T_CONTEXT* pContext);
 
 public:
     PT_CONTEXT GetSavedRedirectContext()
@@ -4509,6 +4500,17 @@ public:
     #endif
     }
 
+    static bool UseRedirectForGcStress()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef USE_REDIRECT_FOR_GCSTRESS
+        return UseContextBasedThreadRedirection();
+#else
+        return false;
+#endif
+    }
+
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 private:
     static QueueUserAPC2Proc s_pfnQueueUserAPC2Proc;
@@ -5114,7 +5116,7 @@ protected:
         {
             // Either we initialized m_Thread explicitly with GetThread() in the
             // constructor, or our caller (instantiator of GCHolder) called our constructor
-            // with GetThread() (which we already asserted in the constuctor)
+            // with GetThread() (which we already asserted in the constructor)
             // (i.e., m_Thread == GetThread()).  Also, note that if THREAD_EXISTS,
             // then m_Thread must be non-null (as it's == GetThread()).  So the
             // "if" below looks a little hokey since we're checking for either condition.
@@ -6002,7 +6004,7 @@ struct ManagedThreadBase
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
 
-    // The IOCompletion, QueueUserWorkItem, AddTimer, RegisterWaitForSingleObject cases in
+    // The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in
     // the ThreadPool
     static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 
@@ -6237,5 +6239,14 @@ public:
 private:
     Thread* m_PreviousValue;
 };
+
+#ifndef DACCESS_COMPILE
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+#endif
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
+#endif
+#endif // DACCESS_COMPILE
 
 #endif //__threads_h__

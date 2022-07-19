@@ -1913,6 +1913,9 @@ class SafeHandle : public Object
     //   Modifying the order or fields of this object may require
     //   other changes to the classlib class definition of this
     //   object or special handling when loading this system class.
+#if DEBUG
+    STRINGREF m_ctorStackTrace; // Debug-only stack trace captured when the SafeHandle was constructed
+#endif
     Volatile<LPVOID> m_handle;
     Volatile<INT32> m_state;        // Combined ref count and closed/disposed state (for atomicity)
     Volatile<CLR_BOOL> m_ownsHandle;

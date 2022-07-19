@@ -1242,7 +1242,7 @@ namespace System.Data.SqlTypes
             ResPrec = Math.Min(MaxPrecision, ResPrec);
 
             // If precision adjusted, scale is reduced to keep the integer part untruncated.
-            // But discard the extra carry, only keep the interger part as ResInteger, not ResInteger + 1.
+            // But discard the extra carry, only keep the integer part as ResInteger, not ResInteger + 1.
             Debug.Assert(ResPrec - ResInteger >= 0);
             if (ResPrec - ResInteger < ResScale)
                 ResScale = ResPrec - ResInteger;
@@ -2762,7 +2762,7 @@ namespace System.Data.SqlTypes
             int Sign1;
             int Sign2;
 
-            int iFinalResult;   //Final result of comparision: positive = greater
+            int iFinalResult;   //Final result of comparison: positive = greater
                                 //than, 0 = equal, negative = less than
 
             //Initialize the sign values to be 1(positive) or -1(negative)

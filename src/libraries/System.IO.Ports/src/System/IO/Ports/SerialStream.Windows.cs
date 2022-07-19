@@ -578,7 +578,9 @@ namespace System.IO.Ports
 
             if (tempHandle.IsInvalid)
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(portName);
+                Exception e = Win32Marshal.GetExceptionForLastWin32Error(portName);
+                tempHandle.Dispose();
+                throw e;
             }
 
             try

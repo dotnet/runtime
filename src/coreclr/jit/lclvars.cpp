@@ -709,9 +709,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if (isHfaArg)
         {
             // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
-            // The orginal struct type is available by using origArgType.
+            // The original struct type is available by using origArgType.
             // We also update the cSlots to be the number of float/double/vector fields in the HFA.
-            argType = hfaType; // TODO-Cleanup: remove this asignment and mark `argType` as const.
+            argType = hfaType; // TODO-Cleanup: remove this assignment and mark `argType` as const.
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
         }
@@ -4034,17 +4034,22 @@ size_t LclVarDsc::lvArgStackSize() const
 //
 var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
 {
-    var_types targetType = tree->gtType;
-    var_types lclVarType = TypeGet();
+    var_types targetType = tree->TypeGet();
 
     if (targetType == TYP_STRUCT)
     {
-        if (lclVarType == TYP_STRUCT)
+        ClassLayout* layout;
+        if (tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD))
         {
-            assert(!tree->OperIsLocalField() && "do not expect struct local fields.");
-            lclVarType = GetLayout()->GetRegisterType();
+            layout = tree->AsLclFld()->GetLayout();
         }
-        targetType = lclVarType;
+        else
+        {
+            assert((TypeGet() == TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            layout = GetLayout();
+        }
+
+        targetType = layout->GetRegisterType();
     }
 
 #ifdef DEBUG
@@ -4053,7 +4058,7 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
         const bool phiStore = (tree->gtGetOp1()->OperIsNonPhiLocal() == false);
         // Ensure that the lclVar node is typed correctly,
         // does not apply to phi-stores because they do not produce code in the merge block.
-        assert(phiStore || targetType == genActualType(lclVarType));
+        assert(phiStore || targetType == genActualType(TypeGet()));
     }
 #endif
     return targetType;
@@ -4567,6 +4572,9 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 //------------------------------------------------------------------------
 // lvaMarkLocalVars: enable normal ref counting, compute initial counts, sort locals table
 //
+// Returns:
+//    suitable phase status
+//
 // Notes:
 //    Now behaves differently in minopts / debug. Instead of actually inspecting
 //    the IR and counting references, the jit assumes all locals are referenced
@@ -4575,9 +4583,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 //    Also, when optimizing, lays the groundwork for assertion prop and more.
 //    See details in lvaMarkLclRefs.
 
-void Compiler::lvaMarkLocalVars()
+PhaseStatus Compiler::lvaMarkLocalVars()
 {
-
     JITDUMP("\n*************** In lvaMarkLocalVars()");
 
     // If we have direct pinvokes, verify the frame list root local was set up properly
@@ -4589,6 +4596,8 @@ void Compiler::lvaMarkLocalVars()
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);
         }
     }
+
+    unsigned const lvaCountOrig = lvaCount;
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
@@ -4671,7 +4680,9 @@ void Compiler::lvaMarkLocalVars()
     // If we don't need precise reference counts, e.g. we're not optimizing, we're done.
     if (!PreciseRefCountsRequired())
     {
-        return;
+        // This phase may add new locals
+        //
+        return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     const bool reportParamTypeArg = lvaReportParamTypeArg();
@@ -4690,8 +4701,9 @@ void Compiler::lvaMarkLocalVars()
 
     assert(PreciseRefCountsRequired());
 
-    // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
-    optAddCopies();
+    // This phase may add new locals.
+    //
+    return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -5959,7 +5971,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance,
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
@@ -6052,7 +6064,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance,
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This implementation for all the platforms but UNIX_AMD64 OSs (System V 64 bit.)
 int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
@@ -6403,7 +6415,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
     }
-    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 2)
+    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }
@@ -6592,7 +6604,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             int offset         = originalFrameStkOffs + originalOffset;
 
             JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor aquired) tier0 FP-rel offset %d tier0 frame offset %d new "
+                "---OSR--- V%02u (on tier0 frame, monitor acquired) tier0 FP-rel offset %d tier0 frame offset %d new "
                 "virt offset %d\n",
                 lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
 

@@ -438,10 +438,7 @@ namespace System.Collections.Concurrent
                 }
                 finally
                 {
-                    if (linkedTokenSource != null)
-                    {
-                        linkedTokenSource.Dispose();
-                    }
+                    linkedTokenSource?.Dispose();
                 }
             }
             if (waitForSemaphoreWasSuccessful)
@@ -495,10 +492,7 @@ namespace System.Collections.Concurrent
                     {
                         //TryAdd did not result in increasing the size of the underlying store and hence we need
                         //to increment back the count of the _freeNodes semaphore.
-                        if (_freeNodes != null)
-                        {
-                            _freeNodes.Release();
-                        }
+                        _freeNodes?.Release();
                         throw;
                     }
                     if (addingSucceeded)
@@ -690,9 +684,7 @@ namespace System.Collections.Concurrent
                 if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
                 {
                     // create the linked token if it is not created yet
-                    if (linkedTokenSource == null)
-                        linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                                          _consumersCancellationTokenSource.Token);
+                    linkedTokenSource ??= CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
                     waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(millisecondsTimeout, linkedTokenSource.Token);
                 }
             }
@@ -1531,11 +1523,7 @@ namespace System.Collections.Concurrent
         {
             if (!_isDisposed)
             {
-                if (_freeNodes != null)
-                {
-                    _freeNodes.Dispose();
-                }
-
+                _freeNodes?.Dispose();
                 _occupiedNodes.Dispose();
 
                 _isDisposed = true;
@@ -1645,24 +1633,12 @@ namespace System.Collections.Concurrent
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         public IEnumerable<T> GetConsumingEnumerable(CancellationToken cancellationToken)
         {
-            CancellationTokenSource? linkedTokenSource = null;
-            try
+            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
+            while (!IsCompleted)
             {
-                linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
-                while (!IsCompleted)
+                if (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
                 {
-                    T? item;
-                    if (TryTakeWithNoTimeValidation(out item, Timeout.Infinite, cancellationToken, linkedTokenSource))
-                    {
-                        yield return item;
-                    }
-                }
-            }
-            finally
-            {
-                if (linkedTokenSource != null)
-                {
-                    linkedTokenSource.Dispose();
+                    yield return item;
                 }
             }
         }
@@ -1765,10 +1741,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ObjectDisposedException">If the collection has been disposed.</exception>
         private void CheckDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(BlockingCollection<T>), SR.BlockingCollection_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
     }
 

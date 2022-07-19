@@ -226,12 +226,6 @@ namespace Internal.IL
             _isReadOnly = false;
         }
 
-        private void ImportJmp(int token)
-        {
-            // JMP is kind of like a tail call (with no arguments pushed on the stack).
-            ImportCall(ILOpcode.call, token);
-        }
-
         private void ImportCasting(ILOpcode opcode, int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
@@ -369,11 +363,6 @@ namespace Internal.IL
                         _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
                     }
 
-                    return;
-                }
-
-                if (method.OwningType.IsByReferenceOfT && (method.IsConstructor || method.Name == "get_Value"))
-                {
                     return;
                 }
 
@@ -770,6 +759,31 @@ namespace Internal.IL
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             ImportCall(opCode, token);
+        }
+
+        private void ImportJmp(int token)
+        {
+            // JMP is kind of like a tail call (with no arguments pushed on the stack).
+            ImportCall(ILOpcode.call, token);
+        }
+
+        private void ImportCalli(int token)
+        {
+            MethodSignature signature = (MethodSignature)_methodIL.GetObject(token);
+
+            // Managed calli
+            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
+                return;
+
+            // Calli in marshaling stubs
+            if (_methodIL is Internal.IL.Stubs.PInvokeILStubMethodIL)
+                return;
+
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
+                signature,
+                ((MetadataType)_methodIL.OwningMethod.OwningType).Module);
+
+            _dependencies.Add(_factory.CanonicalEntrypoint(stub), "calli");
         }
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -1321,7 +1335,6 @@ namespace Internal.IL
         private void ImportAddressOfVar(int index, bool argument) { }
         private void ImportDup() { }
         private void ImportPop() { }
-        private void ImportCalli(int token) { }
         private void ImportLoadNull() { }
         private void ImportReturn() { }
         private void ImportLoadInt(long value, StackValueKind kind) { }

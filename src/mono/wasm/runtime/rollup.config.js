@@ -14,6 +14,7 @@ const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "7.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
+const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const terserConfig = {
     compress: {
         defaults: false,// too agressive minification breaks subsequent emcc compilation
@@ -39,6 +40,7 @@ const terserConfig = {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
         // and unit test at src\libraries\System.Private.Runtime.InteropServices.JavaScript\tests\timers.js
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
+        keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
@@ -60,7 +62,7 @@ const inlineAssert = [
         pattern: /^\s*mono_assert/gm,
         failure: "previous regexp didn't inline all mono_assert statements"
     }];
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration }), typescript()];
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads }), typescript()];
 
 const iffeConfig = {
     treeshake: !isDebug,
@@ -81,13 +83,6 @@ const iffeConfig = {
             plugins,
         }
     ],
-    onwarn: (warning, handler) => {
-        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
-            return;
-        }
-
-        handler(warning);
-    },
     plugins: outputCodePlugins
 };
 const typesConfig = {
@@ -131,7 +126,7 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
     return workerConfig;
 }
 
-const workerConfigs = findWebWorkerInputs ("./workers").map ((workerInput) => makeWorkerConfig (workerInput.workerName, workerInput.path));
+const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
 
 const allConfigs = [
     iffeConfig,
@@ -256,7 +251,7 @@ function findWebWorkerInputs(basePath) {
     for (const file of files) {
         const match = file.match(re);
         if (match) {
-            results.push ({"workerName": match[1], "path": path.join (basePath, file) });
+            results.push({ "workerName": match[1], "path": path.join(basePath, file) });
         }
     }
     return results;

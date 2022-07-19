@@ -175,6 +175,7 @@ else()
     unix/cgroup.cpp
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
+    unix/UnixSignals.cpp
     unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp
     ../libunwind/src/Unwind-EHABI.cpp

@@ -562,7 +562,7 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             CheckRequestMessage(request);
 
             SetOperationStarted();
@@ -677,7 +677,7 @@ namespace System.Net.Http
 
         public void CancelPendingRequests()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // With every request we link this cancellation token source.
             CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts, new CancellationTokenSource());
@@ -725,18 +725,10 @@ namespace System.Net.Http
 
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
 

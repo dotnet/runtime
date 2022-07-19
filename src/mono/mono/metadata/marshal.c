@@ -600,7 +600,7 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
 	const size_t len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (data, (gint32)MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, (gint32)MIN (len, GINT_TO_UINT(max_len)), error);
 }
 
 gpointer
@@ -765,7 +765,7 @@ mono_string_builder_new (int starting_string_length, MonoError *error)
 	mono_error_assert_ok (error);
 
 	MonoArrayHandle chunkChars = MONO_HANDLE_NEW_GET (MonoArray, sb, chunkChars);
-	g_assert (MONO_HANDLE_GETVAL (chunkChars, max_length) >= initial_len);
+	g_assert (MONO_HANDLE_GETVAL (chunkChars, max_length) >= GINT_TO_UINT(initial_len));
 
 	return sb;
 }
@@ -784,9 +784,9 @@ mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *
 
 	do {
 		MONO_HANDLE_GET (chunkChars, chunk, chunkChars);
-		const int maxLength = MONO_HANDLE_GETVAL (chunkChars, max_length);
+		const guint32 maxLength = MONO_HANDLE_GETVAL (chunkChars, max_length);
 		g_assert (maxLength >= 0);
-		const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
+		const guint32 chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
 		g_assert (chunkOffset >= 0);
 		if (maxLength > 0 && chunkOffset < string_len) {
 			// Check that we will not overrun our boundaries.
@@ -828,9 +828,9 @@ mono_string_utf8len_to_builder (MonoStringBuilderHandle sb, const char *text, gs
 	GError *gerror = NULL;
 	glong copied;
 	gunichar2* ut = g_utf8_to_utf16 (text, (glong)len, NULL, &copied, &gerror);
-	int capacity = mono_string_builder_capacity (sb);
+	guint capacity = mono_string_builder_capacity (sb);
 
-	if (copied > capacity)
+	if (GLONG_TO_ULONG(copied) > capacity)
 		copied = capacity;
 
 	if (!gerror) {
@@ -917,7 +917,7 @@ mono_string_builder_to_utf8_impl (MonoStringBuilderHandle sb, MonoError *error)
 	}
 
 	len = mono_string_builder_capacity (sb) + 1;
-	res = (char *)mono_marshal_alloc (MAX (byte_count + 1, len), error);
+	res = (char *)mono_marshal_alloc (MAX (GLONG_TO_ULONG(byte_count) + 1, len), error);
 	if (!is_ok (error)) {
 		res = NULL;
 		goto exit;
@@ -978,7 +978,7 @@ mono_string_builder_to_utf16_impl (MonoStringBuilderHandle sb, MonoError *error)
 			const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
 			g_assert (chunkOffset >= 0);
 			g_assertf ((chunkOffset + chunkLength) >= chunkLength, "integer overflow");
-			g_assertf ((chunkOffset + chunkLength) <= capacity, "A chunk in the StringBuilder had a length longer than expected from the offset.");
+			g_assertf (GINT_TO_UINT(chunkOffset + chunkLength) <= capacity, "A chunk in the StringBuilder had a length longer than expected from the offset.");
 			memcpy (str + chunkOffset, MONO_HANDLE_RAW (chunkChars)->vector, chunkLength * sizeof (gunichar2));
 		}
 		MONO_HANDLE_GET (chunk, chunk, chunkPrevious);
@@ -1111,8 +1111,8 @@ mono_string_to_byvalstr_impl (char *dst, MonoStringHandle src, int size, MonoErr
 
 	char *s = mono_string_handle_to_utf8 (src, error);
 	return_if_nok (error);
-	size_t len = MIN (size, strlen (s));
-	len -= (len >= size);
+	size_t len = MIN (GINT_TO_UINT(size), strlen (s));
+	len -= (len >= GINT_TO_UINT(size));
 	memcpy (dst, s, len);
 	dst [len] = 0;
 	g_free (s);
@@ -3246,9 +3246,8 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		return;
 	}
 
-	mono_array_size_t i;
 	MonoCustomAttrEntry *attr = NULL;
-	for (i = 0; i < cinfo->num_attrs; ++i) {
+	for (int i = 0; i < cinfo->num_attrs; ++i) {
 		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
 		if (ctor_class == attr_class) {
 			attr = &cinfo->attrs [i];
@@ -3262,7 +3261,7 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		MonoArray *named_args = mono_marshal_get_callconvs_array_from_attribute(attr, &arginfo);
 		if (named_args)
 		{
-			for (i = 0; i < mono_array_length_internal(named_args); ++i) {
+			for (mono_array_size_t i = 0; i < mono_array_length_internal(named_args); ++i) {
 				CattrNamedArg *info = &arginfo[i];
 				g_assert(info->field);
 				if (strcmp(info->field->name, "CallConvs") != 0)
@@ -3326,9 +3325,8 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		return;
 	}
 
-	mono_array_size_t i;
 	MonoCustomAttrEntry *attr = NULL;
-	for (i = 0; i < cinfo->num_attrs; ++i) {
+	for (int i = 0; i < cinfo->num_attrs; ++i) {
 		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
 		if (ctor_class == attr_class) {
 			attr = &cinfo->attrs [i];
@@ -3339,7 +3337,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 	if (attr != NULL) {
 		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
 		mono_error_assert_ok (error);
-		for (i = 0; i < decoded_args->named_args_num; ++i) {
+		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
 				g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
 				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
@@ -5332,7 +5330,6 @@ void
 mono_struct_delete_old (MonoClass *klass, char *ptr)
 {
 	MonoMarshalType *info;
-	int i;
 
 	info = mono_marshal_load_type_info (klass);
 
@@ -5342,7 +5339,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 	if (m_class_is_blittable (klass))
 		return;
 
-	for (i = 0; i < info->num_fields; i++) {
+	for (guint32 i = 0; i < info->num_fields; i++) {
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;
 		char *cpos;

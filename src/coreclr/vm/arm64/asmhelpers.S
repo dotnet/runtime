@@ -213,7 +213,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     // x12 will be used for pointers
 
     mov x8, x0
-    mov x9, x1 
+    mov x9, x1
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]
@@ -754,7 +754,7 @@ LOCAL_LABEL(Success):
     blt     LOCAL_LABEL(Promote)
 
     ldr     x16, [x9, #ResolveCacheElem__target]    // get the ImplTarget
-    br      x16               // branch to interface implemenation target
+    br      x16               // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
                               // Move this entry to head postion of the chain

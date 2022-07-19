@@ -7,6 +7,7 @@
   },
   "version": "1.0.0",
   "main": "dotnet.js",
+  "type": "module",
   "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",

@@ -204,18 +204,7 @@ namespace System.Runtime.Serialization
         }
 
         private Func<object>? _makeNewInstance;
-        private Func<object> MakeNewInstance
-        {
-            get
-            {
-                if (_makeNewInstance == null)
-                {
-                    _makeNewInstance = FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
-                }
-
-                return _makeNewInstance;
-            }
-        }
+        private Func<object> MakeNewInstance => _makeNewInstance ??= FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
 
         internal bool CreateNewInstanceViaDefaultConstructor([NotNullWhen(true)] out object? obj)
         {
@@ -1487,15 +1476,7 @@ namespace System.Runtime.Serialization
                 set { _childElementNamespaces = value; }
             }
 
-            private static Type[] SerInfoCtorArgs
-            {
-                get
-                {
-                    if (s_serInfoCtorArgs == null)
-                        s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-                    return s_serInfoCtorArgs;
-                }
-            }
+            private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
             internal struct Member
             {

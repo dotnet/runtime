@@ -51,13 +51,21 @@ namespace System.SpanTests
         [Fact]
         public static void MemoryMarshal_GenericStaticReturningSpan()
         {
-            Type type = typeof(MemoryMarshal);
+            MethodInfo createSpanMethod = typeof(MemoryMarshal).GetMethod(nameof(MemoryMarshal.CreateSpan));
 
             int value = 0;
             ref int refInt = ref value;
+            Type refIntType = refInt.GetType();
 
-            MethodInfo method = type.GetMethod(nameof(MemoryMarshal.CreateSpan)).MakeGenericMethod((refInt.GetType()));
-            Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { null, 0 }));
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<NotSupportedException>(() => createSpanMethod.MakeGenericMethod(refIntType));
+            }
+            else
+            {
+                MethodInfo method = createSpanMethod.MakeGenericMethod(refIntType);
+                Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { null, 0 }));
+            }
         }
 
         [Fact]

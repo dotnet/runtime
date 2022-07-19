@@ -451,10 +451,7 @@ namespace System.Xml
         {
             base.RawText("<META http-equiv=\"Content-Type\"");
 
-            if (_mediaType == null)
-            {
-                _mediaType = "text/html";
-            }
+            _mediaType ??= "text/html";
 
             base.RawText(" content=\"");
             base.RawText(_mediaType);

@@ -5,13 +5,13 @@
     <TargetOS>browser</TargetOS>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
-    <WasmMainJSPath>main.cjs</WasmMainJSPath>
+    <WasmMainJSPath>main.mjs</WasmMainJSPath>
     <OutputType>Exe</OutputType>
-    <WasmEnableES6>false</WasmEnableES6>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmEmitSymbolMap Condition="'$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
   </PropertyGroup>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="app-support.cjs" />
+    <WasmExtraFilesToDeploy Include="app-support.mjs" />
   </ItemGroup>
 </Project>

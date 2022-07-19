@@ -1004,7 +1004,7 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
             pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
 
             UINT cbSize = CorTypeInfo::Size(targetType);
-            memcpyNoGCRefs(pData, ArgSlotEndianessFixup(&value, cbSize), cbSize);
+            memcpyNoGCRefs(pData, ArgSlotEndiannessFixup(&value, cbSize), cbSize);
 
             HELPER_METHOD_FRAME_END();
         }

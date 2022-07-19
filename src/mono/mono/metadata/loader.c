@@ -611,7 +611,6 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 {
 	MonoMethodSignature *res;
 	gboolean is_open;
-	int i;
 
 	error_init (error);
 	if (!context)
@@ -624,7 +623,7 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 	if (!is_ok (error))
 		goto fail;
 	is_open = mono_class_is_open_constructed_type (res->ret);
-	for (i = 0; i < sig->param_count; ++i) {
+	for (guint16 i = 0; i < sig->param_count; ++i) {
 		res->params [i] = mono_class_inflate_generic_type_checked (sig->params [i], context, error);
 		if (!is_ok (error))
 			goto fail;
@@ -645,7 +644,7 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 fail:
 	if (res->ret)
 		mono_metadata_free_type (res->ret);
-	for (i = 0; i < sig->param_count; ++i) {
+	for (guint16 i = 0; i < sig->param_count; ++i) {
 		if (res->params [i])
 			mono_metadata_free_type (res->params [i]);
 	}
@@ -693,12 +692,12 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, M
 
 	error_init (error);
 
-	for (int i = 0; i < header->num_locals; ++i) {
+	for (guint16 i = 0; i < header->num_locals; ++i) {
 		res->locals [i] = mono_class_inflate_generic_type_checked (header->locals [i], context, error);
 		goto_if_nok (error, fail);
 	}
 	if (res->num_clauses) {
-		for (int i = 0; i < header->num_clauses; ++i) {
+		for (guint i = 0; i < header->num_clauses; ++i) {
 			MonoExceptionClause *clause = &res->clauses [i];
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				continue;

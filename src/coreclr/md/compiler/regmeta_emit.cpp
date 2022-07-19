@@ -362,7 +362,7 @@ HRESULT RegMeta::UnmarkAll()
                       IsTdNestedFamORAssem(pRec->GetFlags()) )
             {
                 // This nested class would potentially be visible outside, either
-                // directly or through inheritence.  If the enclosing class is
+                // directly or through inheritance.  If the enclosing class is
                 // marked, this nested class must be marked.
                 //
                 IfFailGo(m_pStgdb->m_MiniMd.FindNestedClassHelper(TokenFromRid(i, mdtTypeDef), &ulEncloser));
@@ -920,7 +920,7 @@ HRESULT RegMeta::RefToDefOptimization()
 
             // Look for a member with the same def.  Might not be found if it is
             // inherited from a base class.
-            //<TODO>@future: this should support inheritence checking.
+            //<TODO>@future: this should support inheritance checking.
             // Look for a member with the same name and signature.</TODO>
             hr = ImportHelper::FindMember(pMiniMd, tkParent, szName, pvSig, cbSig, &mfdef);
             if (hr != S_OK)
@@ -1141,7 +1141,7 @@ ErrExit:
 // Turn the specified internal flags on.
 //*******************************************************************************
 HRESULT RegMeta::_TurnInternalFlagsOn(  // S_OK or error.
-    mdToken     tkObj,                  // [IN] Target object whose internal flags are targetted.
+    mdToken     tkObj,                  // [IN] Target object whose internal flags are targeted.
     DWORD       flags)                  // [IN] Specifies flags to be turned on.
 {
     HRESULT     hr;

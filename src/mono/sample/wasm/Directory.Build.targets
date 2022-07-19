@@ -38,7 +38,7 @@
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript --mime .js=text/javascript --mime .cjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />

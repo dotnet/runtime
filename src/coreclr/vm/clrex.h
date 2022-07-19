@@ -358,7 +358,7 @@ class EEResourceException : public EEException
     // Unmanaged message text containing only the resource name (GC safe)
     void GetMessage(SString &result);
 
-    // Throwable message containig the resource contents (not GC safe)
+    // Throwable message containing the resource contents (not GC safe)
     BOOL GetThrowableMessage(SString &result);
 
  protected:

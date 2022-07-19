@@ -214,7 +214,7 @@ public:
 //   the hash function is re-applied.
 //
 //   Inserts choose an empty slot in the current bucket for new entries, if the current bucket
-//   is full, then the seed is refined and a new bucket is choosen, if an empty slot is not found
+//   is full, then the seed is refined and a new bucket is chosen, if an empty slot is not found
 //   after 8 retries, the hash table is expanded, this causes the current array of buckets to
 //   be put in a free list and a new array of buckets is allocated and all non-deleted entries
 //   from the old hash table are rehashed to the new array

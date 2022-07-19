@@ -3,3 +3,8 @@ declare module "consts:*" {
     const constant: any;
     export default constant;
 }
+
+declare module "consts:monoWasmThreads" {
+    const constant: boolean;
+    export default constant;
+}

@@ -672,7 +672,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	}
 
 	if (pass_on_stack) {
-		/* Allways pass in memory */
+		/* Always pass in memory */
 		ainfo->offset = GINT32_TO_INT16 (*stack_size);
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
@@ -983,7 +983,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 #endif
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* We allways pass the sig cookie on the stack for simplicity */
+			/* We always pass the sig cookie on the stack for simplicity */
 			/*
 			 * Prevent implicit arguments + the sig cookie from being passed
 			 * in registers.
@@ -2077,14 +2077,13 @@ arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
-	int i, n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	int j;
 	LLVMCallInfo *linfo;
 	MonoType *t;
 
-	n = sig->param_count + sig->hasthis;
+	guint n = sig->param_count + sig->hasthis;
 
 	cinfo = get_call_info (cfg->mempool, sig);
 
@@ -2132,7 +2131,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		break;
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (guint i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
 		if (i >= sig->hasthis)
@@ -4141,7 +4140,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 		 * Under Windows, it is necessary to allocate one page at a time,
 		 * "touching" stack after each successful sub-allocation. This is
 		 * because of the way stack growth is implemented - there is a
-		 * guard page before the lowest stack page that is currently commited.
+		 * guard page before the lowest stack page that is currently committed.
 		 * Stack normally grows sequentially so OS traps access to the
 		 * guard page and commits more pages when needed.
 		 */

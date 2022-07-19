@@ -770,12 +770,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
+            // We don't have generic multireg APIs
             assert(sizeBytes == 0);
         }
         else
         {
-            assert(sizeBytes != 0);
-
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
             // rather than deferring the decision after getting the simdBaseJitType of arg.
             if (!isSupportedBaseType(intrinsic, simdBaseJitType))
@@ -783,6 +782,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 
+            assert(sizeBytes != 0);
             retType = getSIMDTypeForSize(sizeBytes);
         }
     }

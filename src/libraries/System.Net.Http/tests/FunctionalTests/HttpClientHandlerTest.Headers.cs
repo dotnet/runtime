@@ -277,18 +277,18 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_MissingExpires_ReturnNull()
         {
-             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-             {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpResponseMessage response = await client.GetAsync(uri);
                     Assert.Null(response.Content.Headers.Expires);
                 }
             },
-            async server =>
-            {
-                await server.HandleRequestAsync(HttpStatusCode.OK);
-            });
+           async server =>
+           {
+               await server.HandleRequestAsync(HttpStatusCode.OK);
+           });
         }
 
         [Theory]
@@ -392,7 +392,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
@@ -434,7 +434,6 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
-                    catch (QuicConnectionAbortedException) { }
                 });
         }
 

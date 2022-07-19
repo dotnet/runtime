@@ -4,33 +4,99 @@
 import { Module } from "./imports";
 import { mono_assert } from "./types";
 
+class OperationFailedError extends Error { }
+
+const ERR_ARGS = -1;
+const ERR_WORKER_FAILED = -2;
+const ERR_OP_FAILED = -3;
+const ERR_UNKNOWN = -100;
+
 let mono_wasm_crypto: {
     channel: LibraryChannel
     worker: Worker
 } | null = null;
 
-export function dotnet_browser_can_use_simple_digest_hash(): number {
+export function dotnet_browser_can_use_subtle_crypto_impl(): number {
     return mono_wasm_crypto === null ? 0 : 1;
 }
 
 export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
-    mono_assert(!!mono_wasm_crypto, "subtle crypto not initialized");
-
     const msg = {
         func: "digest",
         type: ver,
         data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
     };
 
-    const response = mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
-    const digest = JSON.parse(response);
-    if (digest.length > output_len) {
-        console.info("call_digest: about to throw!");
-        throw "DIGEST HASH: Digest length exceeds output length: " + digest.length + " > " + output_len;
+    return _send_simple_msg(msg, "DIGEST HASH", output_buffer, output_len);
+}
+
+export function dotnet_browser_sign(hashAlgorithm: number, key_buffer: number, key_len: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
+    const msg = {
+        func: "sign",
+        type: hashAlgorithm,
+        key: Array.from(Module.HEAPU8.subarray(key_buffer, key_buffer + key_len)),
+        data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
+    };
+
+    return _send_simple_msg(msg, "SIGN HASH", output_buffer, output_len);
+}
+
+const AesBlockSizeBytes = 16; // 128 bits
+
+export function dotnet_browser_encrypt_decrypt(isEncrypting: boolean, key_buffer: number, key_len: number, iv_buffer: number, iv_len: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
+    if (input_len <= 0 || input_len % AesBlockSizeBytes !== 0) {
+        throw "ENCRYPT DECRYPT: data was not a full block: " + input_len;
     }
 
-    Module.HEAPU8.set(digest, output_buffer);
-    return 1;
+    const msg = {
+        func: "encrypt_decrypt",
+        isEncrypting: isEncrypting,
+        key: Array.from(Module.HEAPU8.subarray(key_buffer, key_buffer + key_len)),
+        iv: Array.from(Module.HEAPU8.subarray(iv_buffer, iv_buffer + iv_len)),
+        data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
+    };
+
+    const result = _send_msg_worker(msg);
+    if (typeof result === "number") {
+        return result;
+    }
+
+    if (result.length > output_len) {
+        console.error(`ENCRYPT DECRYPT: Encrypt/Decrypt length exceeds output length: ${result.length} > ${output_len}`);
+        return ERR_ARGS;
+    }
+
+    Module.HEAPU8.set(result, output_buffer);
+    return result.length;
+}
+
+export function dotnet_browser_derive_bits(password_buffer: number, password_len: number, salt_buffer: number, salt_len: number, iterations: number, hashAlgorithm: number, output_buffer: number, output_len: number): number {
+    const msg = {
+        func: "derive_bits",
+        password: Array.from(Module.HEAPU8.subarray(password_buffer, password_buffer + password_len)),
+        salt: Array.from(Module.HEAPU8.subarray(salt_buffer, salt_buffer + salt_len)),
+        iterations: iterations,
+        hashAlgorithm: hashAlgorithm,
+        lengthInBytes: output_len
+    };
+
+    return _send_simple_msg(msg, "DERIVE BITS", output_buffer, output_len);
+}
+
+function _send_simple_msg(msg: any, prefix: string, output_buffer: number, output_len: number): number {
+    const result = _send_msg_worker(msg);
+
+    if (typeof result === "number") {
+        return result;
+    }
+
+    if (result.length > output_len) {
+        console.error(`${prefix}: Result length exceeds output length: ${result.length} > ${output_len}`);
+        return ERR_ARGS;
+    }
+
+    Module.HEAPU8.set(result, output_buffer);
+    return 0;
 }
 
 export function init_crypto(): void {
@@ -55,6 +121,33 @@ export function init_crypto(): void {
             console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
             mono_wasm_crypto = null;
         };
+    }
+}
+
+function _send_msg_worker(msg: any): number | any {
+    mono_assert(!!mono_wasm_crypto, "subtle crypto not initialized");
+
+    try {
+        const response = mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
+        const responseJson = JSON.parse(response);
+
+        if (responseJson.error !== undefined) {
+            console.error(`Worker failed with: ${responseJson.error}`);
+            if (responseJson.error_type == "ArgumentsError")
+                return ERR_ARGS;
+            if (responseJson.error_type == "WorkerFailedError")
+                return ERR_WORKER_FAILED;
+
+            return ERR_UNKNOWN;
+        }
+
+        return responseJson.result;
+    } catch (err) {
+        if (err instanceof Error && err.stack !== undefined)
+            console.error(`${err.stack}`);
+        else
+            console.error(`_send_msg_worker failed: ${err}`);
+        return ERR_OP_FAILED;
     }
 }
 
@@ -83,6 +176,8 @@ class LibraryChannel {
     private get STATE_REQ_P(): number { return 3; } // Request has multiple parts
     private get STATE_RESP_P(): number { return 4; } // Response has multiple parts
     private get STATE_AWAIT(): number { return 5; } // Awaiting the next part
+    private get STATE_REQ_FAILED(): number { return 6; } // The Request failed
+    private get STATE_RESET(): number { return 7; } // Reset to a known state
 
     private constructor(msg_char_len: number) {
         this.msg_char_len = msg_char_len;
@@ -106,21 +201,50 @@ class LibraryChannel {
     public get_comm_buffer(): SharedArrayBuffer { return this.comm_buf; }
 
     public send_msg(msg: string): string {
-        if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_IDLE) {
-            throw "OWNER: Invalid sync communication channel state. " + Atomics.load(this.comm, this.STATE_IDX);
+        try {
+            let state = Atomics.load(this.comm, this.STATE_IDX);
+            if (state !== this.STATE_IDLE)
+                console.log(`send_msg, waiting for idle now, ${state}`);
+            state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
+
+            this.send_request(msg);
+            return this.read_response();
+        } catch (err) {
+            this.reset(LibraryChannel._stringify_err(err));
+            throw err;
         }
-        this.send_request(msg);
-        return this.read_response();
+        finally {
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            if (state !== this.STATE_IDLE)
+                console.log(`state at end of send_msg: ${state}`);
+        }
     }
 
     public shutdown(): void {
-        if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_IDLE) {
-            throw "OWNER: Invalid sync communication channel state. " + Atomics.load(this.comm, this.STATE_IDX);
-        }
+        console.debug("Shutting down crypto");
+        const state = Atomics.load(this.comm, this.STATE_IDX);
+        if (state !== this.STATE_IDLE)
+            throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
 
         // Notify webworker
         Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-        Atomics.store(this.comm, this.STATE_IDX, this.STATE_SHUTDOWN);
+        this._change_state_locked(this.STATE_SHUTDOWN);
+        Atomics.notify(this.comm, this.STATE_IDX);
+    }
+
+    private reset(reason: string): void {
+        console.debug(`reset: ${reason}`);
+        const state = Atomics.load(this.comm, this.STATE_IDX);
+        if (state === this.STATE_SHUTDOWN)
+            return;
+
+        if (state === this.STATE_RESET || state === this.STATE_IDLE) {
+            console.debug(`state is already RESET or idle: ${state}`);
+            return;
+        }
+
+        Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+        this._change_state_locked(this.STATE_RESET);
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
@@ -132,20 +256,22 @@ class LibraryChannel {
         for (; ;) {
             this.acquire_lock();
 
-            // Write the message and return how much was written.
-            const wrote = this.write_to_msg(msg, msg_written, msg_len);
-            msg_written += wrote;
+            try {
+                // Write the message and return how much was written.
+                const wrote = this.write_to_msg(msg, msg_written, msg_len);
+                msg_written += wrote;
 
-            // Indicate how much was written to the this.msg buffer.
-            Atomics.store(this.comm, this.MSG_SIZE_IDX, wrote);
+                // Indicate how much was written to the this.msg buffer.
+                Atomics.store(this.comm, this.MSG_SIZE_IDX, wrote);
 
-            // Indicate if this was the whole message or part of it.
-            state = msg_written === msg_len ? this.STATE_REQ : this.STATE_REQ_P;
+                // Indicate if this was the whole message or part of it.
+                state = msg_written === msg_len ? this.STATE_REQ : this.STATE_REQ_P;
 
-            // Notify webworker
-            Atomics.store(this.comm, this.STATE_IDX, state);
-
-            this.release_lock();
+                // Notify webworker
+                this._change_state_locked(state);
+            } finally {
+                this.release_lock();
+            }
 
             Atomics.notify(this.comm, this.STATE_IDX);
 
@@ -153,11 +279,7 @@ class LibraryChannel {
             if (state === this.STATE_REQ)
                 break;
 
-            // Wait for the worker to be ready for the next part.
-            //  - Atomics.wait() is not permissible on the main thread.
-            do {
-                state = Atomics.load(this.comm, this.STATE_IDX);
-            } while (state !== this.STATE_AWAIT);
+            this.wait_for_state(state => state == this.STATE_AWAIT, "send_request");
         }
     }
 
@@ -173,43 +295,59 @@ class LibraryChannel {
     }
 
     private read_response(): string {
-        let state;
         let response = "";
         for (; ;) {
-            // Wait for webworker response.
-            //  - Atomics.wait() is not permissible on the main thread.
-            do {
-                state = Atomics.load(this.comm, this.STATE_IDX);
-            } while (state !== this.STATE_RESP && state !== this.STATE_RESP_P);
-
+            const state = this.wait_for_state(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
             this.acquire_lock();
 
-            const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
+            try {
+                const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
-            // Append the latest part of the message.
-            response += this.read_from_msg(0, size_to_read);
+                // Append the latest part of the message.
+                response += this.read_from_msg(0, size_to_read);
 
-            // The response is complete.
-            if (state === this.STATE_RESP) {
+                // The response is complete.
+                if (state === this.STATE_RESP) {
+                    Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                    break;
+                }
+
+                // Reset the size and transition to await state.
+                Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                this._change_state_locked(this.STATE_AWAIT);
+            } finally {
                 this.release_lock();
-                break;
             }
-
-            // Reset the size and transition to await state.
-            Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-            Atomics.store(this.comm, this.STATE_IDX, this.STATE_AWAIT);
-
-            this.release_lock();
-
             Atomics.notify(this.comm, this.STATE_IDX);
         }
 
         // Reset the communication channel's state and let the
         // webworker know we are done.
-        Atomics.store(this.comm, this.STATE_IDX, this.STATE_IDLE);
+        this._change_state_locked(this.STATE_IDLE);
         Atomics.notify(this.comm, this.STATE_IDX);
 
         return response;
+    }
+
+    private _change_state_locked(newState: number): void {
+        Atomics.store(this.comm, this.STATE_IDX, newState);
+    }
+
+    private wait_for_state(is_ready: (state: number) => boolean, msg: string): number {
+        // Wait for webworker
+        //  - Atomics.wait() is not permissible on the main thread.
+        for (; ;) {
+            const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
+            if (lock_state !== this.LOCK_UNLOCKED)
+                continue;
+
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            if (state == this.STATE_REQ_FAILED)
+                throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
+
+            if (is_ready(state))
+                return state;
+        }
     }
 
     private read_from_msg(begin: number, end: number): string {
@@ -219,16 +357,27 @@ class LibraryChannel {
     }
 
     private acquire_lock() {
-        while (Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED) !== this.LOCK_UNLOCKED) {
-            // empty
+        for (; ;) {
+            const lock_state = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
+
+            if (lock_state === this.LOCK_UNLOCKED) {
+                const state = Atomics.load(this.comm, this.STATE_IDX);
+                if (state === this.STATE_REQ_FAILED)
+                    throw new OperationFailedError("Worker failed");
+                return;
+            }
         }
     }
 
     private release_lock() {
         const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
         if (result !== this.LOCK_OWNED) {
-            throw "CRYPTO: LibraryChannel tried to release a lock that wasn't acquired: " + result;
+            throw new Error("CRYPTO: LibraryChannel tried to release a lock that wasn't acquired: " + result);
         }
+    }
+
+    private static _stringify_err(err: any) {
+        return (err instanceof Error && err.stack !== undefined) ? err.stack : err;
     }
 
     public static create(msg_char_len: number): LibraryChannel {

@@ -14,9 +14,14 @@ namespace System.Runtime.Serialization
         internal void Push(DataContractDictionary dataContractDictionary)
         {
             if (dataContractDictionaries == null)
+            {
                 dataContractDictionaries = new DataContractDictionary[4];
+            }
             else if (_count == dataContractDictionaries.Length)
+            {
                 Array.Resize<DataContractDictionary>(ref dataContractDictionaries, dataContractDictionaries.Length * 2);
+            }
+
             dataContractDictionaries[_count++] = dataContractDictionary;
         }
 

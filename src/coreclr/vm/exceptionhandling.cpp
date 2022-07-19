@@ -213,8 +213,7 @@ void HandleTerminationRequest(int terminationExitCode)
     {
         SetLatchedExitCode(terminationExitCode);
 
-        DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableDumpOnSigTerm);
-        ForceEEShutdown(enabled == 1 ? SCA_TerminateProcessWhenShutdownComplete : SCA_ExitProcessWhenShutdownComplete);
+        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
     }
 }
 #endif
@@ -950,14 +949,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // begin Early Processing
     //
     {
-#ifndef USE_REDIRECT_FOR_GCSTRESS
-        if (IsGcMarker(pContextRecord, pExceptionRecord))
-        {
-            returnDisposition = ExceptionContinueExecution;
-            goto lExit;
-        }
-#endif // !USE_REDIRECT_FOR_GCSTRESS
-
         EH_LOG((LL_INFO100, "..................................................................................\n"));
         EH_LOG((LL_INFO100, "ProcessCLRException enter, sp = 0x%p, ControlPc = 0x%p\n", MemoryStackFp, pDispatcherContext->ControlPc));
         DebugLogExceptionRecord(pExceptionRecord);
@@ -4568,7 +4559,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // the exception to be thrown
         *ex.GetContextRecord() = *frameContext;
 
-        // Move the exception address to the first managed frame on the stack except for the hardware exceptions 
+        // Move the exception address to the first managed frame on the stack except for the hardware exceptions
         // stemming from from a native code out of the well known runtime helpers
         if (!ex.IsExternal)
         {
@@ -4855,7 +4846,7 @@ Parameters:
     UINT index :        index of the register (Rax=0 .. R15=15)
 
 Return value :
-    Pointer to the context member represeting the register
+    Pointer to the context member represetting the register
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
@@ -4873,7 +4864,7 @@ Parameters:
     UINT index :        index of the register (Rax=0 .. R15=15)
 
 Return value :
-    Value of the context member represeting the register
+    Value of the context member represetting the register
 --*/
 DWORD64 GetRegisterValueByIndex(PCONTEXT pContext, UINT index)
 {
@@ -4895,7 +4886,7 @@ Parameters:
     bool hasOpSizePrefix :  true if the instruction has op size prefix (0x66)
 
 Return value :
-    Value of the context member represeting the register
+    Value of the context member represetting the register
 --*/
 DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit, bool hasOpSizePrefix)
 {

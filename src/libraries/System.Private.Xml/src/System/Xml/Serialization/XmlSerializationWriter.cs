@@ -78,7 +78,7 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return _namespaces == null ? null : _namespaces.NamespaceList;
+                return _namespaces?.NamespaceList;
             }
             set
             {
@@ -1355,7 +1355,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls WriteArray")]
         private void WriteReferencedElement(string? name, string? ns, object o, Type? ambientType)
         {
-            if (name == null) name = string.Empty;
+            name ??= string.Empty;
             Type t = o.GetType();
             if (t.IsArray || typeof(IEnumerable).IsAssignableFrom(t))
             {
@@ -3645,9 +3645,13 @@ namespace System.Xml.Serialization
                     {
                         anyCount++;
                         if (element.Name != null && element.Name.Length > 0)
+                        {
                             namedAnys.Add(element);
-                        else if (unnamedAny == null)
-                            unnamedAny = element;
+                        }
+                        else
+                        {
+                            unnamedAny ??= element;
+                        }
                     }
                     else if (choice != null)
                     {

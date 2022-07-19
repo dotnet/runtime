@@ -206,8 +206,7 @@ namespace System.IO.IsolatedStorage
             {
                 if (disposing)
                 {
-                    if (_fs != null)
-                        _fs.Dispose();
+                    _fs?.Dispose();
                 }
             }
             finally

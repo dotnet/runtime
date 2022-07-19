@@ -156,6 +156,8 @@ namespace HttpServer
                 string? contentType = null;
                 if (path.EndsWith(".wasm"))
                     contentType = "application/wasm";
+                if (path.EndsWith(".js") || path.EndsWith(".mjs") || path.EndsWith(".cjs"))
+                    contentType = "text/javascript";
 
                 if (contentType != null)
                     context.Response.ContentType = contentType;

@@ -430,9 +430,13 @@ namespace System.IO.Packaging
 
             // Generate an ID if id is null. Throw exception if neither null nor a valid unique xsd:ID.
             if (id == null)
+            {
                 id = GenerateUniqueRelationshipId();
+            }
             else
+            {
                 ValidateUniqueRelationshipId(id);
+            }
 
             // create and add
             PackageRelationship relationship = new PackageRelationship(_package, _sourcePart, targetUri, targetMode, relationshipType, id);

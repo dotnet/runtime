@@ -536,10 +536,7 @@ namespace System.Xml.Schema
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
             }
             if (schemaInfo != null && schemaInfo.ErrorCount == 0)
             {
@@ -1244,8 +1241,7 @@ namespace System.Xml.Schema
 
         private static void XDR_InitAttribute(XdrBuilder builder, object obj)
         {
-            if (builder._BaseDecl == null)
-                builder._BaseDecl = new DeclBaseInfo();
+            builder._BaseDecl ??= new DeclBaseInfo();
             builder._BaseDecl._MinOccurs = 0;
         }
 

@@ -171,8 +171,8 @@ namespace System.DirectoryServices.AccountManagement
                                 contextName,
                                 null,
                                 contextOptions,
-                                (credentials != null ? credentials.UserName : null),
-                                (credentials != null ? credentials.Password : null)
+                                credentials?.UserName,
+                                credentials?.Password
                                 );
 
                 lock (_tableLock)

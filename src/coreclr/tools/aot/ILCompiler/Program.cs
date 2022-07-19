@@ -110,7 +110,7 @@ namespace ILCompiler
         private void Help(string helpText)
         {
             Console.WriteLine();
-            Console.Write("Microsoft (R) .NET Native IL Compiler");
+            Console.Write(".NET Native IL Compiler");
             Console.Write(" ");
             Console.Write(typeof(Program).GetTypeInfo().Assembly.GetName().Version);
             Console.WriteLine();
@@ -215,7 +215,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("feature", ref _featureSwitches, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
                 syntax.DefineOption("parallelism", ref _parallelism, "Maximum number of threads to use during compilation");
-                syntax.DefineOption("instructionset", ref _instructionSet, "Instruction set to allow or disallow");
+                syntax.DefineOption("instruction-set", ref _instructionSet, "Instruction set to allow or disallow");
                 syntax.DefineOption("guard", ref _guard, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
                 syntax.DefineOption("preinitstatics", ref _preinitStatics, "Interpret static constructors at compile time if possible (implied by -O)");
                 syntax.DefineOption("nopreinitstatics", ref _noPreinitStatics, "Do not interpret static constructors at compile time");
@@ -304,6 +304,10 @@ namespace ILCompiler
 
                     extraHelp.Add(archString.ToString());
                 }
+
+                extraHelp.Add("");
+                extraHelp.Add("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
+                extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
 
                 argSyntax.ExtraHelpParagraphs = extraHelp;
             }
@@ -438,7 +442,15 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
 
             if (_instructionSet != null)

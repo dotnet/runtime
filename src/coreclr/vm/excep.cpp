@@ -6188,7 +6188,12 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
 
         if (exceptionCode == STATUS_CLR_GCCOVER_CODE)
         {
-            if (OnGcCoverageInterrupt(pContext))
+            // GCStress processing can disturb last error, so preserve it.
+            BOOL res;
+            BEGIN_PRESERVE_LAST_ERROR;
+            res = OnGcCoverageInterrupt(pContext);
+            END_PRESERVE_LAST_ERROR;
+            if (res)
             {
                 return true;
             }
@@ -7087,9 +7092,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     // NOTE: this is effectively ifdef (TARGET_AMD64 || TARGET_ARM), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
     // push a frame and cause GC.
-    if (IsGcMarker(pContext, pExceptionRecord))
+    if (Thread::UseRedirectForGcStress())
     {
-        return VEH_CONTINUE_EXECUTION;;
+        if (IsGcMarker(pContext, pExceptionRecord))
+        {
+            return VEH_CONTINUE_EXECUTION;;
+        }
     }
 #endif // USE_REDIRECT_FOR_GCSTRESS
 
@@ -7160,11 +7168,10 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     //
 #if defined(_DEBUG)
                     const char * pStack = "<stack not available>";
-                    StackScratchBuffer buffer;
                     SString sStack;
                     if (GetStackTraceAtContext(sStack, pContext))
                     {
-                        pStack = sStack.GetANSI(buffer);
+                        pStack = sStack.GetUTF8();
                     }
 
                     DWORD tid = GetCurrentThreadId();
@@ -8239,7 +8246,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
 
         if (name != NULL && strcmp(name, "get_StackTrace") == 0)
         {
-            // see if the slot is overriden by pMT
+            // see if the slot is overridden by pMT
             MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
             return (pDerivedMD != pMD);
         }

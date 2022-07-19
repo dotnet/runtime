@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +56,16 @@ namespace LibraryImportGenerator.UnitTests
 
     public static class TestUtils
     {
+        internal static string GetFileLineName(
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerFilePath] string? filePath = null)
+            => $"{Path.GetFileName(filePath)}:{lineNumber}";
+
+        internal static void Use<T>(T _)
+        {
+            // Workaround for - xUnit1026 // Theory methods should use all of their parameters
+        }
+
         /// <summary>
         /// Disable binding redirect warnings. They are disabled by default by the .NET SDK, but not by Roslyn.
         /// See https://github.com/dotnet/roslyn/issues/19640.

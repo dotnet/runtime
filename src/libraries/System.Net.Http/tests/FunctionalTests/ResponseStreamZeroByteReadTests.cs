@@ -6,7 +6,6 @@ using System.IO;
 using System.IO.Tests;
 using System.Linq;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -210,25 +209,13 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class Http3ResponseStreamZeroByteReadTest_MsQuic : ResponseStreamZeroByteReadTestBase
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class Http3ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
-        public Http3ResponseStreamZeroByteReadTest_MsQuic(ITestOutputHelper output) : base(output) { }
+        public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
 
         protected override Version UseVersion => HttpVersion.Version30;
-
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    public sealed class Http3ResponseStreamZeroByteReadTest_Mock : ResponseStreamZeroByteReadTestBase
-    {
-        public Http3ResponseStreamZeroByteReadTest_Mock(ITestOutputHelper output) : base(output) { }
-
-        protected override Version UseVersion => HttpVersion.Version30;
-
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

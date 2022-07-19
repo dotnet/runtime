@@ -7,29 +7,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn
-;;
-;;
-;; INPUT: none
-;;
-;; TRASHES: none
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        NESTED_ENTRY RhpWaitForSuspend
-
-        PROLOG_PUSH {r0-r4,lr}     ; Need to save argument registers r0-r3 and lr, r4 is just for alignment
-        PROLOG_VPUSH {d0-d7}       ; Save float argument registers as well since they're volatile
-
-        bl          RhpWaitForSuspend2
-
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP  {r0-r4,pc}
-
-        NESTED_END RhpWaitForSuspend
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; RhpWaitForGCNoAbort
 ;;
 ;;

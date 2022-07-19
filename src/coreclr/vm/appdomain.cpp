@@ -190,12 +190,12 @@ OBJECTREF *PinnedHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
     }
     CONTRACTL_END;
 
-    OBJECTREF pPreallocatedSentinalObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinalObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
+    _ASSERTE(pPreallocatedSentinelObject  != NULL);
 
     for (int  i = m_CurrentEmbeddedFreePos; i < m_CurrentPos; i++)
     {
-        if (m_pArrayDataPtr[i] == pPreallocatedSentinalObject)
+        if (m_pArrayDataPtr[i] == pPreallocatedSentinelObject)
         {
             m_CurrentEmbeddedFreePos = i;
             m_pArrayDataPtr[i] = NULL;
@@ -462,14 +462,14 @@ void PinnedHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
     _ASSERTE(m_pCrstDebug->OwnedByCurrentThread());
 #endif
 
-    OBJECTREF pPreallocatedSentinalObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinalObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
+    _ASSERTE(pPreallocatedSentinelObject  != NULL);
 
 
     // Add the released handles to the list of available handles.
     for (DWORD i = 0; i < nReleased; i++)
     {
-        SetObjectReference(&pObjRef[i], pPreallocatedSentinalObject);
+        SetObjectReference(&pObjRef[i], pPreallocatedSentinelObject);
     }
 
     m_cEmbeddedFree += nReleased;
@@ -1039,6 +1039,10 @@ void SystemDomain::Attach()
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
     ReJitManager::InitStatic();
+
+#ifdef FEATURE_READYTORUN
+    InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 }
 
 
@@ -1101,8 +1105,8 @@ void SystemDomain::PreallocateSpecialObjects()
 
     _ASSERTE(g_pPreallocatedSentinelObject == NULL);
 
-    OBJECTREF pPreallocatedSentinalObject = AllocateObject(g_pObjectClass);
-    g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinalObject );
+    OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
+    g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinelObject );
 }
 
 void SystemDomain::CreatePreallocatedExceptions()
@@ -1358,12 +1362,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
-    // Load ByReference class
-    //
-    // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
-    //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
-    g_pByReferenceClass = CoreLibBinder::GetClass(CLASS__BYREFERENCE);
-
     // Load Nullable class
     g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
 
@@ -1372,6 +1370,12 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // We have delayed allocation of CoreLib's static handles until we load the object class
     CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+
+    // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
+
+    // Int32 has to be loaded next to break cycle in IShiftOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)

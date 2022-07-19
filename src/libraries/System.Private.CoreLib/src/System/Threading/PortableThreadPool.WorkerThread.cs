@@ -23,7 +23,7 @@ namespace System.Threading
             private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline * 4;
 #endif
 
-            // This value represents an assumption of how much uncommited stack space a worker thread may use in the future.
+            // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
             // preexisting threads from running out of memory when using new stack space in low-memory situations.
             public const int EstimatedAdditionalStackUsagePerThreadBytes = 64 << 10; // 64 KB

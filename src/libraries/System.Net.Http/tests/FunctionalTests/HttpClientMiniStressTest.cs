@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -32,21 +31,12 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic : HttpClientMiniStress
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
     {
-        public SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientMiniStress_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_Mock : HttpClientMiniStress
-    {
-        public SocketsHttpHandler_HttpClientMiniStress_Http3_Mock(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http2 : HttpClientMiniStress

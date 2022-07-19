@@ -1,13 +1,13 @@
-# Dogfooding nightly builds of .NET
+# Dogfooding daily builds of .NET
 
-This document provides the steps necessary to consume a nightly build of .NET runtime and SDK.
+This document provides the steps necessary to consume a latest development build of .NET runtime and SDK.
 Example below is for 7.0 but similar steps should work for other versions as well.
 
-## Obtaining nightly builds of NuGet packages
+## Obtaining daily builds of NuGet packages
 
-If you are only looking to get fixes for an individual NuGet package, and don't need a preview version of the entire runtime, you can add the nightly build package feed to your `NuGet.config` file.  The easiest way to do this is by using the dotnet CLI:
+If you are only looking to get fixes for an individual NuGet package, and don't need a preview version of the entire runtime, you can add the development package feed to your `NuGet.config` file.  The easiest way to do this is by using the dotnet CLI:
 
-**(Recommended)** Create a local NuGet.Config file for your solution, if don't already have one.  Using a local NuGet.Config file will enable the nightly feed as a package source for projects in the current directory only.
+**(Recommended)** Create a local NuGet.Config file for your solution, if don't already have one.  Using a local NuGet.Config file will enable the development feed as a package source for projects in the current directory only.
 ```
 dotnet new nugetconfig
 ```
@@ -24,11 +24,11 @@ Then, you will be able to add the latest prerelease version of the desired packa
 dotnet add package System.Data.OleDb -v 7.0-preview.5.22226.4
 ```
 
-To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
+To use daily builds of the entire runtime, follow the steps given in the rest of this document instead.
 
 ## Install prerequisites
 
-1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/7.0/daily/dotnet-sdk-win-x64.zip).
+1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/7.0/daily/dotnet-sdk-win-x64.zip).
 
 2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 7.0." then you may be executing an older `dotnet`.
 
@@ -68,7 +68,7 @@ Learn about .NET Runtimes and SDKs:
 
 ```
 
-3. Our nightly builds are uploaded to nightly feed, not NuGet - so ensure the nightly feed is in your nuget configuration in case you need other packages that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
+3. Our daily builds are uploaded to development feed, not NuGet - so ensure the development feed is in your nuget configuration in case you need other packages that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
 ```xml
 <packageSources>
     <add key="dotnet7" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet7/nuget/v3/index.json" />
@@ -97,11 +97,11 @@ $ dotnet run
 
 Rinse and repeat!
 
-## Advanced Scenario - Using a nightly build of Microsoft.NETCore.App
+## Advanced Scenario - Using a daily build of Microsoft.NETCore.App
 
 When using the above instructions, your application will run against the same
 .NET runtime that comes with the SDK. That works fine to get up and
-running quickly. However, there are times when you need to use a nightly build
+running quickly. However, there are times when you need to use a daily build
 of Microsoft.NETCore.App which hasn't made its way into the SDK yet. To enable
 this, there are two options you can take.
 
@@ -110,8 +110,8 @@ this, there are two options you can take.
 This is the default case for applications - running against an installed .NET runtime.
 
 1. You still need to install the prerequisite .NET SDK from above.
-2. Optionally, install the specific .NET runtime you require globally or download get the latest one available from the [nightly build table](#nightly-builds-table)
-3. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App
+2. Optionally, install the specific .NET runtime you require globally or download get the latest one available from the [daily build table](#daily-builds-table)
+3. Modify your .csproj to reference the daily build of Microsoft.NETCore.App
 
 ```XML
   <PropertyGroup>
@@ -133,7 +133,7 @@ $ dotnet run
 In this case, the .NET runtime will be published along with your application.
 
 1. You still need to install the prerequisite .NET SDK from above.
-2. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App *and*
+2. Modify your .csproj to reference the daily build of Microsoft.NETCore.App *and*
 make it self-contained by adding a RuntimeIdentifier (RID).
 
 ```XML
@@ -154,7 +154,7 @@ $ dotnet publish
 $ bin\Debug\net7.0\win-x64\publish\App.exe
 ```
 
-### Nightly builds table
+### Daily builds table
 
 <!--
   To update this table, run 'build.sh/cmd RegenerateDownloadTable'. See

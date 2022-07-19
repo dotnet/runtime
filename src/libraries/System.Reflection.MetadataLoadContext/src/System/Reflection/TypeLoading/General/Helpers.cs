@@ -273,16 +273,12 @@ namespace System.Reflection.TypeLoading
             MetadataLoadContext loader = defaultAssembly.Loader;
 
             Func<AssemblyName, Assembly> assemblyResolver =
-                delegate (AssemblyName assemblyName)
-                {
-                    return loader.LoadFromAssemblyName(assemblyName);
-                };
+                loader.LoadFromAssemblyName;
 
             Func<Assembly?, string, bool, Type?> typeResolver =
                 delegate (Assembly? assembly, string fullName, bool ignoreCase2)
                 {
-                    if (assembly == null)
-                        assembly = defaultAssembly;
+                    assembly ??= defaultAssembly;
 
                     Debug.Assert(assembly is RoAssembly);
                     RoAssembly roAssembly = (RoAssembly)assembly;

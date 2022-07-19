@@ -4,11 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: used when implementing a custom TraceLoggingTypeInfo.
@@ -307,10 +303,7 @@ namespace System.Diagnostics.Tracing
             this.bufferedArrayFieldCount++;
             this.impl.fields.Add(fieldMetadata);
 
-            if (this.currentGroup != null)
-            {
-                this.currentGroup.IncrementStructFieldCount();
-            }
+            this.currentGroup?.IncrementStructFieldCount();
         }
 
         private sealed class Impl

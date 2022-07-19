@@ -140,15 +140,7 @@ namespace System.Xml.Serialization
 
         internal LocalBuilder? retLocal;
         internal Label retLabel;
-        internal LocalBuilder ReturnLocal
-        {
-            get
-            {
-                if (retLocal == null)
-                    retLocal = DeclareLocal(_methodBuilder!.ReturnType, "_ret");
-                return retLocal;
-            }
-        }
+        internal LocalBuilder ReturnLocal => retLocal ??= DeclareLocal(_methodBuilder!.ReturnType, "_ret");
         internal Label ReturnLabel
         {
             get { return retLabel; }
@@ -556,12 +548,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo? getMethod = property.GetMethod;
-
-                    if (getMethod == null)
-                    {
-                        getMethod = GetPropertyMethodFromBaseType(property, true);
-                    }
+                    MethodInfo? getMethod = property.GetMethod ?? GetPropertyMethodFromBaseType(property, true);
 
                     System.Diagnostics.Debug.Assert(getMethod != null);
                     Call(getMethod);
@@ -594,12 +581,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo? getMethod = property.GetMethod;
-
-                    if (getMethod == null)
-                    {
-                        getMethod = GetPropertyMethodFromBaseType(property, true);
-                    }
+                    MethodInfo? getMethod = property.GetMethod ?? GetPropertyMethodFromBaseType(property, true);
 
                     System.Diagnostics.Debug.Assert(getMethod != null);
                     Call(getMethod);
@@ -633,12 +615,7 @@ namespace System.Xml.Serialization
                 PropertyInfo property = (PropertyInfo)memberInfo;
                 if (property != null)
                 {
-                    MethodInfo? setMethod = property.SetMethod;
-
-                    if (setMethod == null)
-                    {
-                        setMethod = GetPropertyMethodFromBaseType(property, false);
-                    }
+                    MethodInfo? setMethod = property.SetMethod ?? GetPropertyMethodFromBaseType(property, false);
 
                     System.Diagnostics.Debug.Assert(setMethod != null);
                     Call(setMethod);

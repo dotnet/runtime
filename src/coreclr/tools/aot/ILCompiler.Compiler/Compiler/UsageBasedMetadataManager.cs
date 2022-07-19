@@ -216,6 +216,21 @@ namespace ILCompiler
         {
             TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
 
+            if (type.IsDelegate)
+            {
+                // We've decided as a policy that delegate Invoke methods will be generated in full.
+                // The libraries (e.g. System.Linq.Expressions) have trimming warning suppressions
+                // in places where they assume IL-level trimming (where the method cannot be removed).
+                // We ask for a full reflectable method with its method body instead of just the
+                // metadata.
+                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                if (!IsReflectionBlocked(invokeMethod))
+                {
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                }
+            }
+
             MetadataType mdType = type as MetadataType;
 
             // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
@@ -533,6 +548,26 @@ namespace ILCompiler
             }
         }
 
+        public override void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            Debug.Assert(!method.IsSharedByGenericInstantiations && method.HasInstantiation && method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
+
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
+                && !IsReflectionBlocked(method))
+            {
+                // Ensure that if SomeMethod<T> is considered reflectable, SomeMethod<ConcreteType> is also reflectable.
+                // We only need this because there's a file format limitation in the reflection mapping tables that
+                // requires generic methods to be concrete (i.e. SomeMethod<__Canon> can never be in the mapping table).
+                // If we ever lift this limitation, this code can be deleted: the reflectability is going to be covered
+                // by GetConditionalDependenciesDueToMethodCodePresence below (we get that callback for SomeMethod<__Canon>).
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+
+                dependencies ??= new CombinedDependencyList();
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                    factory.ReflectableMethod(method), factory.ReflectableMethod(typicalMethod), "Reflectability of methods is same across genericness"));
+            }
+        }
+
         public override void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
@@ -720,6 +755,12 @@ namespace ILCompiler
                     // We might not see the instantiated type elsewhere.
                     GetFlowDependenciesForInstantiation(ref dependencies, factory, owningType.Instantiation, owningType.GetTypeDefinition().Instantiation, method);
                 }
+            }
+
+            // Presence of code might trigger the reflectability dependencies.
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
+            {
+                GetDependenciesDueToReflectability(ref dependencies, factory, method);
             }
         }
 

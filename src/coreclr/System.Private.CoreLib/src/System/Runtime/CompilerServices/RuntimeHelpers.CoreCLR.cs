@@ -661,6 +661,12 @@ namespace System.Runtime.CompilerServices
             return (MethodTable*)m_asTAddr;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TypeHandle TypeHandleOf<T>()
+        {
+            return new TypeHandle((void*)RuntimeTypeHandle.GetValueInternal(typeof(T).TypeHandle));
+        }
+
         /// <summary>
         /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
         /// </summary>

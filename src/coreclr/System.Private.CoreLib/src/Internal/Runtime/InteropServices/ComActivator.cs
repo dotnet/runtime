@@ -716,11 +716,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 throw new COMException(); // E_FAIL
             }
 
-            var license = (IDisposable?)parameters[2];
-            if (license != null)
-            {
-                license.Dispose();
-            }
+            ((IDisposable?)parameters[2])?.Dispose();
 
             var licenseKey = (string?)parameters[3];
             if (licenseKey == null)

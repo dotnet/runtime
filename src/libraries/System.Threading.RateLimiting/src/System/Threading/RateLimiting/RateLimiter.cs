@@ -61,7 +61,7 @@ namespace System.Threading.RateLimiting
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ValueTask<RateLimitLease> WaitAsync(int permitCount = 1, CancellationToken cancellationToken = default)
+        public ValueTask<RateLimitLease> WaitAndAcquireAsync(int permitCount = 1, CancellationToken cancellationToken = default)
         {
             if (permitCount < 0)
             {
@@ -73,16 +73,16 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
             }
 
-            return WaitAsyncCore(permitCount, cancellationToken);
+            return WaitAndAcquireAsyncCore(permitCount, cancellationToken);
         }
 
         /// <summary>
-        /// Method that <see cref="RateLimiter"/> implementations implement for <see cref="WaitAsync"/>.
+        /// Method that <see cref="RateLimiter"/> implementations implement for <see cref="WaitAndAcquireAsync"/>.
         /// </summary>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
-        protected abstract ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken);
+        protected abstract ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken);
 
         /// <summary>
         /// Dispose method for implementations to write.

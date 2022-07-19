@@ -91,8 +91,6 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="X509FilesystemTests.Unix.cs" />
     <Compile Include="X509StoreTests.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.ChMod.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -101,10 +99,6 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.CheckX509Hostname_IntPtr.cs"

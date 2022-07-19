@@ -35,7 +35,7 @@ mono_flight_recorder_iter_init (MonoFlightRecorder *recorder, MonoFlightRecorder
 	if (recorder->cursor == MONO_FLIGHT_RECORDER_SENTINEL) {
 		iter->lowest_index = MONO_FLIGHT_RECORDER_SENTINEL;
 		iter->highest_index = MONO_FLIGHT_RECORDER_SENTINEL;
-	} else if (recorder->cursor >= recorder->max_count) {
+	} else if (GINTPTR_TO_SIZE(recorder->cursor) >= recorder->max_count) {
 		// Ring buffer has wrapped around
 		// So the item *after* the highest index is the lowest index
 		iter->highest_index = (recorder->cursor + 1) % recorder->max_count;
@@ -62,14 +62,14 @@ mono_flight_recorder_iter_next (MonoFlightRecorderIter *iter, MonoFlightRecorder
 		return FALSE;
 
 	g_assert (iter->lowest_index >= 0);
-	g_assert (iter->lowest_index < iter->recorder->max_count);
+	g_assert (GINTPTR_TO_SIZE(iter->lowest_index) < iter->recorder->max_count);
 
 	// Reference to the variably-sized logging payload
 	memcpy (payload, (gpointer *) &iter->recorder->items [iter->lowest_index]->payload, iter->recorder->payload_size);
 	memcpy (header, (gpointer *) &iter->recorder->items [iter->lowest_index]->header, sizeof (MonoFlightRecorderHeader));
 	iter->lowest_index++;
 
-	if (iter->lowest_index >= iter->recorder->max_count)
+	if (GINTPTR_TO_SIZE(iter->lowest_index) >= iter->recorder->max_count)
 		iter->lowest_index = iter->lowest_index % iter->recorder->max_count;
 
 	return TRUE;
@@ -103,7 +103,7 @@ mono_flight_recorder_init (size_t max_count, size_t payload_size)
 
 	// First byte after end of pointer array is the flexible-shape memory
 	intptr_t memory = (intptr_t) &recorder->items[recorder->max_count];
-	for (int i=0; i < recorder->max_count; i++) {
+	for (gsize i=0; i < recorder->max_count; i++) {
 		recorder->items [i] = (MonoFlightRecorderItem *) (memory + (item_size * i));
 		g_assert ((intptr_t) recorder->items [i] < end_of_memory);
 	}

@@ -88,20 +88,8 @@ namespace System.Drawing
         {
             if ((large && _largeImage == null) || (!large && _smallImage == null))
             {
-                Image? img;
-                if (large)
-                {
-                    img = _largeImage;
-                }
-                else
-                {
-                    img = _smallImage;
-                }
-
-                if (img == null)
-                {
-                    img = GetImageFromResource(type, imgName, large);
-                }
+                Image? img = large ? _largeImage : _smallImage;
+                img ??= GetImageFromResource(type, imgName, large);
 
                 // last resort for large images.
                 if (large && _largeImage == null && _smallImage != null)

@@ -678,7 +678,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    // If last condition evalutes to false, branch to false label
+                    // If last condition evaluates to false, branch to false label
                     // Else fall through to true code path
                     _iterCurr.SetBranching(BranchingContext.OnFalse, lblOnFalse);
                     break;
@@ -752,7 +752,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    // If left condition evalutes to true, jump to code that pushes "true"
+                    // If left condition evaluates to true, jump to code that pushes "true"
                     Debug.Assert(_iterCurr.CurrentBranchingContext == BranchingContext.None);
                     lblTemp = _helper.DefineLabel();
                     NestedVisitWithBranch(ndOr.Left, BranchingContext.OnTrue, lblTemp);
@@ -773,7 +773,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    // If right condition evalutes to true, jump to code that pushes "true".
+                    // If right condition evaluates to true, jump to code that pushes "true".
                     // Otherwise, if both conditions evaluate to false, fall through code path
                     // will push "false".
                     NestedVisitWithBranch(ndOr.Right, BranchingContext.OnTrue, lblTemp);
@@ -3439,7 +3439,7 @@ namespace System.Xml.Xsl.IlGen
             // If the expression is a singleton,
             if (ndVal.Child.XmlType.IsSingleton)
             {
-                // Then generate code to push expresion result onto the stack
+                // Then generate code to push expression result onto the stack
                 NestedVisitEnsureStack(ndVal.Child, typeof(XPathNavigator), false);
 
                 // navigator.Value;
@@ -3514,7 +3514,7 @@ namespace System.Xml.Xsl.IlGen
             // If the expression is a singleton,
             if (ndGenId.Child.XmlType!.IsSingleton)
             {
-                // Then generate code to push expresion result onto the stack
+                // Then generate code to push expression result onto the stack
                 NestedVisitEnsureStack(ndGenId.Child, typeof(XPathNavigator), false);
 
                 // runtime.GenerateId(value);

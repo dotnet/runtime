@@ -1613,10 +1613,7 @@ namespace System.Runtime.Serialization.Json
                 if (val[i] == '\\')
                 {
                     i++;
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder();
-                    }
+                    sb ??= new StringBuilder();
                     sb.Append(val, startIndex, count);
                     Fx.Assert(i < val.Length, "Found that an '\' was the last character in a string. ReadServerTypeAttriute validates that the escape sequence is valid when it calls ReadQuotedText and ReadEscapedCharacter");
                     if (i >= val.Length)

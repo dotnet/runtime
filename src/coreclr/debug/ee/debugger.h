@@ -2938,7 +2938,7 @@ void RedirectedHandledJITCaseForDbgThreadControl_StubEnd();
 void RedirectedHandledJITCaseForUserSuspend_Stub();
 void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
-#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64) && defined(USE_REDIRECT_FOR_GCSTRESS)
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64

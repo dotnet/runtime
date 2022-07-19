@@ -277,7 +277,7 @@ struct MethodTableWriteableData
         enum_flag_HasApproxParent           = 0x00000010,
         enum_flag_UnrestoredTypeKey         = 0x00000020,
         enum_flag_IsNotFullyLoaded          = 0x00000040,
-        enum_flag_DependenciesLoaded        = 0x00000080,     // class and all depedencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
+        enum_flag_DependenciesLoaded        = 0x00000080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
         // enum_unused                      = 0x00000100,
 
@@ -2047,7 +2047,7 @@ public:
     // Count of interfaces that can have their extra info stored inline in the optional data structure itself
     // (once the interface count exceeds this limit the optional data slot will instead point to a buffer with
     // the information).
-    enum { kInlinedInterfaceInfoThreshhold = sizeof(TADDR) * 8 };
+    enum { kInlinedInterfaceInfoThreshold = sizeof(TADDR) * 8 };
 
     // Calculate how many bytes of storage will be required to track additional information for interfaces.
     // This will be zero if there are no interfaces, but can also be zero for small numbers of interfaces as
@@ -2094,13 +2094,15 @@ public:
     // Specify allowVariantMatches to permit generic interface variance
     // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
     // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
+    // The 'level' parameter specifies the load level for the class containing the resolved MethodDesc.
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
         BOOL allowNullResult,
         BOOL verifyImplemented = FALSE,
         BOOL allowVariantMatches = TRUE,
-        BOOL *uniqueResolution = NULL);
+        BOOL *uniqueResolution = NULL,
+        ClassLoadLevel level = CLASS_LOADED);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2179,7 +2181,8 @@ public:
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
         BOOL allowVariance,
-        BOOL throwOnConflict);
+        BOOL throwOnConflict,
+        ClassLoadLevel level = CLASS_LOADED);
 #endif // DACCESS_COMPILE
 
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);
@@ -2218,7 +2221,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
@@ -3330,7 +3333,7 @@ private:
 #if defined(UNIX_AMD64_ABI)
 #error "Can't define both FEATURE_HFA and UNIX_AMD64_ABI"
 #endif
-        enum_flag_IsHFA                     = 0x00000800,   // This type is an HFA (Homogenous Floating-point Aggregate)
+        enum_flag_IsHFA                     = 0x00000800,   // This type is an HFA (Homogeneous Floating-point Aggregate)
 #endif // FEATURE_HFA
 
 #if defined(UNIX_AMD64_ABI)
@@ -3640,9 +3643,9 @@ private:
     // for data that is only relevant to a small number of method tables.
 
     // Optional members and multipurpose slots have similar purpose, but they differ in details:
-    // - Multipurpose slots can only accomodate pointer sized structures right now. It is non-trivial
+    // - Multipurpose slots can only accommodate pointer sized structures right now. It is non-trivial
     //   to add new ones, the access is faster.
-    // - Optional members can accomodate structures of any size. It is trivial to add new ones,
+    // - Optional members can accommodate structures of any size. It is trivial to add new ones,
     //   the access is slower.
 
     // The following macro will automatically create GetXXX accessors for the optional members.
