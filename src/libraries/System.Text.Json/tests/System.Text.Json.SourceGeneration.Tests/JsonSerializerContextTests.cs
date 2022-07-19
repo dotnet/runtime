@@ -24,9 +24,29 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void VariousGenericsAreSupported()
         {
-            Assert.NotNull(GenericContext<object>.Default);
-            Assert.NotNull(ContextGenericContainer<object>.NestedInGenericContainerContext.Default);
+            Assert.NotNull(GenericContext<int>.Default);
+            AssertSerialization(GenericContext<int>.Default.JsonMessage);
+
+            Assert.NotNull(ContextGenericContainer<int>.NestedInGenericContainerContext.Default);
+            AssertSerialization(ContextGenericContainer<int>.NestedInGenericContainerContext.Default.JsonMessage);
+
+            Assert.NotNull(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default);
+            AssertSerialization(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default.JsonMessage);
+
+            Assert.NotNull(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default);
+            AssertSerialization(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default.JsonMessage);
+
+            Assert.NotNull(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default);
+            AssertSerialization(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default.JsonMessage);
+
             Assert.NotNull(NestedGenericTypesContext.Default);
+
+            static void AssertSerialization(JsonTypeInfo<JsonMessage> jsonTypeInfo)
+            {
+                string json = JsonSerializer.Serialize(new JsonMessage { Message = "Hi" }, jsonTypeInfo);
+                JsonMessage deserialized = JsonSerializer.Deserialize<JsonMessage>(json, jsonTypeInfo);
+                Assert.Equal("Hi", deserialized.Message);
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
