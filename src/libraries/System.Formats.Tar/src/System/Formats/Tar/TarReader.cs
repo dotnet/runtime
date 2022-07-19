@@ -101,7 +101,8 @@ namespace System.Formats.Tar
 
             AdvanceDataStreamIfNeeded();
 
-            if (TryGetNextEntryHeader(out TarHeader? header, copyData))
+            TarHeader? header = TryGetNextEntryHeader(copyData);
+            if (header != null)
             {
                 if (!_readFirstEntry)
                 {
@@ -330,15 +331,15 @@ namespace System.Formats.Tar
         // An entry header represents any typeflag that is contains metadata.
         // Metadata typeflags: ExtendedAttributes, GlobalExtendedAttributes, LongLink, LongPath.
         // Metadata typeflag entries get handled internally by this method until a valid header entry can be returned.
-        private bool TryGetNextEntryHeader([NotNullWhen(returnValue: true)] out TarHeader? header, bool copyData)
+        private TarHeader? TryGetNextEntryHeader(bool copyData)
         {
             Debug.Assert(!_reachedEndMarkers);
 
-            header = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Unknown);
+            TarHeader? header = TarHeader.TryGetNextHeader(_archiveStream, copyData, TarEntryFormat.Unknown);
 
             if (header == null)
             {
-                return false;
+                return null;
             }
 
             // If a metadata typeflag entry is retrieved, handle it here, then read the next entry
@@ -348,7 +349,7 @@ namespace System.Formats.Tar
             {
                 if (!TryProcessExtendedAttributesHeader(header, copyData, out TarHeader? mainHeader))
                 {
-                    return false;
+                    return null;
                 }
                 header = mainHeader;
             }
@@ -357,12 +358,12 @@ namespace System.Formats.Tar
             {
                 if (!TryProcessGnuMetadataHeader(header, copyData, out TarHeader mainHeader))
                 {
-                    return false;
+                    return null;
                 }
                 header = mainHeader;
             }
 
-            return header != null;
+            return header;
         }
 
         // Asynchronously attempts to read the next tar archive entry header.
