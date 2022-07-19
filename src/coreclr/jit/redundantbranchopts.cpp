@@ -390,7 +390,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     const bool trueReaches  = optReachable(trueSuccessor, block, domBlock);
                     const bool falseReaches = optReachable(falseSuccessor, block, domBlock);
 
-                    if (trueReaches && falseReaches && rii.canInferFromTrue && rii.canInferFromFalse)
+                    if (trueReaches && falseReaches && rii.canInferFromTrue && rii.canInferFromFalse &&
+                        (fgCurBBEpochSize == (fgDomBBcount + 1))
                     {
                         // JIT-TP: it didn't produce diffs so let's skip it
                         if (trySpeculativeDom)
