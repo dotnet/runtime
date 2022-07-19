@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
-import { BINDINGType, MONOType } from "./legacy/exports-legacy";
+import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
 import { DotnetModule, MonoConfig, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 

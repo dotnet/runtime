@@ -21,8 +21,8 @@ import { init_polyfills } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { init_managed_exports as init_managed_exports } from "./managed-exports";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
-import { init_legacy_exports } from "./legacy/corebindings";
-import { cwraps_binding_api, cwraps_mono_api } from "./legacy/exports-legacy";
+import { init_legacy_exports } from "./net6-legacy/corebindings";
+import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { cwraps_internal } from "./exports-internal";
 
 export let runtime_is_initialized_resolve: () => void;

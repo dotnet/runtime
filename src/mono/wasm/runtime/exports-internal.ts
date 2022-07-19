@@ -5,7 +5,7 @@ import { get_dotnet_instance } from "./exports";
 import { http_wasm_supports_streaming_response, http_wasm_create_abort_controler, http_wasm_abort_request, http_wasm_abort_response, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_bytes, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes } from "./http";
 import { Module, runtimeHelpers } from "./imports";
 import { get_property, set_property, has_property, get_typeof_property, get_global_this, dynamic_import } from "./invoke-js";
-import { mono_method_resolve } from "./legacy/method-binding";
+import { mono_method_resolve } from "./net6-legacy/method-binding";
 import { mono_wasm_set_runtime_options } from "./startup";
 import { mono_intern_string } from "./strings";
 import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";

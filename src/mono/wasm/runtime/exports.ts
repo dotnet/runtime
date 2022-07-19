@@ -11,7 +11,7 @@ import {
 } from "./startup";
 import {
     mono_bind_static_method
-} from "./legacy/method-calls";
+} from "./net6-legacy/method-calls";
 import {
     afterUpdateGlobalBufferAndViews
 } from "./memory";
@@ -19,7 +19,7 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { afterThreadInitTLS } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
-import { export_binding_api, export_mono_api } from "./legacy/exports-legacy";
+import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 
