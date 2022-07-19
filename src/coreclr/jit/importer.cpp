@@ -22796,7 +22796,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     int                  exactClassesCount             = 0;
 
     // This is currently only targets NativeAOT
-    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (baseClass != NO_CLASS_HANDLE))
     {
         // NativeAOT is able to tell us the exact list of classes which implement this baseClass (class/interface)
         // so if we have just one (TODO: add multiple guesses) we can omit fallback
