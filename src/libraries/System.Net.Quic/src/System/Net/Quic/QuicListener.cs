@@ -163,13 +163,10 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         try
         {
-            while (true)
+            PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            await using (pendingConnection.ConfigureAwait(false))
             {
-                PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-                await using (pendingConnection.ConfigureAwait(false))
-                {
-                    return await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
-                }
+                return await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         catch (ChannelClosedException ex) when (ex.InnerException is not null)
