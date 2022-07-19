@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
@@ -296,14 +297,49 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
-        public async Task CancelPendingRequest_DropsStalledConnectionAttempt()
+        private sealed class SetTcsContent : StreamContent
         {
-            if (UseVersion >= HttpVersion30)
+            private readonly TaskCompletionSource<bool> _tcs;
+            public long Ticks;
+
+            public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
+
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+                SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                // This test relies on ConnectCallback, and the scenario is not yet validated for HTTP/3.
-                return;
+                Ticks = Environment.TickCount64;
+                _tcs.SetResult(true);
+                return base.SerializeToStreamAsync(stream, context);
             }
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))] // Reduces chance of timing-related issues
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public class SocketsHttpHandler_Cancellation_Test_NonParallel : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_Cancellation_Test_NonParallel(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        // [OuterLoop("Incurs significant delay.")] // TODO: Uncomment when ready
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("1.1")]
+        [InlineData("2.0")]
+        public static void CancelPendingRequest_DropsStalledConnectionAttempt(string versionString)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = "100";
+
+            RemoteExecutor.Invoke(static v => CancelPendingRequest_DropsStalledConnectionAttempt_Impl(v), versionString, options).Dispose();
+        }
+
+        private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString)
+        {
+            var version = Version.Parse(versionString);
+            LoopbackServerFactory factory = GetFactoryForVersion(version);
 
             const int AttemptCount = 3;
             const int FirstConnectionDelayMs = 10_000;
@@ -312,11 +348,11 @@ namespace System.Net.Http.Functional.Tests
 
             using CancellationTokenSource cts0 = new CancellationTokenSource(RequestTimeoutMs);
 
-            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            await factory.CreateClientAndServerAsync(async uri =>
             {
-                using var handler = CreateHttpClientHandler();
+                using var handler = CreateHttpClientHandler(version);
                 GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = DoConnect;
-                using var client = CreateHttpClient(handler);
+                using var client = new HttpClient(handler) { DefaultRequestVersion = version };
 
                 await Assert.ThrowsAnyAsync<TaskCanceledException>(async () =>
                 {
@@ -355,24 +391,6 @@ namespace System.Net.Http.Functional.Tests
                 await s.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
 
                 return new NetworkStream(s, ownsSocket: true);
-            }
-        }
-
-        private sealed class SetTcsContent : StreamContent
-        {
-            private readonly TaskCompletionSource<bool> _tcs;
-            public long Ticks;
-
-            public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
-
-            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
-                SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
-
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-            {
-                Ticks = Environment.TickCount64;
-                _tcs.SetResult(true);
-                return base.SerializeToStreamAsync(stream, context);
             }
         }
     }
