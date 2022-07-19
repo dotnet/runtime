@@ -26,8 +26,6 @@ typedef uint32_t MonoWasmEventPipeSessionID;
 #error "EventPipeSessionID is 64-bits, update the JS side to work with it"
 #endif
 
-typedef void (*mono_wasm_event_pipe_early_startup_cb)(void);
-
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			     IpcStream *ipc_stream,
@@ -57,9 +55,6 @@ mono_wasm_diagnostic_server_post_resume_runtime (void);
 
 EMSCRIPTEN_KEEPALIVE IpcStream *
 mono_wasm_diagnostic_server_create_stream (void);
-
-void
-mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback);
 
 G_END_DECLS
 

@@ -548,11 +548,4 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 {
 	g_assert_not_reached ();
 }
-
-void
-mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback)
-{
-	g_assert_not_reached ();
-}
-
 #endif /* HOST_WASM */

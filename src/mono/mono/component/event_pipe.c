@@ -416,30 +416,15 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	return TRUE;
 }
 
-static mono_wasm_event_pipe_early_startup_cb wasm_early_startup_callback;
-
-void
-mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback)
-{
-	wasm_early_startup_callback = callback;
-}
-
-void
-invoke_wasm_early_startup_callback (void)
-{
-	EM_ASM({
-			console.log ('in real invoke early callback\n');
-		});
-	if (wasm_early_startup_callback)
-		wasm_early_startup_callback ();
-}
+// JS callback to invoke on the main thread early during runtime initialization once eventpipe is functional but before too much of the rest of the runtime is loaded.
+extern void mono_wasm_event_pipe_early_startup_callback (void);
 
 
 static void
 mono_wasm_event_pipe_init (void)
 {
 	ep_init ();
-	invoke_wasm_early_startup_callback ();
+	mono_wasm_event_pipe_early_startup_callback ();
 }
 
 #endif /* HOST_WASM */

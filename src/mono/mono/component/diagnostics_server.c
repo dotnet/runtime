@@ -67,18 +67,12 @@ static MonoComponentDiagnosticsServer fn_table = {
 static bool
 diagnostics_server_available (void)
 {
-	EM_ASM({
-			console.log ("diagnostic server available");
-		});
 	return true;
 }
 
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void)
 {
-	EM_ASM({
-			console.log ("diagnostic server component init");
-		});
 	return &fn_table;
 }
 
@@ -88,9 +82,6 @@ static bool
 ds_server_wasm_init (void)
 {
 	/* called on the main thread when the runtime is sufficiently initialized */
-	EM_ASM({
-			console.log ("ds_server_wasm_init");
-		});
 	mono_coop_sem_init (&wasm_ds_options.suspend_resume, 0);
 	mono_wasm_diagnostic_server_on_runtime_server_init(&wasm_ds_options);
 	return true;
@@ -100,19 +91,12 @@ ds_server_wasm_init (void)
 static bool
 ds_server_wasm_shutdown (void)
 {
-	EM_ASM({
-			console.log ("ds_server_wasm_shutdown");
-		});
 	return true;
 }
 
 static void
 ds_server_wasm_pause_for_diagnostics_monitor (void)
 {
-	EM_ASM({
-			console.log ("ds_server_wasm_pause_for_diagnostics_monitor");
-		});
-
 	/* wait until the DS receives a resume */
 	if (wasm_ds_options.suspend) {
 		const guint timeout = 50;
@@ -126,9 +110,6 @@ ds_server_wasm_pause_for_diagnostics_monitor (void)
 				/* timed out */
 				cumulative_timeout += timeout;
 				if (cumulative_timeout > warn_threshold) {
-					EM_ASM({
-							console.log ("ds_server_wasm_pause_for_diagnostics_monitor paused for 5 seconds");
-						});
 					cumulative_timeout = 0;
 				}
 			}
@@ -140,9 +121,6 @@ ds_server_wasm_pause_for_diagnostics_monitor (void)
 static void
 ds_server_wasm_disable (void)
 {
-	EM_ASM({
-			console.log ("ds_server_wasm_disable");
-		});
 }
 
 /* Allocated by mono_wasm_diagnostic_server_create_thread,
