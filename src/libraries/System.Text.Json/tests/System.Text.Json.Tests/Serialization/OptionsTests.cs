@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -9,7 +8,6 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
 using System.Text.Unicode;
-using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -440,7 +438,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_JsonSerializerContext_GetConverter_FallsBackToReflectionConverter()
+        public static void Options_JsonSerializerContext_GetConverter_DoesNotFallBackToReflectionConverter()
         {
             RemoteExecutor.Invoke(static () =>
             {
@@ -450,13 +448,17 @@ namespace System.Text.Json.Serialization.Tests
                 // Default converters have not been rooted yet
                 Assert.Null(context.GetTypeInfo(typeof(MyClass)));
                 Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
-
-                // Root converters process-wide by calling a Serialize overload accepting options
                 Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
 
-                // We still can't resolve metadata for MyClass, but we can now resolve a converter using the rooted converters.
+                // Root converters process-wide using a default options instance
+                var options = new JsonSerializerOptions();
+                JsonConverter converter = options.GetConverter(typeof(MyClass));
+                Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
+
+                // We still can't resolve metadata for MyClass or get a converter using the rooted converters.
                 Assert.Null(context.GetTypeInfo(typeof(MyClass)));
-                Assert.IsAssignableFrom<JsonConverter<MyClass>>(context.Options.GetConverter(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
 
             }).Dispose();
         }
@@ -555,6 +557,23 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new CustomConverterTests.LongArrayConverter());
             GenericConverterTestHelper<long[]>("LongArrayConverter", new long[] { 1, 2, 3, 4 }, "\"1,2,3,4\"", options);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Poco))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void Options_GetConverter_CustomResolver_DoesNotReturnConverterForUnsupportedType(Type type)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new NullResolver() };
+            Assert.Throws<NotSupportedException>(() => options.GetConverter(type));
+        }
+
+        public class NullResolver : IJsonTypeInfoResolver
+        {
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => null;
         }
 
         private static void GenericConverterTestHelper<T>(string converterName, object objectValue, string stringValue, JsonSerializerOptions options, bool nullOptionOkay = true)

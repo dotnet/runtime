@@ -5536,7 +5536,7 @@ ClrDataAccess::Initialize(void)
     {
         // DAC fatal error: Platform mismatch - the platform reported by the data target
         // is not what this version of mscordacwks.dll was built for.
-        return CORDBG_E_UNCOMPATIBLE_PLATFORMS;
+        return CORDBG_E_INCOMPATIBLE_PLATFORMS;
     }
 
     //

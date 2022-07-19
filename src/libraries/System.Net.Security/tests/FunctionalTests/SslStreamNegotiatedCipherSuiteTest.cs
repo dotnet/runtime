@@ -696,11 +696,12 @@ namespace System.Net.Security.Tests
 
             using (clientStream)
             using (serverStream)
+            using (X509Certificate2 serverCert = Configuration.Certificates.GetSelfSignedServerCertificate())
             using (SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false),
                              client = new SslStream(clientStream, leaveInnerStreamOpen: false))
             {
                 var serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificate = Configuration.Certificates.GetSelfSignedServerCertificate();
+                serverOptions.ServerCertificate = serverCert;
                 serverOptions.EncryptionPolicy = serverParams.EncryptionPolicy;
                 serverOptions.EnabledSslProtocols = serverParams.SslProtocols;
                 serverOptions.CipherSuitesPolicy = serverParams.CipherSuitesPolicy;

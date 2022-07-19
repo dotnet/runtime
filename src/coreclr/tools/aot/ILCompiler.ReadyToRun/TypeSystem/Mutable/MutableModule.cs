@@ -22,7 +22,7 @@ namespace Internal.TypeSystem.Ecma
             Dictionary<ModuleDesc, EntityHandle> _moduleRefs = new Dictionary<ModuleDesc, EntityHandle>();
             List<string> _moduleRefStrings = new List<string>();
             readonly Func<ModuleDesc, int> _moduleToIndex;
-            
+
             MutableModule _mutableModule;
 
             protected override EntityHandle GetNonNestedResolutionScope(MetadataType metadataType)
@@ -56,7 +56,7 @@ namespace Internal.TypeSystem.Ecma
                         }
                         else
                         {
-                            // Further depedencies are handled by specifying a module which has a further assembly dependency on the correct module
+                            // Further dependencies are handled by specifying a module which has a further assembly dependency on the correct module
                             string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences, metadataType);
                             int index = _moduleToIndex(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences);
                             Debug.Assert(index != -1);

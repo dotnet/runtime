@@ -39,7 +39,7 @@ namespace System.Data.OleDb
         private long _sequentialBytesRead;
         private int _sequentialOrdinal;
 
-        private Bindings?[]? _bindings; // _metdata contains the ColumnBinding
+        private Bindings?[]? _bindings; // _metadata contains the ColumnBinding
 
         // do we need to jump to the next accessor
         private int _nextAccessorForRetrieval;
@@ -1270,7 +1270,7 @@ namespace System.Data.OleDb
 
                     // If a provider doesn't support IID_NULL and returns E_NOINTERFACE we want to break out
                     // of the loop without throwing an exception.  Our behavior will match ADODB in that scenario
-                    // where Recordset.Close just releases the interfaces without proccessing remaining results
+                    // where Recordset.Close just releases the interfaces without processing remaining results
                     if ((OleDbHResult.DB_S_NORESULT == hr) || (OleDbHResult.E_NOINTERFACE == hr))
                     {
                         break;

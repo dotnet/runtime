@@ -118,6 +118,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         public void Dispose()
         {
             _cert.Dispose();
+            _ocspResponder?.Dispose();
         }
 
         internal string SubjectName => _cert.Subject;
@@ -899,7 +900,9 @@ SingleResponse ::= SEQUENCE {
                     eeKey,
                     extensions);
 
+                X509Certificate2 tmp = endEntityCert;
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
+                tmp.Dispose();
             }
 
             if (registerAuthorities)

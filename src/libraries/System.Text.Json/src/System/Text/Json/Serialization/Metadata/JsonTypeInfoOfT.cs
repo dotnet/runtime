@@ -96,9 +96,16 @@ namespace System.Text.Json.Serialization.Metadata
                 declaringTypeInfo: null,
                 Options)
             {
-                DefaultConverterForType = Converter,
                 JsonTypeInfo = this,
                 IsForTypeInfo = true,
+            };
+        }
+
+        private protected override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+        {
+            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
+            {
+                JsonTypeInfo = this
             };
         }
 

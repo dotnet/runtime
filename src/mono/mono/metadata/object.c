@@ -6200,7 +6200,7 @@ mono_string_new_internal (const char *text)
 	MonoString *res = NULL;
 	res = mono_string_new_checked (text, error);
 	if (!is_ok (error)) {
-		/* Mono API compatability: assert on Out of Memory errors,
+		/* Mono API compatibility: assert on Out of Memory errors,
 		 * return NULL otherwise (most likely an invalid UTF-8 byte
 		 * sequence). */
 		if (mono_error_get_error_code (error) == MONO_ERROR_OUT_OF_MEMORY)

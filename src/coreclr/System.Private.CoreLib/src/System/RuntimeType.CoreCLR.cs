@@ -1366,7 +1366,7 @@ namespace System
                             // The inheritance of properties are defined by the inheritance of their
                             // getters and setters.
                             //
-                            // A property on a base type is "overriden" by a property on a sub type
+                            // A property on a base type is "overridden" by a property on a sub type
                             // if the getter/setter of the latter occupies the same vtable slot as
                             // the getter/setter of the former.
                             //

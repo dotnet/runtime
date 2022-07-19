@@ -374,7 +374,7 @@ Contract for performing operations on an initialized hostpolicy.
   * `delegate` - function pointer to the requested runtime functionality
 
 ``` C
-enum intialization_options_t
+enum initialization_options_t
 {
     none = 0x0,
     wait_for_initialized = 0x1,

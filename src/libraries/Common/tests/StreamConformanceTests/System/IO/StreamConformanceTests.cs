@@ -2725,7 +2725,7 @@ namespace System.IO.Tests
                 return;
             }
 
-            StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync();
 
             foreach (Stream stream in streams)
             {

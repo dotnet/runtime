@@ -22,7 +22,7 @@
 #  c  register which can be used as a byte register (RAX..RDX)
 #  A - first arg reg (rdi/rcx)
 #
-# len:number         describe the maximun length in bytes of the instruction
+# len:number         describe the maximum length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
 #                    it defaults to zero.   But lengths are only checked if the given opcode
 #                    is encountered during compilation. Some opcodes, like CONV_U4 are

@@ -481,7 +481,7 @@ namespace Tests.Integration
             }
         }
 
-        public class ImportOnOverridenPropertyWithSameContract : ImportOnVirtualProperty
+        public class ImportOnOverriddenPropertyWithSameContract : ImportOnVirtualProperty
         {
             [Import("VirtualImport")]
             public override int VirtualImport
@@ -503,7 +503,7 @@ namespace Tests.Integration
             var container = ContainerFactory.Create();
             container.AddAndComposeExportedValue<int>("VirtualImport", 21);
 
-            var import = new ImportOnOverridenPropertyWithSameContract();
+            var import = new ImportOnOverriddenPropertyWithSameContract();
 
             container.SatisfyImportsOnce(import);
 
@@ -516,7 +516,7 @@ namespace Tests.Integration
             Assert.Equal(21, import.VirtualImport);
         }
 
-        public class ImportOnOverridenPropertyWithDifferentContract : ImportOnVirtualProperty
+        public class ImportOnOverriddenPropertyWithDifferentContract : ImportOnVirtualProperty
         {
             [Import("OverriddenImport")]
             public override int VirtualImport
@@ -535,7 +535,7 @@ namespace Tests.Integration
             container.AddAndComposeExportedValue<int>("VirtualImport", 21);
             container.AddAndComposeExportedValue<int>("OverriddenImport", 42);
 
-            var import = new ImportOnOverridenPropertyWithSameContract();
+            var import = new ImportOnOverriddenPropertyWithSameContract();
 
             container.SatisfyImportsOnce(import);
 

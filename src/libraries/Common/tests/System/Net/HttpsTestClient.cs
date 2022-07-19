@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-    public class HttpsTestClient
+    public class HttpsTestClient : IDisposable
     {
         public class Options
         {
@@ -39,15 +39,20 @@ User-Agent: Testing application
             public SslPolicyErrors IgnoreSslPolicyErrors { get; set; } = SslPolicyErrors.None;
         }
 
-        private Options _options;
+        private readonly Options _options;
         private int _requestCount = 0;
-        private VerboseTestLogging _log = VerboseTestLogging.GetInstance();
+        private readonly VerboseTestLogging _log = VerboseTestLogging.GetInstance();
 
         public SslStream Stream { get; private set; }
 
         public HttpsTestClient(Options options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
+        }
+
+        public void Dispose()
+        {
+            _options.ClientCertificate?.Dispose();
         }
 
         public async Task HttpsRequestAsync(Func<string, Task<string>> httpConversation = null)

@@ -10,6 +10,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -33,54 +34,73 @@ namespace System.Net.Quic.Tests
         public async Task ConnectWithCertificateChain()
         {
             (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
-            X509Certificate2 rootCA = chain[chain.Count - 1];
-
-            var listenerOptions = new QuicListenerOptions()
+            try
             {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) =>
-                {
-                    var serverOptions = CreateQuicServerOptions();
-                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, chain);
-                    serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
-                    return ValueTask.FromResult(serverOptions);
-                }
-            };
+                X509Certificate2 rootCA = chain[chain.Count - 1];
 
-            // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
-            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
-            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
-            {
-                Assert.Equal(certificate.Subject, cert.Subject);
-                Assert.Equal(certificate.Issuer, cert.Issuer);
-                // We should get full chain without root CA.
-                // With trusted root, we should be able to build chain.
-                chain.ChainPolicy.CustomTrustStore.Add(rootCA);
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                bool ret = chain.Build(certificate);
-                if (!ret)
+                var listenerOptions = new QuicListenerOptions()
                 {
-                    _output.WriteLine("Chain build failed with {0} elements", chain.ChainElements);
-                    foreach (X509ChainElement element in chain.ChainElements)
+                    ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
                     {
-                        _output.WriteLine("Element subject {0} and issuer {1}", element.Certificate.Subject, element.Certificate.Issuer);
-                        _output.WriteLine("Element status len {0}", element.ChainElementStatus.Length);
-                        foreach (X509ChainStatus status in element.ChainElementStatus)
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, chain);
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+
+                // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+
+                    // Dispose of the chain's elements before calling Build, which will overwrite them.
+                    for (int i = 0; i < chain.ChainElements.Count; i++)
+                    {
+                        chain.ChainElements[i].Certificate.Dispose();
+                    }
+
+                    // We should get full chain without root CA.
+                    // With trusted root, we should be able to build chain.
+                    chain.ChainPolicy.CustomTrustStore.Add(rootCA);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    bool ret = chain.Build(certificate);
+                    if (!ret)
+                    {
+                        _output.WriteLine("Chain build failed with {0} elements", chain.ChainElements);
+                        foreach (X509ChainElement element in chain.ChainElements)
                         {
-                            _output.WriteLine($"Status:  {status.Status}: {status.StatusInformation}");
+                            _output.WriteLine("Element subject {0} and issuer {1}", element.Certificate.Subject, element.Certificate.Issuer);
+                            _output.WriteLine("Element status len {0}", element.ChainElementStatus.Length);
+                            foreach (X509ChainStatus status in element.ChainElementStatus)
+                            {
+                                _output.WriteLine($"Status:  {status.Status}: {status.StatusInformation}");
+                            }
                         }
                     }
+
+                    return ret;
+                };
+
+                (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+                using X509Certificate clientRemoteCertificate = clientConnection.RemoteCertificate;
+                Assert.Equal(certificate, clientRemoteCertificate);
+                Assert.Null(serverConnection.RemoteCertificate);
+                await serverConnection.DisposeAsync();
+                await clientConnection.DisposeAsync();
+            }
+            finally
+            {
+                foreach (X509Certificate2 cert in chain)
+                {
+                    cert.Dispose();
                 }
-
-                return ret;
-            };
-
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
-            Assert.Equal(certificate, clientConnection.RemoteCertificate);
-            Assert.Null(serverConnection.RemoteCertificate);
-            await serverConnection.DisposeAsync();
-            await clientConnection.DisposeAsync();
+                certificate.Dispose();
+            }
         }
 
         [ConditionalFact]
@@ -110,19 +130,19 @@ namespace System.Net.Quic.Tests
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
-            ValueTask<QuicConnection> clientTask = CreateQuicConnection(clientOptions);
+            Task<QuicConnection> clientTask = CreateQuicConnection(clientOptions).AsTask();
 
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(500); //Some delay to see if we would get failed connection.
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
 
-            clientTask.AsTask().Wait(PassingTestTimeout);
+            Assert.True(clientTask.Wait(PassingTestTimeout));
             await Assert.ThrowsAsync<OperationCanceledException>(() => serverTask);
             // The task will likely succeed but we don't really care.
             // It may fail if the server aborts quickly.
             try
             {
-                await clientTask;
+                await using QuicConnection clientConnection = await clientTask;
             }
             catch (Exception ex)
             {
@@ -171,8 +191,8 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectWithServerCertificateCallback()
         {
-            X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
-            X509Certificate2 c2 = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate(); // This 'wrong' certificate but should be sufficient
+            using X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 c2 = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate(); // This 'wrong' certificate but should be sufficient
             X509Certificate2 expectedCertificate = c1;
 
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -244,7 +264,7 @@ namespace System.Net.Quic.Tests
         [InlineData("localhost")]
         public async Task ConnectWithIpSetsSni(string destination)
         {
-            X509Certificate2 certificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 certificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
             string expectedName = "foobar";
             string? receivedHostName = null;
 
@@ -280,33 +300,43 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectWithCertificateForDifferentName_Throws()
         {
-            (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost");
-
-            var quicOptions = new QuicListenerOptions()
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost");
+            try
             {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) =>
+                var quicOptions = new QuicListenerOptions()
                 {
-                    var serverOptions = CreateQuicServerOptions();
-                    serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
-                    return ValueTask.FromResult(serverOptions);
-                }
-            };
-            await using QuicListener listener = await CreateQuicListener(quicOptions);
+                    ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+                await using QuicListener listener = await CreateQuicListener(quicOptions);
 
-            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
-            // Use different target host on purpose to get RemoteCertificateNameMismatch ssl error.
-            clientOptions.ClientAuthenticationOptions.TargetHost = "loopback";
-            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+                // Use different target host on purpose to get RemoteCertificateNameMismatch ssl error.
+                clientOptions.ClientAuthenticationOptions.TargetHost = "loopback";
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(SslPolicyErrors.RemoteCertificateNameMismatch, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    return SslPolicyErrors.None == errors;
+                };
+
+                await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions));
+            }
+            finally
             {
-                Assert.Equal(certificate.Subject, cert.Subject);
-                Assert.Equal(certificate.Issuer, cert.Issuer);
-                Assert.Equal(SslPolicyErrors.RemoteCertificateNameMismatch, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
-                return SslPolicyErrors.None == errors;
-            };
-
-            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions));
+                foreach (X509Certificate2 cert in chain)
+                {
+                    cert.Dispose();
+                }
+                certificate.Dispose();
+            }
         }
 
         [ConditionalTheory]
@@ -318,31 +348,43 @@ namespace System.Net.Quic.Tests
         {
             var ipAddress = IPAddress.Parse(ipString);
 
-            (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
-
-            var listenerOptions = new QuicListenerOptions()
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
+            try
             {
-                ListenEndPoint = new IPEndPoint(ipAddress, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) =>
+                var listenerOptions = new QuicListenerOptions()
                 {
-                    var serverOptions = CreateQuicServerOptions();
-                    serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
-                    return ValueTask.FromResult(serverOptions);
-                }
-            };
+                    ListenEndPoint = new IPEndPoint(ipAddress, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
 
-            // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
-            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
-            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(expectsError ? SslPolicyErrors.RemoteCertificateNameMismatch : SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    return true;
+                };
+
+                (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+                await clientConnection.DisposeAsync();
+                await serverConnection.DisposeAsync();
+            }
+            finally
             {
-                Assert.Equal(certificate.Subject, cert.Subject);
-                Assert.Equal(certificate.Issuer, cert.Issuer);
-                Assert.Equal(expectsError ? SslPolicyErrors.RemoteCertificateNameMismatch : SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
-                return true;
-            };
-
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+                foreach (X509Certificate2 cert in chain)
+                {
+                    cert.Dispose();
+                }
+                certificate.Dispose();
+            }
         }
 
         [ConditionalTheory]
@@ -403,7 +445,8 @@ namespace System.Net.Quic.Tests
             await PingPong(clientConnection, serverConnection);
             // check we completed the client certificate verification.
             Assert.True(clientCertificateOK);
-            Assert.Equal(sendCertificate ? ClientCertificate : null, serverConnection.RemoteCertificate);
+            using X509Certificate serverRemoteCertificate = serverConnection.RemoteCertificate;
+            Assert.Equal(sendCertificate ? ClientCertificate : null, serverRemoteCertificate);
 
             await serverConnection.CloseAsync(0);
             await clientConnection.DisposeAsync();
@@ -545,7 +588,7 @@ namespace System.Net.Quic.Tests
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
             // Open one stream, second call should block
-            QuicStream stream = await OpenStreamAsync(clientConnection);
+            using QuicStream stream = await OpenStreamAsync(clientConnection);
             ValueTask<QuicStream> waitTask = OpenStreamAsync(clientConnection);
             Assert.False(waitTask.IsCompleted);
 
@@ -891,6 +934,9 @@ namespace System.Net.Quic.Tests
                 await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => clientStream.ReadAsync(buffer).AsTask());
                 QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
+
+                await serverConnection.DisposeAsync();
+                await clientConnection.DisposeAsync();
             }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
         }
 
@@ -915,6 +961,9 @@ namespace System.Net.Quic.Tests
                 QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => clientStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
                 await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => serverStream.ReadAsync(buffer).AsTask());
+
+                await serverConnection.DisposeAsync();
+                await clientConnection.DisposeAsync();
             }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
         }
 
