@@ -469,7 +469,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -505,12 +505,6 @@ public:
         return m_pArrayDataPtr + m_CurrentPos;
     }
 
-    DWORD GetSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ArraySize;
-    }
-
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
@@ -522,24 +516,6 @@ private:
     OBJECTREF *m_pArrayDataPtr;
 };
 
-// PinnedHeapHandleTable::AllocateHandles() cannot always be completed under a Crst
-// This class encapsulates a unit of work that must be done outside the Crst and then
-// the AllocateHandles() call can be re-attempted
-class OutsideLockWorkPHHT
-{
-public:
-    OutsideLockWorkPHHT();
-    OutsideLockWorkPHHT(PinnedHeapHandleBucket *pNext, DWORD nRequested, BaseDomain* pDomain);
-    BOOL NeedsWorkAndRetry();
-    void Run();
-    PinnedHeapHandleBucket* GetPinnedHeapHandleBucket();
-
-private:
-    PinnedHeapHandleBucket *m_pBucket;
-    PinnedHeapHandleBucket *m_pNext;
-    DWORD m_nRequested;
-    BaseDomain* m_pDomain;
-};
 
 
 // The pinned heap handle table is used to allocate handles that are pointers
@@ -552,7 +528,7 @@ public:
     ~PinnedHeapHandleTable();
 
     // Allocate handles from the pinned heap handle table.
-    OBJECTREF* AllocateHandles(DWORD nRequested, OutsideLockWorkPHHT & outsideLockWork);
+    OBJECTREF* AllocateHandles(DWORD nRequested);
 
     // Release object handles allocated using AllocateHandles().
     void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);
@@ -560,43 +536,25 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
+    void ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased);
+
     // The buckets of object handles.
+    // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
+    // synchronized by m_Crst
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
+    // these fields are synchronized by m_Crst
     PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
-#ifdef _DEBUG
-
-    // these functions are present to enforce that there is a locking mechanism in place
-    // for each PinnedHeapHandleTable even though the code itself does not do the locking
-    // you must tell the table which lock you intend to use and it will verify that it has
-    // in fact been taken before performing any operations
-
-public:
-    void RegisterCrstDebug(CrstBase *pCrst)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // this function must be called exactly once
-        _ASSERTE(pCrst != NULL);
-        _ASSERTE(m_pCrstDebug == NULL);
-        m_pCrstDebug = pCrst;
-    }
-
-private:
-    // we will assert that this Crst is held before using the object
-    CrstBase *m_pCrstDebug;
-
-#endif
-
+    CrstExplicitInit m_Crst;
 };
 
 class PinnedHeapHandleBlockHolder;
@@ -620,27 +578,7 @@ public:
         }
         CONTRACTL_END;
 
-        OutsideLockWorkPHHT outsideLockWork;
-        while(true)
-        {
-            m_Data = pOwner->AllocateHandles(nCount, outsideLockWork);
-            if (outsideLockWork.NeedsWorkAndRetry())
-            {
-                // Calling outsideLockWork.Run() here is still inside a lock and leaves this code path 
-                // vulnerable to a potential debugger deadlock (see the big comment on 
-                // PinnedHeapHandleTable::AllocateHandles in appdomain.cpp)
-                //
-                // This code path has always been vulnerable to that deadlock and is no worse off than it was
-                // before. The BaseDomain::AllocateObjRefPtrsInLargeTable() path is fixed because that is where
-                // customers observed a problem. Fixing this path would take further refactoring and can be
-                // done in the future.
-                outsideLockWork.Run();
-            }
-            else
-            {
-                break;
-            }
-        }
+        m_Data = pOwner->AllocateHandles(nCount);
         m_Count=nCount;
         m_pTable=pOwner;
     };
@@ -1184,9 +1122,6 @@ protected:
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-    // The pinned heap handle table critical section.
-    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
 
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.

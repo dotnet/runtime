@@ -297,10 +297,6 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    m_PinnedHeapHandleTable.RegisterCrstDebug(&m_HashTableCrstGlobal);
-#endif
 }
 
 GlobalStringLiteralMap::~GlobalStringLiteralMap()
