@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Numerics;
 
 namespace System.Collections
 {
@@ -119,9 +120,7 @@ namespace System.Collections
         }
 
         private const uint Vector128ByteCount = 16;
-        private const uint Vector128IntCount = 4;
         private const uint Vector256ByteCount = 32;
-        private const uint Vector256IntCount = 8;
         public unsafe BitArray(bool[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
@@ -338,25 +337,14 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            uint i = 0;
+            int i = 0;
 
-            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
+                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
                 {
-                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) & Vector256.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                {
-                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) & Vector128.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
+                    Vector<int> result = new Vector<int>(thisArray, i) & new Vector<int>(valueArray, i);
+                    result.CopyTo(thisArray, i);
                 }
             }
 
@@ -404,25 +392,14 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            uint i = 0;
+            int i = 0;
 
-            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
+                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
                 {
-                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) | Vector256.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                {
-                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) | Vector128.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
+                    Vector<int> result = new Vector<int>(thisArray, i) | new Vector<int>(valueArray, i);
+                    result.CopyTo(thisArray, i);
                 }
             }
 
@@ -470,25 +447,14 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            uint i = 0;
+            int i = 0;
 
-            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
+                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
                 {
-                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) ^ Vector256.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                {
-                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) ^ Vector128.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
+                    Vector<int> result = new Vector<int>(thisArray, i) ^ new Vector<int>(valueArray, i);
+                    result.CopyTo(thisArray, i);
                 }
             }
 
@@ -529,24 +495,14 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            uint i = 0;
+            int i = 0;
 
-            ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
+                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
                 {
-                    Vector256<int> result = ~Vector256.LoadUnsafe(ref value, i);
-                    result.StoreUnsafe(ref value, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                {
-                    Vector128<int> result = ~Vector128.LoadUnsafe(ref value, i);
-                    result.StoreUnsafe(ref value, i);
+                    Vector<int> result = ~new Vector<int>(thisArray, i);
+                    result.CopyTo(thisArray, i);
                 }
             }
 
