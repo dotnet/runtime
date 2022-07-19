@@ -212,15 +212,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForDivMod(treeNode->AsOp());
             break;
 
-        case GT_AND:
-#if !defined(TARGET_64BIT)
-            // An And that is not contained should not have any contained children.
-            assert(!treeNode->AsOp()->gtOp1->isContained() && !treeNode->AsOp()->gtOp2->isContained());
-            FALLTHROUGH;
-#endif
-
         case GT_OR:
         case GT_XOR:
+        case GT_AND:
         case GT_AND_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 

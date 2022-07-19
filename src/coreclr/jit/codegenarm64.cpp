@@ -4464,12 +4464,12 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
 //
 // Arguments:
 //    tree - the node. Either a compare or a tree of compares connected by ANDs.
-//    inchain - whether a contained chain is in progress.
+//    inChain - whether a contained chain is in progress.
 //    prev - If a chain is in progress, the condition of the previous compare.
 // Return:
 //    The last compare node generated.
 //
-void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, insCond* prevcond)
+void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inChain, insCond* prevcond)
 {
     if (tree->OperIs(GT_AND))
     {
@@ -4480,7 +4480,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, in
         {
             // An And that is not contained should not have any contained children.
             assert(!op1->isContained() && !op2->isContained());
-            *inchain = false;
+            *inChain = false;
         }
         else
         {
@@ -4490,20 +4490,20 @@ void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, in
             // If Op1 is contained, generate into flags. Otherwise, move the result into flags.
             if (op1->isContained())
             {
-                genCodeForContainedCompareChain(op1, inchain, prevcond);
-                assert(*inchain);
+                genCodeForContainedCompareChain(op1, inChain, prevcond);
+                assert(*inChain);
             }
             else
             {
                 emitter* emit = GetEmitter();
-                emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 1);
-                *prevcond = INS_COND_EQ;
-                *inchain  = true;
+                emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 0);
+                *prevcond = INS_COND_NE;
+                *inChain  = true;
             }
 
             // Generate Op2 based on Op1.
-            genCodeForContainedCompareChain(op2, inchain, prevcond);
-            assert(*inchain);
+            genCodeForContainedCompareChain(op2, inChain, prevcond);
+            assert(*inChain);
         }
     }
     else
@@ -4512,7 +4512,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, in
         if (tree->isContained())
         {
             // Generate the compare, putting the result in the flags register.
-            if (!*inchain)
+            if (!*inChain)
             {
                 // First item in a chain. Use a standard compare.
                 genCodeForCompare(tree);
@@ -4524,12 +4524,12 @@ void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, in
                 genCodeForConditionalCompare(tree, *prevcond);
             }
 
-            *inchain  = true;
+            *inChain  = true;
             *prevcond = InsCondForCompareOp(tree);
         }
         else
         {
-            *inchain = false;
+            *inChain = false;
         }
     }
 }
