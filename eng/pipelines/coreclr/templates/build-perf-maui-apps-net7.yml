@@ -112,7 +112,7 @@ steps:
 
   # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
-      echo '' > ./global.json 
+      echo '{}' > ./global.json 
     displayName: Create global.json
     workingDirectory: $(Build.SourcesDirectory)
   
