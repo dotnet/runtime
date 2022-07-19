@@ -298,31 +298,14 @@ namespace HttpStress
 
                         if (e is IOException ioe)
                         {
-                            if (ctx.HttpVersion < HttpVersion.Version20)
+                            if (ctx.HttpVersion < HttpVersion.Version20 ||
+                                e is HttpProtocolException protocolException &&
+                                (protocolException.ErrorCode == 0x2 ||  // INTERNAL_ERROR, UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
+                                 protocolException.ErrorCode == 0x8 ||  // CANCEL, UseHttpSys
+                                 protocolException.ErrorCode == 0x102)) // H3_INTERNAL_ERROR (258)
                             {
                                 return;
                             }
-
-                            string? name = e.InnerException?.GetType().Name;
-                            switch (name)
-                            {
-                                case "Http2ProtocolException":
-                                case "Http2ConnectionException":
-                                case "Http2StreamException":
-                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
-                                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
-                                    {
-                                        return;
-                                    }
-                                    break;
-                            }
-                        }
-
-                        if (ctx.HttpVersion == HttpVersion.Version30 &&
-                            e is HttpProtocolException protocolException &&
-                            protocolException.ErrorCode == 258) // 258 = H3_INTERNAL_ERROR (0x102)
-                        {
-                            return;
                         }
 
                         throw;
