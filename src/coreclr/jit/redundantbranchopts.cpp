@@ -398,12 +398,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                             break;
                         }
 
-                        if (fgCurBBEpochSize != (fgBBNumMax + 1))
-                        {
-                            // We added new blocks since the last renumerate e.g. in optLoopHoist
-                            break;
-                        }
-
                         // Both dominating compare outcomes reach the current block so we can't infer the
                         // value of the relop.
                         //
@@ -558,6 +552,12 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 {
     assert(block->bbJumpKind == BBJ_COND);
     assert(domBlock->bbJumpKind == BBJ_COND);
+
+    if (fgCurBBEpochSize != (fgBBNumMax + 1))
+    {
+        JITDUMP("Looks like we've added a new block (e.g. during optLoopHoist) since last renumber, so no threading\n");
+        return false;
+    }
 
     // If the dominating block is not the immediate dominator
     // we might need to duplicate a lot of code to thread
