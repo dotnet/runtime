@@ -2139,10 +2139,14 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     // When both operands are runtime types we can sometimes also fold.
     // This is the VN analog of gtFoldTypeCompare
     //
-    resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
-    if (resultVN != NoVN)
+    const genTreeOps oper = genTreeOps(func);
+    if (GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
     {
-        return resultVN;
+        resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
+        if (resultVN != NoVN)
+        {
+            return resultVN;
+        }
     }
 
     // We canonicalize commutative operations.
@@ -3682,16 +3686,8 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
 //
 ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    if (func >= VNF_Boundary)
-    {
-        return NoVN;
-    }
-
     const genTreeOps oper = genTreeOps(func);
-    if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
-    {
-        return NoVN;
-    }
+    assert(GenTree::StaticOperIs(oper, GT_EQ, GT_NE));
 
     VNFuncApp  arg0Func;
     const bool arg0IsFunc = GetVNFunc(arg0VN, &arg0Func);
@@ -3718,12 +3714,17 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     // in case they differ (say for prejitting or AOT).
     //
     ValueNum handle0 = arg0Func.m_args[0];
-    ValueNum handle1 = arg1Func.m_args[0];
-
-    if (!IsVNHandle(handle0) || !IsVNHandle(handle1))
+    if (!IsVNHandle(handle0))
     {
         return NoVN;
     }
+
+    ValueNum handle1 = arg1Func.m_args[0];
+    if (!IsVNHandle(handle1))
+    {
+        return NoVN;
+    }
+
     assert(GetHandleFlags(handle0) == GTF_ICON_CLASS_HDL);
     assert(GetHandleFlags(handle1) == GTF_ICON_CLASS_HDL);
 
