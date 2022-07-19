@@ -10,14 +10,17 @@ using System.Threading;
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Default JsonTypeInfo resolver.
+    /// Defines the default, reflection-based JSON contract resolver used by System.Text.Json.
     /// </summary>
+    /// <remarks>
+    /// The contract resolver used by <see cref="JsonSerializerOptions.Default"/>.
+    /// </remarks>
     public partial class DefaultJsonTypeInfoResolver : IJsonTypeInfoResolver
     {
         private bool _mutable;
 
         /// <summary>
-        /// Constructs DefaultJsonTypeInfoResolver.
+        /// Creates a mutable <see cref="DefaultJsonTypeInfoResolver"/> instance.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -35,7 +38,17 @@ namespace System.Text.Json.Serialization.Metadata
             s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Resolves a JSON contract for a given <paramref name="type"/> and <paramref name="options"/> configuration.
+        /// </summary>
+        /// <param name="type">The type for which to resolve a JSON contract.</param>
+        /// <param name="options">A <see cref="JsonSerializerOptions"/> instance used to determine contract configuration.</param>
+        /// <returns>A <see cref="JsonTypeInfo"/> defining a reflection-derived JSON contract for <paramref name="type"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// The base implementation of this method will produce a reflection-derived contract
+        /// and apply any callbacks from the <see cref="Modifiers"/> list.
+        /// </remarks>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
@@ -88,9 +101,13 @@ namespace System.Text.Json.Serialization.Metadata
         private static MethodInfo? s_createReflectionJsonTypeInfoMethodInfo;
 
         /// <summary>
-        /// List of JsonTypeInfo modifiers. Modifying callbacks are called consecutively after initial resolution
-        /// and cannot be changed after GetTypeInfo is called.
+        /// Gets a list of user-defined callbacks that can be used to modify the initial contract.
         /// </summary>
+        /// <remarks>
+        /// The modifier list will be rendered immutable after the first <see cref="GetTypeInfo(Type, JsonSerializerOptions)"/> invocation.
+        ///
+        /// Modifier callbacks are called consecutively in the order in which they are specified in the list.
+        /// </remarks>
         public IList<Action<JsonTypeInfo>> Modifiers => _modifiers ??= new ModifierCollection(this);
         private ModifierCollection? _modifiers;
 
