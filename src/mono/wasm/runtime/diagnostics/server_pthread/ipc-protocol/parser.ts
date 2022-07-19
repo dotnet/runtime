@@ -52,7 +52,7 @@ function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: Comman
         case EventPipeCommandId.CollectTracing2:
             return parseEventPipeCollectTracing2(cmd);
         default:
-            console.warn("unexpected EventPipe command: " + cmd.command);
+            console.warn("MONO_WASM: unexpected EventPipe command: " + cmd.command);
             return { success: false, error: `unexpected EventPipe command ${cmd.command}` };
     }
 }
@@ -132,7 +132,7 @@ function parseProcessCommand(cmd: BinaryProtocolCommand & { commandSet: CommandS
         case ProcessCommandId.ProcessInfo2:
             throw new Error("TODO");
         default:
-            console.warn("unexpected Process command: " + cmd.command);
+            console.warn("MMONO_WASM: unexpected Process command: " + cmd.command);
             return { success: false, error: `unexpected Process command ${cmd.command}` };
     }
 }

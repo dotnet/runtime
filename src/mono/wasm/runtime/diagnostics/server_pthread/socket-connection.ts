@@ -67,7 +67,7 @@ export class EventPipeSocketConnection {
         switch (this._state) {
             case ListenerState.Sending:
                 /* unexpected message */
-                console.warn("EventPipe session stream received unexpected message from websocket", event);
+                console.warn("MONO_WASM: EventPipe session stream received unexpected message from websocket", event);
                 // TODO notify runtime that the connection had an error
                 this._state = ListenerState.Error;
                 break;

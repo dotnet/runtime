@@ -35,7 +35,7 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
         if (startup_session_configs === null || startup_session_configs.length == 0) {
             return;
         }
-        console.debug("diagnostics: setting startup sessions based on startup session configs", startup_session_configs);
+        console.debug("MONO_WASM: diagnostics: setting startup sessions based on startup session configs", startup_session_configs);
         startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
         startup_session_configs = [];
     }
@@ -96,7 +96,7 @@ let diagnosticsServerEnabled = false;
 
 export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
     if (!monoWasmThreads) {
-        console.warn("ignoring diagnostics options because this runtime does not support diagnostics", options);
+        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics", options);
         return;
     } else {
         if (!is_nullish(options.server)) {

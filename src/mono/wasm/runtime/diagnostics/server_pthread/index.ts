@@ -108,7 +108,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         await this.startRequestedController.promise;
         await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
         while (!this.stopRequested) {
-            console.debug("diagnostic server: advertising and waiting for client");
+            console.debug("MONO_WASM: diagnostic server: advertising and waiting for client");
             const p1: Promise<"first" | "second"> = this.advertiseAndWaitForClient().then(() => "first");
             const p2: Promise<"first" | "second"> = this.stopRequestedController.promise.then(() => "second");
             const result = await Promise.race([p1, p2]);
@@ -116,7 +116,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
                 case "first":
                     break;
                 case "second":
-                    console.debug("stop requested");
+                    console.debug("MONO_WASM: stop requested");
                     break;
                 default:
                     assertNever(result);
@@ -146,7 +146,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
             }
             this.sendAdvertise(ws);
             const message = await p;
-            console.debug("received advertising response: ", message);
+            console.debug("MONO_WASM: received advertising response: ", message);
             queueMicrotask(() => this.parseAndDispatchMessage(ws, message));
         } finally {
             // if there were errors, resume the runtime anyway
@@ -158,14 +158,14 @@ class DiagnosticServerImpl implements DiagnosticServer {
         try {
             const cmd = this.parseCommand(message);
             if (cmd === null) {
-                console.error("unexpected message from client", message);
+                console.error("MONO_WASM: unexpected message from client", message);
                 return;
             } else if (isEventPipeCommand(cmd)) {
                 await this.dispatchEventPipeCommand(ws, cmd);
             } else if (isProcessCommand(cmd)) {
                 await this.dispatchProcessCommand(ws, cmd); // resume
             } else {
-                console.warn("Client sent unknown command", cmd);
+                console.warn("MONO_WASM Client sent unknown command", cmd);
             }
         } finally {
             // if there were errors, resume the runtime anyway
@@ -211,12 +211,12 @@ class DiagnosticServerImpl implements DiagnosticServer {
         if (typeof message.data === "string") {
             return parseMockCommand(message.data);
         } else {
-            console.debug("parsing byte command: ", message.data);
+            console.debug("MONO_WASM: parsing byte command: ", message.data);
             const result = parseProtocolCommand(message.data);
             if (result.success) {
                 return result.result;
             } else {
-                console.warn("failed to parse command: ", result.error);
+                console.warn("MONO_WASM: failed to parse command: ", result.error);
                 return null;
             }
         }
@@ -242,7 +242,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
                 this.attachToRuntime();
                 break;
             default:
-                console.warn("Unknown control command: ", <any>cmd);
+                console.warn("MONO_WASM: Unknown control command: ", <any>cmd);
                 break;
         }
     }
@@ -254,7 +254,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         } else if (isEventPipeCommandStopTracing(cmd)) {
             await this.stopEventPipe(ws, cmd.sessionID);
         } else {
-            console.warn("unknown EventPipe command: ", cmd);
+            console.warn("MONO_WASM: unknown EventPipe command: ", cmd);
         }
     }
 
@@ -264,7 +264,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async stopEventPipe(ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
-        console.debug("stopEventPipe", sessionID);
+        console.debug("MONO_WASM: stopEventPipe", sessionID);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
         // we might send OK before the session is actually stopped since the websocket is async
         // but the client end should be robust to that.
@@ -280,7 +280,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         sessionIDbuf[3] = (session.sessionID >> 24) & 0xFF;
         // sessionIDbuf[4..7] is 0 because all our session IDs are 32-bit
         this.postClientReplyOK(ws, sessionIDbuf);
-        console.debug("created session, now streaming: ", session);
+        console.debug("MONO_WASM: created session, now streaming: ", session);
         cwraps.mono_wasm_event_pipe_session_start_streaming(session.sessionID);
     }
 
@@ -289,7 +289,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         if (isProcessCommandResumeRuntime(cmd)) {
             this.processResumeRuntime(ws);
         } else {
-            console.warn("unknown Process command", cmd);
+            console.warn("MONO_WASM: unknown Process command", cmd);
         }
     }
 
@@ -300,7 +300,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     resumeRuntime(): void {
         if (!this.runtimeResumed) {
-            console.debug("resuming runtime startup");
+            console.info("MONO_WASM: resuming runtime startup");
             cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
             this.runtimeResumed = true;
         }

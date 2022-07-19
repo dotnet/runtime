@@ -38,16 +38,16 @@ class EventPipeFileSession implements EventPipeSession {
         this._state = State.Initialized;
         this._sessionID = sessionID;
         this._tracePath = tracePath;
-        console.debug(`EventPipe session ${this.sessionID} created`);
+        console.debug(`MONO_WASM: EventPipe session ${this.sessionID} created`);
     }
 
     start = () => {
         if (this._state !== State.Initialized) {
-            throw new Error(`EventPipe session ${this.sessionID} already started`);
+            throw new Error(`MONO_WASM: EventPipe session ${this.sessionID} already started`);
         }
         this._state = State.Started;
         start_streaming(this._sessionID);
-        console.debug(`EventPipe session ${this.sessionID} started`);
+        console.debug(`MONO_WASM: EventPipe session ${this.sessionID} started`);
     }
 
     stop = () => {
@@ -56,7 +56,7 @@ class EventPipeFileSession implements EventPipeSession {
         }
         this._state = State.Done;
         stop_streaming(this._sessionID);
-        console.debug(`EventPipe session ${this.sessionID} stopped`);
+        console.debug(`MONO_WASM: EventPipe session ${this.sessionID} stopped`);
     }
 
     getTraceBlob = () => {

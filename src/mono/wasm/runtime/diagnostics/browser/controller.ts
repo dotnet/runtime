@@ -16,15 +16,15 @@ class ServerControllerImpl implements ServerController {
         server.port.addEventListener("message", this.onServerReply.bind(this));
     }
     start(): void {
-        console.debug("signaling the diagnostic server to start");
+        console.debug("MONO_WASM: signaling the diagnostic server to start");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("start"));
     }
     stop(): void {
-        console.debug("signaling the diagnostic server to stop");
+        console.debug("MONO_WASM: signaling the diagnostic server to stop");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("stop"));
     }
     postServerAttachToRuntime(): void {
-        console.debug("signal the diagnostic server to attach to the runtime");
+        console.debug("MONO_WASM: signal the diagnostic server to attach to the runtime");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("attach_to_runtime"));
     }
 
@@ -33,7 +33,7 @@ class ServerControllerImpl implements ServerController {
         if (isDiagnosticMessage(d)) {
             switch (d.cmd) {
                 default:
-                    console.warn("Unknown control reply command: ", <any>d);
+                    console.warn("MONO_WASM: Unknown control reply command: ", <any>d);
                     break;
             }
         }
@@ -50,7 +50,7 @@ export function getController(): ServerController {
 
 export async function startDiagnosticServer(websocket_url: string): Promise<ServerController | null> {
     const sizeOfPthreadT = 4;
-    console.debug(`starting the diagnostic server url: ${websocket_url}`);
+    console.info(`MONO_WASM: starting the diagnostic server url: ${websocket_url}`);
     const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
         if (!cwraps.mono_wasm_diagnostic_server_create_thread(websocket_url, pthreadIdPtr))
             return undefined;
@@ -58,7 +58,7 @@ export async function startDiagnosticServer(websocket_url: string): Promise<Serv
         return pthreadId;
     });
     if (result === undefined) {
-        console.warn("diagnostic server failed to start");
+        console.warn("MONO_WASM: diagnostic server failed to start");
         return null;
     }
     // have to wait until the message port is created
