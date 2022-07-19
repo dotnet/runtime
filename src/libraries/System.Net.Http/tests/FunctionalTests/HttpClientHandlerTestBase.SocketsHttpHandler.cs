@@ -34,7 +34,8 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
-            if (allowAllCertificates)
+            // Browser doesn't support ServerCertificateCustomValidationCallback
+            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
             {
                 // On Android, it is not enough to set the custom validation callback, the certificates also need to be trusted by the OS.
                 // The public keys of our self-signed certificates that are used by the loopback server are part of the System.Net.TestData
