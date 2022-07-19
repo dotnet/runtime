@@ -698,17 +698,18 @@ namespace DebuggerTests
            });
 
         [Theory]
-        [InlineData("DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", 1, 2)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", 1, 1)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", 1, 1, true)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStatic", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStaticAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7, true)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7, true)]
-        public async Task EvaluateStaticFields(string bpLocation, string bpMethod, string namespaceName, string className, int bpLine, int expectedInt, bool isAsync = false) =>
+        [InlineData("DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", "EvaluateMethods", 1, 2)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", "EvaluateMethods", 1, 1)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", "EvaluateMethodsAsync", 1, 1)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStatic", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethods", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStaticAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethodsAsync", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethods", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethodsAsync", 1, 7)]
+        public async Task EvaluateStaticFields(
+            string bpLocation, string bpMethod, string namespaceName, string className, string triggeringMethod, int bpLine, int expectedInt) =>
             await CheckInspectLocalsAtBreakpointSite(
                 bpLocation, bpMethod, bpLine, $"{bpLocation}.{bpMethod}",
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:{triggeringMethod}'); }})",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -798,9 +799,9 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 7, true)]
-        [InlineData("DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", 2)]
+        [InlineData("DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", 2, false)]
         public async Task EvaluateStaticFieldsFromDifferentNamespaceInDifferentFrames(
-            string namespaceName, string className, int expectedInt, bool isFromDifferentNamespace = false) =>
+            string namespaceName, string className, int expectedInt, bool isFromDifferentNamespace) =>
             await CheckInspectLocalsAtBreakpointSite(
                 "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", 1, "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run",
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",

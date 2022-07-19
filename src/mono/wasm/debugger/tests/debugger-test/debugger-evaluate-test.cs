@@ -417,17 +417,22 @@ namespace DebuggerTests
             }
         }
 
-        public static async Task EvaluateMethods()
+        public static void EvaluateMethods()
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
             DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run();
             DebuggerTests.EvaluateStaticFieldsInStaticClass.Run();
-            await DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
             DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStatic();
-            await DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
             var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
             instanceWithStaticFields.Run();
+        }
+
+        public static async Task EvaluateMethodsAsync()
+        {
+            await DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
+            await DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
+            var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
             await instanceWithStaticFields.RunAsync();
         }
     }
