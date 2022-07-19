@@ -359,13 +359,9 @@ async function finalize_startup(config: MonoConfig | MonoConfigError | undefined
         }
 
         try {
-            console.debug("MONO_WASM: Initializing mono runtime");
             await _apply_configuration_from_args(config);
-            console.debug("MONO_WASM: applied config from args");
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
-            console.debug("MONO_WASM: globalization init");
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
-            console.debug("MONO_WASM: loaded runtime");
             runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
         } catch (err: any) {
             _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
@@ -375,11 +371,9 @@ async function finalize_startup(config: MonoConfig | MonoConfigError | undefined
                 const wasm_exit = cwraps.mono_wasm_exit;
                 wasm_exit(1);
             }
-            console.debug("returning after calling runtime initialization rejection");
             return;
         }
 
-        console.debug("got to before bindings_lazy_init");
         bindings_lazy_init();
 
         let tz;
@@ -806,8 +800,7 @@ export type DownloadAssetsContext = {
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 async function mono_wasm_pthread_worker_init(): Promise<void> {
     // This is a good place for subsystems to attach listeners for pthreads_worker.currrentWorkerThreadEvents
-    console.debug("mono_wasm_pthread_worker_init");
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        console.debug("thread created", ev.pthread_self.pthread_id);
+        console.debug("pthread created", ev.pthread_self.pthread_id);
     });
 }
