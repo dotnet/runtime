@@ -96,6 +96,9 @@
   <data name="Argument_InvalidFlag" xml:space="preserve">
     <value>Value of flags is invalid.</value>
   </data>
+  <data name="Argument_InvalidHostnameOrIPAddress" xml:space="preserve">
+    <value>The provided value is not a valid DNS hostname or IP Address.</value>
+  </data>
   <data name="Argument_InvalidNameType" xml:space="preserve">
     <value>The value of 'nameType' is invalid.</value>
   </data>

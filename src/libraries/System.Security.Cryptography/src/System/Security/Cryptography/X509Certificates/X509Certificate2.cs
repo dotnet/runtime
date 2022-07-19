@@ -1239,18 +1239,30 @@ namespace System.Security.Cryptography.X509Certificates
         ///     extended key usage.
         ///   </para>
         /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///   The <paramref name="hostname"/> parameter is not a valid DNS hostname or IP address.
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>The certificate contains multiple Subject Alternative Name extensions.</para>
         ///   <para>- or -</para>
         ///   <para>The Subject Alternative Name extension or Subject Name could not be decooded.</para>
         /// </exception>
+        /// <seealso cref="Uri.CheckHostName"/>
         public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true)
         {
             ArgumentNullException.ThrowIfNull(hostname);
+            IPAddress? ipAddress;
 
-            if (hostname.Length == 0)
+            if (!IPAddress.TryParse(hostname, out ipAddress))
             {
-                return false;
+                UriHostNameType kind = Uri.CheckHostName(hostname);
+
+                if (kind != UriHostNameType.Dns)
+                {
+                    throw new ArgumentException(
+                        SR.Argument_InvalidHostnameOrIPAddress,
+                        nameof(hostname));
+                }
             }
 
             X509Extension? rawSAN = null;
@@ -1272,12 +1284,14 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (rawSAN is not null)
             {
+                Debug.Assert(rawSAN.GetType() == typeof(X509Extension));
+
                 var san = new X509SubjectAlternativeNameExtension();
                 san.CopyFrom(rawSAN);
 
                 bool hadAny = false;
 
-                if (IPAddress.TryParse(hostname, out IPAddress? ipAddress))
+                if (ipAddress is not null)
                 {
                     foreach (IPAddress sanEntry in san.EnumerateIPAddresses())
                     {
@@ -1369,6 +1383,10 @@ namespace System.Security.Cryptography.X509Certificates
 
                         while (set.HasData)
                         {
+                            // We're not concerned with the possibility that the attribute structure
+                            // is malformed here, because X500RelativeDistinguishedName already ensures it.
+                            // So we don't bother checking that there's a value after the OID and then nothing
+                            // after that.
                             AsnValueReader attributeTypeAndValue = set.ReadSequence();
                             Oid? type = Oids.GetSharedOrNullOid(ref attributeTypeAndValue);
 

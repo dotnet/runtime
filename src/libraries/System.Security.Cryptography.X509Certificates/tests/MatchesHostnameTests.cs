@@ -174,8 +174,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
                 {
                     AssertMatch(false, cert, "papaya.fruit.example");
-
-                    AssertMatch(true, cert, "*.fruit.example");
                 }
             }
         }
@@ -204,10 +202,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
                 {
                     AssertMatch(false, cert, "cranberry.fruit.example");
-
-                    // Since we don't consider the partial wildcards as wildcards, they do match unexpanded.
-                    AssertMatch(true, cert, "*berry.fruit.example");
-                    AssertMatch(true, cert, "cran*.fruit.example");
                 }
             }
         }
@@ -244,8 +238,52 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     AssertMatch(false, cert, "apple.pome.fruit.example");
                     AssertMatch(false, cert, "apple.pomme.fruit.example");
 
-                    AssertMatch(true, cert, "*.fruit.example");
-                    AssertMatch(true, cert, "*.fruit.example", allowWildcards: false);
+                    AssertMatch(false, cert, "apple.fruit.example", allowWildcards: false);
+                    AssertMatch(false, cert, "blackberry.fruit.example", allowWildcards: false);
+                    AssertMatch(false, cert, "pome.fruit.example", allowWildcards: false);
+                    AssertMatch(false, cert, "pomme.fruit.example", allowWildcards: false);
+                    // This one has a redundant dNSName after the wildcard
+                    AssertMatch(true, cert, "rambutan.fruit.example", allowWildcards: false);
+
+                    AssertMatch(true, cert, "fruit.example");
+                    AssertMatch(true, cert, "fruit.example", allowWildcards: false);
+                }
+            }
+        }
+
+        [Fact]
+        public static void WildcardsDoNotMatchAfterFirstPosition()
+        {
+            using (ECDsa key = ECDsa.Create())
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=10.0.0.1",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
+                sanBuilder.AddDnsName("fruit.example");
+                sanBuilder.AddDnsName("*.fruit.example");
+                sanBuilder.AddDnsName("*.*.fruit.example");
+                sanBuilder.AddDnsName("apple.*.fruit.example");
+                sanBuilder.AddDnsName("rambutan.fruit.example");
+                sanBuilder.AddEmailAddress("it@fruit.example");
+
+                req.CertificateExtensions.Add(sanBuilder.Build());
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                DateTimeOffset notBefore = now.AddMinutes(-1);
+                DateTimeOffset notAfter = now.AddMinutes(1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
+                {
+                    AssertMatch(true, cert, "apple.fruit.example");
+                    AssertMatch(true, cert, "blackberry.fruit.example");
+                    AssertMatch(true, cert, "pome.fruit.example");
+                    AssertMatch(true, cert, "pomme.fruit.example");
+                    AssertMatch(true, cert, "rambutan.fruit.example");
+                    AssertMatch(false, cert, "apple.pome.fruit.example");
+                    AssertMatch(false, cert, "apple.pomme.fruit.example");
 
                     AssertMatch(false, cert, "apple.fruit.example", allowWildcards: false);
                     AssertMatch(false, cert, "blackberry.fruit.example", allowWildcards: false);
@@ -383,7 +421,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     AssertMatch(true, cert, "tOmaTO.FRUIT.example.");
                     AssertMatch(false, cert, "tOmaTO.vegetable.example.");
                     AssertMatch(true, cert, "FRUit.example.");
-                    AssertMatch(false, cert, ".FRUit.example.");
                     AssertMatch(false, cert, "VEGetaBlE.example.");
                 }
             }
@@ -539,7 +576,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
                 {
-                    AssertMatch(false, cert, "");
                     AssertMatch(false, cert, "FRUit.example");
                     AssertMatch(false, cert, "potato.vegetable.example");
                 }
@@ -562,7 +598,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
                 {
-                    AssertMatch(false, cert, "");
                     AssertMatch(false, cert, "FRUit.example");
                     AssertMatch(false, cert, "potato.vegetable.example");
                 }
@@ -598,10 +633,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     AssertMatch(false, cert, "example");
                     AssertMatch(false, cert, "example.");
-                    AssertMatch(false, cert, ".");
-                    AssertMatch(false, cert, "*");
-                    AssertMatch(false, cert, "*.");
-                    AssertMatch(false, cert, "");
                 }
             }
         }
@@ -637,7 +668,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
 
                     AssertMatch(false, cert, "peach.fruit.example");
-                    AssertMatch(false, cert, "");
                 }
             }
         }
@@ -667,15 +697,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     AssertMatch(false, cert, "example");
                     AssertMatch(false, cert, "example.");
-                    AssertMatch(false, cert, ".");
-                    AssertMatch(true, cert, "*");
-                    AssertMatch(true, cert, "*.");
                 }
             }
         }
 
         [Fact]
-        public static void TooManySANsThrows()
+        public static void TooManySanExtensionsThrows()
         {
             byte[] tooManySans = (
                 "3082021430820175A00302010202083C883E44C34DA5CB300A06082A8648CE3D" +
@@ -715,6 +742,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<ArgumentNullException>("hostname", () => cert.MatchesHostname(null, false, true));
                 Assert.Throws<ArgumentNullException>("hostname", () => cert.MatchesHostname(null, true, false));
                 Assert.Throws<ArgumentNullException>("hostname", () => cert.MatchesHostname(null, false, false));
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void OnlyValidHostnamesAccepted(bool addSanExt)
+        {
+            using (ECDsa key = ECDsa.Create())
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=John Smith",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                DateTimeOffset notBefore = now.AddMinutes(-1);
+                DateTimeOffset notAfter = now.AddMinutes(1);
+
+                if (addSanExt)
+                {
+                    SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
+                    sanBuilder.AddDnsName("fruit.example");
+                    sanBuilder.AddDnsName("*.fruit.example");
+                    sanBuilder.AddDnsName("*.*.fruit.example");
+                    sanBuilder.AddDnsName("apple.*.fruit.example");
+                    sanBuilder.AddDnsName("rambutan.fruit.example");
+                    sanBuilder.AddEmailAddress("it@fruit.example");
+
+                    req.CertificateExtensions.Add(sanBuilder.Build());
+                }
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
+                {
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("John Smith"));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("*.pomme.fruit.example"));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname(".pomme.fruit.example"));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("*berry.fruit.example"));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("cran*.fruit.example"));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("cran*.fruit.example"));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname(""));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("."));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("*."));
+                    Assert.Throws<ArgumentException>("hostname", () => cert.MatchesHostname("*"));
+                }
             }
         }
 

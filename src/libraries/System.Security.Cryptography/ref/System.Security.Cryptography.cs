@@ -3140,7 +3140,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Remove(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
     }
-    public partial class X509SubjectAlternativeNameExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    public sealed partial class X509SubjectAlternativeNameExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509SubjectAlternativeNameExtension() { }
         public X509SubjectAlternativeNameExtension(byte[] rawData, bool critical = false) { }
