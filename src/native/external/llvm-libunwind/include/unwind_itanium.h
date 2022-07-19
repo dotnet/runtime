@@ -65,7 +65,7 @@ extern void _Unwind_DeleteException(_Unwind_Exception *exception_object);
 
 extern uintptr_t _Unwind_GetGR(struct _Unwind_Context *context, int index);
 extern void _Unwind_SetGR(struct _Unwind_Context *context, int index,
-                          uintptr_t new_value);
+                          uintptr_t new_value, uintptr_t *pos);
 extern uintptr_t _Unwind_GetIP(struct _Unwind_Context *context);
 extern void _Unwind_SetIP(struct _Unwind_Context *, uintptr_t new_value);
 
