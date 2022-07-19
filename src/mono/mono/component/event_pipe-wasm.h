@@ -6,13 +6,13 @@
 #define _MONO_COMPONENT_EVENT_PIPE_WASM_H
 
 #include <stdint.h>
-#include <pthread.h>
 #include <eventpipe/ep-ipc-pal-types-forward.h>
 #include <eventpipe/ep-types-forward.h>
 #include <glib.h>
 
 #ifdef HOST_WASM
 
+#include <pthread.h>
 #include <emscripten.h>
 
 G_BEGIN_DECLS
