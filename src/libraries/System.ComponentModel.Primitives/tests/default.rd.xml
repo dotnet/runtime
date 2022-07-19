@@ -1,0 +1,7 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.ComponentModel.Primitives">
+      <Type Name="System.ComponentModel.Component" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

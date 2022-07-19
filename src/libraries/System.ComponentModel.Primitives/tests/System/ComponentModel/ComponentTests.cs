@@ -219,6 +219,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72494", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Finalize_Invoke_DoesNotCallDisposedEvent()
         {
             var component = new SubComponent();
