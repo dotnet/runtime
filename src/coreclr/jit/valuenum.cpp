@@ -3713,8 +3713,9 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     // class handles and the VM agrees comparing these gives the same
     // result as comparing the runtime types.
     //
-    // Note the VN actually tracks the value of embedded handle;
-    // we need to pass the VM the associated the compile time handles.
+    // Note that VN actually tracks the value of embedded handle;
+    // we need to pass the VM the associated the compile time handles,
+    // in case they differ (say for prejitting or AOT).
     //
     ValueNum handle0 = arg0Func.m_args[0];
     ValueNum handle1 = arg1Func.m_args[0];
@@ -3736,6 +3737,14 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     const bool found0 = m_embeddedToCompileTimeHandleMap.TryGetValue(handleVal0, &compileTimeHandle0);
     const bool found1 = m_embeddedToCompileTimeHandleMap.TryGetValue(handleVal1, &compileTimeHandle1);
     assert(found0 && found1);
+
+    // We may see null compile time handles for some constructed class handle cases.
+    // We should fix the construction if possible. But just skip those cases for now.
+    //
+    if ((compileTimeHandle0 == 0) || (compileTimeHandle1 == 0))
+    {
+        return NoVN;
+    }
 
     JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(compileTimeHandle0),
             m_pComp->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), dspPtr(compileTimeHandle1),
@@ -8035,12 +8044,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BOOL:
             if (tree->IsIconHandle())
             {
-                const ssize_t embeddedHandle    = tree->AsIntCon()->IconValue();
-                const ssize_t compileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
+                const ssize_t embeddedHandle = tree->AsIntCon()->IconValue();
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(embeddedHandle, tree->GetIconHandleFlag()));
                 if (tree->GetIconHandleFlag() == GTF_ICON_CLASS_HDL)
                 {
-                    assert(compileTimeHandle != 0);
+                    const ssize_t compileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
                     vnStore->AddToEmbeddedHandleMap(embeddedHandle, compileTimeHandle);
                 }
             }
