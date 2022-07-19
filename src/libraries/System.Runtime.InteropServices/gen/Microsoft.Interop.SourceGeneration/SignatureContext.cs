@@ -120,14 +120,32 @@ namespace Microsoft.Interop
 
             var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, interopAttributeData.StringMarshallingCustomType);
 
-            var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
+            var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
+                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalUsingAttributeParser(env.Compilation, diagnostics));
+
+            var marshallingInfoParser = new MarshallingInfoParser(
+                diagnostics,
+                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
+                useSiteAttributeParsers,
+                ImmutableArray.Create<IMarshallingInfoAttributeParser>(
+                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalUsingAttributeParser(env.Compilation, diagnostics),
+                    new NativeMarshallingAttributeParser(env.Compilation, diagnostics)),
+                ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
+                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
+                    new ArrayMarshallingInfoProvider(env.Compilation),
+                    new CharMarshallingInfoProvider(defaultInfo),
+                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, null!, defaultInfo),
+                    new BooleanMarshallingInfoProvider(),
+                    new BlittableTypeMarshallingInfoProvider(env.Compilation)));
 
             // Determine parameter and return types
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
+                MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with
                 {
@@ -137,7 +155,7 @@ namespace Microsoft.Interop
                 typeInfos.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
+            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,

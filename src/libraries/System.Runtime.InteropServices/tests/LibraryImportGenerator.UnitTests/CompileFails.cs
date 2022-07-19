@@ -121,7 +121,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
             yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
+            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingDuplicateElementIndirectionDepth, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };

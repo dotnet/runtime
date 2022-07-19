@@ -145,17 +145,22 @@ namespace Microsoft.Interop.JavaScript
 
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratorDiagnostics diagnostics, StubEnvironment env)
         {
-            var jsMarshallingAttributeParser = new JSMarshallingAttributeInfoParser(env.Compilation, diagnostics, method);
+            ImmutableArray<IUseSiteAttributeParser> useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation));
+            var jsMarshallingAttributeParser = new MarshallingInfoParser(
+                diagnostics,
+                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
+                useSiteAttributeParsers,
+                ImmutableArray.Create<IMarshallingInfoAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation)),
+                ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(new FallbackJSMarshallingInfoProvider()));
 
             // Determine parameter and return types
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = NoMarshallingInfo.Instance;
-                MarshallingInfo jsMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes(), marshallingInfo);
+                MarshallingInfo jsMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
 
-                var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
+                var typeInfo = TypePositionInfo.CreateForParameter(param, jsMarshallingInfo, env.Compilation);
                 typeInfo = JSTypeInfo.CreateForType(typeInfo, param.Type, jsMarshallingInfo, env.Compilation);
                 typeInfo = typeInfo with
                 {
@@ -165,10 +170,9 @@ namespace Microsoft.Interop.JavaScript
                 typeInfos.Add(typeInfo);
             }
 
-            MarshallingInfo retMarshallingInfo = NoMarshallingInfo.Instance;
-            MarshallingInfo retJSMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes(), retMarshallingInfo);
+            MarshallingInfo retJSMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes());
 
-            var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retMarshallingInfo);
+            var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retJSMarshallingInfo);
             retTypeInfo = JSTypeInfo.CreateForType(retTypeInfo, method.ReturnType, retJSMarshallingInfo, env.Compilation);
             retTypeInfo = retTypeInfo with
             {
