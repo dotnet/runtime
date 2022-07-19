@@ -61,7 +61,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"(?m)$[a-z]", "abc\ndef\nxyz", new ValueTuple<int, int>[] { } };
                 yield return new object[] { engine, @"(?m)^$", "", new[] { (0, 0) } };
                 yield return new object[] { engine, @"(?m)(?:^$)*", "a\nb\nc", new[] { (0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5) } };
-                if (engine != RegexEngine.NonBacktracking) // https://github.com/dotnet/runtime/issues/72470
+                if (!RegexHelpers.IsNonBacktracking(engine)) // https://github.com/dotnet/runtime/issues/72470
                 {
                     yield return new object[] { engine, @"(?m)(?:^|a)+", "a\naaa\n", new[] { (0, 0), (2, 2), (3, 5), (6, 6) } };
                     yield return new object[] { engine, @"(?m)(?:^|a)*", "a\naaa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 5), (5, 5), (6, 6) } };
@@ -230,9 +230,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"[^-]", "--a", new[] { (2, 3) } };
                 yield return new object[] { engine, @"[a-]*", "--a", new[] { (0, 3), (3, 3) } };
                 yield return new object[] { engine, @"[a-m-]*", "--amoma--", new[] { (0, 4), (4, 4), (5, 9), (9, 9) } };
-                yield return new object[] { engine, @"[[:upper:]]", "A", new ValueTuple<int, int>[] { } };
-                yield return new object[] { engine, @"[[:lower:]]+", "`az{", new ValueTuple<int, int>[] { } };
-                yield return new object[] { engine, @"[[:upper:]]+", "@AZ[", new ValueTuple<int, int>[] { } };
+                yield return new object[] { engine, @"[\p{Lu}]", "A", new[] { (0, 1) } };
+                yield return new object[] { engine, @"[\p{Ll}]+", "`az{", new[] { (1, 3) } };
+                yield return new object[] { engine, @"[\p{Lu}]+", "@AZ[", new[] { (1, 3) } };
                 yield return new object[] { engine, @"xxx", "xxx", new[] { (0, 3) } };
                 yield return new object[] { engine, @".*", "\u263A\u007F", new[] { (0, 2), (2, 2) } };
                 yield return new object[] { engine, @"a*a*a*a*a*b", "aaaaaaaaab", new[] { (0, 10) } };
@@ -305,7 +305,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"^a(bc+|b[eh])g|.h$", "abh", new[] { (1, 3) } };
                 yield return new object[] { engine, @"abcd", "abcd", new[] { (0, 4) } };
                 yield return new object[] { engine, @"a(bc)d", "abcd", new[] { (0, 4) } };
-                yield return new object[] { engine, @"a[☺-♥]?c", "a☻c", new[] { (0, 3) } };
+                yield return new object[] { engine, "a[\u263A-\u2665]?c", "a\u263bc", new[] { (0, 3) } };
                 yield return new object[] { engine, @"a+(b|c)*d+", "aabcdd", new[] { (0, 6) } };
                 yield return new object[] { engine, @"^.+$", "vivi", new[] { (0, 4) } };
                 yield return new object[] { engine, @"^(.+)$", "vivi", new[] { (0, 4) } };
@@ -391,12 +391,12 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @".*x(?:abcd)+", "abcdxabcd", new[] { (0, 9) } };
                 yield return new object[] { engine, @"[^abcd]*x(?:abcd)+", "abcdxabcd", new[] { (4, 9) } };
                 yield return new object[] { engine, @".", "\xD4\xC2\x65\x2B\x0E\xFE", new[] { (0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6) } };
-                yield return new object[] { engine, @"${2}\u00E4", "\xD4\xC2\x65\x2B\x0E\xFE", new ValueTuple<int, int>[] { } };
-                yield return new object[] { engine, @"\u2603", "\u2603", new[] { (0, 1) } };
-                yield return new object[] { engine, @"\u2603+", "\u2603", new[] { (0, 1) } };
-                yield return new object[] { engine, @"(?i)\u2603+", "\u2603", new[] { (0, 1) } };
-                yield return new object[] { engine, @"[\u2603\u2160]+", "\u2603", new[] { (0, 1) } };
-                yield return new object[] { engine, @"(?i)\u0394", "\u03B4", new[] { (0, 1) } };
+                yield return new object[] { engine, "${2}\u00E4", "\xD4\xC2\x65\x2B\x0E\xFE", new ValueTuple<int, int>[] { } };
+                yield return new object[] { engine, "\u2603", "\u2603", new[] { (0, 1) } };
+                yield return new object[] { engine, "\u2603+", "\u2603", new[] { (0, 1) } };
+                yield return new object[] { engine, "(?i)\u2603+", "\u2603", new[] { (0, 1) } };
+                yield return new object[] { engine, "[\u2603\u2160]+", "\u2603", new[] { (0, 1) } };
+                yield return new object[] { engine, "(?i)\u0394", "\u03B4", new[] { (0, 1) } };
                 yield return new object[] { engine, @"\p{Lu}+", "\u039B\u0398\u0393\u0394\u03B1", new[] { (0, 4) } };
                 yield return new object[] { engine, @"(?i)\p{Lu}+", "\u039B\u0398\u0393\u0394\u03B1", new[] { (0, 5) } };
                 yield return new object[] { engine, @"\p{L}+", "\u039B\u0398\u0393\u0394\u03B1", new[] { (0, 5) } };
@@ -423,21 +423,14 @@ namespace System.Text.RegularExpressions.Tests
         {
             Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern);
             Match match = regex.Match(input);
-            if (matchBoundaries == null)
+            foreach ((int start, int end) in matchBoundaries)
             {
-                Assert.False(match.Success);
+                Assert.True(match.Success);
+                Assert.Equal(start, match.Index);
+                Assert.Equal(end, match.Index + match.Length);
+                match = match.NextMatch();
             }
-            else
-            {
-                foreach ((int start, int end) in matchBoundaries)
-                {
-                    Assert.True(match.Success);
-                    Assert.Equal(start, match.Index);
-                    Assert.Equal(end, match.Index + match.Length);
-                    match = match.NextMatch();
-                }
-                Assert.False(match.Success);
-            }
+            Assert.False(match.Success);
         }
     }
 }
