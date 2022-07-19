@@ -19,7 +19,7 @@
 static bool
 diagnostics_server_available (void);
 
-#ifndef HOST_WASM
+#if !defined (HOST_WASM) || defined (DISABLE_THREADS)
 static MonoComponentDiagnosticsServer fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_available },
 	&ds_server_init,
@@ -27,14 +27,8 @@ static MonoComponentDiagnosticsServer fn_table = {
 	&ds_server_pause_for_diagnostics_monitor,
 	&ds_server_disable
 };
-#else
-typedef struct _MonoWasmDiagnosticServerOptions {
-	int32_t suspend; /* set from JS! */
-	MonoCoopSem suspend_resume;
-} MonoWasmDiagnosticServerOptions;
 
-static MonoWasmDiagnosticServerOptions wasm_ds_options;
-static pthread_t ds_thread_id;
+#else /* !defined (HOST_WASM) || defined (DISABLE_THREADS) */
 
 static bool
 ds_server_wasm_init (void);
@@ -48,13 +42,6 @@ ds_server_wasm_pause_for_diagnostics_monitor (void);
 static void
 ds_server_wasm_disable (void);
 
-extern void
-mono_wasm_diagnostic_server_on_runtime_server_init (MonoWasmDiagnosticServerOptions *out_options);
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_diagnostic_server_resume_runtime_startup (void);
-
-
 static MonoComponentDiagnosticsServer fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_available },
 	&ds_server_wasm_init,
@@ -62,21 +49,20 @@ static MonoComponentDiagnosticsServer fn_table = {
 	&ds_server_wasm_pause_for_diagnostics_monitor,
 	&ds_server_wasm_disable,
 };
-#endif
 
-static bool
-diagnostics_server_available (void)
-{
-	return true;
-}
+typedef struct _MonoWasmDiagnosticServerOptions {
+	int32_t suspend; /* set from JS! */
+	MonoCoopSem suspend_resume;
+} MonoWasmDiagnosticServerOptions;
 
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_init (void)
-{
-	return &fn_table;
-}
+static MonoWasmDiagnosticServerOptions wasm_ds_options;
+static pthread_t ds_thread_id;
 
-#ifdef HOST_WASM
+extern void
+mono_wasm_diagnostic_server_on_runtime_server_init (MonoWasmDiagnosticServerOptions *out_options);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_diagnostic_server_resume_runtime_startup (void);
 
 static bool
 ds_server_wasm_init (void)
@@ -315,6 +301,7 @@ wasm_ipc_stream_flush (void *self)
 {
 	return true;
 }
+
 static bool
 wasm_ipc_stream_close (void *self)
 {
@@ -324,5 +311,17 @@ wasm_ipc_stream_close (void *self)
 	return r == 0;
 }
 
+#endif /* !defined (HOST_WASM) || defined (DISABLE_THREADS) */
 
-#endif
+static bool
+diagnostics_server_available (void)
+{
+	return true;
+}
+
+MonoComponentDiagnosticsServer *
+mono_component_diagnostics_server_init (void)
+{
+	return &fn_table;
+
+}
