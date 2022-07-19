@@ -13,7 +13,7 @@ namespace System.Formats.Tar
     // - POSIX IEEE 1003.1-2001 ("POSIX.1") Pax Interchange Tar Format (pax).
     // - GNU Tar Format (gnu).
     // Documentation: https://www.freebsd.org/cgi/man.cgi?query=tar&sektion=5
-    internal partial struct TarHeader
+    internal partial class TarHeader
     {
         // POSIX fields (shared by Ustar and PAX)
         private const string UstarMagic = "ustar\0";

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     // Reads the header attributes from a tar archive entry.
-    internal partial struct TarHeader
+    internal partial class TarHeader
     {
         private const string UstarPrefixFormat = "{0}/{1}"; // "prefix/name"
 
