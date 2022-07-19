@@ -128,6 +128,7 @@
 
     <ItemGroup>
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="interp" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=10000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />

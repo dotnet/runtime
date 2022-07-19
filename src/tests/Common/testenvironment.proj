@@ -297,7 +297,7 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
-      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot-interp" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
