@@ -17,9 +17,9 @@ namespace System.Formats.Tar
     {
         private const string UstarPrefixFormat = "{0}/{1}"; // "prefix/name"
 
-        // Attempts to read all the fields of the next header.
+        // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
-        // Returns true if all the attributes were read successfully, false otherwise.
+        // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
         internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat)
         {
             // The four supported formats have a header that fits in the default record size
