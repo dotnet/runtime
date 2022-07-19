@@ -159,8 +159,8 @@ internal static partial class Interop
             return store;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestory")]
-        internal static partial void X509StoreDestory(IntPtr v);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestroy")]
+        internal static partial void X509StoreDestroy(IntPtr v);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCrl")]
         [return: MarshalAs(UnmanagedType.Bool)]

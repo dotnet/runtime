@@ -414,7 +414,7 @@ private:
     // Returns:
     //   S_OK on success.
     //   If it's a jitted method, error codes equivalent to GetMethodDescPtrFromIp
-    //   E_INVALIDARG if a non-jitted metod can't be located in the stubs.
+    //   E_INVALIDARG if a non-jitted method can't be located in the stubs.
     HRESULT GetMethodDescPtrFromIpEx(
         TADDR funcIp,
         OUT VMPTR_MethodDesc *ppMD);

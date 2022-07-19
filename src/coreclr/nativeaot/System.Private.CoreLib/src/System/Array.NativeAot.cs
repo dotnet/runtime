@@ -84,7 +84,7 @@ namespace System
             }
             else
             {
-                // Create a local copy of the lenghts that cannot be motified by the caller
+                // Create a local copy of the lengths that cannot be motified by the caller
                 int* pImmutableLengths = stackalloc int[rank];
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];

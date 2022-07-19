@@ -249,7 +249,7 @@ ep_rt_shutdown (void);
 
 static
 bool
-ep_rt_config_aquire (void);
+ep_rt_config_acquire (void);
 
 static
 bool
@@ -658,7 +658,7 @@ ep_rt_runtime_version_get_utf8 (void);
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock);
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock);
 
 static
 bool
@@ -691,7 +691,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock);
 
 static
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock);
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock);
 
 static
 bool
@@ -961,7 +961,7 @@ ep_rt_volatile_store_ptr_without_barrier (
 #define EP_SPIN_LOCK_ENTER(expr, section_name) \
 { \
 	ep_rt_spin_lock_requires_lock_not_held (expr); \
-	ep_rt_spin_lock_aquire (expr); \
+	ep_rt_spin_lock_acquire (expr); \
 	bool _no_error_ ##section_name = false;
 
 #define EP_SPIN_LOCK_EXIT(expr, section_name) \
@@ -985,7 +985,7 @@ _ep_on_spinlock_exit_ ##section_name : \
 #define EP_LOCK_ENTER(section_name) \
 { \
 	ep_requires_lock_not_held (); \
-	bool _owns_config_lock_ ##section_name = ep_rt_config_aquire (); \
+	bool _owns_config_lock_ ##section_name = ep_rt_config_acquire (); \
 	bool _no_config_error_ ##section_name = false; \
 	if (EP_UNLIKELY((!_owns_config_lock_ ##section_name))) \
 		goto _ep_on_config_lock_exit_ ##section_name;

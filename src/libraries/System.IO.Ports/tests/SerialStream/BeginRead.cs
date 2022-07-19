@@ -193,7 +193,7 @@ namespace System.IO.Ports.Tests
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that
                 // the code calling the callback has finished it's processing
-                IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
+                IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAsyncResult;
 
                 // No we have to wait for the callbackHandler to complete
                 elapsedTime = 0;
@@ -239,7 +239,7 @@ namespace System.IO.Ports.Tests
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that
                 // the code calling the callback has finished it's processing
-                IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
+                IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAsyncResult;
 
                 // No we have to wait for the callbackHandler to complete
                 elapsedTime = 0;
@@ -285,7 +285,7 @@ namespace System.IO.Ports.Tests
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that
                 // the code calling the callback has finished it's processing
-                IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
+                IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAsyncResult;
 
                 // No we have to wait for the callbackHandler to complete
                 elapsedTime = 0;
@@ -313,7 +313,7 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying read method throws {0} buffer.Lenght={1}, offset={2}, count={3}",
+                Debug.WriteLine("Verifying read method throws {0} buffer.Length={1}, offset={2}, count={3}",
                                 typeof(T), bufferLength, offset, count);
 
                 com.Open();
@@ -347,7 +347,7 @@ namespace System.IO.Ports.Tests
                 // Generate some random bytes in the buffer
                 rndGen.NextBytes(buffer);
 
-                Debug.WriteLine("Verifying read method buffer.Lenght={0}, offset={1}, count={2} with {3} random chars", buffer.Length, offset, count, bytesToWrite.Length);
+                Debug.WriteLine("Verifying read method buffer.Length={0}, offset={1}, count={2} with {3} random chars", buffer.Length, offset, count, bytesToWrite.Length);
 
                 com1.ReadTimeout = 500;
 
@@ -380,7 +380,7 @@ namespace System.IO.Ports.Tests
                 callbackHandler.BeginReadAsyncResult = readAsyncResult;
 
                 int bytesRead = com1.BaseStream.EndRead(readAsyncResult);
-                IAsyncResult asyncResult = callbackHandler.ReadAysncResult;
+                IAsyncResult asyncResult = callbackHandler.ReadAsyncResult;
                 Assert.Equal(this, asyncResult.AsyncState);
                 Assert.False(asyncResult.CompletedSynchronously);
                 Assert.True(asyncResult.IsCompleted);
@@ -442,7 +442,7 @@ namespace System.IO.Ports.Tests
 
         private class CallbackHandler
         {
-            private IAsyncResult _readAysncResult;
+            private IAsyncResult _readAsyncResult;
             private IAsyncResult _beginReadAsyncResult;
             private readonly SerialPort _com;
 
@@ -453,13 +453,13 @@ namespace System.IO.Ports.Tests
                 _com = com;
             }
 
-            public void Callback(IAsyncResult readAysncResult)
+            public void Callback(IAsyncResult readAsyncResult)
             {
                 lock (this)
                 {
-                    _readAysncResult = readAysncResult;
+                    _readAsyncResult = readAsyncResult;
 
-                    Assert.True(readAysncResult.IsCompleted, "IAsyncResult passed into callback is not completed");
+                    Assert.True(readAsyncResult.IsCompleted, "IAsyncResult passed into callback is not completed");
 
                     while (null == _beginReadAsyncResult)
                     {
@@ -479,7 +479,7 @@ namespace System.IO.Ports.Tests
                             Fail("Err_6498afead Expected IAsyncResult returned from begin read to not be completed");
                         }
 
-                        if (!readAysncResult.IsCompleted)
+                        if (!readAsyncResult.IsCompleted)
                         {
                             Fail("Err_1398ehpo Expected IAsyncResult passed into callback to not be completed");
                         }
@@ -490,18 +490,18 @@ namespace System.IO.Ports.Tests
             }
 
 
-            public IAsyncResult ReadAysncResult
+            public IAsyncResult ReadAsyncResult
             {
                 get
                 {
                     lock (this)
                     {
-                        while (null == _readAysncResult)
+                        while (null == _readAsyncResult)
                         {
                             Monitor.Wait(this);
                         }
 
-                        return _readAysncResult;
+                        return _readAsyncResult;
                     }
                 }
             }

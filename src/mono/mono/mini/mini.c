@@ -1237,7 +1237,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 
 		if (slot == 0xffffff) {
 			/*
-			 * Allways allocate valuetypes to sizeof (target_mgreg_t) to allow more
+			 * Always allocate valuetypes to sizeof (target_mgreg_t) to allow more
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
@@ -1491,7 +1491,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 		if (slot == 0xffffff) {
 			/*
-			 * Allways allocate valuetypes to sizeof (target_mgreg_t) to allow more
+			 * Always allocate valuetypes to sizeof (target_mgreg_t) to allow more
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
@@ -3780,7 +3780,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		g_assert (cfg->got_var_allocated);
 
 		/*
-		 * Allways allocate the GOT var to a register, because keeping it
+		 * Always allocate the GOT var to a register, because keeping it
 		 * in memory will increase the number of live temporaries in some
 		 * code created by inssel.brg, leading to the well known spills+
 		 * branches problem. Testcase: mcs crash in

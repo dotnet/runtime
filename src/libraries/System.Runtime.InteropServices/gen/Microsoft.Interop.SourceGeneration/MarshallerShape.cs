@@ -367,7 +367,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? AllocateContainerForManagedElementsFinally(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
             {
                 // static TCollection AllocateContainerForManagedElementsFinally(TNative unmanaged, int length);
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
                         && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32

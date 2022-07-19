@@ -298,7 +298,7 @@ namespace System
         /// large object heap space is available.</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize, long lohSize)
         {
@@ -314,7 +314,7 @@ namespace System
         /// is performed if the requested amount of memory is not available</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize, bool disallowFullBlockingGC)
         {
@@ -332,7 +332,7 @@ namespace System
         /// is performed if the requested amount of memory is not available</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize, long lohSize, bool disallowFullBlockingGC)
         {

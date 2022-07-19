@@ -13,7 +13,7 @@ namespace System.IO.Ports.Tests
     public class Encoding_Property : PortsTest
     {
         //The default number of bytes to read/write to verify the speed of the port
-        //and that the bytes were transfered successfully
+        //and that the bytes were transferred successfully
         private const int DEFAULT_CHAR_ARRAY_SIZE = 8;
 
         //The maximum time we will wait for all of encoded bytes to be received

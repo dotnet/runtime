@@ -186,7 +186,7 @@ void MorphInitBlockHelper::PrepareDst()
     if (m_asg->TypeGet() != m_dst->TypeGet())
     {
         assert(!m_initBlock && "the asg type should be final for an init block.");
-        JITDUMP("changing type of asignment from %-6s to %-6s\n", varTypeName(m_asg->TypeGet()),
+        JITDUMP("changing type of assignment from %-6s to %-6s\n", varTypeName(m_asg->TypeGet()),
                 varTypeName(m_dst->TypeGet()));
 
         m_asg->ChangeType(m_dst->TypeGet());
@@ -761,7 +761,7 @@ void MorphCopyBlockHelper::PrepareSrc()
 }
 
 // TrySpecialCases: check special cases that require special transformations.
-//    The current special cases include asignments with calls in RHS.
+//    The current special cases include assignments with calls in RHS.
 //
 // Notes:
 //    It could change multiReg flags or change m_dst node.
@@ -1130,7 +1130,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 }
 
 //------------------------------------------------------------------------
-// CopyFieldByField: transform the copy block to a field by field asignment.
+// CopyFieldByField: transform the copy block to a field by field assignment.
 //
 // Notes:
 //    We do it for promoted lclVars which fields can be enregistered.
@@ -1282,7 +1282,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         if (i == (fieldCnt - 1))
                         {
-                            // Reuse the orginal "dstAddr" tree for the last field.
+                            // Reuse the original "dstAddr" tree for the last field.
                             dstAddrClone = dstAddr;
                         }
                         else
@@ -1370,7 +1370,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         if (i == (fieldCnt - 1))
                         {
-                            // Reuse the orginal m_srcAddr tree for the last field.
+                            // Reuse the original m_srcAddr tree for the last field.
                             srcAddrClone = srcAddr;
                         }
                         else
@@ -1478,7 +1478,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //    tree - a block copy (i.e. an assignment with a block op on the lhs).
 //
 // Return Value:
-//    We can return the orginal block copy unmodified (least desirable, but always correct)
+//    We can return the original block copy unmodified (least desirable, but always correct)
 //    We can return a single assignment, when fgMorphOneAsgBlockOp transforms it (most desirable).
 //    If we have performed struct promotion of the Source() or the Dest() then we will try to
 //    perform a field by field assignment for each of the promoted struct fields.
@@ -1492,7 +1492,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //    When performing a field by field assignment we can have one of Source() or Dest treated as a blob of bytes
 //    and in such cases we will call lvaSetVarDoNotEnregister() on the one treated as a blob of bytes.
 //    If the Source() or Dest() is a struct that has a "CustomLayout" and "ConstainsHoles" then we
-//    can not use a field by field assignment and must leave the orginal block copy unmodified.
+//    can not use a field by field assignment and must leave the original block copy unmodified.
 //
 GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 {
@@ -1511,7 +1511,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 //    perform a field by field assignment for each of the promoted struct fields.
 //    This is not always possible (e.g. if the struct is address exposed).
 //
-//    Otherwise the orginal GT_ASG tree is returned unmodified, note that the
+//    Otherwise the original GT_ASG tree is returned unmodified, note that the
 //    nodes can still be changed.
 //
 // Assumptions:

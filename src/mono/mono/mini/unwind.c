@@ -1041,7 +1041,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	/* Decode FDE */
 
 	p = fde;
-	// FIXME: Endianess ?
+	// FIXME: Endianness ?
 	fde_len = *(guint32*)p;
 	g_assert (fde_len != 0xffffffff && fde_len != 0);
 	p += 4;

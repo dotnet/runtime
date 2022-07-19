@@ -38,7 +38,7 @@ public class Interfaces
         TestDefaultInterfaceMethods.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
-        TestSharedIntefaceMethods.Run();
+        TestSharedInterfaceMethods.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -555,7 +555,7 @@ public class Interfaces
         }
     }
 
-    class TestSharedIntefaceMethods
+    class TestSharedInterfaceMethods
     {
         interface IInnerValueGrabber
         {
@@ -592,10 +592,10 @@ public class Interfaces
 
             var x = new Derived<Atom1, Atom2>() { InnerValue = "My inner value" };
             string r1 = ((IFace<Atom1>)x).GrabValue(new Atom1());
-            if (r1 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom1' with 'The Atom1'")
+            if (r1 != "'My inner value' over 'Interfaces+TestSharedInterfaceMethods+Atom1' with 'The Atom1'")
                 throw new Exception();
             string r2 = ((IFace<Atom2>)x).GrabValue(new Atom2());
-            if (r2 != "'My inner value' over 'Interfaces+TestSharedIntefaceMethods+Atom2' with 'The Atom2'")
+            if (r2 != "'My inner value' over 'Interfaces+TestSharedInterfaceMethods+Atom2' with 'The Atom2'")
                 throw new Exception();
 
             IFace<object> o = new Yadda() { InnerValue = "SomeString" };
@@ -637,14 +637,14 @@ public class Interfaces
             public virtual IFoo GetFoo() => throw new NotImplementedException();
         }
 
-        class DerivedWithOverridenUnusedVirtual : BaseWithUnusedVirtual
+        class DerivedWithOverriddenUnusedVirtual : BaseWithUnusedVirtual
         {
-            public override Foo GetFoo() => new Foo("DerivedWithOverridenUnusedVirtual");
+            public override Foo GetFoo() => new Foo("DerivedWithOverriddenUnusedVirtual");
         }
 
-        class SuperDerivedWithOverridenUnusedVirtual : DerivedWithOverridenUnusedVirtual
+        class SuperDerivedWithOverriddenUnusedVirtual : DerivedWithOverriddenUnusedVirtual
         {
-            public override Foo GetFoo() => new Foo("SuperDerivedWithOverridenUnusedVirtual");
+            public override Foo GetFoo() => new Foo("SuperDerivedWithOverriddenUnusedVirtual");
         }
 
         interface IInterfaceWithCovariantReturn
@@ -685,14 +685,14 @@ public class Interfaces
             }
 
             {
-                DerivedWithOverridenUnusedVirtual b = new DerivedWithOverridenUnusedVirtual();
-                if (b.GetFoo().State != "DerivedWithOverridenUnusedVirtual")
+                DerivedWithOverriddenUnusedVirtual b = new DerivedWithOverriddenUnusedVirtual();
+                if (b.GetFoo().State != "DerivedWithOverriddenUnusedVirtual")
                     throw new Exception();
             }
 
             {
-                DerivedWithOverridenUnusedVirtual b = new SuperDerivedWithOverridenUnusedVirtual();
-                if (b.GetFoo().State != "SuperDerivedWithOverridenUnusedVirtual")
+                DerivedWithOverriddenUnusedVirtual b = new SuperDerivedWithOverriddenUnusedVirtual();
+                if (b.GetFoo().State != "SuperDerivedWithOverriddenUnusedVirtual")
                     throw new Exception();
             }
 

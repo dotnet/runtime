@@ -345,6 +345,9 @@ namespace ILCompiler
 
                     ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
+
+                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
             }
         }
 
@@ -358,6 +361,12 @@ namespace ILCompiler
             if ((category & MetadataCategory.Description) != 0)
             {
                 GetMetadataDependenciesDueToReflectability(ref dependencies, factory, field);
+            }
+
+            if ((category & MetadataCategory.RuntimeMapping) != 0)
+            {
+                TypeDesc owningCanonicalType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningCanonicalType);
             }
         }
 
@@ -393,8 +402,6 @@ namespace ILCompiler
             {
                 GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type);
             }
-
-            GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
         }
 
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -402,11 +409,6 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
-        }
-
-        protected virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            // MetadataManagers can override this to provide additional dependencies caused by the emission of an MethodTable.
         }
 
         public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -464,7 +466,6 @@ namespace ILCompiler
                 ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
             }
 
-            GetDependenciesDueToTemplateTypeLoader(ref dependencies, factory, method);
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
         }
 
@@ -478,28 +479,6 @@ namespace ILCompiler
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of
             // method code.
-        }
-
-        private void GetDependenciesDueToTemplateTypeLoader(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // TODO-SIZE: this is overly generous in the templates we create
-            if (_blockingPolicy is FullyBlockedMetadataBlockingPolicy)
-                return;
-
-            if (method.HasInstantiation)
-            {
-                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
-            }
-            else
-            {
-                TypeDesc owningTemplateType = method.OwningType;
-
-                // Unboxing and Instantiating stubs use a different type as their template
-                if (factory.TypeSystemContext.IsSpecialUnboxingThunk(method))
-                    owningTemplateType = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(method).OwningType;
-
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
-            }
         }
 
         protected virtual void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
