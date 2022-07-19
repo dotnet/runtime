@@ -57,7 +57,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         }
     }
 
-    // these could be overriden on DotnetModuleConfig
+    // these could be overridden on DotnetModuleConfig
     if (!module.preInit) {
         module.preInit = [];
     } else if (typeof module.preInit === "function") {
@@ -792,7 +792,7 @@ export type DownloadAssetsContext = {
 /// 2. Emscripten does not run the preInit or preRun functions in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 async function mono_wasm_pthread_worker_init(): Promise<void> {
-    // This is a good place for subsystems to attach listeners for pthreads_worker.currrentWorkerThreadEvents
+    // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("pthread created", ev.pthread_self.pthread_id);
     });

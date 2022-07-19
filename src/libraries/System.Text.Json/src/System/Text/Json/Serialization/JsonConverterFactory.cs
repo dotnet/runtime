@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
     public abstract class JsonConverterFactory : JsonConverter
     {
         /// <summary>
-        /// When overidden, constructs a new <see cref="JsonConverterFactory"/> instance.
+        /// When overridden, constructs a new <see cref="JsonConverterFactory"/> instance.
         /// </summary>
         protected JsonConverterFactory() { }
 

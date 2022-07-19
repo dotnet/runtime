@@ -8,6 +8,10 @@ class ThreadStore;
 class CLREventStatic;
 class Thread;
 
+#ifdef TARGET_UNIX
+#include "UnixContext.h"
+#endif
+
 // The offsets of some fields in the thread (in particular, m_pTransitionFrame) are known to the compiler and get
 // inlined into the code.  Let's make sure they don't change just because we enable/disable server GC in a particular
 // runtime build.
@@ -28,7 +32,10 @@ class Thread;
 #endif // HOST_64BIT
 
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
-#define REDIRECTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
+
+// the thread has been interrupted and context for the interruption point
+// can be retrieved via GetInterruptedContext()
+#define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
 enum SyncRequestResult
 {
@@ -76,7 +83,7 @@ struct ThreadBuffer
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
 #ifdef HOST_64BIT
-    uintptr_t              m_uHijackedReturnValueFlags;            // used on ARM64 only; however, ARM64 and AMD64 share field offsets
+    uintptr_t               m_uHijackedReturnValueFlags;             // used on ARM64 and UNIX only; however, ARM64 and AMD64 share field offsets
 #endif // HOST_64BIT
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
@@ -88,10 +95,11 @@ struct ThreadBuffer
     uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
+    NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    uint8_t*                m_redirectionContextBuffer;              // storage for redirection context, allocated on demand
-    CONTEXT*                m_redirectionContext;                    // legacy context somewhere inside the context buffer
+    uint8_t*                m_redirectionContextBuffer;             // storage for redirection context, allocated on demand
 #endif //FEATURE_SUSPEND_REDIRECTION
+
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
@@ -134,8 +142,11 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
-    static UInt32_BOOL HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
-    bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
+    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void * pvHijackTargets[]);
+    void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void* pvHijackTargets[]);
+    void HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[]);
+    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     bool Redirect();
@@ -146,9 +157,6 @@ private:
     void CrossThreadUnhijack();
     void UnhijackWorker();
     void EnsureRuntimeInitialized();
-#ifdef _DEBUG
-    bool DebugIsSuspended();
-#endif
 
     //
     // SyncState members
@@ -176,7 +184,7 @@ public:
     bool GcScanRoots(GcScanRootsCallbackFunc * pfnCallback, void * token, PTR_PAL_LIMITED_CONTEXT pInitialContext);
 #endif
 
-    bool                Hijack();
+    void                Hijack();
     void                Unhijack();
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -263,8 +271,10 @@ public:
     Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
+    NATIVE_CONTEXT* GetInterruptedContext();
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    CONTEXT* GetRedirectionContext();
+    NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
 };
 

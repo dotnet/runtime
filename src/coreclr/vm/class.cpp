@@ -428,7 +428,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
 // AddField - called when a new field is added by EnC
 //
 // Since instances of this class may already exist on the heap, we can't change the
-// runtime layout of the object to accomodate the new field.  Instead we hang the field
+// runtime layout of the object to accommodate the new field.  Instead we hang the field
 // off the syncblock (for instance fields) or in the FieldDesc for static fields.
 //
 // Here we just create the FieldDesc and link it to the class.  The actual storage will
@@ -2503,7 +2503,7 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
         return clsIfNone;
 
     // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overriden by the CA
+    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
     if (!ClassSupportsIClassX(this))
         return clsIfNone;
 

@@ -228,7 +228,7 @@ namespace System.Globalization
             return monthNames;
         }
 
-        // Invariant DateTimeFormatInfo doesn't have user-overriden values
+        // Invariant DateTimeFormatInfo doesn't have user-overridden values
         // Default calendar is gregorian
         public DateTimeFormatInfo()
             : this(CultureInfo.InvariantCulture._cultureData, GregorianCalendar.GetDefaultInstance())

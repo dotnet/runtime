@@ -3112,7 +3112,7 @@ private:
 
 //-----------------------------------------------------------------------------
 // FrameWithCookie is used to declare a Frame in source code with a cookie
-// immediately preceeding it.
+// immediately preceding it.
 // This is just a specialized version of GSCookieFor<T>
 //
 // For Frames that are set up by stubs, the stub is responsible for setting up

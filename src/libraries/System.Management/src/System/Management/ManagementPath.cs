@@ -128,7 +128,7 @@ namespace System.Management
 
         //Used internally to check whether a string passed in as a namespace is indeed syntactically correct
         //for a namespace (e.g. either has "\" or "/" in it or is the special case of "root")
-        //This doesn't check for the existance of that namespace, nor does it guarrantee correctness.
+        //This doesn't check for the existence of that namespace, nor does it guarrantee correctness.
         internal static bool IsValidNamespaceSyntax(string nsPath)
         {
             if (nsPath.Length != 0)

@@ -55,5 +55,34 @@ namespace System.Net.Quic.Tests
                 await using QuicConnection clientConnection = await clientStreamTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
+
+        [Fact]
+        public async Task AcceptConnectionAsync_InvalidConnectionOptions_Throws()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            // Do not set any options, which should throw an argument exception from accept.
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions());
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task AcceptConnectionAsync_ThrowingOptionsCallback_Throws(bool useFromException)
+        {
+            const string expectedMessage = "Expected Message";
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            // Throw an exception, which should throw the same from accept.
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) => useFromException ? ValueTask.FromException<QuicServerConnectionOptions>(new Exception(expectedMessage)) : throw new Exception(expectedMessage);
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            Exception exception = await Assert.ThrowsAsync<Exception>(async () => await listener.AcceptConnectionAsync());
+            Assert.Equal(expectedMessage, exception.Message);
+        }
     }
 }

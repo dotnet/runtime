@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization
     public abstract partial class JsonConverter<T> : JsonConverter
     {
         /// <summary>
-        /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
+        /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
         protected internal JsonConverter()
         {

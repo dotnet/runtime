@@ -423,7 +423,7 @@ namespace System.Xml.Xsl.XPath
             {
                 result = _f.BaseFactory.DocOrderDistinct(result);
                 // To make grouping operator NOP we should always return path expressions in DOD.
-                // I can't use Pattern factory here becasue Predicate() depends on fact that DOD() is
+                // I can't use Pattern factory here because Predicate() depends on fact that DOD() is
                 //     outmost node in reverse steps
             }
             return result;

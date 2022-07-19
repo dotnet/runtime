@@ -57,7 +57,7 @@ namespace TypeSystemTests
         public void TestStillNoPointers()
         {
             //
-            // Test that static offsets ignore instance fields preceeding them
+            // Test that static offsets ignore instance fields preceding them
             //
 
             MetadataType t = _testModule.GetType("StaticFieldLayout", "StillNoPointers");

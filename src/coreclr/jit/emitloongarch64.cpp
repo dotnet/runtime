@@ -1912,7 +1912,7 @@ void emitter::emitIns_R_R_R_R(
  *
  *  Add an instruction with a register + static member operands.
  *  Constant is stored into JIT data which is adjacent to code.
- *  For LOONGARCH64, maybe not the best, here just suports the func-interface.
+ *  For LOONGARCH64, maybe not the best, here just supports the func-interface.
  *
  */
 void emitter::emitIns_R_C(

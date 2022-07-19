@@ -303,7 +303,7 @@ void EventReporter::AddStackTrace(SString& s)
             COUNT_T truncCount = truncate.GetCount();
 
             // Go back "truncCount" characters from the end of the string.
-            // The "-1" in end is to accomodate null termination.
+            // The "-1" in end is to accommodate null termination.
             ext = m_Description.Begin() + dwMaxSizeLimit - truncCount - 1;
 
             // Now look for a "\n" from the last position we got

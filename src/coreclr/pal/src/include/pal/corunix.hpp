@@ -1102,7 +1102,7 @@ namespace CorUnix
     {
         WaitSucceeded,
         Alerted,
-        MutexAbondoned,
+        MutexAbandoned,
         WaitTimeout,
         WaitFailed
     };
