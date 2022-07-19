@@ -212,6 +212,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets a configuration object specifying polymorphism metadata.
         /// </summary>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="value" /> has been associated with a different <see cref="JsonTypeInfo"/> instance.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
         ///
@@ -230,13 +233,13 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind == JsonTypeInfoKind.None)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
-                }
-
                 if (value != null)
                 {
+                    if (Kind == JsonTypeInfoKind.None)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                    }
+
                     if (value.DeclaringTypeInfo != null && value.DeclaringTypeInfo != this)
                     {
                         ThrowHelper.ThrowArgumentException_JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo(nameof(value));
@@ -249,7 +252,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private JsonPolymorphismOptions? _polymorphismOptions;
+        private protected JsonPolymorphismOptions? _polymorphismOptions;
 
         internal object? CreateObjectWithArgs { get; set; }
 

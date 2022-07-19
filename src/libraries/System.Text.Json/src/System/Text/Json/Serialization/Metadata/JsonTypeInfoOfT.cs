@@ -123,6 +123,16 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
+        private protected void PopulatePolymorphismMetadata()
+        {
+            JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            if (options != null)
+            {
+                options.DeclaringTypeInfo = this;
+                _polymorphismOptions = options;
+            }
+        }
+
         private protected void MapInterfaceTypesToCallbacks()
         {
             // Callbacks currently only supported in object kinds
