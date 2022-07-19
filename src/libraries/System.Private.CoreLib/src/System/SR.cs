@@ -65,9 +65,7 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
                     // Note: our infrastructure for reporting this exception will again cause resource lookup.
                     // This is the most direct way of dealing with that problem.
-                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {System.CoreLib.Name}.
-                                        Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.
-                                         It is also possible that this was caused by a bug in relevant extensibility points such as assembly resolve events or CultureInfo names.";
+                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {System.CoreLib.Name} .Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.";
                     Environment.FailFast(message);
 #endif
                 }
@@ -92,7 +90,7 @@ namespace System
                 string? s = ResourceManager.GetString(key, null);
                 _currentlyLoading.RemoveAt(_currentlyLoading.Count - 1); // Pop
 
-                Debug.Assert(s != null, $"Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called SR.GetResourceString.  Resource name was: \"{key}\"");
+                Debug.Assert(s != null, $"Looking up resource '{key}' failed. Was your resource name misspelled? Did you rebuild {System.CoreLib.Name} after adding a resource?");
                 return s ?? key;
             }
             catch
