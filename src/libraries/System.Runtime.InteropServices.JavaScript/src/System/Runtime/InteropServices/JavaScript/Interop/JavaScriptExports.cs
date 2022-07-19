@@ -60,14 +60,14 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 GCHandle callback_gc_handle = (GCHandle)arg_return.slot.GCHandle;
-
-                JSHostImplementation.ToManagedCallback? cb = (JSHostImplementation.ToManagedCallback?)callback_gc_handle.Target;
-                if (cb == null)
+                if (callback_gc_handle.Target is JSHostImplementation.ToManagedCallback callback)
+                {
+                    callback(arguments_buffer);
+                }
+                else
                 {
                     throw new InvalidOperationException("ToManagedCallback is null");
                 }
-
-                cb(arguments_buffer);
             }
             catch (Exception ex)
             {
@@ -83,14 +83,14 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 GCHandle callback_gc_handle = (GCHandle)arg_return.slot.GCHandle;
-
-                JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)callback_gc_handle.Target;
-                if (holder == null || holder.Callback == null)
+                if (callback_gc_handle.Target is JSHostImplementation.TaskCallback holder && holder.Callback is not null)
+                {
+                    holder.Callback(arguments_buffer);
+                }
+                else
                 {
                     throw new InvalidOperationException("TaskCallback is null");
                 }
-
-                holder.Callback(arguments_buffer);
             }
             catch (Exception ex)
             {
