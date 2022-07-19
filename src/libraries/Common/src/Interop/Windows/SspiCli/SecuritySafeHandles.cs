@@ -783,9 +783,13 @@ namespace System.Net.Security
 
                         outSecBuffer.size = outUnmanagedBuffer[index].cbBuffer;
                         outSecBuffer.type = outUnmanagedBuffer[index].BufferType;
-                        outSecBuffer.token = outSecBuffer.size > 0 ?
-                                    new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
-                                    null;
+
+                        if (isSspiAllocated)
+                        {
+                            outSecBuffer.token = outSecBuffer.size > 0 ?
+                                        new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
+                                        null;
+                        }
 
                         if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                         {
