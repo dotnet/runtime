@@ -33,8 +33,6 @@
 #include "wasm-config.h"
 #include "pinvoke.h"
 
-#include <emscripten/threading.h>
-
 #ifdef GEN_PINVOKE
 #include "wasm_m2n_invoke.g.h"
 #endif
@@ -485,9 +483,6 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
-	if (!emscripten_is_main_browser_thread ())
-		printf ("load_runtime called in a worker!\n");
-
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
@@ -611,9 +606,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
-	printf ("wasm: before mono_jit_init_version\n");
 	root_domain = mono_jit_init_version ("mono", NULL);
-	printf ("wasm: after mono_jit_init_version\n");
 
 	mono_initialize_internals();
 
