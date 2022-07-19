@@ -1159,7 +1159,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    // Cancel immediately by default
+                    // Cancel immediately if no timeout specified.
                     waiter.ConnectionCancellationTokenSource.Cancel();
                 }
             }

@@ -45,8 +45,9 @@ namespace System.Net.Http
             // Defaults to 1.0. Higher values result in shorter window, but slower downloads.
             public static double Http2StreamWindowScaleThresholdMultiplier { get; } = GetHttp2StreamWindowScaleThresholdMultiplier();
 
-            public static int PendingConnectionTimeoutOnRequestCompletion { get; } = RuntimeSettingParser.ParseInt32EnvironmentVariableValue(
-                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION", 0);
+            public static int PendingConnectionTimeoutOnRequestCompletion { get; } = RuntimeSettingParser.QueryRuntimeSettingInt32(
+                "System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion",
+                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION", 15_000);
 
             public const int DefaultHttp2MaxStreamWindowSize = 16 * 1024 * 1024;
             public const double DefaultHttp2StreamWindowScaleThresholdMultiplier = 1.0;
