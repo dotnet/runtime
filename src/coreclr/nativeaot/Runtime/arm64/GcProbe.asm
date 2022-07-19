@@ -188,25 +188,6 @@ __PPF_ThreadReg SETS "x2"
     MEND
 
 ;;
-;; Macro to clear the hijack state. This is safe to do because the suspension code will not Unhijack this
-;; thread if it finds it at an IP that isn't managed code.
-;;
-;; Register state on entry:
-;;  x2: thread pointer
-;;
-;; Register state on exit:
-;;
-    MACRO
-        ClearHijackState
-
-        ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
-        ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-        stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        ;; Clear m_uHijackedReturnValueFlags
-        str         xzr, [x2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
-    MEND
-
-;;
 ;; The prolog for all GC suspension hijacks (normal and stress). Fixes up the hijacked return address, and
 ;; clears the hijack state.
 ;;
@@ -231,32 +212,15 @@ __PPF_ThreadReg SETS "x2"
         ;; Load m_pvHijackedReturnAddress and m_uHijackedReturnValueFlags
         ldp         lr, x12, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
-        ClearHijackState
-    MEND
+        ;;
+        ;; Clear hijack state
+        ;;
+        ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
+        ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
+        stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        ;; Clear m_uHijackedReturnValueFlags
+        str         xzr, [x2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
-;;
-;; Set the Thread state and wait for a GC to complete.
-;;
-;; Register state on entry:
-;;  x4: thread pointer
-;;
-;; Register state on exit:
-;;  x4: thread pointer
-;;  All other registers trashed
-;;
-
-    EXTERN RhpWaitForGCNoAbort
-
-    MACRO
-        WaitForGCCompletion
-
-        ldr         w2, [x4, #OFFSETOF__Thread__m_ThreadStateFlags]
-        tst         w2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
-        bne         %ft0
-
-        ldr         x9, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        bl          RhpWaitForGCNoAbort
-0
     MEND
 
     MACRO
@@ -337,8 +301,8 @@ __PPF_ThreadReg SETS "x2"
     NESTED_ENTRY RhpGcProbeRare
         PROLOG_PROBE_FRAME x2, x3, x12,
 
-        mov         x4, x2
-        WaitForGCCompletion
+        ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        bl          RhpWaitForGC2
 
         ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tbnz        x2, #PTFF_THREAD_ABORT_BIT, %F1

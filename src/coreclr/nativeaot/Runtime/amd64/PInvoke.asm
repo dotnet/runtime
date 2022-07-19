@@ -5,38 +5,6 @@ include asmmacros.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForGCNoAbort -- rare path for WaitForGCCompletion
-;;
-;;
-;; INPUT: RCX: transition frame
-;;
-;; TRASHES: RCX, RDX, R8, R9, R10, R11
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpWaitForGCNoAbort, _TEXT
-        push_vol_reg    rax                 ; don't trash the integer return value
-        alloc_stack     30h
-        movdqa          [rsp + 20h], xmm0   ; don't trash the FP return value
-        END_PROLOGUE
-
-        mov         rdx, [rcx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
-
-        test        dword ptr [rdx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-        jnz         Done
-
-        ; passing transition frame pointer in rcx
-        call        RhpWaitForGC2
-
-Done:
-        movdqa      xmm0, [rsp + 20h]
-        add         rsp, 30h
-        pop         rax
-        ret
-
-NESTED_END RhpWaitForGCNoAbort, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; RhpPInvoke
 ;;
 ;; IN:  RCX: address of pinvoke frame

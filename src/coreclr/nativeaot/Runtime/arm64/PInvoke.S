@@ -18,42 +18,6 @@ TSF_Attached_Bit                = 0
 TSF_SuppressGcStress_Bit        = 3
 TSF_DoNotTriggerGc_Bit          = 4
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// RhpWaitForGCNoAbort
-//
-//
-// INPUT: x9: transition frame
-//
-// TRASHES: None
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    NESTED_ENTRY RhpWaitForGCNoAbort, _TEXT, NoHandler
-
-        // FP and LR registers
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -0x40            // Push down stack pointer and store FP and LR
-
-        // Save the integer return registers, as well as the floating return registers
-        stp         x0, x1, [sp, #0x10]
-        stp         d0, d1, [sp, #0x20]
-        stp         d2, d3, [sp, #0x30]
-
-        ldr         x0, [x9, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
-        ldr         w0, [x0, #OFFSETOF__Thread__m_ThreadStateFlags]
-        tbnz        x0, #TSF_DoNotTriggerGc_Bit, Done
-
-        mov         x0, x9      // passing transition frame in x0
-        bl          RhpWaitForGC2
-
-Done:
-        ldp         x0, x1, [sp, #0x10]
-        ldp         d0, d1, [sp, #0x20]
-        ldp         d2, d3, [sp, #0x30]
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x40
-        EPILOG_RETURN
-
-    NESTED_END RhpWaitForGCNoAbort
-
 //
 // RhpPInvoke
 //
