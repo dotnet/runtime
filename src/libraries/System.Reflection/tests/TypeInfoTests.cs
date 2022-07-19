@@ -454,6 +454,13 @@ namespace System.Reflection.Tests
 
         private static void GetEnumValues(Type enumType, Array expected)
         {
+            if (!PlatformDetection.EnumGetValuesReturnsEnumArray)
+            {
+                // Change the array to underlying type array if GetValues doesn't return Enum[] but int[]
+                Array newExpected = Array.CreateInstance(Enum.GetUnderlyingType(enumType), expected.Length);
+                Array.Copy(expected, newExpected, expected.Length);
+                expected = newExpected;
+            }
             Assert.Equal(expected, enumType.GetTypeInfo().GetEnumValues());
         }
 

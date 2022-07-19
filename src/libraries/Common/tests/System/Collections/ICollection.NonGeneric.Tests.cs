@@ -225,7 +225,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public virtual void ICollection_NonGeneric_CopyTo_ArrayOfEnumType(int count)
         {
-            Array enumArr = Enum.GetValues(typeof(EnumerableType));
+            Array enumArr = Enum.GetValues<EnumerableType>();
             if (count > 0 && count < enumArr.Length)
             {
                 ICollection collection = NonGenericICollectionFactory(count);

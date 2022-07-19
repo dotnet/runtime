@@ -175,6 +175,23 @@ namespace System
             }
         }
 
+        private static volatile Tuple<bool> s_lazyEnumGetValuesReturnsEnumArray;
+        public static bool EnumGetValuesReturnsEnumArray
+        {
+            get
+            {
+                if (s_lazyEnumGetValuesReturnsEnumArray == null)
+                {
+                    bool enumGetValuesReturnsEnumArray = Enum.GetValues(typeof(TestEnum)).GetType() == typeof(TestEnum[]);
+                    s_lazyEnumGetValuesReturnsEnumArray = Tuple.Create<bool>(enumGetValuesReturnsEnumArray);
+                }
+                return s_lazyEnumGetValuesReturnsEnumArray.Item1;
+            }
+        }
+        enum TestEnum { }
+
+        public static bool EnumGetValuesReturnsUnderlyingTypeArray => !EnumGetValuesReturnsEnumArray;
+
         private static volatile Tuple<bool> s_lazyMetadataTokensSupported;
         public static bool IsMetadataTokenSupported
         {
