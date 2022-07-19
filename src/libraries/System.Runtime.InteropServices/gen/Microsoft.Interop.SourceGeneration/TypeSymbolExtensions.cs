@@ -262,7 +262,7 @@ namespace Microsoft.Interop
                     {
                         int numArgumentsToPropogate = numArgumentsToInsert - numArgumentsToCopy;
                         // Record how many of the original generic type parameters we needed to use as arguments.
-                        // This value represents how many generic arguments at the instantiatedTemplateType type would need to have the same total number of generic parameters as unboundConstructedType,
+                        // This value represents how many generic arguments the instantiatedTemplateType type would need to have the same total number of generic parameters as unboundConstructedType,
                         // including accounting for nesting.
                         numOriginalTypeArgumentsSubstituted += numArgumentsToPropogate;
                         currentType.TypeParameters.CastArray<ITypeSymbol>().CopyTo(currentType.TypeParameters.Length - numArgumentsToPropogate, arguments, numArgumentsToCopy, numArgumentsToPropogate);

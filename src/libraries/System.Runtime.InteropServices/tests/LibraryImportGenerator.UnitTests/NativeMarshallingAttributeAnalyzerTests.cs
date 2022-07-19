@@ -17,7 +17,7 @@ namespace LibraryImportGenerator.UnitTests
     public class NativeMarshallingAttributeAnalyzerTests
     {
         [Fact]
-        public async Task NativeMarshallingWithNullMarshallerType_ReportsDiagnostic()
+        public async Task NullMarshallerType_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -31,7 +31,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithMarshallerWithNoEntryPointAttributes_ReportsDiagnostic()
+        public async Task MarshallerWithNoEntryPointAttributes_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -49,7 +49,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithMarshallerWithOnlyEntryPointAttributesForAnotherType_ReportsDiagnostic()
+        public async Task MarshallerWithOnlyEntryPointAttributesForAnotherType_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -69,7 +69,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithMarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
+        public async Task MarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -88,7 +88,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task GenericTypeNativeMarshallingWithMarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
+        public async Task GenericTypeWithMarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -107,7 +107,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NestedGenericTypeNativeMarshallingWithMarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
+        public async Task NestedGenericTypeWithMarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -129,7 +129,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithMarshallerWithEntryPointAttributeForTypeAndOtherType_DoesNotReportDiagnostic()
+        public async Task MarshallerWithEntryPointAttributeForTypeAndOtherType_DoesNotReportDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -150,7 +150,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithMarshallerWithHigherArity_ReportsDiagnostic()
+        public async Task MarshallerWithHigherArity_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -170,7 +170,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithMarshallerWithLowerArity_ReportsDiagnostic()
+        public async Task MarshallerWithLowerArity_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -190,7 +190,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithCollectionMarshallerWithOneHigherArity_DoesNotReportDiagnostic()
+        public async Task CollectionMarshallerWithOneHigherArity_DoesNotReportDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -212,7 +212,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithCollectionMarshallerWithSameArity_ReportsDiagnostic()
+        public async Task CollectionMarshallerWithSameArity_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -235,7 +235,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task NativeMarshallingWithCollectionMarshallerWithMoreArity_ReportsDiagnostic()
+        public async Task CollectionMarshallerWithMoreArity_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;

@@ -18,7 +18,7 @@ namespace LibraryImportGenerator.UnitTests
     public class CustomMarshallerAttributeAnalyzerTests
     {
         [Fact]
-        public async Task CustomMarshallerWithNullMarshallerType_ReportsDiagnostic()
+        public async Task NullMarshallerType_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
@@ -32,7 +32,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task CustomMarshallerWithMarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
+        public async Task MarshallerWithEntryPointAttributeForType_DoesNotReportDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
