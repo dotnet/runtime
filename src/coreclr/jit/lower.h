@@ -85,6 +85,9 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
+#ifdef TARGET_ARM64
+    void ContainCheckConditionalCompare(GenTreeOp* cmp);
+#endif
     bool ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree** earliest_valid);
     void ContainCheckSelect(GenTreeConditional* node);
     void ContainCheckBitCast(GenTree* node);

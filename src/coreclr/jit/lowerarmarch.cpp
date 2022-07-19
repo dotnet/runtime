@@ -104,12 +104,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
-                if (parentNode->isContained())
-                {
-                    // Contained node will be generated as a ccmp.
-                    return emitter::emitIns_valid_imm_for_ccmp(immVal);
-                }
-                FALLTHROUGH;
             case GT_CMP:
             case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
@@ -2060,6 +2054,30 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
+
+//------------------------------------------------------------------------
+// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+#ifdef TARGET_ARM64
+void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
+{
+    GenTree* op2 = cmp->gtOp2;
+
+    if (!varTypeIsFloating(cmp->TypeGet()) && op2->IsCnsIntOrI() &&
+        !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+    {
+        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
+
+        if (emitter::emitIns_valid_imm_for_ccmp(immVal))
+        {
+            MakeSrcContained(cmp, op2);
+        }
+    }
+}
+#endif
 
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.

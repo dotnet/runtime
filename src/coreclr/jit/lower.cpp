@@ -7058,10 +7058,12 @@ bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree*
         {
             tree->AsOp()->SetContained();
 
+#ifdef TARGET_ARM64
             // Ensure the children of the compare are contained correctly.
             tree->AsOp()->gtGetOp1()->ClearContained();
             tree->AsOp()->gtGetOp2()->ClearContained();
-            ContainCheckCompare(tree->AsOp());
+            ContainCheckConditionalCompare(tree->AsOp());
+#endif
             *earliest_valid = tree;
             return true;
         }
@@ -7086,12 +7088,9 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
     if (earliest_valid != nullptr)
     {
         // The earliest node in the chain will be generated as a standard compare.
-        // Temporary set as uncontained in order to correct its children.
-        earliest_valid->AsOp()->ClearContained();
         earliest_valid->AsOp()->gtGetOp1()->ClearContained();
         earliest_valid->AsOp()->gtGetOp2()->ClearContained();
         ContainCheckCompare(earliest_valid->AsOp());
-        earliest_valid->AsOp()->SetContained();
     }
 }
 
