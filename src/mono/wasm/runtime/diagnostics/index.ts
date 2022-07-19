@@ -28,6 +28,7 @@ export interface Diagnostics {
 let startup_session_configs: EventPipeSessionOptions[] = [];
 let startup_sessions: (EventPipeSession | null)[] | null = null;
 
+// called from C on the main thread
 export function mono_wasm_event_pipe_early_startup_callback(): void {
     if (startup_session_configs === null || startup_session_configs.length == 0) {
         return;

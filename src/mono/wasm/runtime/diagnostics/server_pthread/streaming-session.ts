@@ -14,15 +14,19 @@ import {
 } from "./protocol-client-commands";
 import { createEventPipeStreamingSession } from "../shared/create-session";
 
+/// The streaming session holds all the pieces of an event pipe streaming session that the
+///  diagnostic server knows about: the session ID, a
+///  queue used by the EventPipe streaming thread to forward events to the diagnostic server thread,
+///  and a wrapper around the WebSocket object used to send event data back to the host.
 export class EventPipeStreamingSession {
-    constructor(readonly sessionID: EventPipeSessionIDImpl, readonly ws: WebSocket | MockRemoteSocket,
+    constructor(readonly sessionID: EventPipeSessionIDImpl,
         readonly queue: StreamQueue, readonly connection: EventPipeSocketConnection) { }
 }
 
 export async function makeEventPipeStreamingSession(ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<EventPipeStreamingSession> {
     // First, create the native IPC stream and get its queue.
     const ipcStreamAddr = cwraps.mono_wasm_diagnostic_server_create_stream(); // FIXME: this should be a wrapped in a JS object so we can free it when we're done.
-    const queueAddr = mono_wasm_diagnostic_server_get_stream_queue(ipcStreamAddr);
+    const queueAddr = getQueueAddrFromStreamAddr(ipcStreamAddr);
     // then take over the websocket connection
     const conn = takeOverSocket(ws);
     // and set up queue notifications
@@ -36,7 +40,7 @@ export async function makeEventPipeStreamingSession(ws: WebSocket | MockRemoteSo
     const sessionID = createEventPipeStreamingSession(ipcStreamAddr, options);
     if (sessionID === false)
         throw new Error("failed to create event pipe session");
-    return new EventPipeStreamingSession(sessionID, ws, queue, conn);
+    return new EventPipeStreamingSession(sessionID, queue, conn);
 }
 
 
@@ -61,7 +65,6 @@ function providersStringFromObject(providers: EventPipeCollectTracingCommandProv
 
 
 const IPC_STREAM_QUEUE_OFFSET = 4; /* keep in sync with mono_wasm_diagnostic_server_create_stream() in C */
-function mono_wasm_diagnostic_server_get_stream_queue(streamAddr: VoidPtr): VoidPtr {
-    // TODO: this can probably be in JS if we put the queue at a known address in the stream. (probably offset 4);
+function getQueueAddrFromStreamAddr(streamAddr: VoidPtr): VoidPtr {
     return <any>streamAddr + IPC_STREAM_QUEUE_OFFSET;
 }

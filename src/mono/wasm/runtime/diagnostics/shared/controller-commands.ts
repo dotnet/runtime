@@ -1,9 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { DiagnosticMessage } from "./types";
+import type { MonoThreadMessage } from "../../pthreads/shared";
+import { isMonoThreadMessage } from "../../pthreads/shared";
 
-/// Commands from the main thread to the diagnostic server
+// Messages from the main thread to the diagnostic server thread
+export interface DiagnosticMessage extends MonoThreadMessage {
+    type: "diagnostic_server";
+    cmd: string;
+}
+
+export function isDiagnosticMessage(x: unknown): x is DiagnosticMessage {
+    return isMonoThreadMessage(x) && x.type === "diagnostic_server";
+}
+
+/// Commands from the diagnostic server controller on the main thread to the diagnostic server
 export type DiagnosticServerControlCommand =
     | DiagnosticServerControlCommandStart
     | DiagnosticServerControlCommandStop

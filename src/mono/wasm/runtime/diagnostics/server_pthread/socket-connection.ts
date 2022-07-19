@@ -6,7 +6,7 @@ import { VoidPtr } from "../../types/emscripten";
 import { Module } from "../../imports";
 import type { CommonSocket } from "./common-socket";
 enum ListenerState {
-    SendingTrailingData,
+    Sending,
     Closed,
     Error
 }
@@ -25,11 +25,15 @@ class SocketGuts {
     }
 }
 
+
+/// A wrapper around a WebSocket that just sends data back to the host.
+/// It sets up message and clsoe handlers on the WebSocket tht put it into an idle state
+/// if the connection closes or we receive any replies.
 export class EventPipeSocketConnection {
     private _state: ListenerState;
     readonly stream: SocketGuts;
     constructor(readonly socket: CommonSocket) {
-        this._state = ListenerState.SendingTrailingData;
+        this._state = ListenerState.Sending;
         this.stream = new SocketGuts(socket);
     }
 
@@ -48,7 +52,7 @@ export class EventPipeSocketConnection {
 
     write(ptr: VoidPtr, len: number): boolean {
         switch (this._state) {
-            case ListenerState.SendingTrailingData:
+            case ListenerState.Sending:
                 this.stream.write(ptr, len);
                 return true;
             case ListenerState.Closed:
@@ -61,7 +65,7 @@ export class EventPipeSocketConnection {
 
     private _onMessage(event: MessageEvent): void {
         switch (this._state) {
-            case ListenerState.SendingTrailingData:
+            case ListenerState.Sending:
                 /* unexpected message */
                 console.warn("EventPipe session stream received unexpected message from websocket", event);
                 // TODO notify runtime that the connection had an error
@@ -106,6 +110,8 @@ export class EventPipeSocketConnection {
     }
 }
 
+/// Take over a WebSocket that was used by the diagnostic server to receive the StartCollecting command and
+/// use it for sending the event pipe data back to the host.
 export function takeOverSocket(socket: CommonSocket): EventPipeSocketConnection {
     const connection = new EventPipeSocketConnection(socket);
     connection.addListeners();

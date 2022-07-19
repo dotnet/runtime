@@ -8,10 +8,11 @@ import { assertNever, mono_assert } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
 import { Module } from "../../imports";
 import cwraps from "../../cwraps";
-import { EventPipeSessionIDImpl, isDiagnosticMessage } from "../shared/types";
+import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
 import {
     DiagnosticServerControlCommand,
+    isDiagnosticMessage
 } from "../shared/controller-commands";
 
 import { mockScript } from "./mock-remote";
@@ -33,13 +34,19 @@ import parseMockCommand from "./mock-command-parser";
 import { CommonSocket } from "./common-socket";
 import {
     createProtocolSocket, dotnetDiagnosticsServerProtocolCommandEvent,
-    BinaryProtocolCommand,
     ProtocolCommandEvent,
+} from "./protocol-socket";
+import {
+    BinaryProtocolCommand,
     isBinaryProtocolCommand,
+} from "./ipc-protocol/types";
+import {
     parseBinaryProtocolCommand,
     ParseClientCommandResult,
+} from "./ipc-protocol/parser";
+import {
     createBinaryCommandOKReply,
-} from "./protocol-socket";
+} from "./ipc-protocol/serializer";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
     return new Promise((resolve) => {

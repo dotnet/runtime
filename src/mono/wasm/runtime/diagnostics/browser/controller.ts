@@ -4,8 +4,7 @@
 import cwraps from "../../cwraps";
 import { withStackAlloc, getI32 } from "../../memory";
 import { Thread, waitForThread } from "../../pthreads/browser";
-import { makeDiagnosticServerControlCommand } from "../shared/controller-commands";
-import { isDiagnosticMessage } from "../shared/types";
+import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {

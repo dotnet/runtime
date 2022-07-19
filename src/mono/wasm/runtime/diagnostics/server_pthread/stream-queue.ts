@@ -12,29 +12,18 @@ import * as Memory from "../../memory";
 // struct MonoWasmEventPipeStreamQueue {
 //    union { void* buf; intptr_t close_msg; /* -1 */ };
 //    int32_t count;
-//    volatile int32_t write_done;
+//    volatile int32_t buf_full;
 // }
 //
-// To write, the streaming thread does:
+// To write, the streaming thread:
+//  1. sets buf (or close_msg) and count, and then atomically sets buf_full.
+//  2. queues mono_wasm_diagnostic_server_stream_signal_work_available to run on the diagnostic server thread
+//  3. waits for buf_full to be 0.
 //
-//  int32_t queue_write (MonoWasmEventPipeSteamQueue *queue, uint8_t *buf, int32_t len, int32_t *bytes_written)
-//  {
-//   queue->buf = buf;
-//   queue->count = len;
-//   //WISH: mono_wasm_memory_atomic_notify (&queue->wakeup_write, 1);  //   __builtin_wasm_memory_atomic_notify((int*)addr, count);
-//   emscripten_dispatch_to_thread (diagnostic_thread_id, wakeup_stream_queue, queue);
-//   int r = mono_wasm_memory_atomic_wait (&queue->wakeup_write_done, 0, -1);  // __builtin_wasm_memory_atomic_wait((int*)addr, expected, timeout); // returns 0 ok, 1 not_equal, 2 timed out
-//   if (G_UNLIKELY (r != 0) {
-//     return -1;
-//   }
-//   result = Atomics.load (wakeup_write_done); // 0 or errno
-//   if (bytes_writen) *bytes_written = len;
-//   mono_atomic_store_int32 (&queue->wakeup_write_done, 0);
-//
-//  This would be a lot less hacky if more browsers implemented Atomics.waitAsync.
-//  Then we wouldn't have to use emscripten_dispatch_to_thread, and instead the diagnostic server could
-//  just call Atomics.waitAsync to wait for the streaming thread to write.
-//
+// Note this is a little bit fragile if there are multiple writers.
+// There _are_ multiple writers - when the streaming session first starts, either the diagnostic server thread
+// or the main thread write to the queue before the streaming thread starts.  But those actions are
+// implicitly serialized because the streaming thread isn't started until the writes are done.
 
 const BUF_OFFSET = 0;
 const COUNT_OFFSET = 4;
