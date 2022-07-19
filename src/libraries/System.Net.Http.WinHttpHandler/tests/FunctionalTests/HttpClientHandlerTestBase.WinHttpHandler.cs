@@ -29,7 +29,7 @@ namespace System.Net.Http.Functional.Tests
         protected static WinHttpClientHandler CreateHttpClientHandler(string useVersionString) =>
             CreateHttpClientHandler(Version.Parse(useVersionString));
 
-        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = true) =>
+        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
             new HttpRequestMessage(method, uri)
             {
                 Version = version
