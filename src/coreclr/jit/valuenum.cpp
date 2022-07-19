@@ -2134,14 +2134,33 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         return EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
     }
 
-    if ((genTreeOps(func) == GT_EQ) && (arg0VN == arg1VN))
+    if ((arg0VN == arg1VN) && !varTypeIsFloating(TypeOfVN(arg0VN)))
     {
-        return VNForIntCon(1);
-    }
+        if (GenTree::StaticOperIs(genTreeOps(func), GT_EQ, GT_LE, GT_GE))
+        {
+            return VNForIntCon(1);
+        }
 
-    if ((genTreeOps(func) == GT_NE) && (arg0VN == arg1VN))
-    {
-        return VNForIntCon(0);
+        if (GenTree::StaticOperIs(genTreeOps(func), GT_NE, GT_LT, GT_GT))
+        {
+            return VNForIntCon(0);
+        }
+
+        if (GenTree::StaticOperIs(genTreeOps(func), GT_XOR, GT_SUB))
+        {
+            if (genActualType(typ) == TYP_INT)
+            {
+                return VNForIntCon(0);
+            }
+
+            assert(genActualType(typ) == TYP_LONG);
+            return VNForLongCon(0);
+        }
+
+        if (GenTree::StaticOperIs(genTreeOps(func), GT_AND, GT_OR))
+        {
+            return arg0VN;
+        }
     }
 
     // We canonicalize commutative operations.
