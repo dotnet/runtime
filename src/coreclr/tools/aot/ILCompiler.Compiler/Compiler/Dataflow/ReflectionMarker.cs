@@ -206,6 +206,14 @@ namespace ILCompiler.Dataflow
                 }
             }
 
+            var diagnosticContext = new DiagnosticContext(
+                origin,
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                _logger);
+            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
+
             if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
                 return;
 

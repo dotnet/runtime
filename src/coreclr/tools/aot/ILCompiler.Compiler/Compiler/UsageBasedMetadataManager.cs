@@ -783,15 +783,28 @@ namespace ILCompiler
 
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
-            // We validate that the various dataflow/Requires* annotations are consistent across virtual method overrides
-            if (HasMismatchingAttributes(baseMethod, overridingMethod, "RequiresUnreferencedCodeAttribute"))
+            bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
+            string overridingMethodName = overridingMethod.GetDisplayName();
+            string baseMethodName = baseMethod.GetDisplayName();
+            string[] requiresCheck = new[] { DiagnosticUtilities.RequiresUnreferencedCodeAttribute, DiagnosticUtilities.RequiresDynamicCodeAttribute, DiagnosticUtilities.RequiresAssemblyFilesAttribute };
+            foreach (var requiresAttribute in requiresCheck)
             {
-                Logger.LogWarning(overridingMethod, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
-            }
+                // We validate that the various dataflow/Requires* annotations are consistent across virtual method overrides
+                if (HasMismatchingAttributes(baseMethod, overridingMethod, requiresAttribute))
+                {
+                    string message = MessageFormat.FormatRequiresAttributeMismatch(overridingMethod.DoesMethodRequire(requiresAttribute, out _),
+                        baseMethodTypeIsInterface, requiresAttribute, overridingMethodName, baseMethodName);
 
-            if (HasMismatchingAttributes(baseMethod, overridingMethod, "RequiresDynamicCodeAttribute"))
-            {
-                Logger.LogWarning(overridingMethod, DiagnosticId.RequiresDynamicCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
+                    DiagnosticId diagnosticId = requiresAttribute switch
+                    {
+                        DiagnosticUtilities.RequiresUnreferencedCodeAttribute => DiagnosticId.RequiresUnreferencedCodeAttributeMismatch,
+                        DiagnosticUtilities.RequiresDynamicCodeAttribute => DiagnosticId.RequiresDynamicCodeAttributeMismatch,
+                        DiagnosticUtilities.RequiresAssemblyFilesAttribute => DiagnosticId.RequiresAssemblyFilesAttributeMismatch,
+                        _ => throw new NotImplementedException($"{requiresAttribute} is not a valid supported Requires attribute"),
+                    };
+
+                    Logger.LogWarning(overridingMethod, diagnosticId, message);
+                }
             }
 
             bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
@@ -802,7 +815,7 @@ namespace ILCompiler
             }
         }
 
-        public static bool HasMismatchingAttributes (MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
+        public static bool HasMismatchingAttributes(MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
         {
             bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
             bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);

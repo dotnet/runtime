@@ -179,7 +179,7 @@ namespace Mono.Linker.Tests.Extensions
             if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter))
             {
                 // Append property name
-                string name = methodDefinition.IsSetter ? string.Concat(methodDefinition.Name.AsSpan(4), ".set") : string.Concat(methodDefinition.Name.AsSpan(4), ".get");
+                string name = methodDefinition.IsSetter ? string.Concat(methodDefinition.Name.Replace("set_",""), ".set") : string.Concat(methodDefinition.Name.Replace("get_",""), ".get");
                 sb.Append(name);
                 // Insert declaring type name and namespace
                 sb.Insert(0, '.').Insert(0, method.DeclaringType?.GetDisplayName());
