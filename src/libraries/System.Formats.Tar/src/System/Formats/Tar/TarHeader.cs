@@ -13,7 +13,7 @@ namespace System.Formats.Tar
     // - POSIX IEEE 1003.1-2001 ("POSIX.1") Pax Interchange Tar Format (pax).
     // - GNU Tar Format (gnu).
     // Documentation: https://www.freebsd.org/cgi/man.cgi?query=tar&sektion=5
-    internal partial struct TarHeader
+    internal sealed partial class TarHeader
     {
         // POSIX fields (shared by Ustar and PAX)
         private const string UstarMagic = "ustar\0";
@@ -60,20 +60,20 @@ namespace System.Formats.Tar
         internal DateTimeOffset _mTime;
         internal int _checksum;
         internal TarEntryType _typeFlag;
-        internal string _linkName;
+        internal string? _linkName;
 
         // POSIX and GNU shared attributes
 
         internal string _magic;
         internal string _version;
-        internal string _gName;
-        internal string _uName;
+        internal string? _gName;
+        internal string? _uName;
         internal int _devMajor;
         internal int _devMinor;
 
         // POSIX attributes
 
-        internal string _prefix;
+        internal string? _prefix;
 
         // PAX attributes
 
@@ -87,5 +87,44 @@ namespace System.Formats.Tar
         // If the archive is GNU and the offset, longnames, unused, sparse, isextended and realsize
         // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
         internal byte[]? _gnuUnusedBytes;
+
+        // Constructor called when creating an entry with default common fields.
+        internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)
+        {
+            _format = format;
+            _name = name;
+            _mode = mode;
+            _mTime = mTime;
+            _typeFlag = typeFlag;
+            _magic = GetMagicForFormat(format);
+            _version = GetVersionForFormat(format);
+        }
+
+        // Constructor called when creating an entry using the common fields from another entry.
+        // The *TarEntry constructor calling this should take care of setting any format-specific fields.
+        internal TarHeader(TarEntryFormat format, TarEntryType typeFlag, TarHeader other)
+            : this(format, other._name, other._mode, other._mTime, typeFlag)
+        {
+            _uid = other._uid;
+            _gid = other._gid;
+            _size = other._size;
+            _checksum = other._checksum;
+            _linkName = other._linkName;
+            _dataStream = other._dataStream;
+        }
+
+        private static string GetMagicForFormat(TarEntryFormat format) => format switch
+        {
+            TarEntryFormat.Ustar or TarEntryFormat.Pax => UstarMagic,
+            TarEntryFormat.Gnu => GnuMagic,
+            _ => string.Empty,
+        };
+
+        private static string GetVersionForFormat(TarEntryFormat format) => format switch
+        {
+            TarEntryFormat.Ustar or TarEntryFormat.Pax => UstarVersion,
+            TarEntryFormat.Gnu => GnuVersion,
+            _ => string.Empty,
+        };
     }
 }
