@@ -847,6 +847,13 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
 
+#ifdef DEBUG
+        if ((block->bbFlags & BBF_HAS_LABEL) != 0)
+        {
+            assert(block->bbEmitCookie != nullptr);
+        }
+#endif
+
         INDEBUG(compiler->compCurBB = nullptr);
 
     } //------------------ END-FOR each block of the method -------------------
