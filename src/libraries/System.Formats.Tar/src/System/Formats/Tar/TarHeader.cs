@@ -60,20 +60,20 @@ namespace System.Formats.Tar
         internal DateTimeOffset _mTime;
         internal int _checksum;
         internal TarEntryType _typeFlag;
-        internal string _linkName;
+        internal string? _linkName;
 
         // POSIX and GNU shared attributes
 
         internal string _magic;
         internal string _version;
-        internal string _gName;
-        internal string _uName;
+        internal string? _gName;
+        internal string? _uName;
         internal int _devMajor;
         internal int _devMinor;
 
         // POSIX attributes
 
-        internal string _prefix;
+        internal string? _prefix;
 
         // PAX attributes
 
@@ -101,15 +101,12 @@ namespace System.Formats.Tar
             _mode = mode;
             _mTime = mTime;
             _typeFlag = typeFlag;
-            _linkName = string.Empty;
             _magic = GetMagicForFormat(format);
             _version = GetVersionForFormat(format);
-            _gName = string.Empty;
-            _uName = string.Empty;
-            _prefix = string.Empty;
         }
 
         // Constructor called when creating an entry using the common fields from another entry.
+        // The *TarEntry constructor calling this should take care of setting any format-specific fields.
         internal TarHeader(TarEntryFormat format, TarEntryType typeFlag, TarHeader other)
         {
             _format = format;
@@ -124,9 +121,6 @@ namespace System.Formats.Tar
             _linkName = other._linkName;
             _magic = GetMagicForFormat(format);
             _version = GetVersionForFormat(format);
-            _gName = string.Empty;
-            _uName = string.Empty;
-            _prefix = string.Empty;
             _dataStream = other._dataStream;
         }
 

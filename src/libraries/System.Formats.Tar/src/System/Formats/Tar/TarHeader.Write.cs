@@ -180,7 +180,7 @@ namespace System.Formats.Tar
         internal void WriteAsGnu(Stream archiveStream, Span<byte> buffer)
         {
             // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName.Length > FieldLengths.LinkName)
+            if (_linkName?.Length > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
                 longLinkHeader.WriteAsGnuInternal(archiveStream, buffer);
@@ -206,7 +206,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName.Length > FieldLengths.LinkName)
+            if (_linkName?.Length > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
                 await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
@@ -595,8 +595,14 @@ namespace System.Formats.Tar
             {
                 _extendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
-            TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
-            TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+            if (!string.IsNullOrEmpty(_gName))
+            {
+                TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
+            }
+            if (!string.IsNullOrEmpty(_uName))
+            {
+                TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+            }
 
             if (!string.IsNullOrEmpty(_linkName))
             {

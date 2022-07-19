@@ -116,7 +116,7 @@ namespace System.Formats.Tar
         /// <exception cref="InvalidOperationException">Cannot set the link name if the entry type is not <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/>.</exception>
         public string LinkName
         {
-            get => _header._linkName;
+            get => _header._linkName ?? string.Empty;
             set
             {
                 if (_header._typeFlag is not TarEntryType.HardLink and not TarEntryType.SymbolicLink)
