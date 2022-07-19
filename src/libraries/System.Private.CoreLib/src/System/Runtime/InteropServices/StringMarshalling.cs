@@ -26,12 +26,10 @@ namespace System.Runtime.InteropServices
         Custom = 0,
         /// <summary>
         /// Use the platform provided UTF-8 marshaller.
-        /// <see cref="Marshalling.Utf8StringMarshaller"/>
         /// </summary>
         Utf8,
         /// <summary>
         /// Use the platform provided UTF-16 marshaller.
-        /// <see cref="Marshalling.Utf16StringMarshaller"/>
         /// </summary>
         Utf16,
     }
