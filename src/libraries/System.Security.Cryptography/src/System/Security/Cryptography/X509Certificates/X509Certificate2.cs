@@ -1223,6 +1223,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///     </list>
         ///   </para>
         ///   <para>
+        ///     This implementation considers <c>SRV-ID</c> values or <c>URI-ID</c> values as out-of-scope,
+        ///     and will not use their presence as a reason to stop the fallback from <c>DNS-ID</c> matching
+        ///     to the <c>CN-ID</c>.
+        ///   </para>
+        ///   <para>
         ///     This method does not convert non-ASCII hostnames to the IDNA representation. For Unicode domains,
         ///     the caller must make use of <see cref="System.Globalization.IdnMapping"/> or an equivalent IDNA mapper.
         ///   </para>
@@ -1245,8 +1250,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   <para>The certificate contains multiple Subject Alternative Name extensions.</para>
         ///   <para>- or -</para>
-        ///   <para>The Subject Alternative Name extension or Subject Name could not be decooded.</para>
+        ///   <para>The Subject Alternative Name extension or Subject Name could not be decoded.</para>
         /// </exception>
+        /// <seealso cref="IPAddress.TryParse(string, out IPAddress)"/>
         /// <seealso cref="Uri.CheckHostName"/>
         public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true)
         {
@@ -1320,12 +1326,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     ReadOnlySpan<char> afterFirstDot = default;
                     int firstDot = match.IndexOf('.');
-
-                    // ".something.example.org" always fails to match.
-                    if (firstDot == 0)
-                    {
-                        return false;
-                    }
+                    Debug.Assert(firstDot != 0, "Leading periods should have been rejected.");
 
                     if (firstDot > 0)
                     {

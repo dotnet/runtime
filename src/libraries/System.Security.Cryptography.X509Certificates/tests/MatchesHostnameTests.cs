@@ -108,6 +108,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
                 sanBuilder.AddIpAddress(IPAddress.Loopback);
+                sanBuilder.AddIpAddress(IPAddress.IPv6Loopback);
+                sanBuilder.AddIpAddress(IPAddress.Parse("[fe80::1]"));
                 sanBuilder.AddEmailAddress("it@fruit.example");
 
                 req.CertificateExtensions.Add(sanBuilder.Build());
@@ -119,9 +121,61 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
                 {
                     AssertMatch(true, cert, "127.0.0.1");
+                    // Various text forms of IPv6Loopback
+                    AssertMatch(true, cert, "[::1]");
+                    AssertMatch(true, cert, "::1");
+                    AssertMatch(true, cert, "[::01]");
+                    AssertMatch(true, cert, "[0000::1]");
+                    // Various text forms of fe80::1
+                    AssertMatch(true, cert, "[fe80::1]");
+                    AssertMatch(true, cert, "[FE80::1]");
+                    AssertMatch(true, cert, "fe80::1");
+                    AssertMatch(true, cert, "[fe80:0000::1]");
+                    AssertMatch(true, cert, "[fe80:0000::01]");
+                    // Various text forms of fe80::
+                    AssertMatch(false, cert, "[fe80::]");
+                    AssertMatch(false, cert, "fe80::");
+                    AssertMatch(false, cert, "[fe80::0]");
+                    AssertMatch(false, cert, "[fe80:0000::]");
 
                     // Since the SAN has an iPAddress value, we do not fall back to the CN.
                     AssertMatch(false, cert, "10.0.0.1");
+                }
+            }
+        }
+
+        [Fact]
+        public static void IPv6InCommonNameIsTextMatch()
+        {
+            using (ECDsa key = ECDsa.Create())
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=[fe80::1]",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
+                sanBuilder.AddDnsName("huckleberry.fruit.example");
+                sanBuilder.AddEmailAddress("it@fruit.example");
+
+                req.CertificateExtensions.Add(sanBuilder.Build());
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                DateTimeOffset notBefore = now.AddMinutes(-1);
+                DateTimeOffset notAfter = now.AddMinutes(1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
+                {
+                    // Various text forms of fe80::1.  These would all match under IP-ID, but
+                    // only the first couple match under CN-ID (case-insensitive exact)
+                    AssertMatch(true, cert, "[fe80::1]");
+                    AssertMatch(true, cert, "[fE80::1]");
+                    AssertMatch(true, cert, "[FE80::1]");
+                    AssertMatch(true, cert, "[Fe80::1]");
+
+                    AssertMatch(false, cert, "fe80::1");
+                    AssertMatch(false, cert, "[fe80:0000::1]");
+                    AssertMatch(false, cert, "[fe80:0000::01]");
                 }
             }
         }
@@ -202,6 +256,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
                 {
                     AssertMatch(false, cert, "cranberry.fruit.example");
+                    AssertMatch(false, cert, "cranapple.fruit.example");
+                    AssertMatch(false, cert, "strawberry.fruit.example");
                 }
             }
         }
@@ -364,38 +420,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         public static void DnsNameMatchIgnoresTrailingPeriodFromParameter()
-        {
-            using (ECDsa key = ECDsa.Create())
-            {
-                CertificateRequest req = new CertificateRequest(
-                    "CN=10.0.0.1",
-                    key,
-                    HashAlgorithmName.SHA256);
-
-                SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
-                sanBuilder.AddDnsName("fruit.EXAMPLE");
-                sanBuilder.AddDnsName("*.FrUIt.eXaMpLE");
-                sanBuilder.AddEmailAddress("it@fruit.example");
-
-                req.CertificateExtensions.Add(sanBuilder.Build());
-
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-                DateTimeOffset notBefore = now.AddMinutes(-1);
-                DateTimeOffset notAfter = now.AddMinutes(1);
-
-                using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
-                {
-                    AssertMatch(true, cert, "aPPlE.fruit.example.");
-                    AssertMatch(true, cert, "tOmaTO.FRUIT.example.");
-                    AssertMatch(false, cert, "tOmaTO.vegetable.example.");
-                    AssertMatch(true, cert, "FRUit.example.");
-                    AssertMatch(false, cert, "VEGetaBlE.example.");
-                }
-            }
-        }
-
-        [Fact]
-        public static void DnsNameMatchRejectsLeadingPeriodFromParameter()
         {
             using (ECDsa key = ECDsa.Create())
             {
@@ -697,6 +721,66 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     AssertMatch(false, cert, "example");
                     AssertMatch(false, cert, "example.");
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void DnsMatchIgnoresUriAndSrv(bool includeDnsName)
+        {
+            // URI: https://tangerine.fruit.example
+            // Other(SRV): _mail.ugli.fruit.example
+            ReadOnlySpan<byte> uriAndSrv = new byte[]
+            {
+                0x30, 0x4A, 0x86, 0x20, 0x68, 0x74, 0x74, 0x70, 0x73, 0x3A, 0x2F, 0x2F, 0x74, 0x61, 0x6E, 0x67,
+                0x65, 0x72, 0x69, 0x6E, 0x65, 0x2E, 0x66, 0x72, 0x75, 0x69, 0x74, 0x2E, 0x65, 0x78, 0x61, 0x6D,
+                0x70, 0x6C, 0x65, 0x2F, 0xA0, 0x26, 0x06, 0x08, 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x08, 0x07,
+                0xA0, 0x1A, 0x16, 0x18, 0x5F, 0x6D, 0x61, 0x69, 0x6C, 0x2E, 0x75, 0x67, 0x6C, 0x69, 0x2E, 0x66,
+                0x72, 0x75, 0x69, 0x74, 0x2E, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65,
+            };
+
+            // URI: https://tangerine.fruit.example
+            // Other(SRV): _mail.ugli.fruit.example
+            // DNS: strawberry.aggregate.fruit.example
+            // DNS: strawberry.fruit.example
+            ReadOnlySpan<byte> uriSrvAndDns = new byte[]
+            {
+                0x30, 0x81, 0x88, 0x86, 0x20, 0x68, 0x74, 0x74, 0x70, 0x73, 0x3A, 0x2F, 0x2F, 0x74, 0x61, 0x6E,
+                0x67, 0x65, 0x72, 0x69, 0x6E, 0x65, 0x2E, 0x66, 0x72, 0x75, 0x69, 0x74, 0x2E, 0x65, 0x78, 0x61,
+                0x6D, 0x70, 0x6C, 0x65, 0x2F, 0xA0, 0x26, 0x06, 0x08, 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x08,
+                0x07, 0xA0, 0x1A, 0x16, 0x18, 0x5F, 0x6D, 0x61, 0x69, 0x6C, 0x2E, 0x75, 0x67, 0x6C, 0x69, 0x2E,
+                0x66, 0x72, 0x75, 0x69, 0x74, 0x2E, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x82, 0x22, 0x73,
+                0x74, 0x72, 0x61, 0x77, 0x62, 0x65, 0x72, 0x72, 0x79, 0x2E, 0x61, 0x67, 0x67, 0x72, 0x65, 0x67,
+                0x61, 0x74, 0x65, 0x2E, 0x66, 0x72, 0x75, 0x69, 0x74, 0x2E, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C,
+                0x65, 0x82, 0x18, 0x73, 0x74, 0x72, 0x61, 0x77, 0x62, 0x65, 0x72, 0x72, 0x79, 0x2E, 0x66, 0x72,
+                0x75, 0x69, 0x74, 0x2E, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65,
+            };
+
+            using (ECDsa key = ECDsa.Create())
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=strawberry.fruit.example",
+                    key,
+                    HashAlgorithmName.SHA256);
+                
+                req.CertificateExtensions.Add(
+                    new X509Extension(
+                        "2.5.29.17",
+                        includeDnsName ? uriSrvAndDns : uriAndSrv,
+                        critical: false));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                DateTimeOffset notBefore = now.AddMinutes(-1);
+                DateTimeOffset notAfter = now.AddMinutes(1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
+                {
+                    AssertMatch(includeDnsName, cert, "strawberry.aggregate.fruit.example");
+                    AssertMatch(true, cert, "strawberry.fruit.example");
+                    AssertMatch(false, cert, "tangerine.fruit.example");
+                    AssertMatch(false, cert, "ugli.fruit.example");
                 }
             }
         }
