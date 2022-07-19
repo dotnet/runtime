@@ -6,13 +6,13 @@
           info:    at Microsoft.Extensions.Configuration.ConfigurationBinder.CreateInstance(Type , IConfiguration , BinderOptions )
           info:    at Microsoft.Extensions.Configuration.ConfigurationBinder.BindProperties(Object , IConfiguration , BinderOptions )
           info:    at System.Reflection.MethodInvoker.InterpretedInvoke(Object , Span`1 , BindingFlags )
-          info: Finished:    Microsoft.Extensions.Configuration.Binder.Tests.dll      
+          info: Finished:    Microsoft.Extensions.Configuration.Binder.Tests.dll
       -->
     <type fullname="System.Collections.Generic.SortedSet`1">
-        <method signature=".ctor" />
+        <method signature="System.Void .ctor()" />
     </type>
     <type fullname="System.Collections.Generic.HashSet`1">
-        <method signature=".ctor" />
+        <method signature="System.Void .ctor()" />
     </type>
   </assembly>
 </linker>
