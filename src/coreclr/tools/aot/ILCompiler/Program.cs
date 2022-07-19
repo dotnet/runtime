@@ -17,6 +17,7 @@ using Internal.CommandLine;
 
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -755,7 +756,8 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var logger = new Logger(Console.Out, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -789,7 +791,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider);
+            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,

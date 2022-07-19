@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using ILCompiler.Logging;
 using ILLink.Shared;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -200,5 +199,9 @@ namespace ILCompiler.Dataflow
                 _ => false
             };
         }
+
+        internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
+        internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
+        internal const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
     }
 }

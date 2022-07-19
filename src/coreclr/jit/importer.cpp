@@ -8501,6 +8501,11 @@ void Compiler::impCheckForPInvokeCall(
         call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
     }
 
+    if ((unmanagedCallConv == CorInfoCallConvExtension::Thiscall) && (sig->numArgs == 0))
+    {
+        BADCODE("thiscall with 0 arguments");
+    }
+
     // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
@@ -8574,11 +8579,6 @@ void Compiler::impCheckForPInvokeCall(
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }
-
-    if (unmanagedCallConv == CorInfoCallConvExtension::Thiscall)
-    {
-        call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
-    }
 }
 
 GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di)
@@ -8649,7 +8649,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     // For "thiscall", the first argument goes in a register. Since its
     // order does not need to be changed, we do not need to spill it
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         assert(argsToReverse);
         argsToReverse--;
@@ -8694,7 +8694,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
