@@ -4,6 +4,7 @@
 import { Module } from "../../imports";
 import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
 import { MonoThreadMessage } from "../shared";
+import { PromiseController, createPromiseController } from "../../promise-controller";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -21,33 +22,27 @@ class ThreadImpl implements Thread {
     }
 }
 
-interface ThreadCreateResolveReject {
-    resolve: (thread: Thread) => void,
-    reject: (error: Error) => void
-}
-
-const thread_promises: Map<pthread_ptr, ThreadCreateResolveReject[]> = new Map();
+const thread_promises: Map<pthread_ptr, PromiseController<Thread>[]> = new Map();
 
 /// wait until the thread with the given id has set up a message port to the runtime
 export function waitForThread(pthread_ptr: pthread_ptr): Promise<Thread> {
     if (threads.has(pthread_ptr)) {
         return Promise.resolve(threads.get(pthread_ptr)!);
     }
-    const promise: Promise<Thread> = new Promise<Thread>((resolve, reject) => {
-        const arr = thread_promises.get(pthread_ptr);
-        if (arr === undefined) {
-            thread_promises.set(pthread_ptr, new Array({ resolve, reject }));
-        } else {
-            arr.push({ resolve, reject });
-        }
-    });
-    return promise;
+    const promiseAndController = createPromiseController<Thread>();
+    const arr = thread_promises.get(pthread_ptr);
+    if (arr === undefined) {
+        thread_promises.set(pthread_ptr, [promiseAndController.promise_control]);
+    } else {
+        arr.push(promiseAndController.promise_control);
+    }
+    return promiseAndController.promise;
 }
 
 function resolvePromises(pthread_ptr: pthread_ptr, thread: Thread): void {
     const arr = thread_promises.get(pthread_ptr);
     if (arr !== undefined) {
-        arr.forEach(({ resolve }) => resolve(thread));
+        arr.forEach((controller) => controller.resolve(thread));
         thread_promises.delete(pthread_ptr);
     }
 }
