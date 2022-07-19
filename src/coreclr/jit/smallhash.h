@@ -76,6 +76,24 @@ struct HashTableInfo<unsigned>
 };
 
 //------------------------------------------------------------------------
+// HashTableInfo<ssize_t>: specialized version of HashTableInfo for ssize_t-
+//                          typed keys.
+template <>
+struct HashTableInfo<ssize_t>
+{
+    static bool Equals(ssize_t x, ssize_t y)
+    {
+        return x == y;
+    }
+
+    static unsigned GetHashCode(ssize_t key)
+    {
+        // Return the key itself
+        return (unsigned)key;
+    }
+};
+
+//------------------------------------------------------------------------
 // HashTableBase: base type for HashTable and SmallHashTable. This class
 //                provides the vast majority of the implementation. The
 //                subclasses differ in the storage they use at the time of

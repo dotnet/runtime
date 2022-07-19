@@ -461,6 +461,11 @@ public:
     // that happens to be the same...
     ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
 
+    void AddToEmbeddedHandleMap(ssize_t embeddedHandle, ssize_t compileTimeHandle)
+    {
+        m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
+    }
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -1382,6 +1387,9 @@ private:
         }
         return m_handleMap;
     }
+
+    typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
+    EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {

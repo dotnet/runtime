@@ -439,6 +439,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
     , m_handleMap(nullptr)
+    , m_embeddedToCompileTimeHandleMap(alloc)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
@@ -3712,28 +3713,48 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     // class handles and the VM agrees comparing these gives the same
     // result as comparing the runtime types.
     //
+    // Note the VN actually tracks the value of embedded handle;
+    // we need to pass the VM the associated the compile time handles.
+    //
     ValueNum handle0 = arg0Func.m_args[0];
     ValueNum handle1 = arg1Func.m_args[0];
+
     if (!IsVNHandle(handle0) || !IsVNHandle(handle1))
     {
         return NoVN;
     }
     assert(GetHandleFlags(handle0) == GTF_ICON_CLASS_HDL);
     assert(GetHandleFlags(handle1) == GTF_ICON_CLASS_HDL);
-    CORINFO_CLASS_HANDLE cls0Hnd = CORINFO_CLASS_HANDLE(ConstantValue<ssize_t>(handle0));
-    CORINFO_CLASS_HANDLE cls1Hnd = CORINFO_CLASS_HANDLE(ConstantValue<ssize_t>(handle1));
 
-    TypeCompareState s = m_pComp->info.compCompHnd->compareTypesForEquality(cls0Hnd, cls1Hnd);
+    const ssize_t handleVal0 = ConstantValue<ssize_t>(handle0);
+    const ssize_t handleVal1 = ConstantValue<ssize_t>(handle1);
+    ssize_t       compileTimeHandle0;
+    ssize_t       compileTimeHandle1;
 
-    if (s == TypeCompareState::May)
+    // These mappings should always exist.
+    //
+    const bool found0 = m_embeddedToCompileTimeHandleMap.TryGetValue(handleVal0, &compileTimeHandle0);
+    const bool found1 = m_embeddedToCompileTimeHandleMap.TryGetValue(handleVal1, &compileTimeHandle1);
+    assert(found0 && found1);
+
+    JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(compileTimeHandle0),
+            m_pComp->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), dspPtr(compileTimeHandle1),
+            m_pComp->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle1)));
+
+    ValueNum               result = NoVN;
+    const TypeCompareState s =
+        m_pComp->info.compCompHnd->compareTypesForEquality(CORINFO_CLASS_HANDLE(compileTimeHandle0),
+                                                           CORINFO_CLASS_HANDLE(compileTimeHandle1));
+    if (s != TypeCompareState::May)
     {
-        return NoVN;
+        const bool typesAreEqual = (s == TypeCompareState::Must);
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+        result = VNForIntCon(compareResult);
     }
 
-    // At this point we know enough to determine if the resulting compare will
-    // be true or false, but we'll let normal const folding take over.
-    //
-    return VNForFunc(type, func, handle0, handle1);
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -8014,8 +8035,14 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BOOL:
             if (tree->IsIconHandle())
             {
-                tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+                const ssize_t embeddedHandle    = tree->AsIntCon()->IconValue();
+                const ssize_t compileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
+                tree->gtVNPair.SetBoth(vnStore->VNForHandle(embeddedHandle, tree->GetIconHandleFlag()));
+                if (tree->GetIconHandleFlag() == GTF_ICON_CLASS_HDL)
+                {
+                    assert(compileTimeHandle != 0);
+                    vnStore->AddToEmbeddedHandleMap(embeddedHandle, compileTimeHandle);
+                }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
