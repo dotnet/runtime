@@ -3,6 +3,7 @@
 
 /// <reference lib="webworker" />
 
+import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import { assertNever, mono_assert } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
 import { Module } from "../../imports";
@@ -73,7 +74,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     constructor(websocketUrl: string) {
         this.websocketUrl = websocketUrl;
         pthread_self.addEventListenerFromBrowser(this.onMessageFromMainThread.bind(this));
-        this.mocked = websocketUrl.startsWith("mock:");
+        this.mocked = monoDiagnosticsMock && websocketUrl.startsWith("mock:");
     }
 
     private startRequestedController = createPromiseController<void>().promise_control;
@@ -117,7 +118,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async openSocket(): Promise<CommonSocket> {
-        if (this.mocked) {
+        if (monoDiagnosticsMock && this.mocked) {
             return mockScript.open();
         } else {
             const sock = new WebSocket(this.websocketUrl);
@@ -131,7 +132,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         try {
             const ws = await this.openSocket();
             let p: Promise<MessageEvent<string | ArrayBuffer>> | Promise<ProtocolCommandEvent>;
-            if (this.mocked) {
+            if (monoDiagnosticsMock && this.mocked) {
                 p = addOneShotMessageEventListener(ws);
             } else {
                 p = addOneShotProtocolCommandEventListener(createProtocolSocket(ws));
@@ -312,7 +313,7 @@ export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUr
     const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
     console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     const server = new DiagnosticServerImpl(websocketUrl);
-    if (websocketUrl.startsWith("mock:")) {
+    if (monoDiagnosticsMock && websocketUrl.startsWith("mock:")) {
         queueMicrotask(() => {
             mockScript.run();
         });

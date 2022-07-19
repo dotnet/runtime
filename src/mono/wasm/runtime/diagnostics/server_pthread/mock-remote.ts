@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mock, MockScriptEngine } from "../mock";
+import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
+import type { Mock, MockScriptEngine } from "../mock";
+import { mock } from "../mock";
 import { createPromiseController } from "../../promise-controller";
 
 function expectAdvertise(data: string | ArrayBuffer) {
@@ -49,4 +51,4 @@ const script: ((engine: MockScriptEngine) => Promise<void>)[] = [
 ];
 
 /// a mock script that simulates the initial part of the diagnostic server protocol
-export const mockScript = mock(script, { trace: true });
+export const mockScript = monoDiagnosticsMock ? mock(script, { trace: true }) : undefined as unknown as Mock;
