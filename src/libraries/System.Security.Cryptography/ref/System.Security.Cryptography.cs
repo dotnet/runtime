@@ -1542,7 +1542,6 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         [System.ObsoleteAttribute("Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.", DiagnosticId="SYSLIB0045", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.MD5? Create(string algName) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(byte[] source) { throw null; }
