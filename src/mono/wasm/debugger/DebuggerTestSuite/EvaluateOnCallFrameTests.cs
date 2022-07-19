@@ -1303,24 +1303,26 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await CheckEvaluateFail("list.Count.x", "Cannot find member 'x' on a primitive type");
-                await CheckEvaluateFail("listNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\""));
-                await CheckEvaluateFail("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\""));
-                await CheckEvaluateFail("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\""));
-                await CheckEvaluateFail("listNull?", "Expected expression.");
-                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("x?.p", "Operation '?' not allowed on primitive type - 'x?'");
-                await CheckEvaluateFail("str_null.Length", GetNullReferenceErrorOn("\"Length\""));
-                await CheckEvaluateFail("str_null!.Length", GetNullReferenceErrorOn("\"Length\""));
+                await CheckEvaluateFail(id,
+                    ("list.Count.x", "Cannot find member 'x' on a primitive type"),
+                    ("listNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\"")),
+                    ("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\"")),
+                    ("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\"")),
+                    ("listNull?", "Expected expression."),
+                    ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("x?.p", "Operation '?' not allowed on primitive type - 'x?'"),
+                    ("str_null.Length", GetNullReferenceErrorOn("\"Length\"")),
+                    ("str_null!.Length", GetNullReferenceErrorOn("\"Length\""))
+                );
 
                 string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
             });
