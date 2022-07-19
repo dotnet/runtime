@@ -75,7 +75,7 @@ struct HashTableInfo<unsigned>
     }
 };
 
-#ifdef HOST_32BIT
+#ifdef HOST_64BIT
 //------------------------------------------------------------------------
 // HashTableInfo<ssize_t>: specialized version of HashTableInfo for ssize_t-
 //                          typed keys.
