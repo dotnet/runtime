@@ -830,6 +830,9 @@ namespace System.Tests
             long intMaxPlus1 = (long)int.MaxValue + 1;
             string intMaxPlus1String = intMaxPlus1.ToString();
             Assert.Throws<FormatException>(() => d.ToString("E" + intMaxPlus1String));
+
+            // Check larger overflowed value
+            Assert.Throws<FormatException>(() => d.ToString("EG4772185890"));
         }
 
         [Theory]
