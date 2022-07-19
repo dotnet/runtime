@@ -927,10 +927,14 @@ namespace System.Numerics
                 if (head < 0x08 || clearHighF)
                 {
                     // {0xF8-0xFF} print as {8-F}
-                    // {0x00-0x07} print as {0-7}
-                    sb.Append(head < 10 ?
-                        (char)(head + '0') :
-                        format == 'X' ? (char)((head & 0xF) - 10 + 'A') : (char)((head & 0xF) - 10 + 'a'));
+                    // {0x01-0x07} print as {1-7}
+                    if (head > 0)
+                    {
+                        sb.Append(head < 10 ?
+                            (char)(head + '0') :
+                            format == 'X' ? (char)((head & 0xF) - 10 + 'A') : (char)((head & 0xF) - 10 + 'a'));
+                    }
+
                     cur--;
                 }
             }
