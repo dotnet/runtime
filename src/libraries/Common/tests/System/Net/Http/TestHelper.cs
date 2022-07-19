@@ -169,7 +169,8 @@ namespace System.Net.Http.Functional.Tests
         {
             var handler = new SocketsHttpHandler();
 
-            if (allowAllCertificates)
+            // Browser doesn't support ServerCertificateCustomValidationCallback
+            if (allowAllCertificates && TestPlatforms.IsNotBrowser)
             {
                 // On Android, it is not enough to set the custom validation callback, the certificates also need to be trusted by the OS.
                 // See HttpClientHandlerTestBase.SocketsHttpHandler.cs:CreateHttpClientHandler for more details.
