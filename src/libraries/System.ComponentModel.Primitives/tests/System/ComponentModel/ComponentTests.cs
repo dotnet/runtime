@@ -218,8 +218,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(0, callCount);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72494", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingFinalizersSupported))]
         public void Finalize_Invoke_DoesNotCallDisposedEvent()
         {
             var component = new SubComponent();

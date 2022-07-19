@@ -138,6 +138,7 @@ namespace System
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+        public static bool IsInvokingFinalizersSupported => !IsNativeAot;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
