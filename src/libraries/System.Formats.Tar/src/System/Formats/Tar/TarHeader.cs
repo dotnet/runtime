@@ -13,7 +13,7 @@ namespace System.Formats.Tar
     // - POSIX IEEE 1003.1-2001 ("POSIX.1") Pax Interchange Tar Format (pax).
     // - GNU Tar Format (gnu).
     // Documentation: https://www.freebsd.org/cgi/man.cgi?query=tar&sektion=5
-    internal partial class TarHeader
+    internal sealed partial class TarHeader
     {
         // POSIX fields (shared by Ustar and PAX)
         private const string UstarMagic = "ustar\0";
@@ -87,5 +87,61 @@ namespace System.Formats.Tar
         // If the archive is GNU and the offset, longnames, unused, sparse, isextended and realsize
         // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
         internal byte[]? _gnuUnusedBytes;
+
+        internal TarHeader(TarEntryFormat format)
+            : this(format, string.Empty, 0, default, 0)
+        {
+        }
+
+        // Constructor called when creating an entry with default common fields.
+        internal TarHeader(TarEntryFormat format, string name, int mode, DateTimeOffset mTime, TarEntryType typeFlag)
+        {
+            _format = format;
+            _name = name;
+            _mode = mode;
+            _mTime = mTime;
+            _typeFlag = typeFlag;
+            _linkName = string.Empty;
+            _magic = GetMagicForFormat(format);
+            _version = GetVersionForFormat(format);
+            _gName = string.Empty;
+            _uName = string.Empty;
+            _prefix = string.Empty;
+        }
+
+        // Constructor called when creating an entry using the common fields from another entry.
+        internal TarHeader(TarEntryFormat format, TarEntryType typeFlag, TarHeader other)
+        {
+            _format = format;
+            _name = other._name;
+            _mode = other._mode;
+            _uid = other._uid;
+            _gid = other._gid;
+            _size = other._size;
+            _mTime = other._mTime;
+            _checksum = other._checksum;
+            _typeFlag = typeFlag;
+            _linkName = other._linkName;
+            _magic = GetMagicForFormat(format);
+            _version = GetVersionForFormat(format);
+            _gName = string.Empty;
+            _uName = string.Empty;
+            _prefix = string.Empty;
+            _dataStream = other._dataStream;
+        }
+
+        private static string GetMagicForFormat(TarEntryFormat format) => format switch
+        {
+            TarEntryFormat.Ustar or TarEntryFormat.Pax => UstarMagic,
+            TarEntryFormat.Gnu => GnuMagic,
+            _ => string.Empty,
+        };
+
+        private static string GetVersionForFormat(TarEntryFormat format) => format switch
+        {
+            TarEntryFormat.Ustar or TarEntryFormat.Pax => UstarVersion,
+            TarEntryFormat.Gnu => GnuVersion,
+            _ => string.Empty,
+        };
     }
 }
