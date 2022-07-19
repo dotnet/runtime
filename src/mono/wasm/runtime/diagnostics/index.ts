@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import monoWasmThreads from "consts:monoWasmThreads";
 import type {
     DiagnosticOptions,
     EventPipeSessionOptions,
@@ -30,12 +31,14 @@ let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 // called from C on the main thread
 export function mono_wasm_event_pipe_early_startup_callback(): void {
-    if (startup_session_configs === null || startup_session_configs.length == 0) {
-        return;
+    if (monoWasmThreads) {
+        if (startup_session_configs === null || startup_session_configs.length == 0) {
+            return;
+        }
+        console.debug("diagnostics: setting startup sessions based on startup session configs", startup_session_configs);
+        startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
+        startup_session_configs = [];
     }
-    console.debug("diagnostics: setting startup sessions based on startup session configs", startup_session_configs);
-    startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
-    startup_session_configs = [];
 }
 
 
@@ -49,26 +52,34 @@ function createAndStartEventPipeSession(options: (EventPipeSessionOptions)): Eve
     return session;
 }
 
+function getDiagnostics(): Diagnostics {
+    if (monoWasmThreads) {
+        return {
+            /// An enumeration of the level (higher value means more detail):
+            /// LogAlways: 0,
+            /// Critical: 1,
+            /// Error: 2,
+            /// Warning: 3,
+            /// Informational: 4,
+            /// Verbose: 5,
+            EventLevel: eventLevel,
+            /// A builder for creating an EventPipeSessionOptions instance.
+            SessionOptionsBuilder: SessionOptionsBuilder,
+            /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
+            /// Use the options to control the kinds of events to be collected.
+            /// Multiple sessions may be created and started at the same time.
+            createEventPipeSession: makeEventPipeSession,
+            getStartupSessions(): (EventPipeSession | null)[] {
+                return Array.from(startup_sessions || []);
+            },
+        };
+    } else {
+        return undefined as unknown as Diagnostics;
+    }
+}
+
 /// APIs for working with .NET diagnostics from JavaScript.
-export const diagnostics: Diagnostics = {
-    /// An enumeration of the level (higher value means more detail):
-    /// LogAlways: 0,
-    /// Critical: 1,
-    /// Error: 2,
-    /// Warning: 3,
-    /// Informational: 4,
-    /// Verbose: 5,
-    EventLevel: eventLevel,
-    /// A builder for creating an EventPipeSessionOptions instance.
-    SessionOptionsBuilder: SessionOptionsBuilder,
-    /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
-    /// Use the options to control the kinds of events to be collected.
-    /// Multiple sessions may be created and started at the same time.
-    createEventPipeSession: makeEventPipeSession,
-    getStartupSessions(): (EventPipeSession | null)[] {
-        return Array.from(startup_sessions || []);
-    },
-};
+export const diagnostics: Diagnostics = getDiagnostics();
 
 // Initialization flow
 ///   * The runtime calls configure_diagnostics with options from MonoConfig
@@ -84,22 +95,27 @@ let suspendOnStartup = false;
 let diagnosticsServerEnabled = false;
 
 export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
-    if (!is_nullish(options.server)) {
-        if (options.server.connect_url === undefined || typeof (options.server.connect_url) !== "string") {
-            throw new Error("server.connect_url must be a string");
-        }
-        const url = options.server.connect_url;
-        const suspend = boolsyOption(options.server.suspend);
-        const controller = await startDiagnosticServer(url);
-        if (controller) {
-            diagnosticsServerEnabled = true;
-            if (suspend) {
-                suspendOnStartup = true;
+    if (!monoWasmThreads) {
+        console.warn("ignoring diagnostics options because this runtime does not support diagnostics", options);
+        return;
+    } else {
+        if (!is_nullish(options.server)) {
+            if (options.server.connect_url === undefined || typeof (options.server.connect_url) !== "string") {
+                throw new Error("server.connect_url must be a string");
+            }
+            const url = options.server.connect_url;
+            const suspend = boolsyOption(options.server.suspend);
+            const controller = await startDiagnosticServer(url);
+            if (controller) {
+                diagnosticsServerEnabled = true;
+                if (suspend) {
+                    suspendOnStartup = true;
+                }
             }
         }
+        const sessions = options?.sessions ?? [];
+        startup_session_configs.push(...sessions);
     }
-    const sessions = options?.sessions ?? [];
-    startup_session_configs.push(...sessions);
 }
 
 function boolsyOption(x: string | boolean): boolean {
