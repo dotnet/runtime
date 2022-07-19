@@ -6194,6 +6194,9 @@ public:
             if (!GCToOSInterface::GetProcessorForHeap ((uint16_t)i, &proc_no, &node_no))
                 break;
 
+            if (node_no == NUMA_NODE_UNDEFINED)
+                node_no = 0;
+
             int start_heap = (int)numa_node_to_heap_map[node_no];
             int end_heap = (int)(numa_node_to_heap_map[node_no + 1]);
 

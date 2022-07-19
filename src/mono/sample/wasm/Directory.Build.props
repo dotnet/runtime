@@ -28,6 +28,11 @@
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemTpe="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferencOutputAssembly="false" />
+  </ItemGroup>
+
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
   <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
 </Project>

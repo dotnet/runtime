@@ -8871,6 +8871,105 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 #endif
 }
 
+static void
+add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX:
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_METHOD_RGCTX: {
+		MonoMethod *m = NULL;
+
+		if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH || patch_info->type == MONO_PATCH_INFO_RGCTX_SLOT_INDEX) {
+			MonoJumpInfoRgctxEntry *e = patch_info->data.rgctx_entry;
+
+			if (e->info_type == MONO_RGCTX_INFO_GENERIC_METHOD_CODE || e->info_type == MONO_RGCTX_INFO_METHOD_FTNDESC)
+				m = e->data->data.method;
+		} else {
+			m = patch_info->data.method;
+		}
+
+		if (!m)
+			break;
+
+		if (m->is_inflated && (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))) {
+			if (!(mono_class_generic_sharing_enabled (m->klass) &&
+				  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&
+				(!method_has_type_vars (m) || mono_method_is_generic_sharable_full (m, TRUE, TRUE, FALSE))) {
+				if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+					if (mono_aot_mode_is_full (&acfg->aot_opts) && !method_has_type_vars (m))
+						add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
+				} else {
+					add_extra_method_with_depth (acfg, m, depth + 1);
+					add_types_from_method_header (acfg, m);
+				}
+			}
+			add_generic_class_with_depth (acfg, m->klass, depth + 5, "method");
+		}
+		if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (m);
+
+			if (info && info->subtype == WRAPPER_SUBTYPE_ELEMENT_ADDR)
+				add_extra_method_with_depth (acfg, m, depth + 1);
+		}
+		break;
+	}
+	case MONO_PATCH_INFO_VTABLE: {
+		MonoClass *klass = patch_info->data.klass;
+
+		if (mono_class_is_ginst (klass) && !mini_class_is_generic_sharable (klass))
+			add_generic_class_with_depth (acfg, klass, depth + 5, "vtable");
+		break;
+	}
+	case MONO_PATCH_INFO_SFLDA: {
+		MonoClass *klass = m_field_get_parent (patch_info->data.field);
+
+		/* The .cctor needs to run at runtime. */
+		if (mono_class_is_ginst (klass) && !mono_generic_context_is_sharable_full (&mono_class_get_generic_class (klass)->context, FALSE, FALSE) && mono_class_get_cctor (klass))
+			add_extra_method_with_depth (acfg, mono_class_get_cctor (klass), depth + 1);
+		break;
+	}
+	case MONO_PATCH_INFO_GSHARED_METHOD_INFO: {
+		MonoGSharedMethodInfo *info = (MonoGSharedMethodInfo*)patch_info->data.target;
+
+		for (int i = 0; i < info->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *entry = &info->entries [i];
+			MonoRgctxInfoType info_type = entry->info_type;
+			gpointer data = entry->data;
+			MonoJumpInfo tmp;
+			MonoJumpInfoType patch_type;
+
+			memset (&tmp, 0, sizeof (MonoJumpInfo));
+
+			patch_type = mini_rgctx_info_type_to_patch_info_type (info_type);
+			switch (patch_type) {
+			case MONO_PATCH_INFO_CLASS:
+				tmp.type = patch_type;
+				tmp.data.target = mono_class_from_mono_type_internal ((MonoType*)data);
+				break;
+			case MONO_PATCH_INFO_FIELD:
+			case MONO_PATCH_INFO_METHOD:
+			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_VIRT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+				tmp.type = patch_type;
+				tmp.data.target = data;
+				break;
+			default:
+				break;
+			}
+			add_referenced_patch (acfg, &tmp, depth);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}
+
 /*
  * compile_method:
  *
@@ -9089,67 +9188,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	 */
 	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
 	if (!acfg->aot_opts.no_instances && depth < 32 && (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))) {
-		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_RGCTX_FETCH:
-			case MONO_PATCH_INFO_RGCTX_SLOT_INDEX:
-			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_METHOD_FTNDESC:
-			case MONO_PATCH_INFO_METHOD_RGCTX: {
-				MonoMethod *m = NULL;
-
-				if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH || patch_info->type == MONO_PATCH_INFO_RGCTX_SLOT_INDEX) {
-					MonoJumpInfoRgctxEntry *e = patch_info->data.rgctx_entry;
-
-					if (e->info_type == MONO_RGCTX_INFO_GENERIC_METHOD_CODE || e->info_type == MONO_RGCTX_INFO_METHOD_FTNDESC)
-						m = e->data->data.method;
-				} else {
-					m = patch_info->data.method;
-				}
-
-				if (!m)
-					break;
-				if (m->is_inflated && (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))) {
-					if (!(mono_class_generic_sharing_enabled (m->klass) &&
-						  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&
-						(!method_has_type_vars (m) || mono_method_is_generic_sharable_full (m, TRUE, TRUE, FALSE))) {
-						if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-							if (mono_aot_mode_is_full (&acfg->aot_opts) && !method_has_type_vars (m))
-								add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
-						} else {
-							add_extra_method_with_depth (acfg, m, depth + 1);
-							add_types_from_method_header (acfg, m);
-						}
-					}
-					add_generic_class_with_depth (acfg, m->klass, depth + 5, "method");
-				}
-				if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
-					WrapperInfo *info = mono_marshal_get_wrapper_info (m);
-
-					if (info && info->subtype == WRAPPER_SUBTYPE_ELEMENT_ADDR)
-						add_extra_method_with_depth (acfg, m, depth + 1);
-				}
-				break;
-			}
-			case MONO_PATCH_INFO_VTABLE: {
-				MonoClass *klass = patch_info->data.klass;
-
-				if (mono_class_is_ginst (klass) && !mini_class_is_generic_sharable (klass))
-					add_generic_class_with_depth (acfg, klass, depth + 5, "vtable");
-				break;
-			}
-			case MONO_PATCH_INFO_SFLDA: {
-				MonoClass *klass = m_field_get_parent (patch_info->data.field);
-
-				/* The .cctor needs to run at runtime. */
-				if (mono_class_is_ginst (klass) && !mono_generic_context_is_sharable_full (&mono_class_get_generic_class (klass)->context, FALSE, FALSE) && mono_class_get_cctor (klass))
-					add_extra_method_with_depth (acfg, mono_class_get_cctor (klass), depth + 1);
-				break;
-			}
-			default:
-				break;
-			}
-		}
+		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
+			add_referenced_patch (acfg, patch_info, depth);
 	}
 
 	/* Determine whenever the method has GOT slots */

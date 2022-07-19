@@ -34,9 +34,6 @@ namespace System.Net.Quic;
 ///
 /// Each connection can then open outbound stream: <see cref="QuicConnection.OpenOutboundStreamAsync(QuicStreamType, CancellationToken)" />,
 /// or accept an inbound stream: <see cref="QuicConnection.AcceptInboundStreamAsync(CancellationToken)" />.
-///
-/// After all the streams have been finished, connection should be properly closed with an application code: <see cref="CloseAsync(long, CancellationToken)" />.
-/// If not, the connection will not send the peer information about being closed and the peer's connection will have to wait on its idle timeout.
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
@@ -177,6 +174,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
 
+    /// <inheritdoc cref="ToString"/>
     public override string ToString() => _handle.ToString();
 
     /// <summary>
