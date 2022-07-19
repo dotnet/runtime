@@ -156,7 +156,7 @@ mono_wasm_diagnostic_server_create_thread (const char *websocket_url, pthread_t 
 	memset(out_thread_id, 0, sizeof(pthread_t));
 	return FALSE;
 }
-	
+
 void
 mono_wasm_diagnostic_server_thread_attach_to_runtime (void)
 {
@@ -176,11 +176,13 @@ mono_wasm_diagnostic_server_post_resume_runtime (void)
 	}
 }
 
+#define QUEUE_CLOSE_SENTINEL ((uint8_t*)(intptr_t)-1)
+
 /* single-reader single-writer one-element queue. See
  * src/mono/wasm/runtime/diagnostics/server_pthread/stream-queue.ts
- */ 
+ */
 typedef struct WasmIpcStreamQueue {
-	uint8_t *buf;
+	uint8_t *buf; /* or QUEUE_CLOSE_SENTINEL */
 	int32_t count;
 	volatile int32_t buf_full;
 } WasmIpcStreamQueue;
@@ -229,8 +231,14 @@ queue_push_sync (WasmIpcStreamQueue *q, const uint8_t *buf, uint32_t buf_size, u
 	// wait until the reader reads the value
 	int r = 0;
 	if (G_LIKELY (will_wait)) {
+		gboolean is_browser_thread_inited = FALSE;
+		gboolean is_browser_thread = FALSE;
 		while (mono_atomic_load_i32 (&q->buf_full) != 0) {
-			if (G_UNLIKELY (mono_threads_wasm_is_browser_thread ())) {
+			if (G_UNLIKELY (is_browser_thread_inited)) {
+					is_browser_thread = mono_threads_wasm_is_browser_thread ();
+					is_browser_thread_inited = TRUE;
+			}
+			if (G_UNLIKELY (is_browser_thread)) {
 				/* can't use memory.atomic.wait32 on the main thread, spin instead */
 				/* this lets Emscripten run queued calls on the main thread */
 				emscripten_thread_sleep (1);
@@ -312,7 +320,7 @@ wasm_ipc_stream_close (void *self)
 {
 	WasmIpcStream *stream = (WasmIpcStream*)self;
 	// push the special buf value -1 to signal stream close.
-	int r = queue_push_sync (&stream->queue, (void*)(intptr_t)-1, 0, NULL);
+	int r = queue_push_sync (&stream->queue, QUEUE_CLOSE_SENTINEL, 0, NULL);
 	return r == 0;
 }
 
