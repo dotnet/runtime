@@ -75,6 +75,7 @@ struct HashTableInfo<unsigned>
     }
 };
 
+#ifdef HOST_32BIT
 //------------------------------------------------------------------------
 // HashTableInfo<ssize_t>: specialized version of HashTableInfo for ssize_t-
 //                          typed keys.
@@ -92,6 +93,7 @@ struct HashTableInfo<ssize_t>
         return (unsigned)key;
     }
 };
+#endif
 
 //------------------------------------------------------------------------
 // HashTableBase: base type for HashTable and SmallHashTable. This class
