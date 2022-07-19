@@ -159,7 +159,7 @@ struct _MonoMemoryManager {
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
 	MonoConcGHashTable *refobject_hash;
-	// Maps class -> type initializaiton exception object
+	// Maps class -> type initialization exception object
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;

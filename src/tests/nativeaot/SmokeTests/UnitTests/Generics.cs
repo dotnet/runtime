@@ -27,6 +27,7 @@ class Generics
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
+        TestSharedAndUnsharedGvmAnalysisRegression.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
         TestReflectionInvoke.Run();
@@ -43,6 +44,7 @@ class Generics
         TestSimpleGenericRecursion.Run();
         TestGenericRecursionFromNpgsql.Run();
         TestRecursionInGenericVirtualMethods.Run();
+        TestRecursionInGenericInterfaceMethods.Run();
         TestRecursionThroughGenericLookups.Run();
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -911,7 +913,6 @@ class Generics
 
                 // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
                 // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
-                // On ProjectN, both types will get vtable entries for both methods.
                 new BaseClass<int>().Method1(1);
                 m1 = typeof(BaseClass<int>).GetTypeInfo().GetDeclaredMethod("Method1");
                 Verify("BaseClass.Method1", m1.Invoke(new BaseClass<int>(), new object[] { (int)1 }));
@@ -1662,6 +1663,36 @@ class Generics
         {
             TestInContext<object>();
             TestInContext<int>();
+        }
+    }
+
+    class TestSharedAndUnsharedGvmAnalysisRegression
+    {
+        interface IAtom { }
+        interface IPhantom { }
+        class Atom : IAtom, IPhantom { }
+
+        class Lol<TLeft> where TLeft : IAtom, IPhantom
+        {
+            public static void Run() => ((IPartitionedStreamRecipient<int>)new RightChildResultsRecipient<TLeft, int>()).ReceivePackage<int>();
+        }
+
+        interface IPartitionedStreamRecipient<T>
+        {
+            void ReceivePackage<U>();
+        }
+
+        sealed class RightChildResultsRecipient<TLeftInput, TRightInput> : IPartitionedStreamRecipient<TRightInput>
+        {
+            public void ReceivePackage<U>() => Console.WriteLine("Accepted");
+        }
+
+        static Type s_atom = typeof(Atom);
+
+        public static void Run()
+        {
+            // Make sure the compiler never saw anything more concrete than Lol<__Canon>.
+            typeof(Lol<>).MakeGenericType(s_atom).GetMethod("Run").Invoke(null, Array.Empty<object>());
         }
     }
 
@@ -3119,6 +3150,47 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             // Inspired by https://github.com/dotnet/machinelearning/blob/cc5e6395e0d15e4d3db702b9cb1129e12838b840/src/Microsoft.ML.Transforms/UngroupTransform.cs#L610-L629
             s_derived.Get<object>();
+        }
+    }
+
+    class TestRecursionInGenericInterfaceMethods
+    {
+        interface IFoo
+        {
+            void Recurse<T>(int val);
+        }
+
+        class Foo : IFoo
+        {
+            void IFoo.Recurse<T>(int val)
+            {
+                if (val > 0)
+                    ((IFoo)this).Recurse<S<T>>(val - 1);
+            }
+        }
+
+        struct S<T>
+        {
+            public T Field;
+        }
+
+        public static void Run()
+        {
+            IFoo f = new Foo();
+
+            f.Recurse<int>(2);
+
+            bool thrown = false;
+            try
+            {
+                f.Recurse<int>(100);
+            }
+            catch (TypeLoadException)
+            {
+                thrown = true;
+            }
+            if (!thrown)
+                throw new Exception();
         }
     }
 

@@ -111,17 +111,11 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                         StringBuilder genericTypeName = new StringBuilder();
                         genericTypeName.Append(typeNameSansBackTick);
                         genericTypeName.Append('<');
-                        if (genericParameterOffsets != null)
-                        {
-                            genericParameterOffsets.Add(genericTypeName.Length);
-                        }
+                        genericParameterOffsets?.Add(genericTypeName.Length);
                         for (int i = 1; i < genericParameterCount; i++)
                         {
                             genericTypeName.Append(',');
-                            if (genericParameterOffsets != null)
-                            {
-                                genericParameterOffsets.Add(genericTypeName.Length);
-                            }
+                            genericParameterOffsets?.Add(genericTypeName.Length);
                         }
                         genericTypeName.Append('>');
                         return genericTypeName.ToString();

@@ -244,7 +244,7 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(in index)));
+            return InternalGetValue(GetFlattenedIndex(index));
         }
 
         public object? GetValue(int index1, int index2)
@@ -268,7 +268,7 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(in index)));
+            InternalSetValue(value, GetFlattenedIndex(index));
         }
 
         public void SetValue(object? value, int index1, int index2)
@@ -1370,7 +1370,7 @@ namespace System
                 }
             }
 
-#if !CORERT
+#if !NATIVEAOT
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
 #else
             return IndexOfImpl(array, value, startIndex, count);
@@ -1625,7 +1625,7 @@ namespace System
                 }
             }
 
-#if !CORERT
+#if !NATIVEAOT
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
 #else
             return LastIndexOfImpl(array, value, startIndex, count);
@@ -1722,7 +1722,8 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Reverse(array, 0, array.Length);
+            if (array.Length > 1)
+                SpanHelpers.Reverse(ref MemoryMarshal.GetArrayDataReference(array), (nuint)array.Length);
         }
 
         public static void Reverse<T>(T[] array, int index, int length)
@@ -1739,16 +1740,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
-            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
-            do
-            {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Add(ref last, -1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
+            SpanHelpers.Reverse(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), (nuint)length);
         }
 
         // Sorts the elements of an array. The sort compares the elements to each
@@ -2477,13 +2469,11 @@ namespace System
                         break;
 
                     keys.SetValue(keys.GetValue(lo + child - 1), lo + i - 1);
-                    if (items != null)
-                        items.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
+                    items?.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
                     i = child;
                 }
                 keys.SetValue(d, lo + i - 1);
-                if (items != null)
-                    items.SetValue(dt, lo + i - 1);
+                items?.SetValue(dt, lo + i - 1);
             }
 
             private void InsertionSort(int lo, int hi)
@@ -2500,14 +2490,12 @@ namespace System
                     while (j >= lo && comparer.Compare(t, keys.GetValue(j)) < 0)
                     {
                         keys.SetValue(keys.GetValue(j), j + 1);
-                        if (items != null)
-                            items.SetValue(items.GetValue(j), j + 1);
+                        items?.SetValue(items.GetValue(j), j + 1);
                         j--;
                     }
 
                     keys.SetValue(t, j + 1);
-                    if (items != null)
-                        items.SetValue(dt, j + 1);
+                    items?.SetValue(dt, j + 1);
                 }
             }
         }

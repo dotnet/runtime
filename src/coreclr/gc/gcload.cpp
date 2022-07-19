@@ -78,7 +78,7 @@ GC_Initialize(
     // various components may want to query the current configuration.
     GCConfig::Initialize();
 
-#ifndef FEATURE_REDHAWK // GCToOSInterface is initialized directly
+#ifndef FEATURE_NATIVEAOT // GCToOSInterface is initialized directly
     if (!GCToOSInterface::Initialize())
     {
         return E_FAIL;

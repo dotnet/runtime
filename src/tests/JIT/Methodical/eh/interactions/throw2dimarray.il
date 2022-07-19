@@ -35,7 +35,9 @@
 
 
 
-.class private auto ansi beforefieldinit App
+.namespace Test_throw2dimarray
+{
+.class public auto ansi beforefieldinit App
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
@@ -408,3 +410,4 @@
   } 
 
 } 
+}

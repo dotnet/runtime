@@ -1559,7 +1559,7 @@ namespace System.Xml.Tests
             public void CData_12(XmlWriterUtils utils)
             {
                 // WriteCData with empty string when the write buffer looks like
-                // <r>aaaaaaa....   (currently lenght is 2048 * 3 - len("<![CDATA[")
+                // <r>aaaaaaa....   (currently length is 2048 * 3 - len("<![CDATA[")
                 int buflen = 2048 * 3;
                 string xml1 = "<r>";
                 string xml3 = "<![CDATA[";

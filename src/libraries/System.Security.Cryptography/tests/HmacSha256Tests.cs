@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class HmacSha256Tests : Rfc4231HmacTests
     {
         protected override int BlockSize => 64;
@@ -123,6 +122,16 @@ namespace System.Security.Cryptography.Tests
         public void HmacSha256_ThrowsArgumentNullForNullConstructorKey()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA256(null));
+        }
+
+        [Fact]
+        public void HmacSha256_EmptyKey()
+        {
+            VerifyRepeating(
+                input: "Crypto is fun!",
+                1,
+                hexKey: "",
+                output: "DE26DD5A23A91021F61EACF8A8DD324AB5637977486A10D701C4DFA4AE33CB4F");
         }
 
         [Fact]

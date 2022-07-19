@@ -67,4 +67,3 @@ namespace System.Text.Json.Reflection
         }
     }
 }
-

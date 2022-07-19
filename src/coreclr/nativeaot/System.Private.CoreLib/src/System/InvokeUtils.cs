@@ -96,7 +96,7 @@ namespace System
                         return srcObject;
                 }
 
-                object dstObject;
+                object? dstObject;
                 Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, srcEEType, dstEEType, semantics, out dstObject);
                 if (exception == null)
                     return dstObject;
@@ -127,7 +127,7 @@ namespace System
         }
 
         // Special coersion rules for primitives, enums and pointer.
-        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstObject)
+        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
         {
             if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType.IsEnum || dstEEType.IsEnum))
             {
@@ -427,9 +427,6 @@ namespace System
                     }
                 }
 
-                if (result == NullByRefValueSentinel)
-                    throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
-
                 return result;
             }
         }
@@ -509,9 +506,9 @@ namespace System
             }
         }
 
-        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[]? parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
+        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[] parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
         {
-            object finalObjectToReturn = boxedValuetype;
+            object? finalObjectToReturn = boxedValuetype;
             EETypePtr eeType = type.ToEETypePtr();
             bool nullable = eeType.IsNullable;
 
@@ -528,10 +525,7 @@ namespace System
             {
                 if (paramType == DynamicInvokeParamType.Ref)
                 {
-                    if (nullableCopyBackObjects == null)
-                    {
-                        nullableCopyBackObjects = new object[parameters.Length];
-                    }
+                    nullableCopyBackObjects ??= new object[parameters.Length];
 
                     nullableCopyBackObjects[index] = finalObjectToReturn;
                     parameters[index] = null;
@@ -548,7 +542,7 @@ namespace System
             return finalObjectToReturn;
         }
 
-        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
+        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
         {
             object finalObjectToReturn = boxedPointerType;
 
@@ -572,18 +566,28 @@ namespace System
 
             Debug.Assert(argSetupState.parameters != null);
             object? incomingParam = argSetupState.parameters[index];
+            bool nullable = type.ToEETypePtr().IsNullable;
 
             // Handle default parameters
             if ((incomingParam == System.Reflection.Missing.Value) && paramType == DynamicInvokeParamType.In)
             {
                 incomingParam = GetDefaultValue(argSetupState.targetMethodOrDelegate, type, index);
+                if (incomingParam != null && nullable)
+                {
+                    // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
+                    // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                    EETypePtr nullableType = type.ToEETypePtr().NullableType;
+                    if (nullableType.IsEnum)
+                    {
+                        incomingParam = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), incomingParam);
+                    }
+                }
 
                 // The default value is captured into the parameters array
                 argSetupState.parameters[index] = incomingParam;
             }
 
             RuntimeTypeHandle widenAndCompareType = type;
-            bool nullable = type.ToEETypePtr().IsNullable;
             if (nullable)
             {
                 widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);
@@ -660,28 +664,12 @@ namespace System
                         {
                             // Since this not a by-ref parameter, we don't want to bash the original user-owned argument array but the rules of DynamicInvokeParamHelperCore() require
                             // that we return non-value types as the "index"th element in an array. Thus, create an on-demand throwaway array just for this purpose.
-                            if (argSetupState.customBinderProvidedParameters == null)
-                            {
-                                argSetupState.customBinderProvidedParameters = new object[argSetupState.parameters.Length];
-                            }
+                            argSetupState.customBinderProvidedParameters ??= new object[argSetupState.parameters.Length];
                             argSetupState.customBinderProvidedParameters[index] = incomingParam;
                             return argSetupState.customBinderProvidedParameters;
                         }
                     }
                 }
-            }
-        }
-
-        private static volatile object _nullByRefValueSentinel;
-        public static object NullByRefValueSentinel
-        {
-            get
-            {
-                if (_nullByRefValueSentinel == null)
-                {
-                    Interlocked.CompareExchange(ref _nullByRefValueSentinel, new object(), null);
-                }
-                return _nullByRefValueSentinel;
             }
         }
     }

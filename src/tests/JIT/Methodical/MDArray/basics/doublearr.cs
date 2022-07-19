@@ -4,7 +4,10 @@
 //Simple arithmatic manipulation of one 2D array elements
 
 using System;
+using Xunit;
 
+namespace Test_doublearr_basics
+{
 public class double1
 {
     public static Random rand;
@@ -130,7 +133,8 @@ public class double1
             }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
@@ -258,4 +262,5 @@ public class double1
             return 1;
         }
     }
+}
 }

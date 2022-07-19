@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if NETFRAMEWORK || NETCOREAPP
@@ -8,6 +8,7 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed partial class ReflectionEmitCachingMemberAccessor : MemberAccessor
     {
         private static readonly ReflectionEmitMemberAccessor s_sourceAccessor = new();
@@ -22,7 +23,7 @@ namespace System.Text.Json.Serialization.Metadata
                     Justification = "Parent method annotation does not flow to lambda method, cf. https://github.com/dotnet/roslyn/issues/46646")]
                 static (_) => s_sourceAccessor.CreateAddMethodDelegate<TCollection>());
 
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
+        public override Func<object>? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
             => s_cache.GetOrAdd((nameof(CreateConstructor), classType, null),
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                     Justification = "Cannot apply DynamicallyAccessedMembersAttribute to tuple properties.")]

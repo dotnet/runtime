@@ -323,8 +323,10 @@ namespace Microsoft.Win32
             return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
         }
 
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName!!, RegistryView view)
+        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
         {
+            ArgumentNullException.ThrowIfNull(machineName);
+
             ValidateKeyView(view);
 
             return OpenRemoteBaseKeyCore(hKey, machineName, view);
@@ -440,8 +442,10 @@ namespace Microsoft.Win32
             return FromHandle(handle, RegistryView.Default);
         }
 
-        public static RegistryKey FromHandle(SafeRegistryHandle handle!!, RegistryView view)
+        public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
+            ArgumentNullException.ThrowIfNull(handle);
+
             ValidateKeyView(view);
 
             return new RegistryKey(handle, writable: true, view: view);
@@ -549,8 +553,10 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public void SetValue(string? name, object value!!, RegistryValueKind valueKind)
+        public void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (name != null && name.Length > MaxValueLength)
             {
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
@@ -708,8 +714,10 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void ValidateKeyName(string name!!)
+        private static void ValidateKeyName(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             int nextSlash = name.IndexOf('\\');
             int current = 0;
             while (nextSlash >= 0)

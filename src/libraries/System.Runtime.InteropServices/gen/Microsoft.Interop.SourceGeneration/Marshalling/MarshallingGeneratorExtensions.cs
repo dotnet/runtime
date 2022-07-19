@@ -96,7 +96,6 @@ namespace Microsoft.Interop
             return param;
         }
 
-
         private static bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
         {
             marshalAsAttribute = null!;
@@ -119,13 +118,20 @@ namespace Microsoft.Interop
                 CountInfo countInfo;
                 MarshallingInfo elementMarshallingInfo;
                 if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshalling
-                    && collectionMarshalling.UseDefaultMarshalling
-                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo
-                    && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }
-                    )
+                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo)
                 {
-                    countInfo = collectionMarshalling.ElementCountInfo;
-                    elementMarshallingInfo = collectionMarshalling.ElementMarshallingInfo;
+                    CustomTypeMarshallerData defaultMarshallerData = collectionMarshalling.Marshallers.GetModeOrDefault(MarshalMode.Default);
+                    if ((defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_ArrayMarshaller}<")
+                        || defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller}<"))
+                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo {  UnmanagedType: not UnmanagedType.CustomMarshaler })
+                    {
+                        countInfo = collectionMarshalling.ElementCountInfo;
+                        elementMarshallingInfo = defaultMarshallerData.CollectionElementMarshallingInfo;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else if (info.MarshallingAttributeInfo is MissingSupportCollectionMarshallingInfo missingSupport)
                 {
@@ -203,6 +209,7 @@ namespace Microsoft.Interop
                 ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax)),
                 ValueBoundaryBehavior.NativeIdentifier => Argument(IdentifierName(nativeIdentifier)),
                 ValueBoundaryBehavior.AddressOfNativeIdentifier => Argument(PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(nativeIdentifier))),
+                ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info).Type, IdentifierName(nativeIdentifier))),
                 _ => throw new InvalidOperationException()
             };
         }

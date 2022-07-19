@@ -4,23 +4,29 @@
 //transient, managed, unmanaged pointer
 //"plain", volatile., unaligned. initblk
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly 'initblk3' {}
+.namespace Test_initblk3
+{
 
 .class public explicit ansi sealed $MultiByte$size$5000 extends [mscorlib]System.ValueType
 {
   .pack 1
   .size 5000
-} // end of class $MultiByte$size$5000
+} // end of class Test_initblk3.$MultiByte$size$5000
 
-.class private initblk2 extends [mscorlib]System.Object
+.class public initblk2 extends [mscorlib]System.Object
 {
 .method public static int32 main() 
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  3
   .locals (int32 V_0,
@@ -29,7 +35,7 @@
            bool V_3,
            int8* V_4,
            int8& V_5,
-           valuetype $MultiByte$size$5000 V_6)
+           valuetype Test_initblk3.$MultiByte$size$5000 V_6)
   ldc.i4.1
   stloc.3
 
@@ -601,5 +607,6 @@
 
   BL_00a8:  ldc.i4.0
   BL_00a9:  ret
+}
 }
 }

@@ -6,18 +6,37 @@ namespace System.Numerics
     /// <summary>Defines support for exponential functions.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IExponentialFunctions<TSelf>
+        : IFloatingPointConstants<TSelf>
         where TSelf : IExponentialFunctions<TSelf>
     {
         /// <summary>Computes <c>E</c> raised to a given power.</summary>
         /// <param name="x">The power to which <c>E</c> is raised.</param>
-        /// <returns><c>E</c> raised to the power of <paramref name="x" />.</returns>
+        /// <returns><c>E<sup><paramref name="x" /></sup></c></returns>
         static abstract TSelf Exp(TSelf x);
 
-        // The following methods are approved but not yet implemented in the libraries
-        // * static abstract TSelf ExpM1(TSelf x);
-        // * static abstract TSelf Exp2(TSelf x);
-        // * static abstract TSelf Exp2M1(TSelf x);
-        // * static abstract TSelf Exp10(TSelf x);
-        // * static abstract TSelf Exp10M1(TSelf x);
+        /// <summary>Computes <c>E</c> raised to a given power and subtracts one.</summary>
+        /// <param name="x">The power to which <c>E</c> is raised.</param>
+        /// <returns><c>E<sup><paramref name="x" /></sup> - 1</c></returns>
+        static virtual TSelf ExpM1(TSelf x) => TSelf.Exp(x) - TSelf.One;
+
+        /// <summary>Computes <c>2</c> raised to a given power.</summary>
+        /// <param name="x">The power to which <c>2</c> is raised.</param>
+        /// <returns><c>2<sup><paramref name="x" /></sup></c></returns>
+        static abstract TSelf Exp2(TSelf x);
+
+        /// <summary>Computes <c>2</c> raised to a given power and subtracts one.</summary>
+        /// <param name="x">The power to which <c>2</c> is raised.</param>
+        /// <returns><c>2<sup><paramref name="x" /></sup> - 1</c></returns>
+        static virtual TSelf Exp2M1(TSelf x) => TSelf.Exp2(x) - TSelf.One;
+
+        /// <summary>Computes <c>10</c> raised to a given power.</summary>
+        /// <param name="x">The power to which <c>10</c> is raised.</param>
+        /// <returns><c>10<sup><paramref name="x" /></sup></c></returns>
+        static abstract TSelf Exp10(TSelf x);
+
+        /// <summary>Computes <c>10</c> raised to a given power and subtracts one.</summary>
+        /// <param name="x">The power to which <c>10</c> is raised.</param>
+        /// <returns><c>10<sup><paramref name="x" /></sup> - 1</c></returns>
+        static virtual TSelf Exp10M1(TSelf x) => TSelf.Exp10M1(x) - TSelf.One;
     }
 }

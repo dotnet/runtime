@@ -14,17 +14,7 @@ namespace System.Net
         private readonly List<string> _serviceNames;
         private ServiceNameCollection? _serviceNameCollection;
 
-        public ServiceNameCollection ServiceNames
-        {
-            get
-            {
-                if (_serviceNameCollection == null)
-                {
-                    _serviceNameCollection = new ServiceNameCollection(_serviceNames);
-                }
-                return _serviceNameCollection;
-            }
-        }
+        public ServiceNameCollection ServiceNames => _serviceNameCollection ??= new ServiceNameCollection(_serviceNames);
 
         public ServiceNameStore()
         {

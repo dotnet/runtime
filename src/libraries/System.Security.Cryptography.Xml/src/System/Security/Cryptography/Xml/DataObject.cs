@@ -23,8 +23,13 @@ namespace System.Security.Cryptography.Xml
             _elData = new CanonicalXmlNodeList();
         }
 
-        public DataObject(string id, string mimeType, string encoding, XmlElement data!!)
+        public DataObject(string id, string mimeType, string encoding, XmlElement data)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
             _id = id;
             _mimeType = mimeType;
             _encoding = encoding;
@@ -128,8 +133,13 @@ namespace System.Security.Cryptography.Xml
             return objectElement;
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _mimeType = Utils.GetAttribute(value, "MimeType", SignedXml.XmlDsigNamespaceUrl);
             _encoding = Utils.GetAttribute(value, "Encoding", SignedXml.XmlDsigNamespaceUrl);

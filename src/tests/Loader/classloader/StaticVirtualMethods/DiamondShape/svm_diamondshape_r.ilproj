@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="svm_diamondshape.il" />
+  </ItemGroup>
+</Project>

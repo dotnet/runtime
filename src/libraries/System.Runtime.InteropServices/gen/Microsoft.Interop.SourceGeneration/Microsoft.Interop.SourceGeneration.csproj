@@ -2,18 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
-    <RunAnalyzers>true</RunAnalyzers>
+    <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- Code included from System.Runtime.InteropServices -->
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs"
-             Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerKind.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs"
-             Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerDirection.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Private.CoreLib\src\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs"
-             Link="Common\System\Runtime\InteropServices\CustomTypeMarshallerFeatures.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs" Link="Production\MarshalMode.cs" />
   </ItemGroup>
 
   <ItemGroup>

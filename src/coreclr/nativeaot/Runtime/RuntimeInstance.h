@@ -7,8 +7,6 @@
 class ThreadStore;
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 class ICodeManager;
-struct StaticGcDesc;
-typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 class TypeManager;
 enum GenericVarianceType : uint8_t;
 
@@ -25,7 +23,7 @@ class RuntimeInstance
 
     PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
-    ReaderWriterLock            m_ModuleListLock;
+    ReaderWriterLock            m_TypeManagerLock;
 
 public:
     struct OsModuleEntry;
@@ -40,19 +38,11 @@ public:
 private:
     OsModuleList                m_OsModuleList;
 
-    struct CodeManagerEntry;
-    typedef DPTR(CodeManagerEntry) PTR_CodeManagerEntry;
+    ICodeManager*               m_CodeManager;
 
-    struct CodeManagerEntry
-    {
-        PTR_CodeManagerEntry    m_pNext;
-        PTR_VOID                m_pvStartRange;
-        uint32_t                  m_cbRange;
-        ICodeManager *          m_pCodeManager;
-    };
-
-    typedef SList<CodeManagerEntry> CodeManagerList;
-    CodeManagerList             m_CodeManagerList;
+    // we support only one code manager for now, so we just record the range.
+    void*                       m_pvManagedCodeStartRange;
+    uint32_t                    m_cbManagedCodeRange;
 
 public:
     struct TypeManagerEntry
@@ -99,10 +89,9 @@ public:
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
-    bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-    void UnregisterCodeManager(ICodeManager * pCodeManager);
+    void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 
-    ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
+    ICodeManager * GetCodeManagerForAddress(PTR_VOID ControlPC);
     PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
@@ -113,14 +102,13 @@ public:
     bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
     bool IsUnboxingStub(uint8_t* pCode);
 
+    bool IsManaged(PTR_VOID pvAddress);
+
     static bool Initialize(HANDLE hPalInstance);
     void Destroy();
 
-    void EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData);
-
     bool ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP);
     bool ShouldHijackLoopForGcStress(uintptr_t CallsiteIP);
-    void SetLoopHijackFlags(uint32_t flag);
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 

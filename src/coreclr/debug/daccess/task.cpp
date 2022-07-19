@@ -3459,7 +3459,7 @@ ClrDataMethodDefinition::SetCodeNotification(
                 }
                 else
                 {
-                    if (jn.SetNotification(modulePtr, m_token, flags) &&
+                    if (jn.SetNotification(modulePtr, m_token, (USHORT)flags) &&
                         jn.UpdateOutOfProcTable())
                     {
                         // new notification added

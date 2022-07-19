@@ -20,21 +20,21 @@ namespace System.Diagnostics.Metrics
     {
         private object _callback;
 
-        internal ObservableCounter(Meter meter, string name, Func<T> observeValue!!, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : base(meter, name, unit, description)
         {
-            _callback = observeValue;
+            _callback = observeValue ?? throw new ArgumentNullException(nameof(observeValue));
             Publish();
         }
 
-        internal ObservableCounter(Meter meter, string name, Func<Measurement<T>> observeValue!!, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableCounter(Meter meter, string name, Func<Measurement<T>> observeValue, string? unit, string? description) : base(meter, name, unit, description)
         {
-            _callback = observeValue;
+            _callback = observeValue ?? throw new ArgumentNullException(nameof(observeValue));
             Publish();
         }
 
-        internal ObservableCounter(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues!!, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableCounter(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit, string? description) : base(meter, name, unit, description)
         {
-            _callback = observeValues;
+            _callback = observeValues ?? throw new ArgumentNullException(nameof(observeValues));
             Publish();
         }
 

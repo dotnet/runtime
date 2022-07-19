@@ -11,10 +11,6 @@ namespace System.Resources.ResourceWriterTests
 {
     public class ResourceReaderTests
     {
-        private const int ResSetVersion = 2;
-        private const int ResourceManagerHeaderVersionNumber = 1;
-        private const int ResourceManagerMagicNumber = unchecked((int)0xBEEFCACE);
-        private const string ResourceReaderFullyQualifiedName = "System.Resources.ResourceReader, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         private static Dictionary<string, string> s_dict = new Dictionary<string, string>{
                                                                            { "name1", "value1"},
                                                                            { "name2", "value2"},

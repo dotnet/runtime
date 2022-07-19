@@ -18,8 +18,13 @@ namespace System.Text.Encodings.Web
         {
         }
 
-        private DefaultJavaScriptEncoder(TextEncoderSettings settings!!, bool allowMinimalJsonEscaping)
+        private DefaultJavaScriptEncoder(TextEncoderSettings settings, bool allowMinimalJsonEscaping)
         {
+            if (settings is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.settings);
+            }
+
             // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
             // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
             // '`' (U+0060 GRAVE ACCENT) is ECMAScript-sensitive (see ECMA-262).

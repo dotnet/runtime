@@ -6,8 +6,6 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
     <!-- Enable when the package shipped with NET6. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Internal transport package to provide windowsdesktop with the assemblies from dotnet/runtime that make up the Microsoft.WindowsDesktop.App shared framework.</PackageDescription>

@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "Not applicable on windows")]
         public void FilesInUnixFilesPermissionsXmlExist()
         {

@@ -185,7 +185,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetSpanWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
             PipeWriter writer = pipe.Writer;
 
@@ -208,7 +208,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetMemoryWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
             PipeWriter writer = pipe.Writer;
 

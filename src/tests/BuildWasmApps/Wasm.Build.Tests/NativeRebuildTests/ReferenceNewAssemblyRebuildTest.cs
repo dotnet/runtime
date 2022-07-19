@@ -20,7 +20,6 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(NativeBuildData))]
         public void ReferenceNewAssembly(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
         {

@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Schema;
+
 #nullable disable
 namespace System.Xml.Xsl.Runtime
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Schema;
-
-
     /// <summary>
     /// This writer supports only writer methods which write attributes.  Attributes are stored in a
     /// data structure until StartElementContent() is called, at which time the attributes are flushed
@@ -262,8 +261,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Notify event listener that attributes have been flushed
-            if (_onRemove != null)
-                _onRemove(_wrapped);
+            _onRemove?.Invoke(_wrapped);
         }
 
         private struct AttrNameVal

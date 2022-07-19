@@ -1,0 +1,7 @@
+Compat issues with assembly System.Diagnostics.Tracing:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.DiagnosticCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.EventCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.IncrementingEventCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.IncrementingPollingCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.PollingCounter' in the contract but not the implementation.
+Total Issues: 4

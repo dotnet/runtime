@@ -21,12 +21,12 @@
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary {}
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
-.namespace AvgTest
+.namespace AvgTest_sizeof_Target_32BIT
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
         // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is32BitProcess))]
         .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type,
@@ -83,6 +83,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'AvgTest'
+} // end of namespace 'AvgTest_sizeof_Target_32BIT'
 
 //*********** DISASSEMBLY COMPLETE ***********************

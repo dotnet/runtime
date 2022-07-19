@@ -25,7 +25,6 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
 
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
-                                            NULL, // szCodeBase
                                             excludeAppPaths,
                                             ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
@@ -86,7 +85,7 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
         if (pManagedAssemblyLoadContext != NULL)
         {
             hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
-                                                                     NULL, &pCoreCLRFoundAssembly);
+                                                                     NULL, this, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
                 // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
@@ -112,6 +111,7 @@ Exit:;
 
 #if !defined(DACCESS_COMPILE)
 HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
+                                                 /* in */ bool excludeAppPaths,
                                                  /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -158,7 +158,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -187,32 +187,6 @@ HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssem
     return hr;
 }
 
-HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
-                                    BINDER_SPACE::Assembly **ppAssembly)
-{
-    HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(wszCodeBase != NULL && ppAssembly != NULL);
-
-    EX_TRY
-    {
-        ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        hr = AssemblyBinderCommon::BindAssembly(this,
-                                                NULL, // pAssemblyName
-                                                wszCodeBase,
-                                                false, // excludeAppPaths
-                                                &pAsm);
-        if(SUCCEEDED(hr))
-        {
-            _ASSERTE(pAsm != NULL);
-            pAsm->SetBinder(this);
-            *ppAssembly = pAsm.Extract();
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
 HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly)
 {
     HRESULT hr = S_OK;
@@ -227,9 +201,9 @@ HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAss
         {
             _ASSERTE(pAsm != NULL);
             *ppSystemAssembly = pAsm.Extract();
+            (*ppSystemAssembly)->SetBinder(this);
         }
 
-        (*ppSystemAssembly)->SetBinder(this);
     }
     EX_CATCH_HRESULT(hr);
 

@@ -149,8 +149,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static void ValidateBuffer(byte[] buffer!!, int offset, int count)
+        internal static void ValidateBuffer(byte[] buffer, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0 || offset > buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

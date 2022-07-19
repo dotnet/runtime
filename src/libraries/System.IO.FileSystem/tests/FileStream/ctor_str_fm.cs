@@ -218,12 +218,12 @@ namespace System.IO.Tests
                 Assert.False(fs.CanRead);
                 Assert.True(fs.CanWrite);
 
-                fs.Write(Encoding.ASCII.GetBytes("abcde"));
+                fs.Write("abcde"u8);
                 Assert.Equal(5, fs.Length);
                 Assert.Equal(5, fs.Position);
                 Assert.Equal(1, fs.Seek(1, SeekOrigin.Begin));
 
-                fs.Write(Encoding.ASCII.GetBytes("xyz"));
+                fs.Write("xyz"u8);
                 Assert.Equal(4, fs.Position);
                 Assert.Equal(5, fs.Length);
             }
@@ -257,12 +257,12 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => fs.Seek(0, SeekOrigin.Begin));
                 Assert.Throws<NotSupportedException>(() => fs.ReadByte());
 
-                fs.Write(Encoding.ASCII.GetBytes("abcde"));
+                fs.Write("abcde"u8);
                 Assert.Equal(position + 5, fs.Position);
 
                 Assert.Equal(position, fs.Seek(position, SeekOrigin.Begin));
                 Assert.Equal(position + 1, fs.Seek(1, SeekOrigin.Current));
-                fs.Write(Encoding.ASCII.GetBytes("xyz"));
+                fs.Write("xyz"u8);
             }
 
             Assert.Equal(initialContents + "axyze", File.ReadAllText(fileName));

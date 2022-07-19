@@ -51,9 +51,11 @@ namespace System
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="innerException"/> argument
         /// is null.</exception>
-        public AggregateException(string? message, Exception innerException!!)
+        public AggregateException(string? message, Exception innerException)
             : base(message, innerException)
         {
+            ArgumentNullException.ThrowIfNull(innerException);
+
             _innerExceptions = new[] { innerException };
         }
 
@@ -66,8 +68,8 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(IEnumerable<Exception> innerExceptions!!) :
-            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
+        public AggregateException(IEnumerable<Exception> innerExceptions) :
+            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
         {
         }
 
@@ -80,8 +82,8 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(params Exception[] innerExceptions!!) :
-            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
+        public AggregateException(params Exception[] innerExceptions) :
+            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
         {
         }
 
@@ -95,8 +97,8 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(string? message, IEnumerable<Exception> innerExceptions!!)
-            : this(message, new List<Exception>(innerExceptions).ToArray(), cloneExceptions: false)
+        public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
+            : this(message, new List<Exception>(innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions))).ToArray(), cloneExceptions: false)
         {
         }
 
@@ -110,8 +112,8 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(string? message, params Exception[] innerExceptions!!) :
-            this(message, innerExceptions, cloneExceptions: true)
+        public AggregateException(string? message, params Exception[] innerExceptions) :
+            this(message, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)), cloneExceptions: true)
         {
         }
 
@@ -253,8 +255,10 @@ namespace System
         /// cref="AggregateException"/> was not handled.</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="predicate"/> argument is
         /// null.</exception>
-        public void Handle(Func<Exception, bool> predicate!!)
+        public void Handle(Func<Exception, bool> predicate)
         {
+            ArgumentNullException.ThrowIfNull(predicate);
+
             List<Exception>? unhandledExceptions = null;
             for (int i = 0; i < _innerExceptions.Length; i++)
             {
@@ -337,7 +341,7 @@ namespace System
                     return base.Message;
                 }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
+                var sb = new ValueStringBuilder(stackalloc char[256]);
                 sb.Append(base.Message);
                 sb.Append(' ');
                 for (int i = 0; i < _innerExceptions.Length; i++)
@@ -347,7 +351,7 @@ namespace System
                     sb.Append(") ");
                 }
                 sb.Length--;
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return sb.ToString();
             }
         }
 

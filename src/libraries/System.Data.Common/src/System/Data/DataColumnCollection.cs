@@ -751,10 +751,7 @@ namespace System.Data
 
                 foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
-                    if (column != null)
-                    {
-                        column.FinishInitInProgress();
-                    }
+                    column?.FinishInitInProgress();
                 }
 
                 _delayedAddRangeColumns = null;

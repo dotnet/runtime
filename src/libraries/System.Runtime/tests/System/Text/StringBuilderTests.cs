@@ -724,12 +724,14 @@ namespace System.Text.Tests
             yield return new object[] { "Hello", null, ", Foo {0,3}", new object[] { "B" }, "Hello, Foo   B" }; // Value's length < minimum length (so prepend whitespace)
             yield return new object[] { "Hello", null, ", Foo {0,     3}", new object[] { "B" }, "Hello, Foo   B" }; // Same as above, but verify AppendFormat ignores whitespace
             yield return new object[] { "Hello", null, ", Foo {0,0}", new object[] { "Bar" }, "Hello, Foo Bar" }; // Minimum length is 0
+            yield return new object[] { "Hello", null, ", Foo {0,  2 }", new object[] { "Bar" }, "Hello, Foo Bar" }; // whitespace before and after length
 
             // Length is negative
             yield return new object[] { "Hello", null, ", Foo {0,-2}", new object[] { "Bar" }, "Hello, Foo Bar" }; // Value's length > |minimum length| (so don't prepend whitespace)
             yield return new object[] { "Hello", null, ", Foo {0,-3}", new object[] { "B" }, "Hello, Foo B  " }; // Value's length < |minimum length| (so append whitespace)
             yield return new object[] { "Hello", null, ", Foo {0,     -3}", new object[] { "B" }, "Hello, Foo B  " }; // Same as above, but verify AppendFormat ignores whitespace
             yield return new object[] { "Hello", null, ", Foo {0,0}", new object[] { "Bar" }, "Hello, Foo Bar" }; // Minimum length is 0
+            yield return new object[] { "Hello", null, ", Foo {0, -2  }", new object[] { "Bar" }, "Hello, Foo Bar" }; // whitespace before and after length
 
             yield return new object[] { "Hello", null, ", Foo {0:D6}", new object[] { 1 }, "Hello, Foo 000001" }; // Custom format
             yield return new object[] { "Hello", null, ", Foo {0     :D6}", new object[] { 1 }, "Hello, Foo 000001" }; // Custom format with ignored whitespace
@@ -915,6 +917,19 @@ namespace System.Text.Tests
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{", new string[10])); // Format with custom format contains unescaped {
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{}", new string[10])); // Format with custom format contains unescaped {
+
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0}", new TooManyCharsWrittenSpanFormattable())); // ISpanFormattable that returns more characters than it actually wrote
+        }
+
+        private struct TooManyCharsWrittenSpanFormattable : ISpanFormattable
+        {
+            public string ToString(string format, IFormatProvider formatProvider) => "abc";
+            public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider provider)
+            {
+                "abc".TryCopyTo(destination);
+                charsWritten = 1_000_000;
+                return true;
+            }
         }
 
         [Fact]

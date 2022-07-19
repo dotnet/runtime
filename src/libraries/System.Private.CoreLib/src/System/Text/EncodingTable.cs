@@ -28,8 +28,10 @@ namespace System.Text
         **  internalGetCodePageFromName will throw ArgumentException if name is not a valid encoding name.
         ============================================================================*/
 
-        internal static int GetCodePageFromName(string name!!)
+        internal static int GetCodePageFromName(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             object? codePageObj = s_nameToCodePage[name];
 
             if (codePageObj != null)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -15,7 +16,7 @@ namespace System.Security.Cryptography
             // secp521r1 maxes out at 139 bytes, so 256 should always be enough
             private const int SignatureStackBufSize = 256;
 
-            private ECAndroid _key;
+            private ECAndroid? _key;
 
             /// <summary>
             /// Create an ECDsaAndroid algorithm with a named curve.
@@ -79,8 +80,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] SignHash(byte[] hash!!)
+            public override byte[] SignHash(byte[] hash)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.AndroidCrypto.EcDsaSize(key);
@@ -184,8 +187,11 @@ namespace System.Security.Cryptography
                 return destination.Slice(0, actualLength);
             }
 
-            public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+            public override bool VerifyHash(byte[] hash, byte[] signature)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -245,7 +251,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     _key?.Dispose();
-                    _key = null!;
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -318,8 +324,13 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            internal SafeEcKeyHandle DuplicateKeyHandle() => _key.UpRefKeyHandle();
+            internal SafeEcKeyHandle DuplicateKeyHandle()
+            {
+                ThrowIfDisposed();
+                return _key.UpRefKeyHandle();
+            }
 
+            [MemberNotNull(nameof(_key))]
             private void ThrowIfDisposed()
             {
                 if (_key == null)

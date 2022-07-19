@@ -78,7 +78,7 @@ namespace Profiler.Tests
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        private static void InlineeTarget()
+        public static void InlineeTarget()
         {
             Console.WriteLine("Inline.InlineeTarget");
         }
@@ -100,6 +100,31 @@ namespace Profiler.Tests
                                           testName: "ReJITWithInlining",
                                           profilerClsid: ReJitProfilerGuid,
                                           profileeOptions: ProfileeOptions.OptimizationSensitive);
+        }
+    }
+
+    public class SeparateClassNeverLoaded
+    {
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static void TriggerInliningChain()
+        {
+            Console.WriteLine("TriggerInlining");
+            // Test Inlining through another method
+            InlineeChain1();
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static void TriggerDirectInlining()
+        {
+            Console.WriteLine("TriggerDirectInlining");
+            RejitWithInlining.InlineeTarget();
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        private static void InlineeChain1()
+        {
+            Console.WriteLine("Inline.InlineeChain1");
+            RejitWithInlining.InlineeTarget();
         }
     }
 }

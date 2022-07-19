@@ -48,7 +48,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodInvoker(this);
+                m_invoker ??= new MethodInvoker(this, Signature);
                 return m_invoker;
             }
         }
@@ -215,16 +215,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!, inherit);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -347,7 +351,7 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
                 ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
                 IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
@@ -362,31 +366,14 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
+#else
+                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
+#endif
             }
 
             return retValue;
-        }
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-            }
         }
 
         #endregion
@@ -456,9 +443,10 @@ namespace System.Reflection
                 DelegateBindingFlags.RelaxedSignature);
         }
 
-        private Delegate CreateDelegateInternal(Type delegateType!!, object? firstArgument, DelegateBindingFlags bindingFlags)
+        private Delegate CreateDelegateInternal(Type delegateType, object? firstArgument, DelegateBindingFlags bindingFlags)
         {
-            // Validate the parameters.
+            ArgumentNullException.ThrowIfNull(delegateType);
+
             RuntimeType? rtType = delegateType as RuntimeType;
             if (rtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
@@ -479,8 +467,10 @@ namespace System.Reflection
 
         #region Generics
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation!!)
+        public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
+            ArgumentNullException.ThrowIfNull(methodInstantiation);
+
             RuntimeType[] methodInstantionRuntimeType = new RuntimeType[methodInstantiation.Length];
 
             if (!IsGenericMethodDefinition)

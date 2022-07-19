@@ -23,7 +23,8 @@ namespace System
     {
         Default = 0,
         Forced = 1,
-        Optimized = 2
+        Optimized = 2,
+        Aggressive = 3,
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -35,6 +36,7 @@ namespace System
         Blocking = 0x00000002,
         Optimized = 0x00000004,
         Compacting = 0x00000008,
+        Aggressive = 0x00000010,
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -197,7 +199,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
             }
 
-            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
+            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
@@ -208,6 +210,22 @@ namespace System
             if (mode == GCCollectionMode.Optimized)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.Optimized;
+            }
+            else if (mode == GCCollectionMode.Aggressive)
+            {
+                iInternalModes |= (int)InternalGCCollectionMode.Aggressive;
+                if (generation != MaxGeneration)
+                {
+                    throw new ArgumentException(SR.Argument_AggressiveGCRequiresMaxGeneration, nameof(generation));
+                }
+                if (!blocking)
+                {
+                    throw new ArgumentException(SR.Argument_AggressiveGCRequiresBlocking, nameof(blocking));
+                }
+                if (!compacting)
+                {
+                    throw new ArgumentException(SR.Argument_AggressiveGCRequiresCompacting, nameof(compacting));
+                }
             }
 
             if (compacting)
@@ -302,8 +320,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(object obj!!)
+        public static void SuppressFinalize(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             _SuppressFinalize(obj);
         }
 
@@ -314,8 +334,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(object obj!!)
+        public static void ReRegisterForFinalize(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             _ReRegisterForFinalize(obj);
         }
 
@@ -617,8 +639,10 @@ namespace System
             }
         }
 
-        internal static void UnregisterMemoryLoadChangeNotification(Action notification!!)
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
+            ArgumentNullException.ThrowIfNull(notification);
+
             lock (s_notifications)
             {
                 for (int i = 0; i < s_notifications.Count; ++i)
@@ -705,5 +729,86 @@ namespace System
 
             return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern long _GetTotalPauseDuration();
+
+        /// <summary>
+        /// Gets the total amount of time paused in GC since the beginning of the process.
+        /// </summary>
+        /// <returns> The total amount of time paused in GC since the beginning of the process.</returns>
+        public static TimeSpan GetTotalPauseDuration()
+        {
+            return new TimeSpan(_GetTotalPauseDuration());
+        }
+
+        internal struct GCConfigurationContext
+        {
+            internal Dictionary<string, object> Configurations;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, GCConfigurationType type, long data)
+        {
+            // If the public key is null, it means that the corresponding configuration isn't publicly available
+            // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
+            if (publicKey == null)
+            {
+                return;
+            }
+
+            Debug.Assert(name != null);
+            Debug.Assert(configurationContext != null);
+
+            ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
+            Debug.Assert(context.Configurations != null);
+            Dictionary<string, object> configurationDictionary = context.Configurations!;
+
+            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            switch (type)
+            {
+                case GCConfigurationType.Int64:
+                    configurationDictionary[nameAsString] = data;
+                    break;
+
+                case GCConfigurationType.StringUtf8:
+                    {
+                        string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
+                        configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
+                        break;
+                    }
+
+                case GCConfigurationType.Boolean:
+                    configurationDictionary[nameAsString] = data != 0;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't neccessarily have to be the same as the ones that are passed by the user.
+        /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
+        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
+        /// </summary>
+        public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            GCConfigurationContext context = new GCConfigurationContext
+            {
+                Configurations = new Dictionary<string, object>()
+            };
+
+            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+            return context.Configurations!;
+        }
+
+        // Corresponding Enum for the managed side of things in gcinterface.h that indicates the type of the configuration.
+        internal enum GCConfigurationType
+        {
+            Int64,
+            StringUtf8,
+            Boolean
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
+        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
     }
 }

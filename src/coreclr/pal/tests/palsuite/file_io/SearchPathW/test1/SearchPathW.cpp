@@ -123,7 +123,7 @@ PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPath
         return FAIL;
     }
 
-   /* Initalize the buffer.
+   /* Initialize the buffer.
      */
     memset(fullPath, 0, _MAX_DIR);
 

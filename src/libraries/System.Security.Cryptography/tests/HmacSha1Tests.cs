@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class HmacSha1Tests : Rfc2202HmacTests
     {
         private static readonly byte[][] s_testKeys2202 =
@@ -111,6 +110,16 @@ namespace System.Security.Cryptography.Tests
         public void HmacSha1_ThrowsArgumentNullForNullConstructorKey()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA1(null));
+        }
+
+        [Fact]
+        public void HmacSha1_EmptyKey()
+        {
+            VerifyRepeating(
+                input: "Crypto is fun!",
+                1,
+                hexKey: "",
+                output: "C979AD8DE8CC546CF82D948226FDD8024599F6CE");
         }
 
         [Fact]

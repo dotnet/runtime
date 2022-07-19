@@ -48,8 +48,15 @@ namespace System.Reflection.Emit
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con!!, object?[] constructorArgs!!, PropertyInfo[] namedProperties!!, object?[] propertyValues!!, FieldInfo[] namedFields!!, object?[] fieldValues!!)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, FieldInfo[] namedFields, object?[] fieldValues)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(constructorArgs);
+            ArgumentNullException.ThrowIfNull(namedProperties);
+            ArgumentNullException.ThrowIfNull(propertyValues);
+            ArgumentNullException.ThrowIfNull(namedFields);
+            ArgumentNullException.ThrowIfNull(fieldValues);
+
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
             if (namedProperties.Length != propertyValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");

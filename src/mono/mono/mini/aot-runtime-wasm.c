@@ -10,6 +10,7 @@
 #include "mini.h"
 #include <mono/jit/mono-private-unstable.h>
 #include "interp/interp.h"
+#include "aot-runtime.h"
 
 #ifdef TARGET_WASM
 
@@ -83,7 +84,43 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 	return p.l;
 }
 
-#include "wasm_m2n_invoke.g.h"
+static MonoWasmNativeToInterpCallback mono_wasm_interp_to_native_callback;
+
+void
+mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
+{
+	mono_wasm_interp_to_native_callback = cb;
+}
+
+int
+mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i)
+{
+	return (int)(gssize)margs->iargs[i];
+}
+
+gint64
+mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i)
+{
+	return get_long_arg (margs, i);
+}
+
+float
+mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i)
+{
+	return *(float*)&margs->fargs [FIDX (i)];
+}
+
+double
+mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i)
+{
+	return margs->fargs [FIDX (i)];
+}
+
+gpointer*
+mono_wasm_interp_method_args_get_retval (InterpMethodArguments *margs)
+{
+	return margs->retval;
+}
 
 static int
 compare_icall_tramp (const void *key, const void *elem)
@@ -108,11 +145,10 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	}
 	cookie [c_count] = 0;
 
-	void *p = bsearch (cookie, interp_to_native_signatures, G_N_ELEMENTS (interp_to_native_signatures), sizeof (gpointer), compare_icall_tramp);
+	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
-	int idx = (const char**)p - (const char**)interp_to_native_signatures;
-	return interp_to_native_invokes [idx];
+	return p;
 }
 
 static MonoWasmGetNativeToInterpTramp get_native_to_interp_tramp_cb;
@@ -134,6 +170,10 @@ mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_ar
 
 #else /* TARGET_WASM */
 
-MONO_EMPTY_SOURCE_FILE (aot_runtime_wasm);
+void
+mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
+{
+	g_assert_not_reached ();
+}
 
 #endif /* TARGET_WASM */

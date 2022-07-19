@@ -19,8 +19,10 @@ namespace System.Diagnostics
     {
         private static volatile DebugProvider s_provider = new DebugProvider();
 
-        public static DebugProvider SetProvider(DebugProvider provider!!)
+        public static DebugProvider SetProvider(DebugProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
+
             return Interlocked.Exchange(ref s_provider, provider);
         }
 

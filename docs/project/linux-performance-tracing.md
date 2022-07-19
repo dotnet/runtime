@@ -48,10 +48,13 @@ Follow these steps to prepare your machine to collect a performance trace.
 1. Have two shell windows available - one for controlling tracing, referred to as **[Trace]**, and one for running the application, referred to as **[App]**.
 2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR.
 
-	> ```bash
+    > ```bash
 	> export COMPlus_PerfMapEnabled=1
 	> export COMPlus_EnableEventLog=1
 	> ```
+
+   Note:
+   COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
 
 3. **[Trace]** Start collection.
 

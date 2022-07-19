@@ -12,18 +12,19 @@
     <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' != 'true' and '$(PublishingTestsRun)' != 'true' and '$(TestSingleFile)' != 'true'">
-    <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" GeneratePathProperty="true" />
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
       with the one used in libraries to have a consistent set of dependency versions. Additionally this works
       around a dupliate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
     -->
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' != 'true' and '$(PublishingTestsRun)' != 'true' and '$(TestSingleFile)' != 'true'">
+    <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" GeneratePathProperty="true" />
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
   </ItemGroup>
 

@@ -2284,7 +2284,13 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
     // not be necessary (alignment to page size should be sufficient), but see
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done.
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    if (!g_useDefaultBaseAddr)
+#endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    {
+        loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+    }
 #endif // HOST_64BIT
 
     if (loadedBase == NULL)
@@ -2394,8 +2400,9 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         goto doneReleaseMappingCriticalSection;
     }
 
-    void* prevSectionEnd;
-    prevSectionEnd = (char*)loadedHeader + headerSize; // the first "section" for our purposes is the header
+    void* prevSectionEndAligned;
+    // the first "section" for our purposes is the header
+    prevSectionEndAligned = ALIGN_UP((char*)loadedHeader + headerSize, GetVirtualPageSize());
 
     for (unsigned i = 0; i < numSections; ++i)
     {
@@ -2412,7 +2419,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         if (   (sectionBase < loadedHeader)                                                           // Did computing the section base overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData < (char*)sectionBase)              // Does the section overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize) // Does the section extend past the end of the image as the header stated?
-            || (prevSectionEnd > sectionBase)                                                       // Does this section overlap the previous one?
+            || (prevSectionEndAligned > sectionBase)                                                       // Does this section overlap the previous one?
             )
         {
             ERROR_(LOADER)( "section %d is corrupt\n", i );
@@ -2435,12 +2442,12 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         }
 
         // Is there space between the previous section and this one? If so, add a PROT_NONE mapping to cover it.
-        if (prevSectionEnd < sectionBaseAligned)
+        if (prevSectionEndAligned < sectionBaseAligned)
         {
             palError = MAPRecordMapping(pFileObject,
                             loadedBase,
-                            prevSectionEnd,
-                            (char*)sectionBaseAligned - (char*)prevSectionEnd,
+                            prevSectionEndAligned,
+                            (char*)sectionBaseAligned - (char*)prevSectionEndAligned,
                             PROT_NONE);
             if (NO_ERROR != palError)
             {
@@ -2488,18 +2495,18 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         }
 #endif // _DEBUG
 
-        prevSectionEnd = ALIGN_UP((char*)sectionBase + currentHeader.SizeOfRawData, GetVirtualPageSize()); // round up to page boundary
+        prevSectionEndAligned = ALIGN_UP((char*)sectionBase + currentHeader.SizeOfRawData, GetVirtualPageSize()); // round up to page boundary
     }
 
     // Is there space after the last section and before the end of the mapped image? If so, add a PROT_NONE mapping to cover it.
     char* imageEnd;
     imageEnd = (char*)loadedBase + virtualSize; // actually, points just after the mapped end
-    if (prevSectionEnd < imageEnd)
+    if (prevSectionEndAligned < imageEnd)
     {
         palError = MAPRecordMapping(pFileObject,
                         loadedBase,
-                        prevSectionEnd,
-                        offset + (char*)imageEnd - (char*)prevSectionEnd,
+                        prevSectionEndAligned,
+                        offset + (char*)imageEnd - (char*)prevSectionEndAligned,
                         PROT_NONE);
         if (NO_ERROR != palError)
         {

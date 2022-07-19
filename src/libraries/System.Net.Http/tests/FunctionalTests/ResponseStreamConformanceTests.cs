@@ -54,9 +54,9 @@ namespace System.Net.Http.Functional.Tests
                 // One chunk for the whole response body
                 await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"{bodyData.Length:X}\r\n"));
                 await responseStream.WriteAsync(bodyData);
-                await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await responseStream.WriteAsync("\r\n"u8.ToArray());
             }
-            await responseStream.WriteAsync(Encoding.ASCII.GetBytes("0\r\n\r\n"));
+            await responseStream.WriteAsync("0\r\n\r\n"u8.ToArray());
         }
     }
 
@@ -70,9 +70,9 @@ namespace System.Net.Http.Functional.Tests
                 // One chunk per byte of the response body
                 await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"1\r\n"));
                 await responseStream.WriteAsync(bodyData.AsMemory(i, 1));
-                await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await responseStream.WriteAsync("\r\n"u8.ToArray());
             }
-            await responseStream.WriteAsync(Encoding.ASCII.GetBytes("0\r\n\r\n"));
+            await responseStream.WriteAsync("0\r\n\r\n"u8.ToArray());
         }
     }
 

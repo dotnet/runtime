@@ -113,7 +113,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	size_t basename_len;
 	basename_len = strlen (basename);
 
-	for (int i = 0; i < a->assembly_count; ++i) {
+	for (guint32 i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, default_alc);
@@ -289,7 +289,7 @@ monovm_create_delegate (const char *assemblyName, const char *typeName, const ch
 	/* monovm_create_delegate may be called instead of monovm_execute_assembly.  Initialize the
 	 * runtime if it isn't already. */
 	if (!mono_get_root_domain())
-		mini_init (assemblyName, "v4.0.30319");
+		mini_init (assemblyName);
 	MONO_ENTER_GC_UNSAFE;
 	result = monovm_create_delegate_impl (assemblyName, typeName, methodName, delegate);
 	MONO_EXIT_GC_UNSAFE;

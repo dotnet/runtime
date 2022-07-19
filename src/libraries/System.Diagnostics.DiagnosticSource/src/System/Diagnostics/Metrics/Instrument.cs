@@ -37,10 +37,10 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected Instrument(Meter meter!!, string name!!, string? unit, string? description)
+        protected Instrument(Meter meter, string name, string? unit, string? description)
         {
-            Meter = meter;
-            Name = name;
+            Meter = meter ?? throw new ArgumentNullException(nameof(meter));
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Description = description;
             Unit = unit;
         }

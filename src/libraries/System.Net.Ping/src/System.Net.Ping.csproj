@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -115,8 +114,6 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
@@ -124,6 +121,5 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.IO.FileSystem" />
   </ItemGroup>
 </Project>

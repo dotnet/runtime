@@ -56,7 +56,7 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
 
     while (TRUE)
     {
-        LONG curValue = FastInterlockCompareExchange((LONG*)&m_Initialized, BeingInitialized, UnInitialized);
+        LONG curValue = InterlockedCompareExchange((LONG*)&m_Initialized, BeingInitialized, UnInitialized);
         if (curValue == Initialized)
         {
             return;
@@ -163,7 +163,7 @@ BOOL SpinLock::GetLockNoWait()
     CONTRACTL_END;
 
     {
-        if (VolatileLoad(&m_lock) == 0 && FastInterlockExchange (&m_lock, 1) == 0)
+        if (VolatileLoad(&m_lock) == 0 && InterlockedExchange (&m_lock, 1) == 0)
         {
             EE_LOCK_TAKEN(this);
             return 1;

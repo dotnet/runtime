@@ -14,7 +14,7 @@ To enable ReJIT on attach there is a new API `ICorProfilerInfo10::RequestReJITWi
                 [in, size_is(cFunctions)]  mdMethodDef methodIds[]);
 ```
 
-Conceptually this works the same as `ICorProfilerInfo4::RequestReJIT` except it will automatically ReJIT any methods that have inlined the target method(s) in the past. The arguments are the same except for the additon of `dwRejitFlags` as the first parameter. The valid values for this argument come from this enum:
+Conceptually this works the same as `ICorProfilerInfo4::RequestReJIT` except it will automatically ReJIT any methods that have inlined the target method(s) in the past. The arguments are the same except for the addition of `dwRejitFlags` as the first parameter. The valid values for this argument come from this enum:
 
 ```cpp
 typedef enum

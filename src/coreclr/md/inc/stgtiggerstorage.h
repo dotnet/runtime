@@ -308,20 +308,4 @@ private:
     void        *m_pbExtra;             // Pointer to extra data if on disk.
 };
 
-
-//*****************************************************************************
-// Debugging helpers.  #define __SAVESIZE_TRACE__ to enable.
-//*****************************************************************************
-
-// #define __SAVESIZE_TRACE__
-#ifdef __SAVESIZE_TRACE__
-#define SAVETRACE(func) DEBUG_STMT(func)
-#else
-#define SAVETRACE(func)
-#endif // __SAVESIZE_TRACE__
-
 #endif // StgTiggerStorage
-
-
-
-// EOF

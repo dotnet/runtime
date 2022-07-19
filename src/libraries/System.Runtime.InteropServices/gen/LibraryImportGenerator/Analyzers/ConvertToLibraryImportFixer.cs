@@ -107,7 +107,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private class CustomFixAllProvider : DocumentBasedFixAllProvider
+        private sealed class CustomFixAllProvider : DocumentBasedFixAllProvider
         {
             public static readonly CustomFixAllProvider Instance = new();
 
@@ -367,7 +367,7 @@ namespace Microsoft.Interop.Analyzers
                         LocalDeclarationStatementSyntax declaration = invocation.FirstAncestorOrSelf<LocalDeclarationStatementSyntax>();
                         if (declaration.IsKind(SyntaxKind.FieldDeclaration) || declaration.IsKind(SyntaxKind.EventFieldDeclaration))
                         {
-                            // We can't fix initalizations without introducing or prepending to a static constructor
+                            // We can't fix initializations without introducing or prepending to a static constructor
                             // for what is an unlikely scenario.
                             continue;
                         }

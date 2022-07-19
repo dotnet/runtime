@@ -174,7 +174,10 @@ namespace System.Runtime.Serialization.Json
             _stream.Flush();
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count) =>
+            Read(new Span<byte>(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer)
         {
             try
             {
@@ -182,7 +185,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     if (_encodingCode == SupportedEncoding.UTF8)
                     {
-                        return _stream.Read(buffer, offset, count);
+                        return _stream.Read(buffer);
                     }
 
                     Debug.Assert(_bytes != null);
@@ -206,11 +209,13 @@ namespace System.Runtime.Serialization.Json
                 }
 
                 // Give them bytes
+                int count = buffer.Length;
                 if (_byteCount < count)
                 {
                     count = _byteCount;
                 }
-                Buffer.BlockCopy(_bytes!, _byteOffset, buffer, offset, count);
+
+                _bytes.AsSpan(_byteOffset, count).CopyTo(buffer);
                 _byteOffset += count;
                 _byteCount -= count;
                 return count;
@@ -395,10 +400,7 @@ namespace System.Runtime.Serialization.Json
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
-            if (_chars == null)
-            {
-                _chars = new char[BufferLength];
-            }
+            _chars ??= new char[BufferLength];
         }
 
         [MemberNotNull(nameof(_bytes))]
@@ -419,16 +421,9 @@ namespace System.Runtime.Serialization.Json
             Debug.Assert(_bytes != null);
 
             count -= _byteCount;
-            while (count > 0)
+            if (count > 0)
             {
-                int read = _stream.Read(_bytes, _byteOffset + _byteCount, count);
-                if (read == 0)
-                {
-                    break;
-                }
-
-                _byteCount += read;
-                count -= read;
+                _byteCount += _stream.ReadAtLeast(_bytes.AsSpan(_byteOffset + _byteCount, count), count, throwOnEndOfStream: false);
             }
         }
 

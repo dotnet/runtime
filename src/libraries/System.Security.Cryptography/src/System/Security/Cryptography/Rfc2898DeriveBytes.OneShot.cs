@@ -38,12 +38,15 @@ namespace System.Security.Cryptography
         ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
         /// </exception>
         public static byte[] Pbkdf2(
-            byte[] password!!,
-            byte[] salt!!,
+            byte[] password,
+            byte[] salt,
             int iterations,
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
+
             return Pbkdf2(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
@@ -157,12 +160,15 @@ namespace System.Security.Cryptography
         /// and use <see cref="Pbkdf2(byte[], byte[], int, HashAlgorithmName, int)" />.
         /// </remarks>
         public static byte[] Pbkdf2(
-            string password!!,
-            byte[] salt!!,
+            string password,
+            byte[] salt,
             int iterations,
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
+
             return Pbkdf2(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 

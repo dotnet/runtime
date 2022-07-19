@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
 
@@ -28,8 +29,13 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="oidValue"/> is <see langword="null"/>.
         /// </exception>
-        public void WriteObjectIdentifier(string oidValue!!, Asn1Tag? tag = null)
+        public void WriteObjectIdentifier(string oidValue, Asn1Tag? tag = null)
         {
+            if (oidValue is null)
+            {
+                throw new ArgumentNullException(nameof(oidValue));
+            }
+
             WriteObjectIdentifier(oidValue.AsSpan(), tag);
         }
 
@@ -135,9 +141,6 @@ namespace System.Formats.Asn1
                 throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
             }
 
-            // The following code is equivalent to
-            // BigInteger.TryParse(temp, NumberStyles.None, CultureInfo.InvariantCulture, out value)
-            // TODO: Split this for netstandard vs netcoreapp for span-perf?.
             BigInteger value = BigInteger.Zero;
 
             for (int position = 0; position < endIndex; position++)
@@ -151,7 +154,6 @@ namespace System.Formats.Asn1
                 value *= 10;
                 value += AtoI(oidValue[position]);
             }
-
             oidValue = oidValue.Slice(Math.Min(oidValue.Length, endIndex + 1));
             return value;
         }
@@ -196,7 +198,7 @@ namespace System.Formats.Asn1
             }
             while (unencoded != BigInteger.Zero);
 
-            Reverse(dest.Slice(0, idx));
+            dest.Slice(0, idx).Reverse();
             return idx;
         }
     }

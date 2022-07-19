@@ -7,57 +7,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn
-;;
-;;
-;; INPUT: none
-;;
-;; TRASHES: none
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpWaitForSuspend
-
-        ;; FP and LR registers
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-0xA0!            ;; Push down stack pointer and store FP and LR
-
-        ;; Need to save argument registers x0-x7 and the return buffer register x8
-        ;; Also save x9 which may be used for saving indirect call target
-        stp         x0, x1, [sp, #0x10]
-        stp         x2, x3, [sp, #0x20]
-        stp         x4, x5, [sp, #0x30]
-        stp         x6, x7, [sp, #0x40]
-        stp         x8, x9, [sp, #0x50]
-
-        ;; Save float argument registers as well since they're volatile
-        stp         d0, d1, [sp, #0x60]
-        stp         d2, d3, [sp, #0x70]
-        stp         d4, d5, [sp, #0x80]
-        stp         d6, d7, [sp, #0x90]
-
-        bl          RhpWaitForSuspend2
-
-        ;; Restore floating point registers
-        ldp            d0, d1, [sp, #0x60]
-        ldp            d2, d3, [sp, #0x70]
-        ldp            d4, d5, [sp, #0x80]
-        ldp            d6, d7, [sp, #0x90]
-
-        ;; Restore the argument registers
-        ldp            x0, x1, [sp, #0x10]
-        ldp            x2, x3, [sp, #0x20]
-        ldp            x4, x5, [sp, #0x30]
-        ldp            x6, x7, [sp, #0x40]
-        ldp            x8, x9, [sp, #0x50]
-
-        ;; Restore FP and LR registers, and free the allocated stack block
-        EPILOG_RESTORE_REG_PAIR   fp, lr, #0xA0!
-        EPILOG_RETURN
-
-    NESTED_END RhpWaitForSuspend
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; RhpWaitForGCNoAbort
 ;;
 ;;
@@ -209,14 +158,7 @@ NoAbort
 
         str     x1, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     x0, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
-
-        ldr     x9, =RhpTrapThreads
-        ldr     w9, [x9]
-        cbnz    w9, InvokeRareTrapThread  ;; TrapThreadsFlags_None = 0
         ret
-
-InvokeRareTrapThread
-        b       RhpWaitForSuspend2
     NESTED_END RhpPInvoke
 
     INLINE_GETTHREAD_CONSTANT_POOL

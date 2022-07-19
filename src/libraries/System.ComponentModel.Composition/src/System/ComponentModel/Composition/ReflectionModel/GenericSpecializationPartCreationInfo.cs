@@ -29,8 +29,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private ConstructorInfo? _constructor;
         private readonly object _lock = new object();
 
-        public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo!!, ReflectionComposablePartDefinition originalPart!!, Type[] specialization!!)
+        public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {
+            ArgumentNullException.ThrowIfNull(originalPartCreationInfo);
+            ArgumentNullException.ThrowIfNull(originalPart);
+            ArgumentNullException.ThrowIfNull(specialization);
+
             _originalPartCreationInfo = originalPartCreationInfo;
             _originalPart = originalPart;
             _specialization = specialization;
@@ -67,13 +71,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             if (_constructor == null)
             {
-                ConstructorInfo? genericConstuctor = _originalPartCreationInfo.GetConstructor();
+                ConstructorInfo? genericConstructor = _originalPartCreationInfo.GetConstructor();
                 ConstructorInfo? result = null;
-                if (genericConstuctor != null)
+                if (genericConstructor != null)
                 {
                     foreach (ConstructorInfo constructor in GetPartType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                     {
-                        if (constructor.MetadataToken == genericConstuctor.MetadataToken)
+                        if (constructor.MetadataToken == genericConstructor.MetadataToken)
                         {
                             result = constructor;
                             break;
@@ -84,10 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 Thread.MemoryBarrier();
                 lock (_lock)
                 {
-                    if (_constructor == null)
-                    {
-                        _constructor = result;
-                    }
+                    _constructor ??= result;
                 }
             }
 
@@ -173,8 +174,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members!!)
+        private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members)
         {
+            ArgumentNullException.ThrowIfNull(members);
+
             Dictionary<LazyMemberInfo, MemberInfo[]> membersTable = new Dictionary<LazyMemberInfo, MemberInfo[]>();
             Dictionary<int, MemberInfo> specializedPartMembers = new Dictionary<int, MemberInfo>();
 

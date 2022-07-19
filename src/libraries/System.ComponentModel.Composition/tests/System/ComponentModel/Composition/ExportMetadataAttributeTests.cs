@@ -50,7 +50,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        public void IsMultiple_ValueAsValueArgument_ShouldSetPropert()
+        public void IsMultiple_ValueAsValueArgument_ShouldSetProperty()
         {
             var expectations = Expectations.GetBooleans();
 

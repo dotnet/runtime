@@ -83,6 +83,8 @@
 #define FALLBACK_HOST_RID _X("solaris")
 #elif defined(TARGET_LINUX_MUSL)
 #define FALLBACK_HOST_RID _X("linux-musl")
+#elif defined(TARGET_ANDROID)
+#define FALLBACK_HOST_RID _X("linux-bionic")
 #else
 #define FALLBACK_HOST_RID _X("linux")
 #endif
@@ -291,13 +293,34 @@ namespace pal
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
 
-    // Returns the globally registered install location (if any)
-    bool get_dotnet_self_registered_dir(string_t* recv);
-    // Returns name of the global registry location (for error messages)
-    string_t get_dotnet_self_registered_config_location();
+    enum class architecture
+    {
+        arm,
+        arm64,
+        armv6,
+        loongarch64,
+        ppc64le,
+        s390X,
+        x64,
+        x86,
 
-    // Returns the default install location for a given platform
+        __last // Sentinel value
+    };
+
+    // Returns the globally registered install location (if any) for the current architecture
+    bool get_dotnet_self_registered_dir(string_t* recv);
+
+    // Returns the globally registered install location (if any) for the specified architecture
+    bool get_dotnet_self_registered_dir_for_arch(architecture arch, string_t* recv);
+
+    // Returns name of the config location for global install registration (for example, registry key or file path)
+    string_t get_dotnet_self_registered_config_location(architecture arch);
+
+    // Returns the default install location for a given platform for the current architecture
     bool get_default_installation_dir(string_t* recv);
+
+    // Returns the default install location for a given platform for the specified architecture
+    bool get_default_installation_dir_for_arch(architecture arch, string_t* recv);
 
     // Returns the global locations to search for SDK/Frameworks - used when multi-level lookup is enabled
     bool get_global_dotnet_dirs(std::vector<string_t>* recv);

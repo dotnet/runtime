@@ -210,6 +210,9 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.Versioning.ObsoletedInOSPlatformAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.Versioning.SupportedOSPlatformGuardAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -266,6 +269,9 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.InteropServices.LibraryImportAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.CodeDom.Compiler.GeneratedCodeAttribute">

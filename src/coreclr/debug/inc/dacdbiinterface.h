@@ -118,7 +118,7 @@ const DWORD kCurrentDbiVersionFormat = 1;
 //         Module::GetName should either return the name, or fail)
 //
 //         Cordb must neuter any Cordb objects that have any pre-existing handles to the object.
-//             After this point, gauranteed that nobody can discover the VMPTR any more:
+//             After this point, guaranteed that nobody can discover the VMPTR any more:
 //             - doesn't show up in enumerations (so can't be discoverered implicitly)
 //             - object should not be discoverable by other objects in VM.
 //             - any Cordb object that already had it would be neutered by Dbi.
@@ -244,7 +244,7 @@ public:
     //
     //
     // Return Value:
-    //    BOOL whether Left-side is intialized.
+    //    BOOL whether Left-side is initialized.
     //
     // Notes:
     //   If the Left-side is not yet started up, then data in the LS is not yet initialized enough
@@ -511,7 +511,7 @@ public:
     //    vmModule - target module to get metadata for.
     //    pTargetBuffer - Out parameter to get target-buffer for metadata. Gauranteed to be non-empty on
     //       return. This will throw CORDBG_E_MISSING_METADATA hr if the buffer is empty.
-    //       This does not gaurantee that the buffer is readable. For example, in a minidump, buffer's
+    //       This does not guarantee that the buffer is readable. For example, in a minidump, buffer's
     //       memory may not be present.
     //
     // Notes:
@@ -1065,7 +1065,7 @@ public:
 
     virtual
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread) = 0;
-    
+
     //
     // Get the allocation info corresponding to the specified thread.
     //
@@ -2660,7 +2660,7 @@ public:
         HRESULT GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode) = 0;
 
     // Retrieves the ILCodeVersionNode for a given NativeCodeVersionNode.
-    // This may return a NULL node if the native code belongs to the default IL version for this this method.
+    // This may return a NULL node if the native code belongs to the default IL version for this method.
     //
     //
     // Arguments:

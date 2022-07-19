@@ -25,21 +25,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override UnicastIPAddressInformationCollection UnicastAddresses
-        {
-            get
-            {
-                return _unicastAddresses ?? (_unicastAddresses = GetUnicastAddresses(_uni));
-            }
-        }
+        public override UnicastIPAddressInformationCollection UnicastAddresses =>
+            _unicastAddresses ??= GetUnicastAddresses(_uni);
 
-        public sealed override MulticastIPAddressInformationCollection MulticastAddresses
-        {
-            get
-            {
-                return _multicastAddreses ?? (_multicastAddreses = GetMulticastAddresses(_uni));
-            }
-        }
+        public sealed override MulticastIPAddressInformationCollection MulticastAddresses =>
+            _multicastAddreses ??= GetMulticastAddresses(_uni);
 
         public override bool IsDnsEnabled
         {

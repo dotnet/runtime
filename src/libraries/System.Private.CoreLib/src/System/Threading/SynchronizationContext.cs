@@ -42,8 +42,10 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        protected static int WaitHelper(IntPtr[] waitHandles!!, bool waitAll, int millisecondsTimeout)
+        protected static int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
+            ArgumentNullException.ThrowIfNull(waitHandles);
+
             return WaitHandle.WaitMultipleIgnoringSyncContext(waitHandles, waitAll, millisecondsTimeout);
         }
 

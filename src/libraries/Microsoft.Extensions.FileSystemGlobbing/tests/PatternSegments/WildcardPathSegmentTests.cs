@@ -28,6 +28,20 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.PatternSegments
         }
 
         [Theory]
+        [InlineData(StringComparison.CurrentCulture)]
+        [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+        [InlineData(StringComparison.InvariantCulture)]
+        [InlineData(StringComparison.InvariantCultureIgnoreCase)]
+        public void DefaultConstructor_ThrowException_WhenNotOrdinalComparison(StringComparison comparisonType)
+        {
+            var paramBegin = "begin";
+            var paramContains = new List<string> { "1", "2", "three" };
+            var paramEnd = "end";
+
+            AssertExtensions.ThrowsContains<InvalidOperationException>(() => new WildcardPathSegment(paramBegin, paramContains, paramEnd, comparisonType), comparisonType.ToString());
+        }
+
+        [Theory]
         [MemberData(nameof(GetPositiveOrdinalIgnoreCaseDataSample))]
         public void PositiveOrdinalIgnoreCaseMatch(string testSample, object segment)
         {

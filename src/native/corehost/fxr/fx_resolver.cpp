@@ -268,10 +268,7 @@ namespace
                     if (selected_ver != fx_ver_t())
                     {
                         // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
-                        std::vector<fx_ver_t> version_list;
-                        version_list.push_back(resolved_ver);
-                        version_list.push_back(selected_ver);
-                        resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
+                        resolved_ver = resolve_framework_reference_from_version_list({ resolved_ver, selected_ver }, fx_ref);
                     }
 
                     if (resolved_ver != selected_ver)
@@ -441,7 +438,7 @@ StatusCode fx_resolver_t::read_framework(
 
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
-            // Resolve the effective framework reference against the the existing physical framework folders
+            // Resolve the effective framework reference against the existing physical framework folders
             fx_definition_t* fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), host_info.dotnet_root, disable_multilevel_lookup);
             if (fx == nullptr)
             {
@@ -451,7 +448,7 @@ StatusCode fx_resolver_t::read_framework(
                     _X("App: %s\n")
                     _X("Architecture: %s"),
                     app_display_name != nullptr ? app_display_name : host_info.host_path.c_str(),
-                    get_arch());
+                    get_current_arch_name());
                 display_missing_framework_error(fx_name, new_effective_fx_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
                 return FrameworkMissingFailure;
             }

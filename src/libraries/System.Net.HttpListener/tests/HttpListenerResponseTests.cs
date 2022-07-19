@@ -13,7 +13,7 @@ namespace System.Net.Tests
     {
         protected HttpListenerFactory Factory { get; }
         protected Socket Client { get; }
-        protected static byte[] SimpleMessage { get; } = Encoding.UTF8.GetBytes("Hello");
+        protected static byte[] SimpleMessage { get; } = "Hello"u8.ToArray();
 
         public HttpListenerResponseTestBase()
         {

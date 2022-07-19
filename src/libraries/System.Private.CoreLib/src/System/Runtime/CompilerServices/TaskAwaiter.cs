@@ -52,7 +52,6 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task"/>.</summary>
-    /// <remarks>This type is intended for compiler use only.</remarks>
     public readonly struct TaskAwaiter : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access the generic TaskAwaiter<> as TaskAwaiter.
@@ -198,8 +197,10 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
-        internal static void OnCompletedInternal(Task task, Action continuation!!, bool continueOnCapturedContext, bool flowExecutionContext)
+        internal static void OnCompletedInternal(Task task, Action continuation, bool continueOnCapturedContext, bool flowExecutionContext)
         {
+            ArgumentNullException.ThrowIfNull(continuation);
+
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
             if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
@@ -308,7 +309,6 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
-    /// <remarks>This type is intended for compiler use only.</remarks>
     public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access TaskAwaiter<> as the non-generic TaskAwaiter.

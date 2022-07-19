@@ -108,27 +108,6 @@ int32_t AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
     return status == kCCSuccess;
 }
 
-int32_t AppleCryptoNative_CryptorFinal(
-    CCCryptorRef cryptor, uint8_t* pbOutput, int32_t cbOutput, int32_t* pcbWritten, int32_t* pccStatus)
-{
-    if (pccStatus == NULL)
-        return -1;
-
-    *pccStatus = 0;
-
-    if (pbOutput == NULL || cbOutput < 0 || pcbWritten == NULL)
-        return -1;
-
-    size_t sizeWritten = 0;
-    CCStatus status =
-        CCCryptorFinal(cryptor, pbOutput, (size_t)cbOutput, &sizeWritten);
-
-    // Safe because sizeWritten is bounded by cbOutput.
-    *pcbWritten = SizeTToInt32(sizeWritten);
-    *pccStatus = status;
-    return status == kCCSuccess;
-}
-
 int32_t AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pccStatus)
 {
     if (pccStatus == NULL)

@@ -122,7 +122,7 @@ __PPF_ThreadReg SETS "r2"
 
         ; Perform the rest of the PInvokeTransitionFrame initialization.
         INIT_PROBE_FRAME $__PPF_ThreadReg, $trashReg, $BITMASK, PROBE_FRAME_SIZE
-        str         sp, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        str         sp, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
     ; Simple macro to use when PROLOG_PROBE_FRAME was used to set up and initialize the prolog and
@@ -200,7 +200,7 @@ __PPF_ThreadReg SETS "r2"
         tst         r2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
         bne         %ft0
 
-        ldr         r2, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        ldr         r2, [r4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGCNoAbort
 0
     MEND
@@ -505,7 +505,7 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
 
         ; TRASHES r1
         INIT_PROBE_FRAME r2, r1, #PROBE_SAVE_FLAGS_R0_IS_GCREF, (PROBE_FRAME_SIZE + 8)
-        str         sp, [r2, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        str         sp, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
 ;;

@@ -46,11 +46,11 @@ sample_profiler_reset_time_granularity (void);
 
 static
 bool
-sample_profiler_load_dependecies (void);
+sample_profiler_load_dependencies (void);
 
 static
 void
-sample_profiler_unload_dependecies (void);
+sample_profiler_unload_dependencies (void);
 
 static
 void
@@ -143,7 +143,7 @@ sample_profiler_reset_time_granularity (void)
 
 static
 bool
-sample_profiler_load_dependecies (void)
+sample_profiler_load_dependencies (void)
 {
 #ifdef HOST_WIN32
 	if (_ref_count > 0)
@@ -168,7 +168,7 @@ sample_profiler_load_dependecies (void)
 
 static
 void
-sample_profiler_unload_dependecies (void)
+sample_profiler_unload_dependencies (void)
 {
 #ifdef HOST_WIN32
 	if (_multimedia_library_handle != NULL) {
@@ -261,7 +261,7 @@ ep_sample_profiler_enable (void)
 	if (!ep_event_is_enabled (_thread_time_event))
 		return;
 
-	sample_profiler_load_dependecies ();
+	sample_profiler_load_dependencies ();
 
 	if (_can_start_sampling)
 		sample_profiler_enable ();
@@ -295,7 +295,7 @@ ep_sample_profiler_disable (void)
 		if (_time_period_is_set)
 			sample_profiler_reset_time_granularity ();
 
-		sample_profiler_unload_dependecies ();
+		sample_profiler_unload_dependencies ();
 	}
 
 	--_ref_count;

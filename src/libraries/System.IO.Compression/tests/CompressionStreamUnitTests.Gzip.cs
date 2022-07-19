@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO.Compression.Tests;
 using Xunit;
 
 namespace System.IO.Compression
@@ -153,15 +155,6 @@ namespace System.IO.Compression
             await TestConcatenatedGzipStreams(streamCount, scenario, bufferSize, bytesPerStream);
         }
 
-        public enum TestScenario
-        {
-            ReadByte,
-            Read,
-            ReadAsync,
-            Copy,
-            CopyAsync
-        }
-
         private async Task TestConcatenatedGzipStreams(int streamCount, TestScenario scenario, int bufferSize, int bytesPerStream = 1)
         {
             bool isCopy = scenario == TestScenario.Copy || scenario == TestScenario.CopyAsync;
@@ -278,6 +271,52 @@ namespace System.IO.Compression
             {
                 compressor.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])).AsTask().Wait();
                 Assert.True(compressor.WriteArrayInvoked);
+            }
+        }
+
+        [Fact]
+        public void StreamCorruption_IsDetected()
+        {
+            byte[] source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+            var buffer = new byte[64];
+            byte[] compressedData;
+            using (var compressed = new MemoryStream())
+            using (Stream compressor = CreateStream(compressed, CompressionMode.Compress))
+            {
+                foreach (byte b in source)
+                {
+                    compressor.WriteByte(b);
+                }
+
+                compressor.Dispose();
+                compressedData = compressed.ToArray();
+            }
+
+            // the last 7 bytes of the 10-byte gzip header can be changed with no decompression error
+            // this is by design, so we skip them for the test
+            int[] byteToSkip = { 3, 4, 5, 6, 7, 8, 9 };
+
+            for (int byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
+            {
+                if (byteToSkip.Contains(byteToCorrupt))
+                    continue;
+
+                // corrupt the data
+                compressedData[byteToCorrupt]++;
+
+                using (var decompressedStream = new MemoryStream(compressedData))
+                {
+                    using (Stream decompressor = CreateStream(decompressedStream, CompressionMode.Decompress))
+                    {
+                        Assert.Throws<InvalidDataException>(() =>
+                        {
+                            while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0);
+                        });
+                    }
+                }
+
+                // restore the data
+                compressedData[byteToCorrupt]--;
             }
         }
 

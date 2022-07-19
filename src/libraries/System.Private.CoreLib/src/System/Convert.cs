@@ -6,6 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Buffers;
+using System.Buffers.Text;
+using System.Text;
 
 namespace System
 {
@@ -16,20 +19,11 @@ namespace System
         InsertLineBreaks = 1
     }
 
-    // Returns the type code of this object. An implementation of this method
-    // must not return TypeCode.Empty (which represents a null reference) or
-    // TypeCode.Object (which represents an object that doesn't implement the
-    // IConvertible interface). An implementation of this method should return
-    // TypeCode.DBNull if the value of this object is a database null. For
-    // example, a nullable integer type should return TypeCode.DBNull if the
-    // value of the object is the database null. Otherwise, an implementation
-    // of this method should return the TypeCode that best describes the
-    // internal representation of the object.
-    // The Value class provides conversion and querying methods for values. The
-    // Value class contains static members only, and it is not possible to create
+    // The Convert class provides conversion and querying methods for values. The
+    // Convert class contains static members only, and it is not possible to create
     // instances of the class.
     //
-    // The statically typed conversion methods provided by the Value class are all
+    // The statically typed conversion methods provided by the Convert class are all
     // of the form:
     //
     //    public static XXX ToXXX(YYY value)
@@ -57,7 +51,7 @@ namespace System
     // String      x   x   x   x   x   x   x   x   x   x   x   x   x   x   x
     // ----------------------------------------------------------------------
     //
-    // For dynamic conversions, the Value class provides a set of methods of the
+    // For dynamic conversions, the Convert class provides a set of methods of the
     // form:
     //
     //    public static XXX ToXXX(object value)
@@ -71,25 +65,11 @@ namespace System
     //    }
     //
     // The code first checks if the given value is a null reference (which is the
-    // same as Value.Empty), in which case it returns the default value for type
+    // same as TypeCode.Empty), in which case it returns the default value for type
     // XXX. Otherwise, a cast to IConvertible is performed, and the appropriate ToXXX()
     // method is invoked on the object. An InvalidCastException is thrown if the
     // cast to IConvertible fails, and that exception is simply allowed to propagate out
     // of the conversion method.
-
-    // Constant representing the database null value. This value is used in
-    // database applications to indicate the absence of a known value. Note
-    // that Value.DBNull is NOT the same as a null object reference, which is
-    // represented by Value.Empty.
-    //
-    // The Equals() method of DBNull always returns false, even when the
-    // argument is itself DBNull.
-    //
-    // When passed Value.DBNull, the Value.GetTypeCode() method returns
-    // TypeCode.DBNull.
-    //
-    // When passed Value.DBNull, the Value.ToXXX() methods all throw an
-    // InvalidCastException.
 
     public static partial class Convert
     {
@@ -143,6 +123,16 @@ namespace System
         }
 #endif
 
+        // Constant representing the database null value. This value is used in
+        // database applications to indicate the absence of a known value. Note
+        // that Convert.DBNull is NOT the same as a null object reference, which is
+        // represented by TypeCode.Empty.
+        //
+        // When passed Convert.DBNull, the Convert.GetTypeCode() method returns
+        // TypeCode.DBNull.
+        //
+        // When passed Convert.DBNull, all the Convert.ToXXX() methods except ToString()
+        // throw an InvalidCastException.
         public static readonly object DBNull = System.DBNull.Value;
 
         // Returns the type code for the given object. If the argument is null,
@@ -226,8 +216,10 @@ namespace System
             };
         }
 
-        internal static object DefaultToType(IConvertible value, Type targetType!!, IFormatProvider? provider)
+        internal static object DefaultToType(IConvertible value, Type targetType, IFormatProvider? provider)
         {
+            ArgumentNullException.ThrowIfNull(targetType);
+
             Debug.Assert(value != null, "[Convert.DefaultToType]value!=null");
 
             if (ReferenceEquals(value.GetType(), targetType))
@@ -285,8 +277,10 @@ namespace System
         }
 
         [return: NotNullIfNotNull("value")]
-        public static object? ChangeType(object? value, Type conversionType!!, IFormatProvider? provider)
+        public static object? ChangeType(object? value, Type conversionType, IFormatProvider? provider)
         {
+            ArgumentNullException.ThrowIfNull(conversionType);
+
             if (value == null)
             {
                 if (conversionType.IsValueType)
@@ -545,8 +539,10 @@ namespace System
             return ToChar(value, null);
         }
 
-        public static char ToChar(string value!!, IFormatProvider? provider)
+        public static char ToChar(string value, IFormatProvider? provider)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Length != 1)
                 throw new FormatException(SR.Format_NeedSingleChar);
 
@@ -2297,13 +2293,17 @@ namespace System
             return ParseNumbers.LongToString(value, toBase, -1, ' ', 0);
         }
 
-        public static string ToBase64String(byte[] inArray!!)
+        public static string ToBase64String(byte[] inArray)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             return ToBase64String(new ReadOnlySpan<byte>(inArray), Base64FormattingOptions.None);
         }
 
-        public static string ToBase64String(byte[] inArray!!, Base64FormattingOptions options)
+        public static string ToBase64String(byte[] inArray, Base64FormattingOptions options)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             return ToBase64String(new ReadOnlySpan<byte>(inArray), options);
         }
 
@@ -2312,8 +2312,10 @@ namespace System
             return ToBase64String(inArray, offset, length, Base64FormattingOptions.None);
         }
 
-        public static string ToBase64String(byte[] inArray!!, int offset, int length, Base64FormattingOptions options)
+        public static string ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (offset < 0)
@@ -2337,7 +2339,30 @@ namespace System
             }
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            string result = string.FastAllocateString(ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks));
+            int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
+
+            if (!insertLineBreaks && bytes.Length >= 64)
+            {
+                // For large inputs it's faster to allocate a temp buffer and call UTF8 version
+                // which is then extended to UTF8 via Latin1.GetString (base64 is always ASCI)
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static string ToBase64StringLargeInputs(ReadOnlySpan<byte> data, int outputLen)
+                {
+                    byte[]? rentedBytes = null;
+                    Span<byte> utf8buffer = outputLen <= 256 ? stackalloc byte[256] : (rentedBytes = ArrayPool<byte>.Shared.Rent(outputLen));
+                    OperationStatus status = Base64.EncodeToUtf8(data, utf8buffer, out int _, out int bytesWritten);
+                    Debug.Assert(status == OperationStatus.Done && bytesWritten == outputLen);
+                    string result = Encoding.Latin1.GetString(utf8buffer.Slice(0, outputLen));
+                    if (rentedBytes != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rentedBytes);
+                    }
+                    return result;
+                }
+                return ToBase64StringLargeInputs(bytes, outputLength);
+            }
+
+            string result = string.FastAllocateString(outputLength);
 
             unsafe
             {
@@ -2357,8 +2382,11 @@ namespace System
             return ToBase64CharArray(inArray, offsetIn, length, outArray, offsetOut, Base64FormattingOptions.None);
         }
 
-        public static unsafe int ToBase64CharArray(byte[] inArray!!, int offsetIn, int length, char[] outArray!!, int offsetOut, Base64FormattingOptions options)
+        public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+            ArgumentNullException.ThrowIfNull(outArray);
+
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (offsetIn < 0)
@@ -2682,8 +2710,10 @@ namespace System
         /// <param name="offset">A position within the input array.</param>
         /// <param name="length">Number of element to convert.</param>
         /// <returns>The array of bytes represented by the specified Base64 encoding characters.</returns>
-        public static byte[] FromBase64CharArray(char[] inArray!!, int offset, int length)
+        public static byte[] FromBase64CharArray(char[] inArray, int offset, int length)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
@@ -2857,8 +2887,10 @@ namespace System
         /// <returns>The string representation in hex of the elements in <paramref name="inArray"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
-        public static string ToHexString(byte[] inArray!!)
+        public static string ToHexString(byte[] inArray)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             return ToHexString(new ReadOnlySpan<byte>(inArray));
         }
 
@@ -2874,8 +2906,10 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> plus <paramref name="length"/> is greater than the length of <paramref name="inArray"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
-        public static string ToHexString(byte[] inArray!!, int offset, int length)
+        public static string ToHexString(byte[] inArray, int offset, int length)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (offset < 0)

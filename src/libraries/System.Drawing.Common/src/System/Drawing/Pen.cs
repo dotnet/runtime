@@ -14,12 +14,7 @@ namespace System.Drawing
     /// <summary>
     /// Defines an object used to draw lines and curves.
     /// </summary>
-    public sealed partial class Pen : MarshalByRefObject, ICloneable, IDisposable
-#pragma warning disable SA1001
-#if FEATURE_SYSTEM_EVENTS
-        , ISystemColorTracker
-#endif
-#pragma warning restore SA1001
+    public sealed class Pen : MarshalByRefObject, ICloneable, IDisposable, ISystemColorTracker
     {
 #if FINALIZATION_WATCH
         private string _allocationSite = Graphics.GetAllocationStack();
@@ -57,7 +52,7 @@ namespace System.Drawing
         {
             _color = color;
 
-            IntPtr pen = IntPtr.Zero;
+            IntPtr pen;
             int status = Gdip.GdipCreatePen1(color.ToArgb(),
                                                 width,
                                                 (int)GraphicsUnit.World,
@@ -66,12 +61,10 @@ namespace System.Drawing
 
             SetNativePen(pen);
 
-#if FEATURE_SYSTEM_EVENTS
             if (_color.IsSystemColor)
             {
                 SystemColorTracker.Add(this);
             }
-#endif
         }
 
         /// <summary>
@@ -84,8 +77,10 @@ namespace System.Drawing
         /// <summary>
         /// Initializes a new instance of the <see cref='Pen'/> class with the specified <see cref='Drawing.Brush'/> and width.
         /// </summary>
-        public Pen(Brush brush!!, float width)
+        public Pen(Brush brush, float width)
         {
+            ArgumentNullException.ThrowIfNull(brush);
+
             IntPtr pen;
             int status = Gdip.GdipCreatePen2(new HandleRef(brush, brush.NativeBrush),
                 width,
@@ -300,6 +295,58 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Gets or sets a custom cap style to use at the beginning of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
+        public CustomLineCap CustomStartCap
+        {
+            get
+            {
+                IntPtr lineCap;
+                int status = Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
+                Gdip.CheckStatus(status);
+
+                return CustomLineCap.CreateCustomLineCapObject(lineCap);
+            }
+            set
+            {
+                if (_immutable)
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
+
+                int status = Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
+                                                              new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
+                Gdip.CheckStatus(status);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a custom cap style to use at the end of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
+        public CustomLineCap CustomEndCap
+        {
+            get
+            {
+                IntPtr lineCap;
+                int status = Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
+                Gdip.CheckStatus(status);
+                return CustomLineCap.CreateCustomLineCapObject(lineCap);
+            }
+            set
+            {
+                if (_immutable)
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
+
+                int status = Gdip.GdipSetPenCustomEndCap(
+                    new HandleRef(this, NativePen),
+                    new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
+                Gdip.CheckStatus(status);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the cap style used at the beginning or end of dashed lines drawn with this <see cref='Pen'/>.
         /// </summary>
         public DashCap DashCap
@@ -464,6 +511,8 @@ namespace System.Drawing
         /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             if (matrix.NativeMatrix == IntPtr.Zero)
             {
                 // Disposed matrices should result in a no-op.
@@ -579,20 +628,16 @@ namespace System.Drawing
 
                 if (value != _color)
                 {
-#if FEATURE_SYSTEM_EVENTS
                     Color oldColor = _color;
-#endif
                     _color = value;
                     InternalSetColor(value);
 
-#if FEATURE_SYSTEM_EVENTS
                     // NOTE: We never remove pens from the active list, so if someone is
                     // changing their pen colors a lot, this could be a problem.
                     if (value.IsSystemColor && !oldColor.IsSystemColor)
                     {
                         SystemColorTracker.Add(this);
                     }
-#endif
                 }
             }
         }
@@ -862,7 +907,6 @@ namespace System.Drawing
             }
         }
 
-#if FEATURE_SYSTEM_EVENTS
         void ISystemColorTracker.OnSystemColorChanged()
         {
             if (NativePen != IntPtr.Zero)
@@ -870,6 +914,5 @@ namespace System.Drawing
                 InternalSetColor(_color);
             }
         }
-#endif
     }
 }

@@ -29,16 +29,26 @@ namespace System.CodeDom
 
         public void Add(string value) => Add(new CodeTypeParameter(value));
 
-        public void AddRange(CodeTypeParameter[] value!!)
+        public void AddRange(CodeTypeParameter[] value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CodeTypeParameterCollection value!!)
+        public void AddRange(CodeTypeParameterCollection value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

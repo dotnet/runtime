@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -284,17 +284,6 @@
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
   </data>
-  <data name="TargetFrameworkNotSupportedDescription" xml:space="preserve">
-    <value>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</value>
-    <comment>{0} is a version number</comment>
-  </data>
-  <data name="TargetFrameworkNotSupportedMessage" xml:space="preserve">
-    <value>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</value>
-    <comment>{0} is a version number</comment>
-  </data>
-  <data name="TargetFrameworkNotSupportedTitle" xml:space="preserve">
-    <value>Current target framework is not supported by source-generated P/Invokes</value>
-  </data>
   <data name="TypeNotSupportedDescription" xml:space="preserve">
     <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
   </data>
@@ -357,7 +346,7 @@
     <value>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</value>
   </data>
   <data name="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage" xml:space="preserve">
-    <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</value>
+    <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</value>
   </data>
   <data name="ValueInRequiresOneParameterConstructorDescription" xml:space="preserve">
     <value>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</value>
@@ -436,5 +425,26 @@
   </data>
   <data name="TwoStageMarshallingNativeTypesMustMatchMessage" xml:space="preserve">
     <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</value>
+  </data>
+  <data name="CallerAllocConstructorMustHaveBufferSizeTitle" xml:space="preserve">
+    <value>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</value>
+  </data>
+  <data name="CustomMarshallerTypeMustHaveRequiredShapeTitle" xml:space="preserve">
+    <value>Marshaller type does not have the required shape</value>
+  </data>
+  <data name="InvalidCustomTypeMarshallerAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid `CustomTypeMarshallerAttribute` usage</value>
+  </data>
+  <data name="InvalidNativeTypeTitle" xml:space="preserve">
+    <value>Specified native type is invalid</value>
+  </data>
+  <data name="InvalidSignaturesInMarshallerShapeTitle" xml:space="preserve">
+    <value>Marshaller type has incompatible method signatures</value>
+  </data>
+  <data name="MissingAllocatingMarshallingFallbackTitle" xml:space="preserve">
+    <value>Marshaller type does not support allocating constructor</value>
+  </data>
+  <data name="ProvidedMethodsNotSpecifiedInFeaturesTitle" xml:space="preserve">
+    <value>Marshaller type defines a well-known method without specifying support for the corresponding feature</value>
   </data>
 </root>

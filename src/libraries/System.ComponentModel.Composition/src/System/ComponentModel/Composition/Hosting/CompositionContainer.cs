@@ -253,7 +253,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                return (_catalogExportProvider != null) ? _catalogExportProvider.Catalog : null;
+                return _catalogExportProvider?.Catalog;
             }
         }
 
@@ -354,35 +354,12 @@ namespace System.ComponentModel.Composition.Hosting
                         rootProvider.ExportsChanging -= OnExportsChangingInternal;
                     }
 
-                    if (disposableRootProvider != null)
-                    {
-                        disposableRootProvider.Dispose();
-                    }
-
-                    if (disposableAncestorExportProvider != null)
-                    {
-                        disposableAncestorExportProvider.Dispose();
-                    }
-
-                    if (disposableLocalExportProvider != null)
-                    {
-                        disposableLocalExportProvider.Dispose();
-                    }
-
-                    if (catalogExportProvider != null)
-                    {
-                        catalogExportProvider.Dispose();
-                    }
-
-                    if (partExportProvider != null)
-                    {
-                        partExportProvider.Dispose();
-                    }
-
-                    if (importEngine != null)
-                    {
-                        importEngine.Dispose();
-                    }
+                    disposableRootProvider?.Dispose();
+                    disposableAncestorExportProvider?.Dispose();
+                    disposableLocalExportProvider?.Dispose();
+                    catalogExportProvider?.Dispose();
+                    partExportProvider?.Dispose();
+                    importEngine?.Dispose();
                 }
 
             }
@@ -551,10 +528,7 @@ namespace System.ComponentModel.Composition.Hosting
                         importEngine = null;
                     }
                 }
-                if (importEngine != null)
-                {
-                    importEngine.Dispose();
-                }
+                importEngine?.Dispose();
             }
             _importEngine.SatisfyImportsOnce(part);
         }
@@ -617,10 +591,7 @@ namespace System.ComponentModel.Composition.Hosting
                     _localExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     break;
                 case ImportSource.NonLocal:
-                    if (_ancestorExportProvider != null)
-                    {
-                        _ancestorExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
-                    }
+                    _ancestorExportProvider?.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     break;
             }
 

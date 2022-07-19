@@ -847,7 +847,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 		obj = (GCObject*)forwarded;
 	}
 
-	return sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
+	return (guint)sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER

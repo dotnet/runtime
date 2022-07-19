@@ -1922,13 +1922,13 @@ namespace System.Threading.Tasks
                 }
             }
 
-#if CORERT
+#if NATIVEAOT
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
             // Propagate the exception(s) on the ThreadPool
             ThreadPool.QueueUserWorkItem(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
-#endif // CORERT
+#endif // NATIVEAOT
         }
 
         /// <summary>
@@ -2440,7 +2440,6 @@ namespace System.Threading.Tasks
         #region Await Support
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public TaskAwaiter GetAwaiter()
         {
             return new TaskAwaiter(this);
@@ -4429,7 +4428,7 @@ namespace System.Threading.Tasks
             if (!continuationTask.IsCompleted)
             {
                 // We need additional correlation produced here to ensure that at least the continuation
-                // code will be correlatable to the currrent activity that initiated "this" task:
+                // code will be correlatable to the current activity that initiated "this" task:
                 //  . when the antecendent ("this") is a promise we have very little control over where
                 //    the code for the promise will run (e.g. it can be a task from a user provided
                 //    TaskCompletionSource or from a classic Begin/End async operation); this user or
@@ -5444,7 +5443,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5489,7 +5487,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -6238,10 +6235,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1!!, Task task2!!) =>
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        public static Task<Task> WhenAny(Task task1, Task task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>
         /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
@@ -6430,10 +6433,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1!!, Task<TResult> task2!!) =>
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        }
 
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
@@ -6912,7 +6921,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Transfer the completion status from "task" to ourself.</summary>
-        /// <param name="task">The source task whose results should be transfered to this.</param>
+        /// <param name="task">The source task whose results should be transferred to this.</param>
         /// <param name="lookForOce">Whether or not to look for OperationCanceledExceptions in task's exceptions if it faults.</param>
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)

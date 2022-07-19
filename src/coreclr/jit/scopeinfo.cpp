@@ -295,7 +295,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_LONG:
         case TYP_DOUBLE:
 #endif // TARGET_64BIT
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if FEATURE_IMPLICIT_BYREFS
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
             // the IR to comply with the ABI and therefore changes the type of the lclVar
@@ -306,7 +306,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
             // See lvaSetStruct for further detail.
             //
             // Now, the VM expects a special enum for these type of local vars: VLT_STK_BYREF
-            // to accomodate for this situation.
+            // to accommodate for this situation.
             if (varDsc->lvIsImplicitByRef)
             {
                 assert(varDsc->lvIsParam);
@@ -314,7 +314,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
                 this->vlType = VLT_STK_BYREF;
             }
             else
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // FEATURE_IMPLICIT_BYREFS
             {
                 this->vlType = VLT_STK;
             }

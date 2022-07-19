@@ -242,7 +242,7 @@
 
 #ifdef _DEBUG
 //
-// Linked list of unmanaged methods preceeding a HelperMethodFrame push.  This
+// Linked list of unmanaged methods preceding a HelperMethodFrame push.  This
 // is linked onto the current Thread.  Each list entry is stack-allocated so it
 // can be associated with an unmanaged frame.  Each unmanaged frame needs to be
 // associated with at least one list entry.

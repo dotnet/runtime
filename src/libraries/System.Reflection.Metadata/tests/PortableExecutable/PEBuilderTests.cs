@@ -135,7 +135,7 @@ namespace System.Reflection.PortableExecutable.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SigningUtilities), nameof(SigningUtilities.SupportsSigning))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void BasicValidationSigned()
         {
@@ -748,7 +748,7 @@ namespace System.Reflection.PortableExecutable.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SigningUtilities), nameof(SigningUtilities.SupportsSigning))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void Checksum()
         {
@@ -756,7 +756,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.False(TestChecksumAndAuthenticodeSignature(new MemoryStream(Misc.Deterministic)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void ChecksumFXAssemblies()
         {

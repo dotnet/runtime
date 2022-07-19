@@ -66,5 +66,8 @@ namespace System.Data.Common
         public virtual DbParameter? CreateParameter() => null;
 
         public virtual DbDataSourceEnumerator? CreateDataSourceEnumerator() => null;
+
+        public virtual DbDataSource CreateDataSource(string connectionString)
+            => new DefaultDataSource(this, connectionString);
     }
 }

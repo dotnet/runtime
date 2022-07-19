@@ -16,12 +16,14 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly ConsoleLoggerProcessor _queueProcessor;
 
         internal ConsoleLogger(
-            string name!!,
+            string name,
             ConsoleLoggerProcessor loggerProcessor,
             ConsoleFormatter formatter,
             IExternalScopeProvider? scopeProvider,
             ConsoleLoggerOptions options)
         {
+            ThrowHelper.ThrowIfNull(name);
+
             _name = name;
             _queueProcessor = loggerProcessor;
             Formatter = formatter;
@@ -42,10 +44,9 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 return;
             }
-            if (formatter == null)
-            {
-                throw new ArgumentNullException(nameof(formatter));
-            }
+
+            ThrowHelper.ThrowIfNull(formatter);
+
             t_stringWriter ??= new StringWriter();
             LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, _name, eventId, state, exception, formatter);
             Formatter.Write(in logEntry, ScopeProvider, t_stringWriter);

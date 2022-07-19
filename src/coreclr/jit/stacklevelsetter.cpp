@@ -12,7 +12,7 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     : Phase(compiler, PHASE_STACK_LEVEL_SETTER)
     , currentStackLevel(0)
     , maxStackLevel(0)
-    , memAllocator(compiler->getAllocator(CMK_fgArgInfoPtrArr))
+    , memAllocator(compiler->getAllocator(CMK_CallArgs))
     , putArgNumSlots(memAllocator)
 #if !FEATURE_FIXED_OUT_ARGS
     , framePointerRequired(compiler->codeGen->isFramePointerRequired())
@@ -105,7 +105,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             GenTreeCall* call                = node->AsCall();
             unsigned     usedStackSlotsCount = PopArgumentsFromCall(call);
 #if defined(UNIX_X86_ABI)
-            call->fgArgInfo->SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
+            call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
 #endif // UNIX_X86_ABI
         }
     }
@@ -237,23 +237,21 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 //   the number of stack slots in stack arguments for the call.
 unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
 {
-    unsigned   usedStackSlotsCount = 0;
-    fgArgInfo* argInfo             = call->fgArgInfo;
-    if (argInfo->HasStackArgs())
+    unsigned usedStackSlotsCount = 0;
+    if (call->gtArgs.HasStackArgs())
     {
-        for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
+        for (CallArg& arg : call->gtArgs.Args())
         {
-            const fgArgTabEntry* argTab    = argInfo->ArgTable()[i];
-            const unsigned       slotCount = argTab->GetStackSlotsNumber();
+            const unsigned slotCount = arg.AbiInfo.GetStackSlotsNumber();
             if (slotCount != 0)
             {
-                GenTree* node = argTab->GetNode();
+                GenTree* node = arg.GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 
 #if !FEATURE_FIXED_OUT_ARGS
-                assert(slotCount == putArg->gtNumSlots);
+                assert((slotCount * TARGET_POINTER_SIZE) == putArg->GetStackByteSize());
 #endif // !FEATURE_FIXED_OUT_ARGS
 
                 putArgNumSlots.Set(putArg, slotCount);

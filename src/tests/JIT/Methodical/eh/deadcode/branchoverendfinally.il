@@ -11,7 +11,9 @@
 .assembly 'branchoverendfinally' {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit foo
+.namespace Test_branchoverendfinally_il
+{
+.class public auto ansi beforefieldinit foo
        extends [mscorlib]System.Object
 {
   .field private static class [eh_common]TestUtil.TestLog testLog
@@ -37,7 +39,7 @@
 
     ldloc.s    expectedOut
     newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-    stsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    stsfld     class [eh_common]TestUtil.TestLog Test_branchoverendfinally_il.foo::testLog
     ret
   } 
 
@@ -49,7 +51,7 @@
     .entrypoint
     .maxstack  1
 
-    ldsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_branchoverendfinally_il.foo::testLog
     callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
     
     .try
@@ -79,10 +81,10 @@
     IL_0036:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0039:
       
-    ldsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_branchoverendfinally_il.foo::testLog
     callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
-    ldsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_branchoverendfinally_il.foo::testLog
     callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     IL_003b:  ret
@@ -98,3 +100,4 @@
   } 
 
 } 
+}

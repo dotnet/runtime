@@ -115,7 +115,7 @@ void LoaderAllocator::AddReference()
     CONTRACTL_END;
 
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
-    FastInterlockIncrement((LONG *)&m_cReferences);
+    InterlockedIncrement((LONG *)&m_cReferences);
 }
 #endif //!DACCESS_COMPILE
 
@@ -146,7 +146,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
             return FALSE;
         }
 
-        UINT32 cOriginalReferences = FastInterlockCompareExchange(
+        UINT32 cOriginalReferences = InterlockedCompareExchange(
             (LONG *)&m_cReferences,
             cReferencesLocalSnapshot + 1,
             cReferencesLocalSnapshot);
@@ -181,7 +181,7 @@ BOOL LoaderAllocator::Release()
 #ifndef DACCESS_COMPILE
 
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
-    LONG cNewReferences = FastInterlockDecrement((LONG *)&m_cReferences);
+    LONG cNewReferences = InterlockedDecrement((LONG *)&m_cReferences);
     return (cNewReferences == 0);
 #else //DACCESS_COMPILE
 
@@ -285,7 +285,6 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
         TypeHandle arg = inst[i];
-        _ASSERTE(!arg.IsEncodedFixup());
         LoaderAllocator *pOtherLA = arg.GetLoaderModule()->GetLoaderAllocator();
 
         if (pOtherLA == this)
@@ -382,8 +381,9 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 #endif //0
 
     AppDomain::AssemblyIterator i;
-    // Iterate through every loader allocator, marking as we go
     {
+        // Iterate through every loader allocator, marking as we go
+        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
@@ -405,17 +405,11 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 }
             }
         }
-    }
 
-    // Iterate through every loader allocator, unmarking marked loaderallocators, and
-    // build a free list of unmarked ones
-    {
-        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
-        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
-
+        // Iterate through every loader allocator, unmarking marked loaderallocators, and
+        // build a free list of unmarked ones
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
 
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
@@ -925,10 +919,11 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     if ((((UINT_PTR)handle) & 1) != 0)
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-        gc.previous = *ptr;
-        if ((*ptr) == gc.compare)
+
+        gc.previous = ObjectToOBJECTREF(InterlockedCompareExchangeT((Object **)ptr, OBJECTREFToObject(gc.value), OBJECTREFToObject(gc.compare)));
+        if (gc.previous == gc.compare)
         {
-            SetObjectReference(ptr, gc.value);
+            ErectWriteBarrier(ptr, gc.value);
         }
     }
     else
@@ -1517,7 +1512,7 @@ DispatchToken LoaderAllocator::GetDispatchToken(
             SimpleWriteLockHolder lock(pFatTokenSetLock);
             NewHolder<FatTokenSet> pFatTokenSet = new FatTokenSet;
 
-            if (FastInterlockCompareExchangePointer(
+            if (InterlockedCompareExchangeT(
                     &m_pFatTokenSetLock, pFatTokenSetLock.GetValue(), NULL) != NULL)
             {   // Someone beat us to it
                 lock.Release();
@@ -2063,7 +2058,7 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
     {
         UMEntryThunkCache *pUMEntryThunkCache = new UMEntryThunkCache(GetAppDomain());
 
-        if (FastInterlockCompareExchangePointer(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete pUMEntryThunkCache;
@@ -2175,7 +2170,7 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
     {
         OnStackReplacementManager * newManager = new OnStackReplacementManager(this);
 
-        if (FastInterlockCompareExchangePointer(&m_onStackReplacementManager, newManager, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_onStackReplacementManager, newManager, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete newManager;

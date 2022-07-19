@@ -12,7 +12,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamMutualAuthenticationTest
+    public class SslStreamMutualAuthenticationTest : IDisposable
     {
         private readonly X509Certificate2 _clientCertificate;
         private readonly X509Certificate2 _serverCertificate;
@@ -23,11 +23,18 @@ namespace System.Net.Security.Tests
             _clientCertificate = Configuration.Certificates.GetClientCertificate();
         }
 
+        public void Dispose()
+        {
+            _serverCertificate.Dispose();
+            _clientCertificate.Dispose();
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, bool useClientSelectionCallback)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

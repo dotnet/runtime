@@ -72,7 +72,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
                 {
                     TypeHandle th = retAndArgTypes[i];
                     // This should be a consequence of the type key being restored
-                    CONSISTENCY_CHECK(!th.IsNull() && !th.IsEncodedFixup());
+                    CONSISTENCY_CHECK(!th.IsNull());
                     if (!this->GetSignatureForTypeHandle(th, pSigBuilder))
                         return FALSE;
                 }
@@ -233,17 +233,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     if ((index != 0) && (this->pfnTokenDefinition != NULL))
     {
-        //
-        // We do not want to log the metadata lookups that we perform here
-        //
-        IBCLoggingDisabler   disableLogging;
-
-        // During IBC profiling this calls
-        //     code:Module::TokenDefinitionHelper
         (*this->pfnTokenDefinition)(this->context.pModuleContext, pTypeHandleModule, index, &token);
-
-        // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-        _ASSERTE(TypeFromToken(token) == ibcExternalType);
         token = TokenFromRid(RidFromToken(token), mdtTypeDef);
     }
 
@@ -256,7 +246,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle t = inst[i];
-            CONSISTENCY_CHECK(!t.IsNull() && !t.IsEncodedFixup());
+            CONSISTENCY_CHECK(!t.IsNull());
             if (!this->GetSignatureForTypeHandle(t, pSigBuilder))
                 return FALSE;
         }
@@ -301,7 +291,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 // Hence we can do the signature comparison without incurring any loads or restores.
 //
 /*static*/ BOOL ZapSig::CompareSignatureToTypeHandle(PCCOR_SIGNATURE          pSig,
-                                                     Module*                  pModule,
+                                                     ModuleBase*              pModule,
                                                      TypeHandle               handle,
                                                      const ZapSig::Context *  pZapSigContext)
 {
@@ -326,7 +316,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     //
     // pOrigModule is the original module that contained this ZapSig
     //
-    Module *       pOrigModule = pZapSigContext->pInfoModule;
+    ModuleBase *   pOrigModule = pZapSigContext->pInfoModule;
     CorElementType sigType     = CorSigUncompressElementType(pSig);
     CorElementType handleType  = handle.GetSignatureCorElementType();
 
@@ -428,7 +418,9 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_TRY
                 {
                     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                    resolved = ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModule, &tk, Loader::DontLoad);
+                    Module *pTypeDefModule = nullptr;
+                    resolved = ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pTypeDefModule, &tk, Loader::DontLoad);
+                    pModule = pTypeDefModule;
                 }
                 EX_CATCH
                 {
@@ -489,7 +481,9 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_TRY
                 {
                     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                    resolved = ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModule, &tk, Loader::DontLoad);
+                    Module *pTypeDefModule = NULL;
+                    resolved = ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pTypeDefModule, &tk, Loader::DontLoad);
+                    pModule = pTypeDefModule;
                 }
                 EX_CATCH
                 {
@@ -558,7 +552,6 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
         FORBID_FAULT;
         PRECONDITION(CheckPointer(pTypeHnd));
         PRECONDITION(CheckPointer(typeHnd2));
-        PRECONDITION(!CORCOMPILE_IS_POINTER_TAGGED((SIZE_T) typeHnd2.AsPtr()));
     }
     CONTRACTL_END
 
@@ -569,7 +562,7 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
 }
 
 #ifndef DACCESS_COMPILE
-Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
+ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
                                       DWORD index)
 {
     CONTRACTL
@@ -584,7 +577,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
     uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
 
-    if (index < assemblyRefMax)
+    if (index <= assemblyRefMax)
     {
         if (index == 0)
         {
@@ -598,6 +591,15 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     else
     {
         index -= assemblyRefMax;
+
+        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        {
+            if (index == 1)
+            {
+                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
+            }
+            index--;
+        }
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
@@ -623,7 +625,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     return pAssembly->GetModule();
 }
 
-Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
+ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                                               DWORD index)
 {
     CONTRACTL
@@ -640,7 +642,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
     uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
 
-    if (index < assemblyRefMax)
+    if (index <= assemblyRefMax)
     {
         if (index == 0)
         {
@@ -654,6 +656,16 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     else
     {
         index -= assemblyRefMax;
+
+        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        {
+            if (index == 1)
+            {
+                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
+            }
+            index--;
+        }
+
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
         if (pAssembly == NULL)
         {
@@ -676,7 +688,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                 {   // Unexpected failure reading MetaData
                     fValidAssemblyRef = FALSE;
                 }
-    
+
                 if (fValidAssemblyRef)
                 {
                     pAssembly = fromModule->GetAssemblyIfLoaded(
@@ -695,7 +707,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
 
 
 TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
-                              Module *pInfoModule,
+                              ModuleBase *pInfoModule,
                               PCCOR_SIGNATURE pBuffer,
                               ClassLoadLevel level,
                               PCCOR_SIGNATURE *ppAfterSig /*=NULL*/)
@@ -733,7 +745,7 @@ TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
 }
 
 MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
-                                 Module *pInfoModule,
+                                 ModuleBase *pInfoModule,
                                  PCCOR_SIGNATURE pBuffer,
                                  TypeHandle * ppTH /*=NULL*/)
 {
@@ -744,7 +756,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
     return DecodeMethod(pInfoModule, pBuffer, &typeContext, &zapSigContext, ppTH, NULL, NULL);
 }
 
-MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
+MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
                                  PCCOR_SIGNATURE pBuffer,
                                  SigTypeContext *pContext,
                                  ZapSig::Context *pZapSigContext,
@@ -757,6 +769,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     STANDARD_VM_CONTRACT;
 
     MethodDesc *pMethod = NULL;
+    ModuleBase *pOrigModule = pInfoModule;
 
     SigPointer sig(pBuffer);
 
@@ -837,7 +850,15 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
         }
         else
         {
-            pMethod = MemberLoader::GetMethodDescFromMethodDef(pInfoModule, TokenFromRid(rid, mdtMethodDef), FALSE);
+            if (pInfoModule->IsFullModule())
+            {
+                pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
+            }
+            else
+            {
+                // Non-full modules cannot have MethodDefs
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            }
         }
     }
 
@@ -883,7 +904,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
 
         for (uint32_t i = 0; i < nargs; i++)
         {
-            pInst[i] = sig.GetTypeHandleThrowing(pInfoModule,
+            pInst[i] = sig.GetTypeHandleThrowing(pOrigModule,
                                                 pContext,
                                                 ClassLoader::LoadTypes,
                                                 CLASS_LOADED,
@@ -912,8 +933,6 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
                                                             actualOwnerRequired);
-
-    g_IBCLogger.LogMethodDescAccess(pMethod);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -955,7 +974,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
 }
 
 FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
-                                Module *pInfoModule,
+                                ModuleBase *pInfoModule,
                                 PCCOR_SIGNATURE pBuffer,
                                 TypeHandle *ppTH /*=NULL*/)
 {
@@ -973,7 +992,7 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
 }
 
 FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
-                                Module *pInfoModule,
+                                ModuleBase *pInfoModule,
                                 PCCOR_SIGNATURE pBuffer,
                                 SigTypeContext *pContext,
                                 TypeHandle *ppTH /*=NULL*/)
@@ -1047,7 +1066,8 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
         }
         else
         {
-            pField = MemberLoader::GetFieldDescFromFieldDef(pInfoModule, TokenFromRid(rid, mdtFieldDef), FALSE);
+            _ASSERTE(pInfoModule->IsFullModule());
+            pField = MemberLoader::GetFieldDescFromFieldDef(static_cast<Module*>(pInfoModule), TokenFromRid(rid, mdtFieldDef), FALSE);
         }
     }
 
@@ -1198,10 +1218,6 @@ BOOL ZapSig::EncodeMethod(
         externalTokens = ZapSig::MulticoreJitTokens;
         pInfoModule = pMethod->GetModule_NoLogging();
     }
-    else if (pfnDefineToken != NULL)
-    {
-        externalTokens = ZapSig::IbcTokens;
-    }
 
     ZapSig zapSig(pInfoModule, pEncodeModuleContext, externalTokens,
                     (EncodeModuleCallback)    pfnEncodeModule,
@@ -1221,37 +1237,11 @@ BOOL ZapSig::EncodeMethod(
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
 
-    //
-    // For backward compatibility, IBC tokens use slightly different encoding:
-    // - Owning type is uncoditionally encoded
-    // - Number of method instantiation arguments is not encoded
-    //
-    if (externalTokens == ZapSig::IbcTokens)
-    {
-        // The type is always encoded before flags for IBC
-        if (!zapSig.GetSignatureForTypeHandle(ownerType, pSigBuilder))
-            return FALSE;
-    }
-    else
-    {
-        // Assume that the owner type is going to be needed
-        methodFlags |= ENCODE_METHOD_SIG_OwnerType;
-    }
+    // Assume that the owner type is going to be needed
+    methodFlags |= ENCODE_METHOD_SIG_OwnerType;
 
     if (IsNilToken(methodToken))
     {
-        methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
-    }
-    else
-    if (!pMethod->GetModule()->IsInCurrentVersionBubble())
-    {
-        // Using a method defined in another version bubble. We can assume the slot number is stable only for real interface methods.
-        if (!ownerType.IsInterface() || pMethod->IsStatic() || pMethod->HasMethodInstantiation())
-        {
-            // FUTURE TODO: Version resilience
-            _ASSERTE(!"References to non-interface methods not yet supported in version resilient images");
-            IfFailThrow(E_FAIL);
-        }
         methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
     }
     else
@@ -1278,13 +1268,6 @@ BOOL ZapSig::EncodeMethod(
             //
             if ((index != 0) && (pfnDefineToken != NULL))
             {
-                //
-                // We do not want to log the metadata lookups that we perform here
-                //
-                IBCLoggingDisabler   disableLogging;
-
-                // During IBC profiling this calls
-                //     code:Module::TokenDefinitionHelper()
                 (*((TokenDefinitionCallback) pfnDefineToken))(pEncodeModuleContext, pTypeHandleModule, index, &methodToken);
             }
         }
@@ -1367,11 +1350,6 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
-
-            // Number of method instantiation arguments is not encoded in IBC tokens - see comment above
-            if (externalTokens != ZapSig::IbcTokens)
-                pSigBuilder->AppendData(inst.GetNumArgs());
-
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];

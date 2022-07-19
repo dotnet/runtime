@@ -37,13 +37,13 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal OSFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal OSFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode)
         {
             string fullPath = Path.GetFullPath(path);
 
             _access = access;
 
-            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
+            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode);
 
             try
             {
@@ -74,7 +74,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length => _fileHandle.GetFileLength();
+        public sealed override unsafe long Length => _fileHandle.GetFileLength();
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.

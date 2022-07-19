@@ -73,12 +73,12 @@
     .field private class [mscorlib]System.AppDomain ad
     .field private valuetype JitTest_sizeof_Target_64Bit_and_arm_il.ComplexStruct2 ss2
   }
-  .class private sequential ansi sealed beforefieldinit Test
+  .class public sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
   {
     .pack 1
     .size 1
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsNotX86Process))]

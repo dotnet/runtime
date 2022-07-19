@@ -135,6 +135,7 @@ set(utils_common_sources
     mono-threads-android.c
     mono-threads-haiku.c
     mono-threads-aix.c
+    mono-threads-wasm.h
     mono-threads-wasm.c
     mono-threads-sunos.c
     mono-threads.h
@@ -208,9 +209,7 @@ endif()
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-cross.c")
-elseif(TARGET_AMD64)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
-elseif(TARGET_X86)
+elseif(TARGET_AMD64 OR TARGET_X86)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
 elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
@@ -220,6 +219,8 @@ elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+elseif(TARGET_POWERPC OR TARGET_POWERPC64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 else()
   message(FATAL_ERROR "")
 endif()

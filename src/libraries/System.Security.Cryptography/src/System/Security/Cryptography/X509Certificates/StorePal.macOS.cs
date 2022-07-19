@@ -14,7 +14,9 @@ namespace System.Security.Cryptography.X509Certificates
         internal static partial IStorePal FromHandle(IntPtr storeHandle)
         {
             if (storeHandle == IntPtr.Zero)
+            {
                 throw new ArgumentNullException(nameof(storeHandle));
+            }
 
             var keychainHandle = new SafeKeychainHandle(storeHandle);
             Interop.CoreFoundation.CFRetain(storeHandle);

@@ -14,7 +14,6 @@
 
   <!-- excluded from source build -->
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
   </ItemGroup>
 

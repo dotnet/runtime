@@ -647,10 +647,7 @@ namespace System.Data.Common
                     }
                     finally
                     {
-                        if (null != dataReader)
-                        {
-                            dataReader.Dispose();
-                        }
+                        dataReader?.Dispose();
                     }
                 }
                 finally

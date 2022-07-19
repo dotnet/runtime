@@ -21,8 +21,10 @@ namespace System.Xml.Linq
         ///  Creates a <see cref="XStreamingElement"/> node with a given name
         /// </summary>
         /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
-        public XStreamingElement(XName name!!)
+        public XStreamingElement(XName name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             this.name = name;
         }
 
@@ -152,8 +154,10 @@ namespace System.Xml.Linq
         /// Save the contents of an <see cref="XStreamingElement"/> to an XML writer, not preserving whitespace
         /// </summary>
         /// <param name="writer"><see cref="XmlWriter"/> to write to </param>
-        public void Save(XmlWriter writer!!)
+        public void Save(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             writer.WriteStartDocument();
             WriteTo(writer);
             writer.WriteEndDocument();
@@ -212,8 +216,10 @@ namespace System.Xml.Linq
         /// Write this <see cref="XStreamingElement"/> to an <see cref="XmlWriter"/>
         /// </summary>
         /// <param name="writer"></param>
-        public void WriteTo(XmlWriter writer!!)
+        public void WriteTo(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             new StreamingElementWriter(writer).WriteStreamingElement(this);
         }
 

@@ -25,7 +25,7 @@
 **               CloseHandle
 **               Sleep
 **               memset
-** 
+**
 
 **
 **=========================================================*/
@@ -123,7 +123,7 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test2_paltest_createmutexw_releasemu
 /*
  * Testing Function
  *
- * Try to get multiple handles to a named Mutex and test 
+ * Try to get multiple handles to a named Mutex and test
  * to make sure they actually refer to same Mutex object.
  */
 BOOL TestNamedMutex_CreateMutexW_ReleaseMutex_test2(const char *szMutexName)
@@ -159,10 +159,10 @@ BOOL TestNamedMutex_CreateMutexW_ReleaseMutex_test2(const char *szMutexName)
     /* We have to call ReleaseMutex here because of the Wait */
     if (ReleaseMutex(hMutex1) == FALSE)
     {
-        Trace("ReleaseMutex Failed.\n");    
+        Trace("ReleaseMutex Failed.\n");
         return FALSE;
     }
-    
+
     /* Get a second handle to the same mutex */
     hMutex2 = CreateMutexW (NULL, FALSE, swzMutexName);
 
@@ -174,7 +174,7 @@ BOOL TestNamedMutex_CreateMutexW_ReleaseMutex_test2(const char *szMutexName)
         return FALSE;
     }
 
-    /* Get rid of the wide character string */ 
+    /* Get rid of the wide character string */
     free(swzMutexName);
 
     /*
@@ -194,10 +194,10 @@ BOOL TestNamedMutex_CreateMutexW_ReleaseMutex_test2(const char *szMutexName)
     /* Give the thread a little time to execute & wait*/
     Sleep(500);
 
-    /* Signal the the first handle */
+    /* Signal the first handle */
     if (ReleaseMutex(hMutex1) == FALSE)
     {
-        Trace("ReleaseMutex Failed.\n");    
+        Trace("ReleaseMutex Failed.\n");
         return FALSE;
     }
 
@@ -326,7 +326,7 @@ BOOL NegativeReleaseMutexTests_CreateMutexW_ReleaseMutex_test2()
         Trace("Error: CloseHandle failed.\n");
         bResults =  FALSE;
     }
-    
+
     bRet = ReleaseMutex(hMutex);
 
     if (bRet != FALSE)

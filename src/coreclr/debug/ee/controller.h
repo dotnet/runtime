@@ -214,7 +214,7 @@ private:
     bool                    m_returnFound;
     FrameInfo               m_returnFrame;
 
-    // A ridiculous flag that is targetting a very narrow fix at issue 650903
+    // A ridiculous flag that is targeting a very narrow fix at issue 650903
     // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
     // help us "Step Out" to a managed frame (i.e., managed-only debugging).
     bool                    m_suppressUMChainFromComPlusMethodFrameGeneric;
@@ -850,7 +850,7 @@ public:
         return EntryPtr(iEntry);
     }
 
-    // Used by DebuggerController to grab indeces of patches
+    // Used by DebuggerController to grab indices of patches
     //      rather than holding direct pointers to them.
     inline ULONG GetItemIndex(HASHENTRY * p)
     {
@@ -986,8 +986,8 @@ inline void VerifyExecutableAddress(const BYTE* address)
     {
         if (!(mbi.State & MEM_COMMIT))
         {
-            STRESS_LOG1(LF_GCROOTS, LL_ERROR, "VerifyExecutableAddress: address is uncommited memory, address=0x%p", address);
-            CONSISTENCY_CHECK_MSGF((mbi.State & MEM_COMMIT), ("VEA: address (0x%p) is uncommited memory.", address));
+            STRESS_LOG1(LF_GCROOTS, LL_ERROR, "VerifyExecutableAddress: address is uncommitted memory, address=0x%p", address);
+            CONSISTENCY_CHECK_MSGF((mbi.State & MEM_COMMIT), ("VEA: address (0x%p) is uncommitted memory.", address));
         }
 
         if (!(mbi.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)))
@@ -1926,7 +1926,7 @@ class DebuggerEnCBreakpoint : public DebuggerController
 {
 public:
     // We have two types of EnC breakpoints. The first is the one we
-    // sprinkle through old code to let us know when execution is occuring
+    // sprinkle through old code to let us know when execution is occurring
     // in a function that now has a new version. The second is when we've
     // actually resumed excecution into a remapped function and we need
     // to then notify the debugger.

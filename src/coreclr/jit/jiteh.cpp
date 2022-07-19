@@ -1663,7 +1663,7 @@ void Compiler::fgRemoveEH()
     assert(!fgDomsComputed);
     assert(!fgFuncletsCreated);
     assert(fgFirstFuncletBB == nullptr); // this should follow from "!fgFuncletsCreated"
-    assert(!optLoopsMarked);
+    assert(!optLoopTableValid);
 
     unsigned  XTnum;
     EHblkDsc* HBtab;
@@ -2382,7 +2382,7 @@ bool Compiler::fgNormalizeEHCase2()
                             newTryStart->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
                         }
 
-                        // Now we need to split any flow edges targetting the old try begin block between the old
+                        // Now we need to split any flow edges targeting the old try begin block between the old
                         // and new block. Note that if we are handling a multiply-nested 'try', we may have already
                         // split the inner set. So we need to split again, from the most enclosing block that we've
                         // already created, namely, insertBeforeBlk.
@@ -4518,7 +4518,7 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
 // inserting the block and properly extending some EH regions (if necessary)
 // puts the block in the correct region. We only consider the case of extending
 // an EH region after 'blk' (that is, to include 'blk' and the newly insert block);
-// we don't consider inserting a block as the the first block of an EH region following 'blk'.
+// we don't consider inserting a block as the first block of an EH region following 'blk'.
 //
 // Consider this example:
 //

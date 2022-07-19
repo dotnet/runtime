@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <FeatureWasmThreads>true</FeatureWasmThreads>
+    <AssemblyName>System.Threading.Thread</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- tell references.targets to bump the assembly version -->
+    <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
+    <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

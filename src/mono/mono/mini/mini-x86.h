@@ -114,12 +114,12 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-/*This is the max size of the locals area of a given frame. I think 1MB is a safe default for now*/
+/* This is the max size of the locals area of a given frame. I think 1MB is a safe default for now */
 #define MONO_ARCH_MAX_FRAME_SIZE 0x100000
 
-/*This is how much a try block must be extended when is is preceeded by a Monitor.Enter() call.
+/* This is how much a try block must be extended when it is preceeded by a Monitor.Enter() call.
 It's 4 bytes as this is how many bytes + 1 that 'add 0x10, %esp' takes. It is used to pop the arguments from
-the monitor.enter call and must be already protected.*/
+the monitor.enter call and must be already protected. */
 #define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 4
 
 struct MonoLMF {

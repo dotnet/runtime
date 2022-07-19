@@ -24,6 +24,7 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
         {
             const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
@@ -48,6 +49,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "User-Agent is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_UserAgent_CorrectlyWritten()
         {
             string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
@@ -71,6 +73,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -106,6 +109,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -167,6 +171,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
             if (PlatformDetection.IsBrowser && (key == "Content-Location" || key == "Date" || key == "Accept-CharSet"))
@@ -212,6 +217,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("Content-Security-Policy", 4618)]
         [InlineData("RandomCustomHeader", 12345)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_LargeHeader_Success(string headerName, int headerValueLength)
         {
             var rand = new Random(42);
@@ -236,6 +242,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_EmptyResponseHeader_Success()
         {
             IList<HttpHeaderData> headers = new HttpHeaderData[] {
@@ -267,26 +274,28 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_MissingExpires_ReturnNull()
         {
-             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-             {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpResponseMessage response = await client.GetAsync(uri);
                     Assert.Null(response.Content.Headers.Expires);
                 }
             },
-            async server =>
-            {
-                await server.HandleRequestAsync(HttpStatusCode.OK);
-            });
+           async server =>
+           {
+               await server.HandleRequestAsync(HttpStatusCode.OK);
+           });
         }
 
         [Theory]
         [InlineData("Thu, 01 Dec 1994 16:00:00 GMT", true)]
         [InlineData("-1", false)]
         [InlineData("0", false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_Expires_Success(string value, bool isValid)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -325,6 +334,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData("Accept-Encoding", "identity,gzip")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_RequestHeaderInResponse_Success(string name, string value)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -382,7 +392,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53874", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
@@ -403,6 +413,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_WithZeroLengthHeaderName_Throws()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -423,7 +434,6 @@ namespace System.Net.Http.Functional.Tests
                         });
                     }
                     catch (IOException) { }
-                    catch (QuicConnectionAbortedException) { }
                 });
         }
 
@@ -447,6 +457,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CustomRequestEncodingSelector_CanSendNonAsciiHeaderValues()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -502,6 +513,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CustomResponseEncodingSelector_CanReceiveNonAsciiHeaderValues()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -554,6 +566,41 @@ namespace System.Net.Http.Functional.Tests
 
                     await server.HandleRequestAsync(headers: headerData);
                 });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        public async Task SendAsync_ContentLengthAndTransferEncodingHeaders_IgnoreContentLength()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion
+                };
+                using HttpClient client = new HttpClient();
+                Task<HttpResponseMessage> getResponse = client.SendAsync(requestMessage);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.SendResponseAsync(HttpStatusCode.OK,
+                        new List<HttpHeaderData>
+                        {
+                            new HttpHeaderData("Content-Length", "33"),
+                            new HttpHeaderData("Transfer-Encoding", "chunked")
+                        }, "5\r\nhello\r\n5\r\nworld\r\n3\r\nyay\r\n0\r\n\r\n");
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                        Assert.True(response.Headers.Contains("Transfer-Encoding"));
+                        Assert.Equal("chunked", Assert.Single(response.Headers.GetValues("Transfer-Encoding")));
+                        Assert.Equal(33, response.Content.Headers.ContentLength);
+
+                        string content = await response.Content.ReadAsStringAsync();
+                        Assert.Equal("helloworldyay", content);
+                    }
+                });
+            });
         }
     }
 }

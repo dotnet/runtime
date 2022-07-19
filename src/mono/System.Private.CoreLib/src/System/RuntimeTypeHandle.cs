@@ -90,6 +90,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
+
         public static bool operator ==(RuntimeTypeHandle left, object right)
         {
             return (right != null) && (right is RuntimeTypeHandle) && left.Equals((RuntimeTypeHandle)right);
@@ -365,8 +369,7 @@ namespace System
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             if (typeName.Length == 0)
                 if (throwOnError)

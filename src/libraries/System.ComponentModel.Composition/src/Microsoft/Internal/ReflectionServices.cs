@@ -57,13 +57,17 @@ namespace Microsoft.Internal
             return true;
         }
 
-        public static string GetDisplayName(Type declaringType!!, string? name)
+        public static string GetDisplayName(Type declaringType, string? name)
         {
+            ArgumentNullException.ThrowIfNull(declaringType);
+
             return declaringType.GetDisplayName() + "." + name;
         }
 
-        public static string GetDisplayName(this MemberInfo member!!)
+        public static string GetDisplayName(this MemberInfo member)
         {
+            ArgumentNullException.ThrowIfNull(member);
+
             switch (member.MemberType)
             {
                 case MemberTypes.TypeInfo:

@@ -79,6 +79,21 @@ namespace System.Text.RegularExpressions
             new ValueMatchEnumerator(this, input, RightToLeft ? input.Length : 0);
 
         /// <summary>
+        /// Searches an input span for all occurrences of a regular expression and returns a <see cref="ValueMatchEnumerator"/> to iterate over the matches.
+        /// </summary>
+        /// <remarks>
+        /// Each match won't actually happen until <see cref="ValueMatchEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueMatchEnumerator.MoveNext"/> call.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueMatchEnumerator.MoveNext"/> will affect the match results.
+        /// The enumerator returned by this method, as well as the structs returned by the enumerator that wrap each match found in the input are ref structs which
+        /// make this method be amortized allocation free.
+        /// </remarks>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="startat">The zero-based character position at which to start the search.</param>
+        /// <returns>A <see cref="ValueMatchEnumerator"/> to iterate over the matches.</returns>
+        public ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, int startat) =>
+            new ValueMatchEnumerator(this, input, startat);
+
+        /// <summary>
         /// Represents an enumerator containing the set of successful matches found by iteratively applying a regular expression pattern to the input span.
         /// </summary>
         /// <remarks>
@@ -126,15 +141,15 @@ namespace System.Text.RegularExpressions
             /// </returns>
             public bool MoveNext()
             {
-                Match? match = _regex.RunSingleMatch(quick: false, _prevLen, _input, _startAt);
-                Debug.Assert(match != null, "Match shouldn't be null because we passed quick = false.");
-                if (match != RegularExpressions.Match.Empty)
+                (bool Success, int Index, int Length, int TextPosition) match = _regex.RunSingleMatch(RegexRunnerMode.BoundsRequired, _prevLen, _input, _startAt);
+                if (match.Success)
                 {
                     _current = new ValueMatch(match.Index, match.Length);
-                    _startAt = match._textpos;
+                    _startAt = match.TextPosition;
                     _prevLen = match.Length;
                     return true;
                 }
+
                 return false;
             }
 

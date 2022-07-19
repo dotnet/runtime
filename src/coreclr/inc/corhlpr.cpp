@@ -26,7 +26,7 @@
 extern "C" {
 
 /***************************************************************************/
-/* Note that this construtor does not set the LocalSig, but has the
+/* Note that this constructor does not set the LocalSig, but has the
    advantage that it does not have any dependancy on EE structures.
    inside the EE use the FunctionDesc constructor */
 
@@ -253,11 +253,7 @@ unsigned __stdcall SectEH_Emit(unsigned size, unsigned ehCount,
             EHSect->Kind = CorILMethod_Sect_EHTable;
             if (moreSections)
                 EHSect->Kind |= CorILMethod_Sect_MoreSects;
-#ifndef SOS_INCLUDE
-            EHSect->DataSize = EHSect->Size(ehCount);
-#else
             EHSect->DataSize = (BYTE) EHSect->Size(ehCount);
-#endif // !SOS_INCLUDE
             EHSect->Reserved = 0;
             assert(EHSect->DataSize == EHSect->Size(ehCount)); // make sure didn't overflow
             outBuff = (BYTE*) &EHSect->Clauses[ehCount];

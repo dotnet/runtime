@@ -21,7 +21,7 @@
 }
 .assembly extern xunit.core {}
 // MVID: {A1B2C1C6-25C2-4DB7-AE55-41CA3A00F290}
-.namespace Test
+.namespace Test_test2_il
 {
   .class private auto ansi Base extends ['mscorlib']System.Object
   {
@@ -35,21 +35,21 @@
       IL_0001:  call       instance void ['mscorlib']System.Object::.ctor()
       IL_0006:  ldarg.0
       IL_0007:  ldc.i4.1
-      IL_0008:  stfld      int32 Test.Base::m
+      IL_0008:  stfld      int32 Test_test2_il.Base::m
       IL_000d:  ret
       IL_000e:  
     } // end of method 'Base::.ctor'
 
     .method public hidebysig newslot virtual 
-            instance class Test.Base[]  Clone(int32 numOfCopies) il managed
+            instance class Test_test2_il.Base[]  Clone(int32 numOfCopies) il managed
     {
       // Code size       33 (0x21)
       .maxstack  3
-      .locals (class Test.Base[] V_0,
+      .locals (class Test_test2_il.Base[] V_0,
                int32 V_1,
-               class Test.Base[] V_2)
+               class Test_test2_il.Base[] V_2)
       IL_0000:  ldarg.1
-      IL_0001:  newarr     Test.Base
+      IL_0001:  newarr     Test_test2_il.Base
       IL_0006:  stloc.0
       IL_0007:  ldc.i4.0
       IL_0008:  stloc.1
@@ -57,7 +57,7 @@
 
       IL_000b:  ldloc.0
       IL_000c:  ldloc.1
-      IL_000d:  newobj     instance void Test.Base::.ctor()
+      IL_000d:  newobj     instance void Test_test2_il.Base::.ctor()
       IL_0012:  stelem.ref
       IL_0013:  ldloc.1
       IL_0014:  ldc.i4.1
@@ -78,7 +78,7 @@
 
   } // end of class 'Base'
 
-  .class private auto ansi Derived extends Test.Base
+  .class public auto ansi Derived extends Test_test2_il.Base
   {
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed
@@ -86,24 +86,24 @@
       // Code size       14 (0xe)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void Test.Base::.ctor()
+      IL_0001:  call       instance void Test_test2_il.Base::.ctor()
       IL_0006:  ldarg.0
       IL_0007:  ldc.i4.2
-      IL_0008:  stfld      int32 Test.Base::m
+      IL_0008:  stfld      int32 Test_test2_il.Base::m
       IL_000d:  ret
       IL_000e:  
     } // end of method 'Derived::.ctor'
 
-    .method public hidebysig virtual instance class Test.Base[] 
+    .method public hidebysig virtual instance class Test_test2_il.Base[] 
             Clone(int32 numOfCopies) il managed
     {
       // Code size       33 (0x21)
       .maxstack  3
-      .locals (class Test.Derived[] V_0,
+      .locals (class Test_test2_il.Derived[] V_0,
                int32 V_1,
-               class Test.Base[] V_2)
+               class Test_test2_il.Base[] V_2)
       IL_0000:  ldarg.1
-      IL_0001:  newarr     Test.Derived
+      IL_0001:  newarr     Test_test2_il.Derived
       IL_0006:  stloc.0
       IL_0007:  ldc.i4.0
       IL_0008:  stloc.1
@@ -111,7 +111,7 @@
 
       IL_000b:  ldloc.0
       IL_000c:  ldloc.1
-      IL_000d:  newobj     instance void Test.Derived::.ctor()
+      IL_000d:  newobj     instance void Test_test2_il.Derived::.ctor()
       IL_0012:  stelem.ref
       IL_0013:  ldloc.1
       IL_0014:  ldc.i4.1
@@ -130,7 +130,7 @@
       IL_0021:  
     } // end of method 'Derived::Clone'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -139,19 +139,19 @@
       .entrypoint
       // Code size       99 (0x63)
       .maxstack  2
-      .locals (class Test.Derived V_0,
-               class Test.Base V_1,
+      .locals (class Test_test2_il.Derived V_0,
+               class Test_test2_il.Base V_1,
                int32 V_2)
-      IL_0000:  newobj     instance void Test.Derived::.ctor()
+      IL_0000:  newobj     instance void Test_test2_il.Derived::.ctor()
       IL_0005:  stloc.0
       IL_0006:  ldloc.0
       IL_0007:  ldc.i4.s   11
-      IL_0009:  call   instance class Test.Base[] Test.Base::Clone(int32)
+      IL_0009:  call   instance class Test_test2_il.Base[] Test_test2_il.Base::Clone(int32)
       IL_000e:  ldc.i4.s   10
       IL_0010:  ldelem.ref
       IL_0011:  stloc.0
       IL_0012:  ldloc.0
-      IL_0013:  ldfld      int32 Test.Base::m
+      IL_0013:  ldfld      int32 Test_test2_il.Base::m
       IL_0018:  ldc.i4.1
       IL_0019:  beq.s      IL_0029
 
@@ -162,16 +162,16 @@
       IL_0027:  br.s       IL_0061
 
       IL_0029:  ldloc.0
-      IL_002a:  castclass  Test.Base
+      IL_002a:  castclass  Test_test2_il.Base
       IL_002f:  stloc.1
       IL_0030:  ldloc.1
       IL_0031:  ldc.i4.s   11
-      IL_0033:  call		instance class Test.Base[] Test.Base::Clone(int32)
+      IL_0033:  call		instance class Test_test2_il.Base[] Test_test2_il.Base::Clone(int32)
       IL_0038:  ldc.i4.s   10
       IL_003a:  ldelem.ref
       IL_003b:  stloc.0
       IL_003c:  ldloc.0
-      IL_003d:  ldfld      int32 Test.Base::m
+      IL_003d:  ldfld      int32 Test_test2_il.Base::m
       IL_0042:  ldc.i4.1
       IL_0043:  beq.s      IL_0053
 
@@ -194,6 +194,6 @@
 
   } // end of class 'Derived'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_test2_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

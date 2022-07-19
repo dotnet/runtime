@@ -133,6 +133,9 @@
     <value>No service for type '{0}' has been registered.</value>
     <comment>{0} = service type</comment>
   </data>
+  <data name="ServiceCollectionReadOnly" xml:space="preserve">
+    <value>The service collection cannot be modified because it is read-only.</value>
+  </data>
   <data name="TryAddIndistinguishableTypeToEnumerable" xml:space="preserve">
     <value>Implementation type cannot be '{0}' because it is indistinguishable from other services registered for '{1}'.</value>
     <comment>{0} = implementation type, {1} = service type</comment>

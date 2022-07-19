@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The test tests Windows ARM64 Varargs (managed) calling convention -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

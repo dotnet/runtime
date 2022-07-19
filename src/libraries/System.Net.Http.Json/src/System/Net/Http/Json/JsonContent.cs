@@ -23,10 +23,15 @@ namespace System.Net.Http.Json
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         private JsonContent(
             object? inputValue,
-            Type inputType!!,
+            Type inputType,
             MediaTypeHeaderValue? mediaType,
             JsonSerializerOptions? options)
         {
+            if (inputType is null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
+
             if (inputValue != null && !inputType.IsAssignableFrom(inputValue.GetType()))
             {
                 throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));

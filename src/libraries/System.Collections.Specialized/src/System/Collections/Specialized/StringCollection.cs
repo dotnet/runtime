@@ -69,8 +69,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Copies the elements of a string array to the end of the <see cref='System.Collections.Specialized.StringCollection'/>.</para>
         /// </devdoc>
-        public void AddRange(string[] value!!)
+        public void AddRange(string[] value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             data.AddRange(value);
         }
 

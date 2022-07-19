@@ -20,22 +20,18 @@ namespace System.Collections.ObjectModel
         [NonSerialized]
         private ValueCollection? _values;
 
-        public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary!!)
+        public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
         {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
             m_dictionary = dictionary;
         }
 
         protected IDictionary<TKey, TValue> Dictionary => m_dictionary;
 
-        public KeyCollection Keys
-        {
-            get => _keys ?? (_keys = new KeyCollection(m_dictionary.Keys));
-        }
+        public KeyCollection Keys => _keys ??= new KeyCollection(m_dictionary.Keys);
 
-        public ValueCollection Values
-        {
-            get => _values ?? (_values = new ValueCollection(m_dictionary.Values));
-        }
+        public ValueCollection Values => _values ??= new ValueCollection(m_dictionary.Values);
 
         public bool ContainsKey(TKey key) => m_dictionary.ContainsKey(key);
 
@@ -105,8 +101,10 @@ namespace System.Collections.ObjectModel
             return ((IEnumerable)m_dictionary).GetEnumerator();
         }
 
-        private static bool IsCompatibleKey(object key!!)
+        private static bool IsCompatibleKey(object key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return key is TKey;
         }
 
@@ -249,8 +247,10 @@ namespace System.Collections.ObjectModel
         {
             private readonly ICollection<TKey> _collection;
 
-            internal KeyCollection(ICollection<TKey> collection!!)
+            internal KeyCollection(ICollection<TKey> collection)
             {
+                ArgumentNullException.ThrowIfNull(collection);
+
                 _collection = collection;
             }
 
@@ -303,8 +303,10 @@ namespace System.Collections.ObjectModel
         {
             private readonly ICollection<TValue> _collection;
 
-            internal ValueCollection(ICollection<TValue> collection!!)
+            internal ValueCollection(ICollection<TValue> collection)
             {
+                ArgumentNullException.ThrowIfNull(collection);
+
                 _collection = collection;
             }
 

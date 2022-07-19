@@ -10,9 +10,9 @@
 .assembly extern mscorlib { }
 .assembly 'fibo' { }
 .assembly extern xunit.core {}
-.namespace BoxTest
+.namespace BoxTest_fibo_il
 {
-  .class auto ansi Test extends [mscorlib]System.Object
+  .class public auto ansi Test extends [mscorlib]System.Object
   {
     .method family hidebysig instance class System.Object 
             Fibonacci(class System.Object num,
@@ -36,7 +36,7 @@
       IL_002a:  ldarg.0
       IL_002b:  ldarg.1
       IL_002c:  ldarg.2
-      IL_002d:  call       instance class System.Object BoxTest.Test::Fibonacci2(class System.Object,
+      IL_002d:  call       instance class System.Object BoxTest_fibo_il.Test::Fibonacci2(class System.Object,
                                                                                  class System.Object)
       IL_0032:  ret
     } // end of method 'Test::Fibonacci'
@@ -72,7 +72,7 @@
       IL_0021:  stloc.2
       IL_0022:  ldloc.s   V_2
       IL_0024:  box        [mscorlib]System.Boolean
-      IL_0029:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
+      IL_0029:  call       instance class System.Object BoxTest_fibo_il.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_002e:  unbox      [mscorlib]System.Int32
       IL_0033:  ldind.i4
@@ -86,7 +86,7 @@
       IL_003f:  ldloc.s   V_1
       IL_0041:  box        [mscorlib]System.Int32
       IL_0046:  ldarg.2
-      IL_0047:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
+      IL_0047:  call       instance class System.Object BoxTest_fibo_il.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_004c:  unbox      [mscorlib]System.Int32
       IL_0051:  ldind.i4
@@ -127,7 +127,7 @@
       IL_009e:  ret
     } // end of method 'Test::Fibonacci2'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -137,7 +137,7 @@
       .maxstack  3
       .locals ([0] int32 V_0,
                [1] bool V_1)
-      IL_0000:  newobj     instance void BoxTest.Test::.ctor()
+      IL_0000:  newobj     instance void BoxTest_fibo_il.Test::.ctor()
       IL_0005:  ldc.i4.s   20
       IL_0007:  stloc.0
       IL_0008:  ldloc.s   V_0
@@ -146,7 +146,7 @@
       IL_0010:  stloc.1
       IL_0011:  ldloc.s   V_1
       IL_0013:  box        [mscorlib]System.Boolean
-      IL_0018:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
+      IL_0018:  call       instance class System.Object BoxTest_fibo_il.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_001d:  pop
       IL_001e:  call       void [System.Console]System.Console::WriteLine()
@@ -167,5 +167,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'BoxTest'
+} // end of namespace 'BoxTest_fibo_il'
 

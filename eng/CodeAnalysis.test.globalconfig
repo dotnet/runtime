@@ -189,6 +189,9 @@ dotnet_diagnostic.CA1309.severity = none
 # CA1310: Specify StringComparison for correctness
 dotnet_diagnostic.CA1310.severity = none
 
+# CA1311: Specify a culture or use an invariant version
+dotnet_diagnostic.CA1311.severity = none
+
 # CA1401: P/Invokes should not be visible
 dotnet_diagnostic.CA1401.severity = none
 
@@ -398,6 +401,15 @@ dotnet_diagnostic.CA1850.severity = none
 
 # CA1851: Possible multiple enumerations of 'IEnumerable' collection
 dotnet_diagnostic.CA1851.severity = none
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = none
+
+# CA1853: Unnecessary call to 'Dictionary.ContainsKey(key)'
+dotnet_diagnostic.CA1853.severity = none
+
+# CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
+dotnet_diagnostic.CA1854.severity = none
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
@@ -786,7 +798,7 @@ dotnet_diagnostic.CA5383.severity = none
 # CA5384: Do Not Use Digital Signature Algorithm (DSA)
 dotnet_diagnostic.CA5384.severity = none
 
-# CA5385: Use Rivest–Shamir–Adleman (RSA) Algorithm With Sufficient Key Size
+# CA5385: Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size
 dotnet_diagnostic.CA5385.severity = none
 
 # CA5386: Avoid hardcoding SecurityProtocolType value
@@ -1428,9 +1440,6 @@ dotnet_diagnostic.IDE0048.severity = silent
 # IDE0049: Use language keywords instead of framework type names for type references
 dotnet_diagnostic.IDE0049.severity = silent
 
-# IDE0050: Convert anonymous type to tuple
-dotnet_diagnostic.IDE0050.severity = silent
-
 # IDE0051: Remove unused private members
 dotnet_diagnostic.IDE0051.severity = silent
 
@@ -1551,8 +1560,26 @@ dotnet_diagnostic.IDE0160.severity = silent
 # IDE0161: Convert to file-scoped namespace
 dotnet_diagnostic.IDE0161.severity = silent
 
-# IDE0190: Null check can be simplified
-dotnet_diagnostic.IDE0190.severity = silent
+# IDE0170: Simplify property pattern
+dotnet_diagnostic.IDE0170.severity = silent
+
+# IDE0180: Use tuple swap
+dotnet_diagnostic.IDE0180.severity = silent
+
+# IDE0200: Remove unnecessary lambda expression
+dotnet_diagnostic.IDE0200.severity = silent
+
+# IDE0210: Use top-level statements
+dotnet_diagnostic.IDE0210.severity = silent
+
+# IDE0211: Use program main
+dotnet_diagnostic.IDE0211.severity = silent
+
+# IDE0220: foreach cast
+dotnet_diagnostic.IDE0220.severity = silent
+
+# IDE0230: Use UTF8 string literal
+dotnet_diagnostic.IDE0230.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = silent

@@ -3,7 +3,10 @@
 
 
 using System;
-internal unsafe class testout1
+using Xunit;
+namespace Test_200w1d_01
+{
+public unsafe class testout1
 {
     private static double s_a3_0 = 134217728.0;
     private static double s_a9_0 = 2.0;
@@ -181,7 +184,8 @@ internal unsafe class testout1
         return Convert.ToDouble(((((((asgop50 / asgop78) - ((asgop39 / (asgop79 * 33.032258064516128)))) + ((*a24_0))) + (asgop20 * (((asgop68 / 0.25) + 0.0) - (*a36_0)))) * ((asgop51 / asgop66) + ((((asgop5 / asgop81) + s_a75_0) + s_a25_0) * s_a87_0))) + ((asgop26 * asgop49) + (s_a58_0 * ((arr3d_0[4, 47, 3] / ((asgop73 * s_a71_0) - (s_a45_0))) - asgop37)))));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retval;
         retval = Convert.ToInt32(Func_0());
@@ -192,4 +196,5 @@ internal unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

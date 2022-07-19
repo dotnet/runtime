@@ -3,10 +3,12 @@
 
 using System;
 using System.IO;
+using Xunit;
 
-internal class Test_negSignedMod
+public class Test_negSignedMod
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine(TimeSpan.FromTicks(-2567240321185713219).Seconds);
         if (TimeSpan.FromTicks(-2567240321185713219).Seconds != -38)

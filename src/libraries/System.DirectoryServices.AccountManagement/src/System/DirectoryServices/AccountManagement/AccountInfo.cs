@@ -86,7 +86,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 // If we get to this point we know that the value of the property has changed and we should not load it from the store.
-                // If value is retrived the state is set to loaded.  Even if user modifies the reference we will
+                // If value is retrieved the state is set to loaded.  Even if user modifies the reference we will
                 // not overwrite it because we mark it as loaded.
                 // If the user sets it before reading it we mark it as changed.  When the users accesses it we just return the current
                 // value.  All change tracking to the store is done off of an actual object comparison because users can change the value

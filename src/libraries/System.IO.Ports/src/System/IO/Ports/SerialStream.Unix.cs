@@ -575,9 +575,11 @@ namespace System.IO.Ports
         }
 
         // this method is used by SerialPort upon SerialStream's creation
-        internal SerialStream(string portName!!, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
+        internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
+            ArgumentNullException.ThrowIfNull(portName);
+
             CheckBaudRate(baudRate);
 
             // Error checking done in SerialPort.
@@ -714,9 +716,9 @@ namespace System.IO.Ports
             if (_dataReceived != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                        var thisRef = (SerialStream)s;
-                        thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
-                    }, this);
+                    var thisRef = (SerialStream)s;
+                    thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
+                }, this);
             }
         }
 
@@ -725,9 +727,9 @@ namespace System.IO.Ports
             if (_pinChanged != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                        var thisRef = (SerialStream)s;
-                        thisRef._pinChanged?.Invoke(thisRef, new SerialPinChangedEventArgs(pinChanged));
-                    }, this);
+                    var thisRef = (SerialStream)s;
+                    thisRef._pinChanged?.Invoke(thisRef, new SerialPinChangedEventArgs(pinChanged));
+                }, this);
             }
         }
 
@@ -736,13 +738,9 @@ namespace System.IO.Ports
             if (_dataReceived != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                        var thisRef = (SerialStream)s;
-                        SerialDataReceivedEventHandler dataReceived = thisRef._dataReceived;
-                        if (dataReceived != null)
-                        {
-                            dataReceived(thisRef, new SerialDataReceivedEventArgs(SerialData.Eof));
-                        }
-                    }, this);
+                    var thisRef = (SerialStream)s;
+                    thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Eof));
+                }, this);
             }
         }
 
@@ -966,8 +964,7 @@ namespace System.IO.Ports
                         Signals changed = current ^ lastSignals;
                         if (changed != Signals.None)
                         {
-                            SerialPinChange pinChanged = SignalsToPinChanges(changed);
-                            RaisePinChanged(pinChanged);
+                            NotifyPinChanges(changed);
                         }
                     }
 
@@ -985,23 +982,27 @@ namespace System.IO.Ports
                 queue.TryDequeue(out _);
         }
 
-        private static SerialPinChange SignalsToPinChanges(Signals signals)
+        private void NotifyPinChanges(Signals signals)
         {
-            SerialPinChange pinChanges = default;
-
             if (signals.HasFlag(Signals.SignalCts))
-                pinChanges |= SerialPinChange.CtsChanged;
+            {
+                RaisePinChanged(SerialPinChange.CtsChanged);
+            }
 
             if (signals.HasFlag(Signals.SignalDsr))
-                pinChanges |= SerialPinChange.DsrChanged;
+            {
+                RaisePinChanged(SerialPinChange.DsrChanged);
+            }
 
             if (signals.HasFlag(Signals.SignalDcd))
-                pinChanges |= SerialPinChange.CDChanged;
+            {
+                RaisePinChanged(SerialPinChange.CDChanged);
+            }
 
             if (signals.HasFlag(Signals.SignalRng))
-                pinChanges |= SerialPinChange.Ring;
-
-            return pinChanges;
+            {
+                RaisePinChanged(SerialPinChange.Ring);
+            }
         }
 
         private static CancellationTokenSource GetCancellationTokenSourceFromTimeout(int timeoutMs)
