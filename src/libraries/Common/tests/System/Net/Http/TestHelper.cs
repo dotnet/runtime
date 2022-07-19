@@ -164,6 +164,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if NETCOREAPP
         public static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
         {
             var handler = new SocketsHttpHandler();
@@ -178,5 +179,6 @@ namespace System.Net.Http.Functional.Tests
 
             return handler;
         }
+#endif
     }
 }
