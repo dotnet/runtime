@@ -484,8 +484,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!ProcessAndValidateArguments())
             return false;
 
-        _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(Assemblies);
-        _assembliesToCompile = FilterAssemblies(_assembliesToCompile);
+        _assembliesToCompile = FilterAssemblies(Assemblies);
+        _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(_assembliesToCompile);
 
         if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
             return false;
