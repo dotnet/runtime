@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -103,7 +102,6 @@ namespace System.Formats.Asn1
         ///   the example enum uses values thar are different from
         ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public static TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -176,7 +174,6 @@ namespace System.Formats.Asn1
         ///   <paramref name="flagsEnumType"/> is <see langword="null" />
         /// </exception>
         /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}"/>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public static Enum ReadNamedBitListValue(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -199,7 +196,7 @@ namespace System.Formats.Asn1
             }
 
             Span<byte> stackSpan = stackalloc byte[sizeof(ulong)];
-            int sizeLimit = Marshal.SizeOf(backingType);
+            int sizeLimit = GetPrimitiveIntegerSize(backingType);
             stackSpan = stackSpan.Slice(0, sizeLimit);
 
             bool read = TryReadBitString(
@@ -493,7 +490,6 @@ namespace System.Formats.Asn1
         ///   the example enum uses values thar are different from
         ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag? expectedTag = null) where TFlagsEnum : Enum
         {
             TFlagsEnum ret = AsnDecoder.ReadNamedBitListValue<TFlagsEnum>(
@@ -548,7 +544,6 @@ namespace System.Formats.Asn1
         ///   <paramref name="flagsEnumType"/> is <see langword="null" />
         /// </exception>
         /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}"/>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public Enum ReadNamedBitListValue(Type flagsEnumType, Asn1Tag? expectedTag = null)
         {
             Enum ret = AsnDecoder.ReadNamedBitListValue(

@@ -13,10 +13,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Numerics\ref\System.Runtime.Numerics.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Formats.Asn1
@@ -114,7 +113,6 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public static TEnum ReadEnumeratedValue<TEnum>(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -188,7 +186,6 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="enumType"/> is <see langword="null" />.
         /// </exception>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public static Enum ReadEnumeratedValue(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -214,7 +211,7 @@ namespace System.Formats.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.4 says the contents are the same as for integers.
-            int sizeLimit = Marshal.SizeOf(backingType);
+            int sizeLimit = GetPrimitiveIntegerSize(backingType);
 
             if (backingType == typeof(int) ||
                 backingType == typeof(long) ||
@@ -350,7 +347,6 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public TEnum ReadEnumeratedValue<TEnum>(Asn1Tag? expectedTag = null) where TEnum : Enum
         {
             TEnum ret = AsnDecoder.ReadEnumeratedValue<TEnum>(_data.Span, RuleSet, out int consumed, expectedTag);
@@ -405,7 +401,6 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="enumType"/> is <see langword="null" />.
         /// </exception>
-        [RequiresDynamicCode("The enum type might not be available at runtime.")]
         public Enum ReadEnumeratedValue(Type enumType, Asn1Tag? expectedTag = null)
         {
             Enum ret = AsnDecoder.ReadEnumeratedValue(_data.Span, RuleSet, enumType, out int consumed, expectedTag);
