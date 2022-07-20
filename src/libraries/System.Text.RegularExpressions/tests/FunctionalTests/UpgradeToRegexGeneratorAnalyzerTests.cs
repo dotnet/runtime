@@ -822,18 +822,9 @@ public partial class C
 
 public class A
 {
-    public partial class B
+    public void Foo()
     {
-        public class C
-        {
-            public partial class D
-            {
-                public void Foo()
-                {
-                    Regex regex = [|new Regex(""pattern"", (RegexOptions)0x0800)|];
-                }
-            }
-        }
+        Regex regex = [|new Regex(""pattern"", (RegexOptions)0x0800)|];
     }
 }
 ";
@@ -841,22 +832,13 @@ public class A
 
 public partial class A
 {
-    public partial class B
+    public void Foo()
     {
-        public partial class C
-        {
-            public partial class D
-            {
-                public void Foo()
-                {
-                    Regex regex = MyRegex();
-                }
-
-                [RegexGenerator(""pattern"", (RegexOptions)2048)]
-                private static partial Regex MyRegex();
-            }
-        }
+        Regex regex = MyRegex();
     }
+
+    [RegexGenerator(""pattern"", (RegexOptions)2048)]
+    private static partial Regex MyRegex();
 }
 ";
 
@@ -870,18 +852,9 @@ public partial class A
 
 public class A
 {
-    public partial class B
+    public void Foo()
     {
-        public class C
-        {
-            public partial class D
-            {
-                public void Foo()
-                {
-                    Regex regex = [|new Regex(""pattern"", (RegexOptions)(-10000))|];
-                }
-            }
-        }
+        Regex regex = [|new Regex(""pattern"", (RegexOptions)(-10000))|];
     }
 }
 ";
@@ -889,22 +862,13 @@ public class A
 
 public partial class A
 {
-    public partial class B
+    public void Foo()
     {
-        public partial class C
-        {
-            public partial class D
-            {
-                public void Foo()
-                {
-                    Regex regex = MyRegex();
-                }
-
-                [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
-                private static partial Regex MyRegex();
-            }
-        }
+        Regex regex = MyRegex();
     }
+
+    [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
+    private static partial Regex MyRegex();
 }
 ";
             await new VerifyCS.Test(null, usePreviewLanguageVersion: true, 1)
