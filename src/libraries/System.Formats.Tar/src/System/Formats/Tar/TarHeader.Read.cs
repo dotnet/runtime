@@ -246,29 +246,14 @@ namespace System.Formats.Tar
         {
             bool skipBlockAlignmentPadding = true;
 
-            string? longPath;
             switch (_typeFlag)
             {
                 case TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes:
                     await ReadExtendedAttributesBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
                     break;
-
-                case TarEntryType.LongLink:
-                    longPath = await ReadGnuLongPathDataBlockAsync(archiveStream, _typeFlag, _size, cancellationToken).ConfigureAwait(false);
-                    if (longPath != null)
-                    {
-                        _linkName = longPath;
-                    }
+                case TarEntryType.LongLink or TarEntryType.LongPath:
+                    await ReadGnuLongPathDataBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
                     break;
-
-                case TarEntryType.LongPath:
-                    longPath = await ReadGnuLongPathDataBlockAsync(archiveStream, _typeFlag, _size, cancellationToken).ConfigureAwait(false);
-                    if (longPath != null)
-                    {
-                        _name = longPath;
-                    }
-                    break;
-
                 case TarEntryType.BlockDevice:
                 case TarEntryType.CharacterDevice:
                 case TarEntryType.Directory:
@@ -277,7 +262,6 @@ namespace System.Formats.Tar
                 case TarEntryType.SymbolicLink:
                     // No data section
                     break;
-
                 case TarEntryType.RegularFile:
                 case TarEntryType.V7RegularFile: // Treated as regular file
                 case TarEntryType.ContiguousFile: // Treated as regular file
@@ -608,21 +592,31 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached.
         private void ReadGnuLongPathDataBlock(Stream archiveStream)
         {
-            Debug.Assert(_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath);
-
-            if (_size > Array.MaxLength)
+            byte[]? buffer = CreateGnuLongDataBufferIfSizeIsValid();
+            if (buffer != null)
             {
-                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
+                archiveStream.ReadExactly(buffer);
+                ReadGnuLongPathDataFromBuffer(buffer);
             }
+        }
 
-            if (_size == 0)
+        // Asynchronously reads the long path found in the data section of a GNU entry of type 'K' or 'L'
+        // and replaces Name or LinkName, respectively, with the found string.
+        // Throws if end of stream is reached.
+        private async ValueTask ReadGnuLongPathDataBlockAsync(Stream archiveStream, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[]? buffer = CreateGnuLongDataBufferIfSizeIsValid();
+            if (buffer != null)
             {
-                return;
+                await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+                ReadGnuLongPathDataFromBuffer(buffer);
             }
+        }
 
-            byte[] buffer = new byte[(int)_size];
-            archiveStream.ReadExactly(buffer);
-
+        // Collects the GNU long path info from the buffer and sets it in the right field depending on the type flag.
+        private void ReadGnuLongPathDataFromBuffer(ReadOnlySpan<byte> buffer)
+        {
             string longPath = TarHelpers.GetTrimmedUtf8String(buffer);
 
             if (_typeFlag == TarEntryType.LongLink)
@@ -635,29 +629,22 @@ namespace System.Formats.Tar
             }
         }
 
-        // Asynchronously reads the long path found in the data section of a GNU entry of type 'K' or 'L'
-        // and replaces Name or LinkName, respectively, with the found string.
-        // Throws if end of stream is reached.
-        private static async ValueTask<string?> ReadGnuLongPathDataBlockAsync(Stream archiveStream, TarEntryType entryType, long size, CancellationToken cancellationToken)
+        // Return a byte array if the size field has a valid value for GNU long metadata entry data. Otherwise, return null, or throw.
+        private byte[]? CreateGnuLongDataBufferIfSizeIsValid()
         {
-            Debug.Assert(entryType is TarEntryType.LongLink or TarEntryType.LongPath);
+            Debug.Assert(_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath);
 
-            cancellationToken.ThrowIfCancellationRequested();
+            if (_size > Array.MaxLength)
+            {
+                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
+            }
 
-            if (size == 0)
+            if (_size == 0)
             {
                 return null;
             }
 
-            if (size > Array.MaxLength)
-            {
-                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, entryType.ToString()));
-            }
-
-            byte[] buffer = new byte[(int)size];
-            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            return TarHelpers.GetTrimmedUtf8String(buffer);
+            return new byte[(int)_size];
         }
 
         // Tries to collect the next extended attribute from the string wrapped by the specified reader.
