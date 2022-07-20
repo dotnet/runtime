@@ -1001,7 +1001,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                 return $@"
 
-private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
+private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
 {{
     {GetEarlyNullCheckSource(emitNullCheck)}
     {serializeMethodBody}
@@ -1076,7 +1076,7 @@ public {typeInfoPropertyTypeRef} {typeFriendlyName}
     get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName});
 }}
 
-private static {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
+private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
