@@ -3,7 +3,7 @@
 
 /* 
  * Bug info:
- * Asserstion prop was comparing 2 range assertions incorrectly and keeping the wrong one as a result.
+ * Assertstion prop was comparing 2 range assertions incorrectly and keeping the wrong one as a result.
  * Thus assuming it didn't need the narrowing convert to byte. It thus returned the full 32 bit value instead of the lower 8 bits  alone.
  * 
  * Repro Steps:

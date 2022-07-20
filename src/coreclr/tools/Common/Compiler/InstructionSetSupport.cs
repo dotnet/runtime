@@ -267,13 +267,13 @@ namespace ILCompiler
 
                 foreach (string unsupported in _unsupportedInstructionSets)
                 {
-                    InstructionSetFlags checkForExplictUnsupport = new InstructionSetFlags();
-                    checkForExplictUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
-                    checkForExplictUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
-                    checkForExplictUnsupport.Set64BitInstructionSetVariants(_architecture);
+                    InstructionSetFlags checkForExplicitUnsupport = new InstructionSetFlags();
+                    checkForExplicitUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
+                    checkForExplicitUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
+                    checkForExplicitUnsupport.Set64BitInstructionSetVariants(_architecture);
 
                     InstructionSetFlags supportedTemp = supportedInstructionSets;
-                    supportedTemp.Remove(checkForExplictUnsupport);
+                    supportedTemp.Remove(checkForExplicitUnsupport);
 
                     // If removing the explicitly unsupported instruction sets, changes the set of
                     // supported instruction sets, then the parameter is invalid

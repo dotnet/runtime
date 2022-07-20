@@ -13,7 +13,7 @@ static ResultCode GetResultCode(UErrorCode err)
 {
     if (err == U_BUFFER_OVERFLOW_ERROR || err == U_STRING_NOT_TERMINATED_WARNING)
     {
-        return InsufficentBuffer;
+        return InsufficientBuffer;
     }
 
     if (err == U_MEMORY_ALLOCATION_ERROR)

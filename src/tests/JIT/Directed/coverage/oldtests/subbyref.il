@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Arithemetic operations are generally only allowed with
+// Arithmetic operations are generally only allowed with
 // primitive types, but certain operations are allowed
 // with byrefs
 

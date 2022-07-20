@@ -621,7 +621,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
             }
 
-            // Character Class Substraction
+            // Character Class Subtraction
 
             // No Negation
             yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);

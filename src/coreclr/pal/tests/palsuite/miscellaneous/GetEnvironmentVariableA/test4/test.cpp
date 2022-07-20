@@ -12,7 +12,7 @@
 **
 **=========================================================*/
 
-/* Depends on SetEnvironmentVariableW (because we're implmenting 
+/* Depends on SetEnvironmentVariableW (because we're implementing 
    the wide version) and strcmp() 
 */
 

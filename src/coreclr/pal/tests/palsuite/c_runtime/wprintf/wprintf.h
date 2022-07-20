@@ -5,7 +5,7 @@
 **
 ** Source: wprintf.h
 **
-** Purpose: Containts common testing functions for wprintf
+** Purpose: Contains common testing functions for wprintf
 **
 **
 **==========================================================================*/

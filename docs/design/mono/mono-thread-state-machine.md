@@ -371,7 +371,7 @@ In hybrid suspend there are several additional states, and an additional `pulse`
 
 User threads in `GC_Unsafe` periodically perform the `poll` transition, as in cooperative suspend.
 
-User threads in `GC_Safe` states can suspend either by reaching a transition out of `GC_Safe` (ie they attempt a `done_Blocking` or `abort_Blocking` transition), or by beeing preemptively suspended by the suspend initiator.  As a result there are two possible suspended states: `Blocking_Self_Suspended` (tried to do a `done_Blocking`  or `abort_Blocking` transition) or `Blocking_Async_Suspended` (suspend initiator performed an `finish_async_suspend` transition).
+User threads in `GC_Safe` states can suspend either by reaching a transition out of `GC_Safe` (ie they attempt a `done_Blocking` or `abort_Blocking` transition), or by being preemptively suspended by the suspend initiator.  As a result there are two possible suspended states: `Blocking_Self_Suspended` (tried to do a `done_Blocking`  or `abort_Blocking` transition) or `Blocking_Async_Suspended` (suspend initiator performed an `finish_async_suspend` transition).
 
 When resuming, if a thread was `Blocking_Self_Suspended` it finishes the `done_Blocking` or `abort_Blocking` transition and goes to a `GC_Unsafe` state.  If it was in `Blocking_Async_Suspended`, then it resumes still in `GC_Safe` and goes back to the `Blocking` state.
 

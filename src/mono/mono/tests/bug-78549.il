@@ -62,7 +62,7 @@ extends [mscorlib]System.Object
 		} // end .try 0
 		catch [mscorlib]System.NullReferenceException { // 0
 		stloc.3
-		ldstr "ok-catched\n"
+		ldstr "ok-caught\n"
 		call void class [mscorlib]System.Console::Write(string)
 		ldc.i4 0
 		stloc 4

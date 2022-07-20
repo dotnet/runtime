@@ -19,7 +19,7 @@ trigger:
     - THIRD-PARTY-NOTICES.TXT
 
 # This is an official pipeline that should not be triggerable from a PR,
-# there is no public pipeline assosiated with it.
+# there is no public pipeline associated with it.
 pr: none
 
 variables:

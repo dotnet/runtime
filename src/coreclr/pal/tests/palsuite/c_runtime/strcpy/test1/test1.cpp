@@ -8,7 +8,7 @@
 ** Purpose:
 ** Call the function to copy into an empty buffer.  Check that the return value
 ** is pointing at the destination buffer.  Also compare the string copied to
-** the origional string, to ensure they are the same.
+** the original string, to ensure they are the same.
 **
 **
 **==========================================================================*/

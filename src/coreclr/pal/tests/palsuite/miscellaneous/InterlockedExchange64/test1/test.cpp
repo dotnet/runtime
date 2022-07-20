@@ -52,7 +52,7 @@ PALTEST(miscellaneous_InterlockedExchange64_test1_paltest_interlockedexchange64_
              "instead it is %ll.",NewValue,TheValue);    
     }
   
-    /* Check to make sure it returns the origional number which 'TheValue' was 
+    /* Check to make sure it returns the original number which 'TheValue' was 
        set to. 
     */
   

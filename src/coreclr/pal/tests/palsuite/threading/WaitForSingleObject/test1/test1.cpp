@@ -6,7 +6,7 @@
 ** Source: test1.c 
 **
 ** Purpose: Test for WaitForSingleObjectTest. Create two events, one
-** with a TRUE and one with FALSE intial state.  Ensure that WaitForSingle
+** with a TRUE and one with FALSE initial state.  Ensure that WaitForSingle
 ** returns correct values for each of these.
 **
 **
@@ -59,7 +59,7 @@ BOOL WaitForSingleObjectTest()
     }
     
     /* If the first section passed, Create another event, with the
-       intial state being FALSE this time.
+       initial state being FALSE this time.
     */
 
     if (bRet)

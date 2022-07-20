@@ -50,7 +50,7 @@ PALTEST(c_runtime_getenv_test3_paltest_getenv_test3, "c_runtime/getenv/test3/pal
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "
-             "was NULL, which indicates the environment varaible was not "
+             "was NULL, which indicates the environment variable was not "
              "found.\n");
     }
 

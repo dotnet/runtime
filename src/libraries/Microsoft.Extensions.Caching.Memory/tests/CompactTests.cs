@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        public void CompactPrioritizesLowPriortyItems()
+        public void CompactPrioritizesLowPriorityItems()
         {
             var cache = CreateCache();
             cache.Set("key1", "Value1", new MemoryCacheEntryOptions().SetPriority(CacheItemPriority.Low));

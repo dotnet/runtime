@@ -2212,7 +2212,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //don't need more directories.
 
     //I now know how big the file is.  Reserve enough address space for the whole thing.  Try to get the
-    //preferred base.  Create the intial mapping as "no access".  We'll use that for the guard pages in the
+    //preferred base.  Create the initial mapping as "no access".  We'll use that for the guard pages in the
     //"holes" between sections.
     SIZE_T preferredBase, virtualSize;
     preferredBase = ntHeader.OptionalHeader.ImageBase;

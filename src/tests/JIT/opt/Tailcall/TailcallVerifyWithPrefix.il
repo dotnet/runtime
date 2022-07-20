@@ -1420,7 +1420,7 @@
   {
     // Code size       948 (0x3b4)
     .maxstack  4
-    .locals init ([0] class [mscorlib]System.Collections.Generic.List`1<string> exludeCollection,
+    .locals init ([0] class [mscorlib]System.Collections.Generic.List`1<string> excludeCollection,
              [1] class [mscorlib]System.Collections.Generic.List`1<string> foo,
              [2] class [mscorlib]System.Type t,
              [3] class [mscorlib]System.Reflection.MethodInfo m,

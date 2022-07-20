@@ -91,7 +91,7 @@ namespace System.IO.Compression
                 using (Stream gz = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
                 using (Stream decompressedData = new DerivedMemoryStream())
                 {
-                    // read one byte in order to fill the inflater bufffer before copy
+                    // read one byte in order to fill the inflater buffer before copy
                     Assert.Equal(3, gz.ReadByte());
 
                     gz.CopyTo(decompressedData, copyToBufferSizeRequested);
@@ -102,7 +102,7 @@ namespace System.IO.Compression
                 using (Stream gz = new GZipStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
                 using (Stream decompressedData = new DerivedMemoryStream())
                 {
-                    // read one byte in order to fill the inflater bufffer before copy
+                    // read one byte in order to fill the inflater buffer before copy
                     Assert.Equal(3, gz.ReadByte());
 
                     await gz.CopyToAsync(decompressedData, copyToBufferSizeRequested);

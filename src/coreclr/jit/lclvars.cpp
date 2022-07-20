@@ -1796,7 +1796,7 @@ void Compiler::StructPromotionHelper::CheckRetypedAsScalar(CORINFO_FIELD_HANDLE 
 //   The last analyzed type is memorized to skip the check if we ask about the same time again next.
 //   However, it was not found profitable to memorize all analyzed types in a map.
 //
-//   The check initializes only nessasary fields in lvaStructPromotionInfo,
+//   The check initializes only necessary fields in lvaStructPromotionInfo,
 //   so if the promotion is rejected early than most fields will be uninitialized.
 //
 bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd)
@@ -3199,7 +3199,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     LclVarDsc* varDsc = lvaGetDesc(varNum);
     assert(varDsc->lvType == TYP_REF);
 
-    // We shoud not have any ref type information for this var.
+    // We should not have any ref type information for this var.
     assert(varDsc->lvClassHnd == NO_CLASS_HANDLE);
     assert(!varDsc->lvClassIsExact);
 
@@ -4230,7 +4230,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
     if (!isRecompute)
     {
-        /* Is this an assigment? */
+        /* Is this an assignment? */
 
         if (tree->OperIs(GT_ASG))
         {
@@ -5629,7 +5629,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif // !defined(TARGET_AMD64)
                     )
             {
-                doAssignStkOffs = false; // Not on frame or an incomming stack arg
+                doAssignStkOffs = false; // Not on frame or an incoming stack arg
             }
         }
 
@@ -8339,7 +8339,7 @@ static unsigned LCL_FLD_PADDING(unsigned lclNum)
     The stress mode does 2 passes.
 
     In the first pass we will mark the locals where we CAN't apply the stress mode.
-    In the second pass we will do the appropiate morphing wherever we've not determined we can't do it.
+    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
 */
 Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
 {

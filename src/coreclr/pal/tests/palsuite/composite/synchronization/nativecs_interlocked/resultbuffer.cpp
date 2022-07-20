@@ -44,7 +44,7 @@ ResultBuffer:: ResultBuffer(int ThreadCount, int ThreadLogSize)
             return(status);
         }
 
-		// Caculate the offset into the shared buffer based on the process and thread indices
+		// Calculate the offset into the shared buffer based on the process and thread indices
 		Offset = (Thread)*ThreadOffset;
 
 		// Write the passed in data to the reserved buffer

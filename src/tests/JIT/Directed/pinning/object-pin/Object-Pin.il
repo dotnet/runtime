@@ -123,7 +123,7 @@ FAILURE2:
     ldc.i4 1
     ret
 FAILURE3:
-    ldstr "Something is wrong, the assigment didnt work!"
+    ldstr "Something is wrong, the assignment didnt work!"
     call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     ldc.i4 1
     ret

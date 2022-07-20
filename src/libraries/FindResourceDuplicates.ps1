@@ -5,7 +5,7 @@
 
 Write-Host "Running..."
 $currentPath = Get-Location
-$resouces = New-Object 'System.Collections.Generic.Dictionary[String,Collections.Generic.List[ResourceRecord]]'
+$resources = New-Object 'System.Collections.Generic.Dictionary[String,Collections.Generic.List[ResourceRecord]]'
 foreach ($resourceFile in Get-ChildItem $currentPath  -recurse -include Strings.resx)
 {
     if ($resourceFile -like "*\tests\*")
@@ -18,27 +18,27 @@ foreach ($resourceFile in Get-ChildItem $currentPath  -recurse -include Strings.
     [xml]$XDocument = Get-Content -Path $resourceFile    
     foreach($resource in $XDocument.SelectNodes("//root/data"))
     {
-        if(!$resouces.ContainsKey($resource.name))
+        if(!$resources.ContainsKey($resource.name))
         {
             $resourceList = New-Object Collections.Generic.List[ResourceRecord]            
-            $resouces.Add($resource.name,$resourceList)
+            $resources.Add($resource.name,$resourceList)
         }    
             
         $record = New-Object ResourceRecord
         $record.value = $resource.value
         $record.fileName = $resourceFile
 
-        $resouces[$resource.name].Add($record);
+        $resources[$resource.name].Add($record);
     }                       
 }
 
 $duplicates = New-Object 'Collections.Generic.List[string]'
 
-foreach($resouce in $resouces.GetEnumerator())
+foreach($resource in $resources.GetEnumerator())
 {
     $values = New-Object Collections.Generic.List[string]       
 
-    foreach($value in $resouce.Value)
+    foreach($value in $resource.Value)
     {
         $values.Add($value.value);        
     }
@@ -47,9 +47,9 @@ foreach($resouce in $resouces.GetEnumerator())
 
     if ($count -gt 1)
     {
-         foreach($value in $resouce.value.GetEnumerator())
+         foreach($value in $resource.value.GetEnumerator())
         {
-            $duplicates.Add("Name: '$($resouce.key)' value: '$($value.value)' relative path: '$($value.fileName.Replace($currentPath,[string]::Empty))'")
+            $duplicates.Add("Name: '$($resource.key)' value: '$($value.value)' relative path: '$($value.fileName.Replace($currentPath,[string]::Empty))'")
         }
     }
 }

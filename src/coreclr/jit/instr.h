@@ -319,7 +319,7 @@ enum insOpts : unsigned
 enum insBarrier : unsigned
 {
     // TODO-LOONGARCH64-CQ: ALL there are the same value right now.
-    // These are reserved for future extention.
+    // These are reserved for future extension.
     // Because the LoongArch64 doesn't support these right now.
     INS_BARRIER_FULL  =  0,
     INS_BARRIER_WMB   =  INS_BARRIER_FULL,//4,

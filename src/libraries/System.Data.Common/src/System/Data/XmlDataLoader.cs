@@ -491,7 +491,7 @@ namespace System.Data
         }
 
 
-        // load all data from tree structre into datarows
+        // load all data from tree structure into datarows
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void LoadRows(DataRow? parentRow, XmlNode parentElement)
         {

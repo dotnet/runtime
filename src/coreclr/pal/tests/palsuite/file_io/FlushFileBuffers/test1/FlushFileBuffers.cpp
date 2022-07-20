@@ -61,7 +61,7 @@ PALTEST(file_io_FlushFileBuffers_test1_paltest_flushfilebuffers_test1, "file_io/
     originalSize = GetFileSize (TheFileHandle, NULL) ; 
     if(originalSize == INVALID_FILE_SIZE)
     {
-         Fail("ERROR: call to GetFileSize faild with error "
+         Fail("ERROR: call to GetFileSize failed with error "
              "The GetLastError is %d.",GetLastError());
     }
     

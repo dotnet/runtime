@@ -71,7 +71,7 @@ PALTEST(file_io_CopyFileW_test2_paltest_copyfilew_test2, "file_io/CopyFileW/test
         Fail("ERROR: Cannot copy a file to itself, %u",GetLastError());
     }
     
-    /* try to get file attributes of desitnation */
+    /* try to get file attributes of destination */
     if (GetFileAttributesA(szSrcExisting) == -1)
     {
         free(wcSource);

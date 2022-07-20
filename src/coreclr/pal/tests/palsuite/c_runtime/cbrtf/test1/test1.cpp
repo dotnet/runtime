@@ -6,7 +6,7 @@
 ** Source:  test1.c
 **
 ** Purpose:  Call the cbrtf function on a positive value, a positive value
-** with a decimal and on the maxium possible float value.  
+** with a decimal and on the maximum possible float value.  
 **
 **
 **===================================================================*/

@@ -1159,7 +1159,7 @@ CorUnix::InternalSetThreadPriority(
        Time Critical [+15]), we have to do a mapping from a known range to an
        unknown (at compilation) range.
        We do this by :
-       -substracting the minimal PAL priority from the desired priority. this
+       -subtracting the minimal PAL priority from the desired priority. this
         gives a value between 0 and the PAL priority range
        -dividing this value by the PAL priority range. this allows us to
         express the desired priority as a floating-point value between 0 and 1

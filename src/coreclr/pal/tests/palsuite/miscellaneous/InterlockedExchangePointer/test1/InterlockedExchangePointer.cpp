@@ -43,7 +43,7 @@ PALTEST(miscellaneous_InterlockedExchangePointer_test1_paltest_interlockedexchan
     if(*(int *)pReturnValue != i1)
     {
         Fail("\nFailed to call InterlockedExchangePointer API, "
-                "return pointer does not point to the origional value\n");
+                "return pointer does not point to the original value\n");
     }
 
     /*check the exchanged value*/

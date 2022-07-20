@@ -5,7 +5,7 @@
 **
 ** Source:  vprintf.h
 **
-** Purpose: Containts common testing functions for vprintf
+** Purpose: Contains common testing functions for vprintf
 **
 **
 **==========================================================================*/

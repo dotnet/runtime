@@ -1583,7 +1583,7 @@ RetryInference:
                 '
                 'Given an array of arguments and an array of argument names, the
                 'index n into each of these arrays represents the nth named argument
-                'and its assocated name. If argument n matches the name of the
+                'and its associated name. If argument n matches the name of the
                 'parameter at index m in the array of parameters, then the named
                 'argument mapping table will contain the value m at index n.
 
@@ -1808,7 +1808,7 @@ skipargument:
                 '
                 'Given an array of arguments and an array of argument names, the
                 'index n into each of these arrays represents the nth named argument
-                'and its assocated name. If argument n matches the name of the
+                'and its associated name. If argument n matches the name of the
                 'parameter at index m in the array of parameters, then the named
                 'argument mapping table will contain the value m at index n.
 

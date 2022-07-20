@@ -71,7 +71,7 @@ typedef enum
  * Constants for passing to the first parameter of syslog.
  * These are a combination of flags where the lower bits are
  * the priority and the higher bits are the facility. The lower
- * bits cannot be OR'd together; they must be OR'd with the higer bits.
+ * bits cannot be OR'd together; they must be OR'd with the higher bits.
  *
  * These values keep their original definition and are taken from syslog.h
  */

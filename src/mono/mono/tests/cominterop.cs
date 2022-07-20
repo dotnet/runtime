@@ -376,9 +376,9 @@ public class Tests
 			if (mono_test_marshal_struct_with_bstr_in_unmanaged(sbfunc) != 0)
 				return 3;
 
-			StructWithBstr swithB;
-			swithB.data = "this is a test string";
-			if (mono_test_marshal_struct_with_bstr_out_unmanaged (swithB) != 0)
+			StructWithBstr sWithB;
+			sWithB.data = "this is a test string";
+			if (mono_test_marshal_struct_with_bstr_out_unmanaged (sWithB) != 0)
 				return 4;
 
 			#endregion // BSTR Tests
@@ -510,9 +510,9 @@ public class Tests
 			if (mono_test_marshal_struct_with_variant_in_unmanaged(svfunc) != 0)
 				return 108;
 
-			StructWithVariant swithV;
-			swithV.data = (object)-123;
-			if (mono_test_marshal_struct_with_variant_out_unmanaged (swithV) != 0)
+			StructWithVariant sWithV;
+			sWithV.data = (object)-123;
+			if (mono_test_marshal_struct_with_variant_out_unmanaged (sWithV) != 0)
 				return 109;
 
 			#endregion // VARIANT Tests

@@ -400,7 +400,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         // WriteChildrenVisitor is a helper class needed to write out the list of the 
         // handles (as space separated hex numbers) of all children of a given node 
-        // to the 'logWriter' text stream.  It simply implementes the IRecordVisitor
+        // to the 'logWriter' text stream.  It simply implements the IRecordVisitor
         // interface to hook the callbacks needed for the MetadataRecord.Visit API.
         // It is only used in the Write() method above.  
         private class WriteChildrenVisitor : IRecordVisitor

@@ -236,7 +236,7 @@
   <data name="MDF_UnableToBuildCollection" xml:space="preserve">
     <value>Unable to build schema collection '{0}';</value>
   </data>
-  <data name="MDF_AmbigousCollectionName" xml:space="preserve">
+  <data name="MDF_AmbiguousCollectionName" xml:space="preserve">
     <value>The collection name '{0}' matches at least two collections with the same name but with different case, but does not match any of them exactly.</value>
   </data>
   <data name="MDF_CollectionNameISNotUnique" xml:space="preserve">

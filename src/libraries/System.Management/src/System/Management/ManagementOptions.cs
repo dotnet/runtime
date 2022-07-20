@@ -524,7 +524,7 @@ namespace System.Management
         /// <param name=' timeout'>The timeout value for enumerating through the results.</param>
         /// <param name=' blockSize'>The number of items to retrieve at one time from WMI.</param>
         /// <param name=' rewindable'><see langword='true'/> to specify whether the result set is rewindable (=allows multiple traversal or one-time); otherwise, <see langword='false'/>.</param>
-        /// <param name=' returnImmediatley'><see langword='true'/> to specify whether the operation should return immediately (semi-sync) or block until all results are available; otherwise, <see langword='false'/> .</param>
+        /// <param name=' returnImmediately'><see langword='true'/> to specify whether the operation should return immediately (semi-sync) or block until all results are available; otherwise, <see langword='false'/> .</param>
         /// <param name=' useAmendedQualifiers'><see langword='true'/> to specify whether the returned objects should contain amended (locale-aware) qualifiers; otherwise, <see langword='false'/> .</param>
         /// <param name=' ensureLocatable'><see langword='true'/> to specify to WMI that it should ensure all returned objects have valid paths; otherwise, <see langword='false'/> .</param>
         /// <param name=' prototypeOnly'><see langword='true'/> to return a prototype of the result set instead of the actual results; otherwise, <see langword='false'/> .</param>
@@ -535,7 +535,7 @@ namespace System.Management
             TimeSpan timeout,
             int blockSize,
             bool rewindable,
-            bool returnImmediatley,
+            bool returnImmediately,
             bool useAmendedQualifiers,
             bool ensureLocatable,
             bool prototypeOnly,
@@ -544,7 +544,7 @@ namespace System.Management
         {
             BlockSize = blockSize;
             Rewindable = rewindable;
-            ReturnImmediately = returnImmediatley;
+            ReturnImmediately = returnImmediately;
             UseAmendedQualifiers = useAmendedQualifiers;
             EnsureLocatable = ensureLocatable;
             PrototypeOnly = prototypeOnly;

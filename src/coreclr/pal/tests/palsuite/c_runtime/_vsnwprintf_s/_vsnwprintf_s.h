@@ -5,7 +5,7 @@
 **
 ** Source:  _vsnwprintf_s.h
 **
-** Purpose: Containts common testing functions for _vsnwprintf_s
+** Purpose: Contains common testing functions for _vsnwprintf_s
 **
 **
 **==========================================================================*/

@@ -70,7 +70,7 @@
     }
 }
 
-// Interface defintion for overriding another interface's implementation
+// Interface definition for overriding another interface's implementation
 .class interface public abstract auto ansi Server.Contract.IDefaultInterfaceTesting2
 {
     .custom instance void [System.Runtime]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) =

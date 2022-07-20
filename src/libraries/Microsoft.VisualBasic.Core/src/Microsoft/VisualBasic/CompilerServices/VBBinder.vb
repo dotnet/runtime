@@ -489,7 +489,7 @@ CleanupAndExit:
                     Else
                         ' Named parameters, reorder the mapping.  If 
                         '  CreateParamOrder fails, it means that the method
-                        '  doesn't have a name that matchs one of the named
+                        '  doesn't have a name that matches one of the named
                         '  parameters so we don't consider it any further.
 
                         Dim ex As Exception

@@ -3957,7 +3957,7 @@ public:
 
     // The array of entries. (The patchtable is a hash implemented as a single-array)
     // This array includes empty entries.
-    // There is an auxillary bucket structure used to map hash codes to array indices.
+    // There is an auxiliary bucket structure used to map hash codes to array indices.
     // We traverse the array, and we recognize an empty slot
     // if DebuggerControllerPatch::opcode == 0.
     // If we haven't gotten the table, then m_pPatchTable is NULL
@@ -4696,7 +4696,7 @@ public:
 // This lets us reuse the existing hash table scheme to build
 // up instantiated types of arbitrary size.
 //
-// Array types are similar, excpet that they start with a head type
+// Array types are similar, excepet that they start with a head type
 // for the "type constructor", e.g. "_ []" is a type constructor with rank 1
 // and m_elementType = ELEMENT_TYPE_SZARRAY.  These head constructors are
 // stored in the m_sharedtypes table in the appdomain.  The actual instantiations
@@ -9891,7 +9891,7 @@ private:
     // EE object handle pointer. Can be casted to OBJECTHANDLE when go to LS
     // This instance owns the handle object and must call into the VM to release
     // it.
-    // If this is non-null, then we increment code:CordbProces::IncrementOutstandingHandles.
+    // If this is non-null, then we increment code:CordbProcess::IncrementOutstandingHandles.
     // Once it goes null, we should decrement the count.
     // Use AssignHandle, ClearHandle to keep this in sync.
     VMPTR_OBJECTHANDLE  m_vmHandle;

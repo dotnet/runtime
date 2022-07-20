@@ -95,7 +95,7 @@ enum gc_etw_segment_type
     gc_etw_segment_pinned_object_heap = 3
 };
 
-/* forward declerations */
+/* forward declarations */
 class CObjectHeader;
 class Object;
 

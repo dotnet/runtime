@@ -114,7 +114,7 @@ namespace Internal.IL.Stubs
                 else if (parameterType.IsEnum)
                 {
                     // If the invoke method takes an enum as an input parameter and there is no default value for
-                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // that parameter, we don't need to specialize on the exact enum type (we only need to specialize
                     // on the underlying integral type of the enum.)
                     if (paramMetadata == null)
                         paramMetadata = method.GetParameterMetadata();

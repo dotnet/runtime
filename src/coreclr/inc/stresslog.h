@@ -14,7 +14,7 @@
    however thread safe */
 
 /* The log has a very simple structure, and it meant to be dumped from a NTSD
-   extention (eg. strike). There is no memory allocation system calls etc to purtub things */
+   extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
 // WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
@@ -542,7 +542,7 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 #endif
 
 // The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally alligned, so we don't waste
+// And make sure the timeStamp field is naturally aligned, so we don't waste
 // space on 32-bit platforms
 struct StressMsg {
     static const size_t formatOffsetBits = 26;

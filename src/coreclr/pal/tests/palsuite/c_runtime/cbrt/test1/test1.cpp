@@ -6,7 +6,7 @@
 ** Source:  test1.c
 **
 ** Purpose:  Call the cbrt function on a positive value, a positive value
-** with a decimal and on the maxium possible double value.  
+** with a decimal and on the maximum possible double value.  
 **
 **
 **===================================================================*/

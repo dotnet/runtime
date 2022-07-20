@@ -5,7 +5,7 @@
 **
 ** Source:  printf.h
 **
-** Purpose: Containts common testing functions for printf
+** Purpose: Contains common testing functions for printf
 **
 **
 **==========================================================================*/

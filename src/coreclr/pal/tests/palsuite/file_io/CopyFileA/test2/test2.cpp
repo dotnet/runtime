@@ -69,7 +69,7 @@ PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test
         Fail("ERROR: Cannot copy a file to itself, %u",GetLastError());
     }
     
-    /* try to get file attributes of desitnation */
+    /* try to get file attributes of destination */
     if (GetFileAttributesA(szSrcExisting) == -1)
     {
         Fail("CopyFileA: GetFileAttributes of destination file "

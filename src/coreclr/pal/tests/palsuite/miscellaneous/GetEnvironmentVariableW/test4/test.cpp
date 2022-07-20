@@ -10,7 +10,7 @@
 **
 **=========================================================*/
 
-/* Depends on SetEnvironmentVariableW (because we're implmenting the wide 
+/* Depends on SetEnvironmentVariableW (because we're implementing the wide 
    version) and strcmp() */
 
 #define UNICODE

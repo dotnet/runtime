@@ -32,7 +32,7 @@
 	// Code size 12 (0xc)
 	.maxstack 8
 	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
 	IL_000b:  throw 
     } // end of method I1::M1
@@ -54,7 +54,7 @@
 	// Code size 12 (0xc)
 	.maxstack 8
 	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
 	IL_000b:  throw 
     } // end of method I2::Application.I1.M1
@@ -76,7 +76,7 @@
 	// Code size 12 (0xc)
 	.maxstack 8
 	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
 	IL_000b:  throw 
     } // end of method I3::Application.I1.M1
@@ -98,7 +98,7 @@
 	// Code size 12 (0xc)
 	.maxstack 8
 	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
 	IL_000b:  throw 
     } // end of method I4::Application.I1.M1

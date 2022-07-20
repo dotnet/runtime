@@ -46,7 +46,7 @@ public class HardwareEh
 	{
 		bool retVal = true;
 
-		TestLibrary.TestFramework.LogInformation("[Postive]");
+		TestLibrary.TestFramework.LogInformation("[Positive]");
 		retVal = PosTest1() && retVal;
 		retVal = PosTest2() && retVal;
 		retVal = PosTest3() && retVal;

@@ -859,7 +859,7 @@ struct static_data
     float limit;
     float max_limit;
     uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
-    size_t gc_clock; // nubmer of gcs after which to collect generation
+    size_t gc_clock; // number of gcs after which to collect generation
 };
 
 // The dynamic data fields are grouped into 3 categories:

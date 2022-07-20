@@ -41,7 +41,7 @@ inline
 EventPipeConfiguration *
 ep_config_get (void)
 {
-	// Singelton.
+	// Singleton.
 	return &_ep_config_instance;
 }
 

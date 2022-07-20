@@ -829,7 +829,7 @@ public class DebuggerAttribute
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void StepThrougBp()
+    public static void StepThroughBp()
     {
         var a = 0;
         a++;
@@ -837,15 +837,15 @@ public class DebuggerAttribute
     }
 
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void StepThrougUserBp()
+    public static void StepThroughUserBp()
     {
         System.Diagnostics.Debugger.Break();
     }
 
     public static void RunStepThrough()
     {
-        StepThrougBp();
-        StepThrougUserBp();
+        StepThroughBp();
+        StepThroughUserBp();
     }
 
     [System.Diagnostics.DebuggerNonUserCode]

@@ -4,7 +4,7 @@
 
 // This test shows an issue  with tail call optimization of an interface call through Virtual Dispatch Stub.
 // The optimized VSD checks that `this` method table is equal to the cached method table.
-// If `this` is `null` then the stub throws `Acess Violation` exception that VM should
+// If `this` is `null` then the stub throws `Access Violation` exception that VM should
 // transform into the NullReference exception. VM is not able to do that when the first frame on the stack is
 // unmanaged, in this case it is JIT_TailCallHelperStub_ReturnAddress from tail call optimization.
 // To repro this issue on amd64/arm64 it also requires to reject fast tail call, for this puprose

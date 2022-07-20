@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// test large number of generic paramters
+// test large number of generic parameters
 //test large number of nested generic type isntantiations
 
 using System;

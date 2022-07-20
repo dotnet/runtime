@@ -5,7 +5,7 @@
 **
 ** Source:      fwprintf.h
 **
-** Purpose:     Containts common testing functions for fwprintf
+** Purpose:     Contains common testing functions for fwprintf
 **
 **
 **==========================================================================*/

@@ -44,14 +44,14 @@ PALTEST(miscellaneous_InterlockedIncrement64_test1_paltest_interlockedincrement6
     /* Incremented twice, it should be 2 now */
     if(TheValue != 2) 
     {
-        Fail("ERROR: The value was incremented twice and shoud now be 2, "
+        Fail("ERROR: The value was incremented twice and should now be 2, "
              "but it is really %ll",TheValue); 
     }
   
     /* Check to make sure it returns itself */
     if(TheReturn != TheValue) 
     {
-        Fail("ERROR: The function should return the new value, which shoud "
+        Fail("ERROR: The function should return the new value, which should "
              "have been %d, but it returned %ll.",TheValue,TheReturn);          
     }
 

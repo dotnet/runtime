@@ -174,7 +174,7 @@
       IL_004e:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0053:  call       void [System.Console]System.Console::WriteLine()
-      IL_0058:  ldstr      "The actual result for funciton argument is: {0}"
+      IL_0058:  ldstr      "The actual result for function argument is: {0}"
       IL_005d:  ldc.i4     0xff
       IL_0062:  call       native unsigned int ShiftTest.byte32Test::f1(native unsigned int)
       IL_0067:  box        [mscorlib]System.Byte
@@ -330,7 +330,7 @@
       IL_01e0:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_01e5:  call       void [System.Console]System.Console::WriteLine()
-      IL_01ea:  ldstr      "The actual result for funciton argument is: {0}"
+      IL_01ea:  ldstr      "The actual result for function argument is: {0}"
       IL_01ef:  ldc.i4.1
       IL_01f0:  call       native unsigned int ShiftTest.byte32Test::f2(native unsigned int)
       IL_01f5:  box        [mscorlib]System.Byte

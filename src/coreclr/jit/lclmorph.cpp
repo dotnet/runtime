@@ -512,7 +512,7 @@ public:
                         // TODO-1stClassStructs: this block is a temporary workaround to keep diffs small,
                         // having `doNotEnreg` affect block init and copy transformations that affect many methods.
                         // I have a change that introduces more precise and effective solution for that, but it would
-                        // be merged separatly.
+                        // be merged separately.
                         GenTreeLclVar* lclVar = retVal->AsLclVar();
                         unsigned       lclNum = lclVar->GetLclNum();
                         if (!m_compiler->compMethodReturnsMultiRegRegTypeAlternate() &&
@@ -1079,7 +1079,7 @@ private:
     // Notes:
     //    This does not do anything if the field access does not denote
     //    involved a promoted struct local.
-    //    If the GT_LCL_FLD offset does not have a coresponding promoted struct
+    //    If the GT_LCL_FLD offset does not have a corresponding promoted struct
     //    field then no transformation is done and struct local's enregistration
     //    is disabled.
     //

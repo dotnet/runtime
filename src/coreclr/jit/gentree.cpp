@@ -6212,7 +6212,7 @@ bool GenTree::TryGetUseBinOp(GenTree* operand, GenTree*** pUse)
 //------------------------------------------------------------------------
 // GenTree::ReplaceOperand:
 //    Replace a given operand to this node with a new operand. If the
-//    current node is a call node, this will also udpate the call
+//    current node is a call node, this will also update the call
 //    argument table if necessary.
 //
 // Arguments:
@@ -13440,7 +13440,7 @@ DONE_FOLD:
 
     /* The node has beeen folded into 'op' */
 
-    // If there was an assigment update, we just morphed it into
+    // If there was an assignment update, we just morphed it into
     // a use, update the flags appropriately
     if (op->gtOper == GT_LCL_VAR)
     {
@@ -13726,7 +13726,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         lvaSetStruct(boxTempLcl, boxClass, isUnsafeValueClass);
         var_types boxTempType = lvaTable[boxTempLcl].lvType;
 
-        // Remove the newobj and assigment to box temp
+        // Remove the newobj and assignment to box temp
         JITDUMP("Bashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
         asg->gtBashToNOP();
 
@@ -14304,7 +14304,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                             // constant to an int as would be obtained by passing that constant as
                             // a parameter and then casting that parameter to an int type.
 
-                            // Don't fold overflowing converions, as the value returned by
+                            // Don't fold overflowing conversions, as the value returned by
                             // JIT's codegen doesn't always match with the C compiler's cast result.
                             // We want the behavior to be the same with or without folding.
 

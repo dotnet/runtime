@@ -48,7 +48,7 @@
 			<g:price>3.80 USD</g:price>
 		</g:shipping>
 			
-		<!-- 2 out of the 3 unique product identifer attributes are required for this item -->
+		<!-- 2 out of the 3 unique product identifier attributes are required for this item -->
 		<g:gtin>88392916560500</g:gtin>
 		<g:brand>BBC</g:brand>
 			
@@ -81,7 +81,7 @@
 			<g:price>8.50 USD</g:price>
 		</g:shipping>
 			
-		<!-- 2 out of the 3 unique product identifer attributes are required for this item  -->
+		<!-- 2 out of the 3 unique product identifier attributes are required for this item  -->
 		<g:gtin>3348901056069</g:gtin>
 		<g:brand>Dior</g:brand>
 			

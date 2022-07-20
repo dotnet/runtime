@@ -1787,8 +1787,8 @@ internal class Program
     }
     struct BlittableStruct<T>
     {
-	public ExplicitLayoutStruct16 _explict;
-        public override string ToString() { return $"{_explict}"; }
+	public ExplicitLayoutStruct16 _explicit;
+        public override string ToString() { return $"{_explicit}"; }
     }
 
     struct StructWithGenericBlittableStruct
@@ -1802,10 +1802,10 @@ internal class Program
     private static bool TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref StructWithGenericBlittableStruct input)
     {
         StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
-        s._blittableGeneric._explict.x = 1;
-        s._blittableGeneric._explict.y = 2;
-        s._blittableGeneric._explict.z = 3;
-        s._blittableGeneric._explict.w = 4;
+        s._blittableGeneric._explicit.x = 1;
+        s._blittableGeneric._explicit.y = 2;
+        s._blittableGeneric._explicit.z = 3;
+        s._blittableGeneric._explicit.w = 4;
         s._int = 5;
 
         Console.WriteLine(input);
@@ -1818,10 +1818,10 @@ internal class Program
     private static bool TestWithStructureNonBlittableFieldDueToGenerics()
     {
         StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
-        s._blittableGeneric._explict.x = 1;
-        s._blittableGeneric._explict.y = 2;
-        s._blittableGeneric._explict.z = 3;
-        s._blittableGeneric._explict.w = 4;
+        s._blittableGeneric._explicit.x = 1;
+        s._blittableGeneric._explicit.y = 2;
+        s._blittableGeneric._explicit.z = 3;
+        s._blittableGeneric._explicit.w = 4;
         s._int = 5;
 
         return TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref s);

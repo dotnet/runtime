@@ -77,7 +77,7 @@ namespace Prog
             {
                 if (this.sessionRegisteredWait.Unregister(callbackThreadComplete))
                 {
-                    Console.WriteLine("waiting on succesful unregister");
+                    Console.WriteLine("waiting on successful unregister");
                     callbackThreadComplete.WaitOne();
                 }
             }

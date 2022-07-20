@@ -76,7 +76,7 @@ namespace SciMark2
             double[] res = new double[6];
             SciMark2.Random R = new SciMark2.Random(Constants.RANDOM_SEED);
 
-            Console.WriteLine("Mininum running time = {0} seconds", min_time);
+            Console.WriteLine("Minimum running time = {0} seconds", min_time);
 
             res[1] = kernel.measureFFT(FFT_size, min_time, R);
 

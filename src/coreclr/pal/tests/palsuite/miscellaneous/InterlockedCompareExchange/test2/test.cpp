@@ -129,7 +129,7 @@ void ModifyGlobalResource(void)
 			g_Total--;
 			if (0!=g_Total)
 				{
-					Fail("Test Failed beacuse g_Total was not protected \n");
+					Fail("Test Failed because g_Total was not protected \n");
 				}
 
 			

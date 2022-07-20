@@ -82,7 +82,7 @@ public sealed class FinalizerTest {
         TempObject = null;
     }
 
-    bool ressurectionTest() {
+    bool resurrectionTest() {
         numTests++;
 
         try {
@@ -102,11 +102,11 @@ public sealed class FinalizerTest {
         GC.Collect();
 
         if (LO2 != null) {
-            Console.WriteLine("ressurectionTest passed");
+            Console.WriteLine("resurrectionTest passed");
             LO2 = null;
             return true;
         }
-        Console.WriteLine("ressurectionTest failed");
+        Console.WriteLine("resurrectionTest failed");
         return false;
 
     }
@@ -148,7 +148,7 @@ public sealed class FinalizerTest {
             numPassed++;
         }
 
-        if (ressurectionTest() ) {
+        if (resurrectionTest() ) {
             numPassed++;
         }
 

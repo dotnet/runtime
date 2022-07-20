@@ -127,7 +127,7 @@
     <value>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</value>
   </data>
   <data name="CannotForwardToDllImportMessage" xml:space="preserve">
-    <value>'{0}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</value>
+    <value>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</value>
   </data>
   <data name="CannotForwardToDllImportTitle" xml:space="preserve">
     <value>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>

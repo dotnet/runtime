@@ -3566,7 +3566,7 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                JITDUMP("\nHandler block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
                         blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;

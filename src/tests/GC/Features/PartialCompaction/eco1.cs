@@ -369,7 +369,7 @@ namespace PartialCompactionTest
             }
         }
 
-        //counts the refernces of this objects
+        //counts the references of this objects
         public static int CountReferences(ObjectWrapper o)
         {
             if (o.visited)
@@ -426,7 +426,7 @@ namespace PartialCompactionTest
             }
            
         }
-        //counts the pinned refernces of this objects
+        //counts the pinned references of this objects
         public static int CountPinnedReferences(ObjectWrapper o)
         {
             if (o.visited)
@@ -631,7 +631,7 @@ namespace PartialCompactionTest
             Console.WriteLine("-timeout <seconds> : when to stop the test, default is " + timeout);
             Console.WriteLine("-maxHeapMB <MB> : max heap size in MB to allocate, default is " + maxHeapMB);
             Console.WriteLine("-regionSizeMB <MB> : regionSize, default is " + regionSizeMB);
-            Console.WriteLine("-depth <depth of refernce tree>, default is " + maxDepth);
+            Console.WriteLine("-depth <depth of reference tree>, default is " + maxDepth);
 
             Console.WriteLine("-randomseed <seed> : random seed(for repro)");
         }

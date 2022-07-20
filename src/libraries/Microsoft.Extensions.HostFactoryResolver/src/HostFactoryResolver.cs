@@ -21,9 +21,9 @@ namespace Microsoft.Extensions.Hosting
         private const string TimeoutEnvironmentKey = "DOTNET_HOST_FACTORY_RESOLVER_DEFAULT_TIMEOUT_IN_SECONDS";
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = SetupDefaultTimout();
+        private static readonly TimeSpan s_defaultWaitTimeout = SetupDefaultTimeout();
 
-        private static TimeSpan SetupDefaultTimout()
+        private static TimeSpan SetupDefaultTimeout()
         {
             if (Debugger.IsAttached)
             {

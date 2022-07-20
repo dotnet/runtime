@@ -792,7 +792,7 @@ StgStringPool::InitNew(
 //*****************************************************************************
 // Load a string heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new strings.
+// be used to eliminate duplicates with new strings.
 //*****************************************************************************
 __checkReturn
 HRESULT
@@ -1144,7 +1144,7 @@ StgGuidPool::InitNew(
 //*****************************************************************************
 // Load a Guid heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new Guids.
+// be used to eliminate duplicates with new Guids.
 //*****************************************************************************
 __checkReturn
 HRESULT

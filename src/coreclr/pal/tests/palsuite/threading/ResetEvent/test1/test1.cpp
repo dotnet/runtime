@@ -5,7 +5,7 @@
 **
 ** Source: test1.c 
 **
-** Purpose: Test for ResetEvent.  Create an event with an intial
+** Purpose: Test for ResetEvent.  Create an event with an initial
 ** state signaled.  Then reset that signal, and check to see that 
 ** the event is now not signaled.
 **

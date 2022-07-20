@@ -270,7 +270,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
             {
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::UNKNOWN;
                 if (callback != nullptr)
-                    callback("unkown poll response", (uint32_t)pollfds[i].revents);
+                    callback("unknown poll response", (uint32_t)pollfds[i].revents);
             }
         }
     }

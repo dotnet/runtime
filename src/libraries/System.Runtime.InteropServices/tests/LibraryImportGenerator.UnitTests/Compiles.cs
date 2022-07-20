@@ -437,7 +437,7 @@ namespace LibraryImportGenerator.UnitTests
         }
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
-        public async Task ValidateSnippetsWithPreprocessorDefintions(string id, string source, IEnumerable<string> preprocessorSymbols)
+        public async Task ValidateSnippetsWithPreprocessorDefinitions(string id, string source, IEnumerable<string> preprocessorSymbols)
         {
             TestUtils.Use(id);
             Compilation comp = await TestUtils.CreateCompilation(source, preprocessorSymbols: preprocessorSymbols);

@@ -173,7 +173,7 @@ public:
 
     PTR_CVOID GetMetadata(COUNT_T* pSize = NULL);
 
-    // Check utilites
+    // Check utilities
     static CHECK CheckStartup();
     static CHECK CheckCanonicalFullPath(const SString& path);
 

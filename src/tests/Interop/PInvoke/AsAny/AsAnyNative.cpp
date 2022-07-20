@@ -91,7 +91,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArraySbyte(
 		{
 			if(sbyteArray[i] != expected[i] || sbyteArray_In[i] != expected[i] || sbyteArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArraySbyte\n");
+				printf("Not correct pass in parameter in PassArraySbyte\n");
 				return FALSE;
 			}
 			sbyteArray_InOut[i] = 10 + expected[i];
@@ -108,7 +108,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayByte(
 		{
 			if(byteArray[i] != expected[i] || byteArray_In[i] != expected[i] || byteArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayByte\n");
+				printf("Not correct pass in parameter in PassArrayByte\n");
 				return FALSE;
 			}
 			byteArray_InOut[i] = 10 + expected[i];
@@ -124,7 +124,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayShort(
 		{
 			if(shortArray[i] != expected[i] || shortArray_In[i] != expected[i] || shortArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayShort\n");
+				printf("Not correct pass in parameter in PassArrayShort\n");
 				return FALSE;
 			}
 			shortArray_InOut[i] = 10 + expected[i];
@@ -140,7 +140,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUshort(
 		{
 			if(ushortArray[i] != expected[i] || ushortArray_In[i] != expected[i] || ushortArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayUshort\n");
+				printf("Not correct pass in parameter in PassArrayUshort\n");
 				return FALSE;
 			}
 			ushortArray_InOut[i] = 10 + expected[i];
@@ -156,7 +156,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayInt(
 		{
 			if(IntArray[i] != expected[i] || IntArray_In[i] != expected[i] || IntArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayInt\n");
+				printf("Not correct pass in parameter in PassArrayInt\n");
 				return FALSE;
 			}
 			IntArray_InOut[i] = 10 + expected[i];
@@ -173,7 +173,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUint(
 		{
 			if(uintArray[i] != expected[i] || uintArray_In[i] != expected[i] || uintArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayUint\n");
+				printf("Not correct pass in parameter in PassArrayUint\n");
 				return FALSE;
 			}
 			uintArray_InOut[i] = 10 + expected[i];
@@ -189,7 +189,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayLong(
 		{
 			if(longArray[i] != expected[i] || longArray_In[i] != expected[i] || longArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayLong\n");
+				printf("Not correct pass in parameter in PassArrayLong\n");
 				return FALSE;
 			}
 			longArray_InOut[i] = 10 + expected[i];
@@ -206,7 +206,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUlong(
 		{
 			if(ulongArray[i] != expected[i] || ulongArray_In[i] != expected[i] || ulongArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayUlong\n");
+				printf("Not correct pass in parameter in PassArrayUlong\n");
 				return FALSE;
 			}
 			ulongArray_InOut[i] = 10 + expected[i];
@@ -223,7 +223,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArraySingle(
 		{
 			if(singleArray[i] != expected[i] || singleArray_In[i] != expected[i] || singleArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArraySingle\n");
+				printf("Not correct pass in parameter in PassArraySingle\n");
 				return FALSE;
 			}
 			singleArray_InOut[i] = 10 + expected[i];
@@ -239,7 +239,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayDouble(
 		{
 			if(doubleArray[i] != expected[i] || doubleArray_In[i] != expected[i] || doubleArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayDouble\n");
+				printf("Not correct pass in parameter in PassArrayDouble\n");
 				return FALSE;
 			}
 			doubleArray_InOut[i] = 10 + expected[i];
@@ -254,7 +254,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayChar(
 		{
 			if(charArray[i] != expected[i] || charArray_In[i] != expected[i] || charArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayChar\n");
+				printf("Not correct pass in parameter in PassArrayChar\n");
 				return FALSE;
 			}			
 		}
@@ -276,7 +276,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayBool(
 		{
 			if(boolArray[i] != expected[i] || boolArray_In[i] != expected[i] || boolArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayBool\n");
+				printf("Not correct pass in parameter in PassArrayBool\n");
 				return FALSE;
 			}			
 		}
@@ -298,7 +298,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayIntPtr(
 		{
 			if(intPtrArray[i] != expected[i] || intPtrArray_In[i] != expected[i] || intPtrArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayIntPtr\n");
+				printf("Not correct pass in parameter in PassArrayIntPtr\n");
 				return FALSE;
 			}
 			intPtrArray_InOut[i] = 10 + expected[i];
@@ -314,7 +314,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE PassArrayUIntPtr(
 		{
 			if(uIntPtrArray[i] != expected[i] || uIntPtrArray_In[i] != expected[i] || uIntPtrArray_InOut[i] != expected[i])
 			{
-				printf("Not correct pass in paremeter in PassArrayUIntPtr\n");
+				printf("Not correct pass in parameter in PassArrayUIntPtr\n");
 				return FALSE;
 			}
 			uIntPtrArray_InOut[i] = 10 + expected[i];

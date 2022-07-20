@@ -160,7 +160,7 @@ enterandleavecs( LPVOID lpParam )
 
 	int Id=(int)lpParam;
 
-	//initialize strucutre to hold thread level statistics
+	//initialize structure to hold thread level statistics
 	stats.relationId = RELATION_ID;
 	stats.processId = USE_PROCESS_COUNT;
 	stats.operationsFailed = 0;

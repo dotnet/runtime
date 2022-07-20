@@ -1487,7 +1487,7 @@ public:
             ulCount = getCountEvents();
             break;
         case mdtProperty:
-            ulCount = getCountPropertys();
+            ulCount = getCountProperties();
             break;
         case mdtModuleRef:
             ulCount = getCountModuleRefs();
@@ -1601,7 +1601,7 @@ public:
     PortablePdbMiniMdTables();
 #endif
     // macro misspells some names.
-    ULONG getCountProperties() {return getCountPropertys();}
+    ULONG getCountProperties() {return getCountProperties();}
     ULONG getCountMethodSemantics() {return getCountMethodSemanticss();}
 
     // Functions for getting a row by rid.  Look like:
@@ -2076,7 +2076,7 @@ public:
                 bRet = (rid <= getCountEvents());
                 break;
             case mdtProperty:
-                bRet = (rid <= getCountPropertys());
+                bRet = (rid <= getCountProperties());
                 break;
             case mdtModuleRef:
                 bRet = (rid <= getCountModuleRefs());

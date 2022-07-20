@@ -1473,7 +1473,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             }
             else
             if (// Static fields are not pinned in collectible types. We will always access
-                // them using a helper since the address cannot be embeded into the code.
+                // them using a helper since the address cannot be embedded into the code.
                 pFieldMT->Collectible() ||
                 // We always treat accessing thread statics as if we are in domain neutral code.
                 pField->IsThreadStatic()
@@ -2817,7 +2817,7 @@ MethodDesc * CEEInfo::GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle)
     return pMethodForSecurity;
 }
 
-// Check that the instantation is <!/!!0, ..., !/!!(n-1)>
+// Check that the instantiation is <!/!!0, ..., !/!!(n-1)>
 static bool IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType varType, ULONG ntypars)
 {
     STANDARD_VM_CONTRACT;
@@ -2840,7 +2840,7 @@ static bool IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType
 }
 
 // Check that methodSpec instantiation is <!!0, ..., !!(n-1)>
-static bool IsMethodSpecForTypicalInstantation(SigPointer sigptr)
+static bool IsMethodSpecForTypicalInstantiation(SigPointer sigptr)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2964,7 +2964,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 goto NoSpecialCase;
 
             // Now just check that the instantiation is (!!0, ..., !!(n-1))
-            if (!IsMethodSpecForTypicalInstantation(SigPointer(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec)))
+            if (!IsMethodSpecForTypicalInstantiation(SigPointer(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec)))
                 goto NoSpecialCase;
 
             // Type instantiation has to match too if there is one
@@ -3634,7 +3634,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
         }
-        if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverLayedField())
+        if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
@@ -5020,7 +5020,7 @@ void CEEInfo::getCallInfo(
             allowInstParam = FALSE;
         }
 
-        // Create instantiating stub if necesary
+        // Create instantiating stub if necessary
         if (!allowInstParam && pTargetMD->RequiresInstArg())
         {
             pTargetMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTargetMD,
@@ -12353,7 +12353,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #endif // FEATURE_INTERPRETER
 
     // Cleanup any internal data structures allocated
-    // such as IL code after a successfull JIT compile
+    // such as IL code after a successful JIT compile
     // If the JIT fails we keep the IL around and will
     // try reJIT the same IL.  VSW 525059
     //
@@ -14714,7 +14714,7 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
         {
             // Because of constraints on epilogs, this unwind opcode is always last in the unwind code array.
             // This means that StackSize has been initialized already when we first see this unwind opcode.
-            // Note that the intial value of StackSize does not include the stack space used for pushes.
+            // Note that the initial value of StackSize does not include the stack space used for pushes.
             // Thus, here we only need to increment StackSize 8 bytes at a time until we see the unwind code for "push rbp".
             if (OpInfo == kRBP)
             {

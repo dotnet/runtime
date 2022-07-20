@@ -45,7 +45,7 @@ class M
     public static int Main()
     {
         // Ensure we get right order of side effects from boxes
-        // now that we are splitting them into multiple statments.
+        // now that we are splitting them into multiple statements.
         V v1 = new V(11);
         int result1 = F(Trouble(ref v1), v1);
         V v2 = new V(11);

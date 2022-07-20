@@ -20,7 +20,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="ArgumentNullException"/> with the given parameter name.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -47,7 +47,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="ArgumentException"/> with the given parameter name.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -74,7 +74,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="ArgumentException"/> of type <typeparamref name="T"/> with the given parameter name.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -110,7 +110,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="AggregateException"/> with a base exception <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -142,7 +142,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="format">
         ///     A <see cref="String"/> containing format information for when the assertion fails.
@@ -165,7 +165,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given delegate throws an <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -196,7 +196,7 @@ namespace CoreFXTestLibrary
         ///     Asserts that the given async delegate throws an <see cref="Exception"/> of type <typeparam name="T".
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Func{}"/> to execute.
+        ///     The delegate of type <see cref="Func{}"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.
@@ -228,7 +228,7 @@ namespace CoreFXTestLibrary
         ///     returns an <see cref="Exception"/> of type <typeparam name="TInner" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.

@@ -795,7 +795,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
+    public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultConstructor()
     {
         TypeWithEnumerableMembers x = new TypeWithEnumerableMembers
         {

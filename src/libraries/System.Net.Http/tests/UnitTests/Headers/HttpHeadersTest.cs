@@ -2492,7 +2492,7 @@ namespace System.Net.Http.Tests
 
             Assert.True(headers.TryGetValues(Name, out IEnumerable<string> values));
 
-            // The entry shoud still exist as the parsing during the validating access should not remove the invalid value.
+            // The entry should still exist as the parsing during the validating access should not remove the invalid value.
             Assert.Equal(1, headers.NonValidated.Count);
             Assert.Equal(1, values.Count());
             Assert.Equal(value, values.Single());

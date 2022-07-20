@@ -78,7 +78,7 @@
     IL_002a:  stloc.0
     IL_002b:  br.s       IL_0047
 
-    IL_002d:  ldstr      "result shoudl be 42, is= "
+    IL_002d:  ldstr      "result should be 42, is= "
     IL_0032:  ldloc.2
     IL_0033:  call       string [mscorlib]System.String::Concat(string,
                                                                 string)

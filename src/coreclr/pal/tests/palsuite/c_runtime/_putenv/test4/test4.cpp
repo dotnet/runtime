@@ -50,7 +50,7 @@ PALTEST(c_runtime__putenv_test4_paltest_putenv_test4, "c_runtime/_putenv/test4/p
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "
-             "was NULL, which indicates the environment varaible was not "
+             "was NULL, which indicates the environment variable was not "
              "found.\n");
     }
 

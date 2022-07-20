@@ -48,7 +48,7 @@ LONG ContSearchFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-LONG ExecExeptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
+LONG ExecExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
 {
     /* let the main know we've hit the filter function */
     bFilterEE = TRUE;
@@ -62,7 +62,7 @@ LONG ExecExeptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
     if (!bFilterCS)
     {
         Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
-             " The ExecExeption filter was hit before the ContSearch "
+             " The ExecException filter was hit before the ContSearch "
              "filter.\n");
     }
     return EXCEPTION_EXECUTE_HANDLER;
@@ -118,7 +118,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_EX_test3_paltest_pal_except_filter_
  
         bExcept2 = TRUE; /* indicate we hit the inner block */
     }
-    PAL_EXCEPT_FILTER(ExecExeptionFilter, (LPVOID)&nValidator)
+    PAL_EXCEPT_FILTER(ExecExceptionFilter, (LPVOID)&nValidator)
     {
         if (!bTry1)
         {

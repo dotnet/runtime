@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // A --> B --> C --> D --> E --> A
-// We should detect the deadlock and allow one thread to proceed (and see unitialized state).
+// We should detect the deadlock and allow one thread to proceed (and see uninitialized state).
 /*
 A --> B --> C --> D --> E --> A
 4 threads:

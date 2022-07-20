@@ -23,7 +23,7 @@ class Program
         }
         else
         {
-            Console.WriteLine("result shoudl be 42, is= " + result);
+            Console.WriteLine("result should be 42, is= " + result);
             Console.WriteLine("+++ FAILED +++");
         }
         return exitStatus;

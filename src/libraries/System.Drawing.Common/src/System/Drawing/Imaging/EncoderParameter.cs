@@ -156,8 +156,8 @@ namespace System.Drawing.Imaging
         }
 
         public EncoderParameter(Encoder encoder,
-                                int numerator1, int demoninator1,
-                                int numerator2, int demoninator2)
+                                int numerator1, int denominator1,
+                                int numerator2, int denominator2)
         {
             _parameterGuid = encoder.Guid;
 
@@ -166,9 +166,9 @@ namespace System.Drawing.Imaging
             _parameterValue = Marshal.AllocHGlobal(4 * sizeof(int));
 
             ((int*)_parameterValue)[0] = numerator1;
-            ((int*)_parameterValue)[1] = demoninator1;
+            ((int*)_parameterValue)[1] = denominator1;
             ((int*)_parameterValue)[2] = numerator2;
-            ((int*)_parameterValue)[3] = demoninator2;
+            ((int*)_parameterValue)[3] = denominator2;
             GC.KeepAlive(this);
         }
 

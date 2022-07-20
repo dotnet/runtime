@@ -214,7 +214,7 @@ public class AssignRect : AssignStruct
 	******************
 	** Copy the contents of one array to another.  This is called by
 	** the routine that builds the initial array, and is used to copy
-	** the contents of the intial array into all following arrays.
+	** the contents of the initial array into all following arrays.
 	*/
     private static void CopyToAssign(int[,] arrayfrom,
                              int[,] arrayto)

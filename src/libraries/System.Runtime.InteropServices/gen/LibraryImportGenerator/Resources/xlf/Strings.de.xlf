@@ -28,8 +28,8 @@
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
-        <source>'{0}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</source>
-        <target state="translated">\"{0}\" weist keine Entsprechung in \"DllImportAtttribute\" auf und wird nicht weitergeleitet.</target>
+        <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
+        <target state="translated">\"{0}\" weist keine Entsprechung in \"DllImportAttribute\" auf und wird nicht weitergeleitet.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">

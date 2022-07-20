@@ -242,7 +242,7 @@ Namespace Microsoft.VisualBasic
         End Function
 
         ''' <summary>
-        ''' VB calls clear whenever it executes any type of Resume statement, Exit Sub, Exit funcion, exit Property, or
+        ''' VB calls clear whenever it executes any type of Resume statement, Exit Sub, Exit function, exit Property, or
         ''' any On Error statement.
         ''' </summary>
         Public Sub Clear()

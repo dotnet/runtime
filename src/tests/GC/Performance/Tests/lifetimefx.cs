@@ -208,7 +208,7 @@ namespace LifeTimeFX
     
     
     
-//#ArrayContainer Simple Array Stock Implemntation for ObjectContainer
+//#ArrayContainer Simple Array Stock Implementation for ObjectContainer
     public sealed class ArrayObjectContainer<T> : ObjectContainer<T> where T:LifeTime
     {
         private T[] objContainer = null;

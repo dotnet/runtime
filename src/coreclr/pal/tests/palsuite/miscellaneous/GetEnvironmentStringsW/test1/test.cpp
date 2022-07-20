@@ -48,7 +48,7 @@ PALTEST(miscellaneous_GetEnvironmentStringsW_test1_paltest_getenvironmentstrings
              "It should point to a block of Environment Strings.\n");
     }
   
-    /* Now that we've grabbed the list of envrionment strings, go through
+    /* Now that we've grabbed the list of environment strings, go through
        each one, and check for a match to 'PALTESTING'.  If this is missing
        it's not pointing at the environment block.
     */

@@ -382,7 +382,7 @@ namespace System.Threading.Channels.Tests
 
                 // Dropped delegate should not be called while holding the channel lock.
                 // Verify this by trying to write into the channel from different thread.
-                // If lock is held during callback, this should effecitvely cause deadlock.
+                // If lock is held during callback, this should effectively cause deadlock.
                 var mres = new ManualResetEventSlim();
                 ThreadPool.QueueUserWorkItem(delegate
                 {
@@ -421,7 +421,7 @@ namespace System.Threading.Channels.Tests
 
                 // Dropped delegate should not be called while holding the channel synchronisation lock.
                 // Verify this by trying to write into the channel from different thread.
-                // If lock is held during callback, this should effecitvely cause deadlock.
+                // If lock is held during callback, this should effectively cause deadlock.
                 var mres = new ManualResetEventSlim();
                 ThreadPool.QueueUserWorkItem(delegate
                 {

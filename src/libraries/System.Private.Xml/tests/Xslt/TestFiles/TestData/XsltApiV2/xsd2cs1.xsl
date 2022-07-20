@@ -310,7 +310,7 @@
         <if test="@fixed">
             <value-of select="$varName"/>.FixedValue = "<value-of select="@fixed"/>";
         </if>
-        <if test="@defalut">
+        <if test="@default">
             <value-of select="$varName"/>.DefaultValue = "<value-of select="@default"/>";
         </if>
         <if test="@type">

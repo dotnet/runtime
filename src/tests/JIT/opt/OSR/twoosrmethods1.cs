@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-// Two OSR methods from one orignal method
+// Two OSR methods from one original method
 
 class X
 {

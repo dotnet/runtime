@@ -118,7 +118,7 @@ make run
 Note that the default configuration of this sample is LLVM JIT.
 
 ## WebAssembly
-To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the progam in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
+To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the program in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
 
 ```
 make build && make run

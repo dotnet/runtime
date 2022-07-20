@@ -331,7 +331,7 @@ namespace PartialCompactionTest
             return runningCount;
         }
 
-        //counts the refernces of this objects
+        //counts the references of this objects
         public static int CountReferences( Object o)
         {
             if (Visited.Contains(o))

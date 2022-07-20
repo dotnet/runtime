@@ -1467,7 +1467,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 }
 
 /*
- * Return the hash table pointed to by VAR, lazily creating it if neccesary.
+ * Return the hash table pointed to by VAR, lazily creating it if necessary.
  */
 static GHashTable*
 get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
@@ -6037,7 +6037,7 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
  * Windows kernel32 APIs, which are DllImport-able under MS.NET,
  * although not exported by kernel32.
  *
- * We map the appropiate kernel32 entries to these functions using
+ * We map the appropriate kernel32 entries to these functions using
  * dllmaps declared in the global etc/mono/config.
  */
 

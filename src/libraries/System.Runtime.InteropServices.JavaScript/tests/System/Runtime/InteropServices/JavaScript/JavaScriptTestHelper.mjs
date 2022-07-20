@@ -268,7 +268,7 @@ globalThis.rebound = {
     // our JSImport will try to bind it to `globalThis.rebound` 
     // but it would stay bound to globalThis.data
     // because once the function is bound, it would stay bound to the first object and can't be re-bound subsequently
-    // this line is actually the firt binding, not the fact it's part of the class JSData
+    // this line is actually the first binding, not the fact it's part of the class JSData
     echoMemberMethod: globalThis.data.echoMemberMethod.bind(globalThis.data)
 }
 

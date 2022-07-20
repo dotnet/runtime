@@ -19,7 +19,7 @@
 // \--*  st.lclVar long   V02 loc0
 // 
 // This requires decomposition of GT_STORE_LCL_VAR to properly detect the insertion point 
-// for a statment it creates.
+// for a statement it creates.
 
 using System;
 using System.Runtime.CompilerServices;

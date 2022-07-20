@@ -175,4 +175,4 @@ This will launch the Visual Studio debugger, with a solution setup for debugging
 
 # Debugging compilation graph
 
-The AOT compilation is driven by a dependency graph. If you need to troubleshoot the dependency graph (to figure out why something was or wasn't generated) you can follow [this guide](debuging-compiler-dependency-analysis.md)
+The AOT compilation is driven by a dependency graph. If you need to troubleshoot the dependency graph (to figure out why something was or wasn't generated) you can follow [this guide](debugging-compiler-dependency-analysis.md)

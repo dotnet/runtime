@@ -513,7 +513,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -585,7 +585,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -657,7 +657,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -729,7 +729,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -1409,7 +1409,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -1481,7 +1481,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -1553,7 +1553,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>
@@ -1625,7 +1625,7 @@ namespace NativeVarargTest
         /// 
         /// Notes:
         /// 
-        /// This is a particularily interesting test case because on every platform it
+        /// This is a particularly interesting test case because on every platform it
         /// will force spilling locals to the stack instead of just passing in registers.
         /// 
         /// </summary>

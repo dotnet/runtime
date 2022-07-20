@@ -10,14 +10,14 @@
 **              and holds a CRITICAL_SECTION object.  Another call to 
 **              TryEnterCriticalSection is made from a different thread, at 
 **              this time, to establish a call to TryEnterCriticalSection
-**              will return immediatly and to establish 
+**              will return immediately and to establish 
 **              TryEnterCriticalSection returns the proper value when it
 **              attempts to lock a CRITICAL_SECTION that is already owned 
 **              by another thread.  The CRITICAL_SECTION object is then 
 **              released and held by a call to EnterCriticalSection.  A new 
 **              thread is invoked and attempts to acquire the held 
 **              CRITICAL_SECTION with a call to TryEnterCriticalSection.  
-**              TryEnterCriticalSection returns immediatly and returns
+**              TryEnterCriticalSection returns immediately and returns
 **              with the value that states the CRITICAL_SECTION object is 
 **              held by another thread.  This establishes 
 **              TryEnterCriticalSection behaves the same way with 
