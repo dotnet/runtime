@@ -46,9 +46,13 @@ namespace System.Threading.RateLimiting
         public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            if (options.TokenLimit <= 0 || options.QueueLimit <= 0 || options.TokensPerPeriod <= 0 || options.ReplenishmentPeriod.Equals(TimeSpan.Zero))
+            if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0 || options.ReplenishmentPeriod.Equals(TimeSpan.Zero))
             {
-                throw new ArgumentException($"{nameof(options.TokenLimit)}, {nameof(options.QueueLimit)}, {nameof(options.TokensPerPeriod)}, and {nameof(options.ReplenishmentPeriod)} must all be set to values greater than 0.");
+                throw new ArgumentException($"{nameof(options.TokenLimit)}, {nameof(options.TokensPerPeriod)}, and {nameof(options.ReplenishmentPeriod)} must all be set to values greater than 0.");
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to values greater than or equal to 0.");
             }
             _tokenCount = options.TokenLimit;
 
