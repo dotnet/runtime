@@ -2176,7 +2176,7 @@ mono_thread_info_get_tools_data (void)
 	return info ? info->tools_data : NULL;
 }
 
-#ifndef HOST_WASM
+#if !defined(HOST_WASM) || defined (HOST_WASI)
 gboolean
 mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
 {

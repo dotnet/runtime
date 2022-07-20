@@ -13,7 +13,7 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 #include <emscripten/emscripten.h>
 #endif
 
@@ -336,7 +336,7 @@ mono_component_event_pipe_init (void)
 }
 
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 
 static MonoWasmEventPipeSessionID
@@ -403,4 +403,4 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	return TRUE;
 }
 
-#endif /* HOST_WASM */
+#endif /* HOST_WASM && !HOST_WASI */

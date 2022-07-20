@@ -6,7 +6,7 @@
 #include "mono/component/event_pipe.h"
 #include "mono/component/event_pipe-wasm.h"
 #include "mono/metadata/components.h"
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 #include <emscripten/emscripten.h>
 #endif
 
@@ -520,7 +520,7 @@ mono_component_event_pipe_init (void)
 	return component_event_pipe_stub_init ();
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
@@ -552,4 +552,4 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	g_assert_not_reached ();
 }
 
-#endif /* HOST_WASM */
+#endif /* HOST_WASM && !HOST_WASI */
