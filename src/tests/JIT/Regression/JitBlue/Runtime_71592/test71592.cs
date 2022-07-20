@@ -8,6 +8,9 @@ public class Test
 {
     public int foo;
 
+    public override bool Equals(object o) => false;
+    public override int GetHashCode() => 0;
+
     public static bool operator ==(Test t1, Test t2) {
         if (ReferenceEquals(t1, t1))
             return true;
