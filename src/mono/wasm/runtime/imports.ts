@@ -49,7 +49,6 @@ export function setImportsAndExports(
     ENVIRONMENT_IS_WEB = imports.isWeb;
     ENVIRONMENT_IS_WORKER = imports.isWorker;
     ENVIRONMENT_IS_PTHREAD = imports.isPThread;
-    runtimeHelpers.locateFile = anyModule["locateFile"];
     runtimeHelpers.quit = imports.quit_;
     runtimeHelpers.ExitStatus = imports.ExitStatus;
     runtimeHelpers.requirePromise = imports.requirePromise;
@@ -79,6 +78,13 @@ export function setImportsAndExports(
     // script location
     replacements.scriptDirectory = detectScriptDirectory(replacements);
     runtimeHelpers.scriptDirectoryPromise = replacements.scriptDirectoryPromise = detectScriptDirectoryAsync(replacements);
+    if (anyModule.__locateFile === anyModule.locateFile) {
+        // it's our early version from dotnet.es6.pre.js, we could replace it
+        anyModule.locateFile = runtimeHelpers.locateFile = (path) => runtimeHelpers.scriptDirectory + path;
+    } else {
+        // we use what was given to us
+        runtimeHelpers.locateFile = anyModule.locateFile;
+    }
 
     // fetch poly
     if (Module.imports.fetch) {
@@ -117,7 +123,8 @@ export function setImportsAndExports(
 
 function normalizeFileUrl(filename: string) {
     // unix vs windows
-    return filename.replace(/\\/g, "/");
+    // remove query string
+    return filename.replace(/\\/g, "/").replace(/[?#].*/, "");
 }
 
 function normalizeDirectoryUrl(dir: string) {
@@ -125,6 +132,10 @@ function normalizeDirectoryUrl(dir: string) {
 }
 
 export function detectScriptDirectory(replacements: EarlyReplacements): string {
+    if (ENVIRONMENT_IS_WORKER) {
+        // Check worker, not web, since window could be polyfilled
+        replacements.scriptUrl = self.location.href;
+    }
     if (ENVIRONMENT_IS_WEB) {
         if (
             (typeof (globalThis.document) === "object") &&
