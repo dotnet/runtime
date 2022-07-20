@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -127,11 +128,11 @@ namespace System.Data.SqlTypes
 
             // Swap to the correct order to be compared
             Span<byte> xBytes = stackalloc byte[sizeof(Guid)];
-            bool xWrote = x._value.GetValueOrDefault().TryWriteSpan(xBytes);
+            bool xWrote = x._value.GetValueOrDefault().TryWriteBytes(xBytes);
             Debug.Assert(xWrote);
 
             Span<byte> yBytes = stackalloc byte[sizeof(Guid)];
-            bool yWrote = y._value.GetValueOrDefault().TryWriteSpan(yBytes);
+            bool yWrote = y._value.GetValueOrDefault().TryWriteBytes(yBytes);
             Debug.Assert(yWrote);
 
             for (int i = 0; i < SizeOfGuid; i++)
