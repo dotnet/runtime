@@ -44,11 +44,7 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.Acquire(""));
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.WaitAndAcquireAsync(""));
         }
-new StudentName
-        {
-            FirstName = "Craig",
-            LastName = "Playstead"
-        };
+
         [Fact]
         public async Task DisposeAsyncMakesMethodsThrow()
         {
