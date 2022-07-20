@@ -12,16 +12,16 @@ enum ListenerState {
 }
 
 class SocketGuts {
-    constructor(private readonly ws: CommonSocket) { }
+    constructor(public readonly socket: CommonSocket) { }
     close(): void {
-        this.ws.close();
+        this.socket.close();
     }
     write(data: VoidPtr, size: number): void {
         const buf = new ArrayBuffer(size);
         const view = new Uint8Array(buf);
         // Can we avoid this copy?
         view.set(new Uint8Array(Module.HEAPU8.buffer, data as unknown as number, size));
-        this.ws.send(buf);
+        this.socket.send(buf);
     }
 }
 
@@ -32,12 +32,13 @@ class SocketGuts {
 export class EventPipeSocketConnection {
     private _state: ListenerState;
     readonly stream: SocketGuts;
-    constructor(readonly socket: CommonSocket) {
+    constructor(socket: CommonSocket) {
         this._state = ListenerState.Sending;
         this.stream = new SocketGuts(socket);
     }
 
     close(): void {
+        console.debug("MONO_WASM: EventPipe session stream closing websocket");
         switch (this._state) {
             case ListenerState.Error:
                 return;
@@ -97,16 +98,18 @@ export class EventPipeSocketConnection {
         }
     }
 
-    private _onError(/*event: Event*/) {
+    private _onError(event: Event) {
+        console.debug("MONO_WASM: EventPipe session stream websocket error", event);
         this._state = ListenerState.Error;
         this.stream.close();
         // TODO: notify runtime that connection had an error
     }
 
     addListeners(): void {
-        this.socket.addEventListener("message", this._onMessage.bind(this));
-        this.socket.addEventListener("close", this._onClose.bind(this));
-        this.socket.addEventListener("error", this._onError.bind(this));
+        const socket = this.stream.socket;
+        socket.addEventListener("message", this._onMessage.bind(this));
+        addEventListener("close", this._onClose.bind(this));
+        addEventListener("error", this._onError.bind(this));
     }
 }
 
