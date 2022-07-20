@@ -33,13 +33,13 @@ export const currentWorkerThreadEvents: WorkerThreadEventTarget =
     MonoWasmThreads ? new EventTarget() : null as any as WorkerThreadEventTarget; // treeshake if threads are disabled
 
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
-    console.debug("got message from main on the dedicated channel", event.data);
+    console.debug("MONO_WASM: got message from main on the dedicated channel", event.data);
 }
 
 let portToMain: MessagePort | null = null;
 
 function setupChannelToMainThread(pthread_ptr: pthread_ptr): MessagePort {
-    console.debug("creating a channel", pthread_ptr);
+    console.debug("MONO_WASM: creating a channel", pthread_ptr);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
@@ -55,7 +55,7 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): MessagePort {
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
     const port = portToMain;
     mono_assert(port !== null, "expected a port to the main thread");
-    console.debug("attaching pthread to runtime", pthread_id);
+    console.debug("MONO_WASM: attaching pthread to runtime", pthread_id);
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_id, port));
 }
 
@@ -67,7 +67,7 @@ export function afterThreadInitTLS(): void {
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
-        console.debug("after thread init, pthread ptr", pthread_ptr);
+        console.debug("MONO_WASM: after thread init, pthread ptr", pthread_ptr);
         const port = setupChannelToMainThread(pthread_ptr);
         currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_ptr, port));
     }

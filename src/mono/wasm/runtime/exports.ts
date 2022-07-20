@@ -31,13 +31,14 @@ import {
     mono_wasm_debugger_attached,
     mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
-import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule, is_nullish, MonoConfig, MonoConfigError } from "./types";
+import { ENVIRONMENT_IS_WORKER, runtimeHelpers, setImportsAndExports } from "./imports";
+import { DotnetModule, is_nullish, MonoConfig, MonoConfigError, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    configure_emscripten_startup
+    configure_emscripten_startup,
+    mono_wasm_load_runtime,
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -60,10 +61,9 @@ import {
     setI8, setI16, setI32, setI52,
     setU8, setU16, setU32, setF32, setF64,
     getI8, getI16, getI32, getI52,
-    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
+    getU8, getU16, getU32, getF32, getF64, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
-import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { dynamic_import, get_global_this, get_property, get_typeof_property, has_property, mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, set_property } from "./invoke-js";
@@ -80,8 +80,8 @@ import {
     dotnet_browser_encrypt_decrypt,
     dotnet_browser_derive_bits,
 } from "./crypto-worker";
-import { mono_wasm_pthread_on_pthread_attached, afterThreadInitTLS } from "./pthreads/worker";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
+import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
+import { init_polyfills } from "./polyfills";
 
 const MONO = {
     // current "public" MONO API
@@ -297,7 +297,7 @@ function initializeImportsAndExports(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
 
@@ -312,7 +312,7 @@ function initializeImportsAndExports(
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;

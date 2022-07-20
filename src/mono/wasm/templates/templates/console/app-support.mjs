@@ -47,22 +47,22 @@ function set_exit_code(exit_code, reason) {
     }
 
     if (App && App.INTERNAL) {
-        let _flush = function(_stream) {
-             return new Promise((resolve, reject) => {
-                 _stream.on('error', (error) => reject(error));
-                 _stream.write('', function() { resolve () });
-             });
+        let _flush = function (_stream) {
+            return new Promise((resolve, reject) => {
+                _stream.on('error', (error) => reject(error));
+                _stream.write('', function () { resolve() });
+            });
         };
         let stderrFlushed = _flush(process.stderr);
         let stdoutFlushed = _flush(process.stdout);
 
-        Promise.all([ stdoutFlushed, stderrFlushed ])
-                .then(
-                    () => App.INTERNAL.mono_wasm_exit(exit_code),
-                    reason => {
-                        console.error(`flushing std* streams failed: ${reason}`);
-                        App.INTERNAL.mono_wasm_exit(123456);
-                    });
+        Promise.all([stdoutFlushed, stderrFlushed])
+            .then(
+                () => App.INTERNAL.mono_wasm_exit(exit_code),
+                reason => {
+                    console.error(`flushing std* streams failed: ${reason}`);
+                    App.INTERNAL.mono_wasm_exit(123456);
+                });
     }
 }
 
@@ -111,12 +111,6 @@ function mergeArguments() {
     is_debugging = runArgs.debugging === true;
 }
 
-let toAbsoluteUrl = function (path, prefix) {
-    if (prefix.startsWith("/")) {
-        return path;
-    }
-    return prefix + path;
-}
 
 try {
     try {
@@ -135,7 +129,6 @@ try {
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        locateFile: toAbsoluteUrl,
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");

@@ -5,9 +5,9 @@ import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-const commands_received : any = new Map<number, CommandResponse>();
+const commands_received: any = new Map<number, CommandResponse>();
 const wasm_func_map = new Map<number, string>();
-commands_received.remove = function (key: number) : CommandResponse { const value = this.get(key); this.delete(key); return value;};
+commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
@@ -15,7 +15,7 @@ let _debugger_buffer: VoidPtr;
 let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
 let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
-const regexes:any[] = [];
+const regexes: any[] = [];
 
 // V8
 //   at <anonymous>:wasm-function[1900]:0x83f63
@@ -66,7 +66,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
         }
     };
     if (commands_received.has(id))
-        console.warn("Addind an id that already exists in commands_received");
+        console.warn(`MONO_WASM: Adding an id (${id}) that already exists in commands_received`);
     commands_received.set(id, buffer_obj);
 }
 
@@ -178,7 +178,7 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
         let ret: Array<any>;
         if (details.items === undefined) {
-            ret = details.map ((p: any) => p.value);
+            ret = details.map((p: any) => p.value);
             return ret;
         }
         if (details.dimensionsDetails === undefined || details.dimensionsDetails.length === 1) {
@@ -363,14 +363,14 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
         return;
     }
 
-    console.debug(`Debugger.Debug: ${message}`);
+    console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
 }
 
 function _readSymbolMapFile(filename: string): void {
     try {
-        const res = Module.FS_readFile(filename, {flags: "r", encoding: "utf8"});
+        const res = Module.FS_readFile(filename, { flags: "r", encoding: "utf8" });
         res.split(/[\r\n]/).forEach((line: string) => {
-            const parts:string[] = line.split(/:/);
+            const parts: string[] = line.split(/:/);
             if (parts.length < 2)
                 return;
 
@@ -378,12 +378,12 @@ function _readSymbolMapFile(filename: string): void {
             wasm_func_map.set(Number(parts[0]), parts[1]);
         });
 
-        console.debug(`Loaded ${wasm_func_map.size} symbols`);
-    } catch (error:any) {
+        console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+    } catch (error: any) {
         if (error.errno == 44) // NOENT
-            console.debug(`Could not find symbols file ${filename}. Ignoring.`);
+            console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
         else
-            console.log(`Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
         return;
     }
 }
@@ -395,11 +395,10 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         const origMessage = message;
 
-        for (let i = 0; i < regexes.length; i ++)
-        {
+        for (let i = 0; i < regexes.length; i++) {
             const newRaw = message.replace(new RegExp(regexes[i], "g"), (substring, ...args) => {
                 const groups = args.find(arg => {
-                    return typeof(arg) == "object" && arg.replaceSection !== undefined;
+                    return typeof (arg) == "object" && arg.replaceSection !== undefined;
                 });
 
                 if (groups === undefined)
@@ -421,7 +420,7 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`failed to symbolicate: ${error}`);
+        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
         return message;
     }
 }
@@ -506,7 +505,7 @@ export function setup_proxy_console(id: string, originalConsole: Console, origin
         };
     }
 
-    const originalConsoleObj : any = originalConsole;
+    const originalConsoleObj: any = originalConsole;
     const methods = ["debug", "trace", "warn", "info", "error"];
     for (const m of methods) {
         if (typeof (originalConsoleObj[m]) !== "function") {
