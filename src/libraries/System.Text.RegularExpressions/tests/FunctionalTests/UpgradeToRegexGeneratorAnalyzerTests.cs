@@ -846,6 +846,38 @@ public partial class A
         }
 
         [Fact]
+        public async Task InvalidRegexOptions_LocalConstant()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public void Foo()
+    {
+        const RegexOptions MyOptions = (RegexOptions)0x0800;
+        Regex regex = [|new Regex(""pattern"", MyOptions)|];
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public void Foo()
+    {
+        const RegexOptions MyOptions = (RegexOptions)0x0800;
+        Regex regex = MyRegex();
+    }
+
+    [RegexGenerator(""pattern"", (RegexOptions)2048)]
+    private static partial Regex MyRegex();
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
         public async Task InvalidRegexOptions_Negative()
         {
             string test = @"using System.Text.RegularExpressions;
