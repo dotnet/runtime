@@ -994,7 +994,7 @@ namespace System
             if (firstIndex < 0)
                 return this;
 
-            int remainingLength = Length - firstIndex;
+            nint remainingLength = (nint)(uint)(Length - firstIndex);
             string result = FastAllocateString(Length);
 
             int copyLength = firstIndex;
@@ -1010,7 +1010,7 @@ namespace System
             ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), (nint)(uint)copyLength);
             nint i = 0;
 
-            if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
+            if (Vector.IsHardwareAccelerated && Length >= Vector<ushort>.Count)
             {
                 Vector<ushort> oldChars = new(oldChar);
                 Vector<ushort> newChars = new(newChar);
@@ -1019,7 +1019,7 @@ namespace System
                 Vector<ushort> equals;
                 Vector<ushort> results;
 
-                nint lengthToExamine = (nint)(uint)(remainingLength - Vector<ushort>.Count);
+                nint lengthToExamine = remainingLength - Vector<ushort>.Count;
 
                 if (lengthToExamine > 0)
                 {
@@ -1043,7 +1043,7 @@ namespace System
                 // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
                 // additional check which would introduce a branch here.
 
-                i = (nint)(uint)this.Length - Vector<ushort>.Count;
+                i = (nint)(uint)Length - Vector<ushort>.Count;
                 original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref _firstChar, i)));
                 equals = Vector.Equals(original, oldChars);
                 results = Vector.ConditionalSelect(equals, newChars, original);
@@ -1051,7 +1051,7 @@ namespace System
             }
             else
             {
-                for (; i < (nint)(uint)remainingLength; ++i)
+                for (; i < remainingLength; ++i)
                 {
                     ushort currentChar = Unsafe.Add(ref pSrc, i);
                     Unsafe.Add(ref pDst, i) = currentChar == oldChar ? newChar : currentChar;
