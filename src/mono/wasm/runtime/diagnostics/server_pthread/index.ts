@@ -135,8 +135,12 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
+    private openCount = 0;
+
     async advertiseAndWaitForClient(): Promise<void> {
         try {
+            const connNum = this.openCount++;
+            console.debug("MONO_WASM: opening websocket and sending ADVR_V1", connNum);
             const ws = await this.openSocket();
             let p: Promise<MessageEvent<string | ArrayBuffer>> | Promise<ProtocolCommandEvent>;
             if (monoDiagnosticsMock && this.mocked) {
@@ -146,19 +150,19 @@ class DiagnosticServerImpl implements DiagnosticServer {
             }
             this.sendAdvertise(ws);
             const message = await p;
-            console.debug("MONO_WASM: received advertising response: ", message);
-            queueMicrotask(() => this.parseAndDispatchMessage(ws, message));
+            console.debug("MONO_WASM: received advertising response: ", message, connNum);
+            queueMicrotask(() => this.parseAndDispatchMessage(ws, connNum, message));
         } finally {
             // if there were errors, resume the runtime anyway
             this.resumeRuntime();
         }
     }
 
-    async parseAndDispatchMessage(ws: CommonSocket, message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent): Promise<void> {
+    async parseAndDispatchMessage(ws: CommonSocket, connNum: number, message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent): Promise<void> {
         try {
-            const cmd = this.parseCommand(message);
+            const cmd = this.parseCommand(message, connNum);
             if (cmd === null) {
-                console.error("MONO_WASM: unexpected message from client", message);
+                console.error("MONO_WASM: unexpected message from client", message, connNum);
                 return;
             } else if (isEventPipeCommand(cmd)) {
                 await this.dispatchEventPipeCommand(ws, cmd);
@@ -207,16 +211,17 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     }
 
-    parseCommand(message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent): ProtocolClientCommandBase | null {
+    parseCommand(message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
         if (typeof message.data === "string") {
             return parseMockCommand(message.data);
         } else {
-            console.debug("MONO_WASM: parsing byte command: ", message.data);
+            console.debug("MONO_WASM: parsing byte command: ", message.data, connNum);
             const result = parseProtocolCommand(message.data);
+            console.debug("MONO_WASM: parsied byte command: ", result, connNum);
             if (result.success) {
                 return result.result;
             } else {
-                console.warn("MONO_WASM: failed to parse command: ", result.error);
+                console.warn("MONO_WASM: failed to parse command: ", result.error, connNum);
                 return null;
             }
         }
