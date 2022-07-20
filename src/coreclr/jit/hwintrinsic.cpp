@@ -319,9 +319,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     // ISA is unsupported. For Vector256 this is when AVX2 is unsupported since integer types
     // can't get properly accelerated.
 
-
     // We support some Vector256 intrinsics on AVX-only CPUs
-    bool isLimittedVector256Isa = false;
+    bool isLimitedVector256Isa = false;
 
     if (isa == InstructionSet_Vector128)
     {
@@ -337,7 +336,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                isLimittedVector256Isa = true;
+                isLimitedVector256Isa = true;
             }
             else
             {
@@ -375,11 +374,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             NamedIntrinsic ni = intrinsicInfo.id;
 
+#if defined(TARGET_XARCH)
             // on AVX1-only CPUs we only support NI_Vector256_Create intrinsic in Vector256
-            if (isLimittedVector256Isa && (ni != NI_Vector256_Create))
+            if (isLimitedVector256Isa && (ni != NI_Vector256_Create))
             {
                 return NI_Illegal;
             }
+#endif
             return ni;
         }
     }
