@@ -19,7 +19,7 @@ namespace System.Formats.Asn1.Tests.Reader
             typeof(AsnDecoder).GetMethod("ReadTagAndLength", BindingFlags.Static | BindingFlags.NonPublic)
                 .CreateDelegate(typeof(ReadTagAndLengthDelegate));
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
         [InlineData(4, 0, "0400")]
         [InlineData(1, 1, "0101")]
         [InlineData(4, 127, "047F")]
@@ -53,7 +53,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 () => new AsnReader(data, (AsnEncodingRules)invalidRuleSetValue));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
         [InlineData("")]
         [InlineData("05")]
         [InlineData("0481")]
@@ -68,7 +68,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 () => ReadTagAndLength(inputData, AsnEncodingRules.DER, out _, out _));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
         [InlineData("DER indefinite constructed", AsnEncodingRules.DER, "3080" + "0500" + "0000")]
         [InlineData("0xFF-BER", AsnEncodingRules.BER, "04FF")]
         [InlineData("0xFF-CER", AsnEncodingRules.CER, "04FF")]
@@ -108,7 +108,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 () => ReadTagAndLength(inputData, rules, out _, out _));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         public static void IndefiniteLength(AsnEncodingRules ruleSet)
@@ -131,7 +131,7 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.True(tag.IsConstructed, "tag.IsConstructed");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
         [InlineData(0, "0483000000")]
         [InlineData(1, "048A00000000000000000001")]
         [InlineData(128, "049000000000000000000000000000000080")]
@@ -152,7 +152,7 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.True(reader.HasData, "reader.HasData");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
         [InlineData(AsnEncodingRules.BER, 4, 0, 5, "0483000000" + "0500")]
         [InlineData(AsnEncodingRules.DER, 1, 1, 2, "0101" + "FF")]
         [InlineData(AsnEncodingRules.CER, 0x10, null, 2, "3080" + "0500" + "0000")]
