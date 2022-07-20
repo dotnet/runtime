@@ -605,12 +605,12 @@ namespace System.Threading.RateLimiting.Tests
             {
                 if (resource == "1")
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
                 else
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
             });
@@ -644,12 +644,12 @@ namespace System.Threading.RateLimiting.Tests
             {
                 if (resource == "1")
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
                 else
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
             });
@@ -661,7 +661,7 @@ namespace System.Threading.RateLimiting.Tests
                 return i.ToString();
             });
 
-            var lease = await translateLimiter.WaitAsync(1);
+            var lease = await translateLimiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, translateCallCount);
 
@@ -683,12 +683,12 @@ namespace System.Threading.RateLimiting.Tests
             {
                 if (resource == "1")
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
                 else
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
             });
@@ -731,12 +731,12 @@ namespace System.Threading.RateLimiting.Tests
             {
                 if (resource == "1")
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
                 else
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
             });
@@ -763,12 +763,12 @@ namespace System.Threading.RateLimiting.Tests
             {
                 if (resource == "1")
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
                 else
                 {
-                    return RateLimitPartition.CreateConcurrencyLimiter(1,
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
                         _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
                 }
             });
