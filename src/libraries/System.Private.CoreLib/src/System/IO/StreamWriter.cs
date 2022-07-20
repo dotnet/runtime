@@ -97,14 +97,12 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             }
-            if (encoding == null)
-            {
-                encoding = UTF8NoBOM;
-            }
+
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
+
             if (bufferSize == -1)
             {
                 bufferSize = DefaultBufferSize;
@@ -115,7 +113,7 @@ namespace System.IO
             }
 
             _stream = stream;
-            _encoding = encoding;
+            _encoding = encoding ?? UTF8NoBOM;
             _encoder = _encoding.GetEncoder();
             if (bufferSize < MinBufferSize)
             {
@@ -297,7 +295,7 @@ namespace System.IO
 
             // For sufficiently small char data being flushed, try to encode to the stack.
             // For anything else, fall back to allocating the byte[] buffer.
-            Span<byte> byteBuffer = stackalloc byte[0];
+            scoped Span<byte> byteBuffer;
             if (_byteBuffer is not null)
             {
                 byteBuffer = _byteBuffer;

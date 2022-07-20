@@ -7,15 +7,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Net.Security
 {
     internal sealed class SafeDeleteNegoContext : SafeDeleteContext
     {
         private SafeGssCredHandle? _acceptorCredential;
         private SafeGssNameHandle? _targetName;
-        private SafeGssContextHandle? _context;
+        private SafeGssContextHandle _context;
         private bool _isNtlmUsed;
 
         public SafeGssCredHandle AcceptorCredential
@@ -38,7 +36,7 @@ namespace System.Net.Security
             get { return _isNtlmUsed; }
         }
 
-        public SafeGssContextHandle? GssContext
+        public SafeGssContextHandle GssContext
         {
             get { return _context; }
         }
@@ -47,6 +45,7 @@ namespace System.Net.Security
             : base(credential)
         {
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
+            _context = new SafeGssContextHandle();
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential, string targetName)
@@ -55,6 +54,7 @@ namespace System.Net.Security
             try
             {
                 _targetName = SafeGssNameHandle.CreateTarget(targetName);
+                _context = new SafeGssContextHandle();
             }
             catch
             {
@@ -65,7 +65,6 @@ namespace System.Net.Security
 
         public void SetGssContext(SafeGssContextHandle context)
         {
-            Debug.Assert(context != null && !context.IsInvalid, "Invalid context passed to SafeDeleteNegoContext");
             _context = context;
         }
 
@@ -78,11 +77,7 @@ namespace System.Net.Security
         {
             if (disposing)
             {
-                if (null != _context)
-                {
-                    _context.Dispose();
-                    _context = null;
-                }
+                _context.Dispose();
 
                 if (_targetName != null)
                 {

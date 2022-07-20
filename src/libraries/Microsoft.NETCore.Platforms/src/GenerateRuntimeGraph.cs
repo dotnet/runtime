@@ -344,7 +344,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         {
             var serializer = new JsonSerializer();
             using (var file = File.OpenText(mapFile))
-            using (var jsonTextReader = new JsonTextReader(file))
+            using (var jsonTextReader = new JsonTextReader(file) { MaxDepth = null })
             {
                 return serializer.Deserialize<IDictionary<string, IEnumerable<string>>>(jsonTextReader);
             }

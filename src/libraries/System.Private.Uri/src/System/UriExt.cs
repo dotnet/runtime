@@ -323,8 +323,7 @@ namespace System
                     return false;
             }
 
-            if (result is null)
-                result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
+            result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
 
             result?.DebugSetLeftCtor();
             return e is null && result != null && result.IsAbsoluteUri;
@@ -459,22 +458,22 @@ namespace System
                 {
                     if ((nonCanonical & (Flags.E_UserNotCanonical | Flags.UserIriCanonical)) == (Flags.E_UserNotCanonical | Flags.UserIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
+                        nonCanonical &= ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_PathNotCanonical | Flags.PathIriCanonical)) == (Flags.E_PathNotCanonical | Flags.PathIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
+                        nonCanonical &= ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical)) == (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
+                        nonCanonical &= ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical)) == (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
+                        nonCanonical &= ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
                     }
                 }
 

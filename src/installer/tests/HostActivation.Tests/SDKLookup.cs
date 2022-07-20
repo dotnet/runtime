@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail()
                 .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
                 .And.FindAnySdk(false)
-                .And.HaveStdErrContaining("aka.ms/dotnet-download")
+                .And.HaveStdErrContaining("aka.ms/dotnet/download")
                 .And.NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add SDK versions

@@ -480,9 +480,9 @@ namespace System.Numerics.Tensors
         {
             // Create a copy of the backing storage, eliminating any unused space.
             var newValues = values.Slice(0, nonZeroCount).ToArray();
-            var newIndicies = indices.Slice(0, nonZeroCount).ToArray();
+            var newIndices = indices.Slice(0, nonZeroCount).ToArray();
 
-            return new CompressedSparseTensor<T>(newValues, compressedCounts.ToArray(), newIndicies, nonZeroCount, dimensions, IsReversedStride);
+            return new CompressedSparseTensor<T>(newValues, compressedCounts.ToArray(), newIndices, nonZeroCount, dimensions, IsReversedStride);
         }
 
         /// <summary>

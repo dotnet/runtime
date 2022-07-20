@@ -681,7 +681,6 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     }
 
     // Very important that this either sets pStrName or Throws.
-    // Don't set it and then then throw.
     IfFailThrow(hrStatus);
 }
 
@@ -1208,10 +1207,10 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 
     TADDR pTargetIL; // target address of start of IL blob
 
-    // This works for methods in dynamic modules, and methods overriden by a profiler.
+    // This works for methods in dynamic modules, and methods overridden by a profiler.
     pTargetIL = pModule->GetDynamicIL(mdMethodToken, TRUE);
 
-    // Method not overriden - get the original copy of the IL by going to the PE file/RVA
+    // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
     // implemend for DAC.
     if (pTargetIL == 0 && !pModule->IsReflection())
@@ -4256,7 +4255,7 @@ bool DacDbiInterfaceImpl::MetadataUpdatesApplied()
 #endif
 }
 
-// Helper to intialize a TargetBuffer from a MemoryRange
+// Helper to initialize a TargetBuffer from a MemoryRange
 //
 // Arguments:
 //    memoryRange - memory range.
@@ -4278,7 +4277,7 @@ void InitTargetBufferFromMemoryRange(const MemoryRange memoryRange, TargetBuffer
     pTargetBuffer->Init(addr, (ULONG)memoryRange.Size());
 }
 
-// Helper to intialize a TargetBuffer (host representation of target) from an SBuffer  (target)
+// Helper to initialize a TargetBuffer (host representation of target) from an SBuffer  (target)
 //
 // Arguments:
 //   pBuffer - target pointer to a SBuffer structure. If pBuffer is NULL, then target buffer will be empty.
@@ -6204,7 +6203,7 @@ void EnumerateBlockingObjectsCallback(PTR_DebugBlockingItem obj, VOID* pUserData
     BlockingObjectUserDataWrapper* wrapper = (BlockingObjectUserDataWrapper*)pUserData;
     DacBlockingObject dacObj;
 
-    // init to an arbitrary value to avoid mac compiler error about unintialized use
+    // init to an arbitrary value to avoid mac compiler error about uninitialized use
     // it will be correctly set in the switch and is never used with only this init here
     dacObj.blockingReason = DacBlockReason_MonitorCriticalSection;
 
@@ -6450,7 +6449,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
 
 bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 {
-    // With heap corruption, it's entierly possible that the MethodTable
+    // With heap corruption, it's entirely possible that the MethodTable
     // we get is bad.  This could cause exceptions, which we will catch
     // and return false.  This causes the heapwalker to move to the next
     // segment.
@@ -6463,7 +6462,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
         if (cs)
         {
             DWORD tmp = 0;
-            if (mCache.Read(mCurrObj+sizeof(TADDR), &tmp))
+            if (mCache.Read(mCurrObj + sizeof(TADDR), &tmp))
                 cs *= tmp;
             else
                 ret = false;
@@ -6478,6 +6477,12 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
             size = AlignLarge(size);
         else
             size = Align(size);
+
+        // If size == 0, it means we have a heap corruption and
+        // we will stuck in an infinite loop, so better fail the call now.
+        ret &= (0 < size);
+        // Also guard for cases where the size reported is too large and exceeds the high allocation mark.
+        ret &= ((mCurrObj + size) <= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
     }
     EX_CATCH
     {

@@ -421,7 +421,7 @@ namespace System
             }
             else
             {
-                return (param1Less == true) ? 1 : 2;
+                return param1Less ? 1 : 2;
             }
         }
 

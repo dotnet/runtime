@@ -25,7 +25,7 @@ In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same 
 - Executed second (2)
 - Applied only when linking ES6
 - Will check that it was passed `moduleFactory` callback. Because of emscripten reasons it has confusing `createDotnetRuntime` name here.
-- Will validate `Module.ready` is left un-overriden.
+- Will validate `Module.ready` is left un-overridden.
 
 # runtime.*.iffe.js
 - Executed third (3)
@@ -33,7 +33,7 @@ In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same 
 
 # dotnet.*.post.js
 - Executed last (4)
-- When `onRuntimeInitialized` is overriden it would wait for emscriptens `Module.ready`
+- When `onRuntimeInitialized` is overridden it would wait for emscriptens `Module.ready`
 - Otherwise it would wait for MonoVM to load all assets and assemblies.
 - It would pass on the API exports
 

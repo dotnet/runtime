@@ -169,10 +169,7 @@ namespace System.Web.Util
                 // to the string builder when special characters are detected.
                 if (CharRequiresJavaScriptEncoding(c))
                 {
-                    if (b == null)
-                    {
-                        b = new StringBuilder(value.Length + 5);
-                    }
+                    b ??= new StringBuilder(value.Length + 5);
 
                     if (count > 0)
                     {
@@ -708,10 +705,7 @@ namespace System.Web.Util
                                 else
                 */
                 {
-                    if (_byteBuffer == null)
-                    {
-                        _byteBuffer = new byte[_bufferSize];
-                    }
+                    _byteBuffer ??= new byte[_bufferSize];
 
                     _byteBuffer[_numBytes++] = b;
                 }

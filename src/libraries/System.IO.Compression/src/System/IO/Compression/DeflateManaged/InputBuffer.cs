@@ -219,7 +219,7 @@ namespace System.IO.Compression
         public void SkipToByteBoundary()
         {
             _bitBuffer >>= (_bitsInBuffer % 8);
-            _bitsInBuffer = _bitsInBuffer - (_bitsInBuffer % 8);
+            _bitsInBuffer -= (_bitsInBuffer % 8);
         }
     }
 }

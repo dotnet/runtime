@@ -125,17 +125,8 @@ namespace System.Xml.Schema
                 _reader = reader;
             }
 
-            public override string? LookupNamespace(string prefix)
-            {
-                string? ns = _nsMgr.LookupNamespace(prefix);
-
-                if (ns == null)
-                {
-                    ns = _reader.LookupNamespace(prefix);
-                }
-
-                return ns;
-            }
+            public override string? LookupNamespace(string prefix) =>
+                _nsMgr.LookupNamespace(prefix) ?? _reader.LookupNamespace(prefix);
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -757,10 +748,7 @@ namespace System.Xml.Schema
             {
                 if (ns == _schemaNames.NsXmlNs)
                 {
-                    if (_namespaces == null)
-                    {
-                        _namespaces = new List<XmlQualifiedName>();
-                    }
+                    _namespaces ??= new List<XmlQualifiedName>();
                     _namespaces.Add(new XmlQualifiedName((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value));
                 }
                 else

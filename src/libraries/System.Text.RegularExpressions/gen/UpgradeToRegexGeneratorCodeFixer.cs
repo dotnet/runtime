@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: false);
+            SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: true);
             if (nodeToFix is null)
             {
                 return;
@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
             context.RegisterCodeFix(
                 CodeAction.Create(
                     SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, context.Diagnostics[0], cancellationToken),
+                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, context.Diagnostics[0], cancellationToken),
                     equivalenceKey: SR.UseRegexSourceGeneratorTitle),
                 context.Diagnostics);
         }
@@ -65,10 +65,12 @@ namespace System.Text.RegularExpressions.Generator
         /// nodes in order to apply the code fix to the diagnostic.
         /// </summary>
         /// <param name="document">The original document.</param>
+        /// <param name="root">The root of the syntax tree.</param>
+        /// <param name="nodeToFix">The node to fix. This is where the diagnostic was produced.</param>
         /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, Diagnostic diagnostic, CancellationToken cancellationToken)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -86,14 +88,6 @@ namespace System.Text.RegularExpressions.Generator
                 return document;
             }
 
-            // Find the node that corresponding to the diagnostic which we will then fix.
-            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-            if (root is null)
-            {
-                return document;
-            }
-
-            SyntaxNode nodeToFix = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: false);
             // Save the operation object from the nodeToFix before it gets replaced by the new method invocation.
             // We will later use this operation to get the parameters out and pass them into the RegexGenerator attribute.
             IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
@@ -103,16 +97,20 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
-            TypeDeclarationSyntax? typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            SyntaxNode? typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
 
-            if (typeDeclaration is null)
+            if (typeDeclarationOrCompilationUnit is null)
             {
-                return document;
+                typeDeclarationOrCompilationUnit = await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
             }
 
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;
-            ITypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) as ITypeSymbol;
+
+            INamedTypeSymbol? typeSymbol = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax typeDeclaration ?
+                semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) :
+                semanticModel.GetDeclaredSymbol((CompilationUnitSyntax)typeDeclarationOrCompilationUnit, cancellationToken)?.ContainingType;
+
             if (typeSymbol is not null)
             {
                 IEnumerable<ISymbol> members = GetAllMembers(typeSymbol);
@@ -140,16 +138,19 @@ namespace System.Text.RegularExpressions.Generator
                 });
 
             // We find nodeToFix again by calculating the offset of how many partial keywords we had to add.
-            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length));
+            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length), getInnermostNodeForTie: true);
             if (nodeToFix is null)
             {
                 return document;
             }
 
             // We need to find the typeDeclaration again, but now using the new root.
-            typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
-            Debug.Assert(typeDeclaration is not null);
-            TypeDeclarationSyntax newTypeDeclaration = typeDeclaration;
+            typeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax ?
+                nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() :
+                await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(typeDeclarationOrCompilationUnit is not null);
+            SyntaxNode newTypeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit;
 
             // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
             DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
@@ -177,12 +178,12 @@ namespace System.Text.RegularExpressions.Generator
                 SyntaxNode createRegexMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
                 SyntaxNode method = generator.InvocationExpression(generator.MemberAccessExpression(createRegexMethod, invocationOperation.TargetMethod.Name), arguments.Select(arg => arg.Syntax).ToArray());
 
-                newTypeDeclaration = newTypeDeclaration.ReplaceNode(nodeToFix, method);
+                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(method, nodeToFix));
             }
             else // When using a Regex constructor
             {
                 SyntaxNode invokeMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
-                newTypeDeclaration = newTypeDeclaration.ReplaceNode(nodeToFix, invokeMethod);
+                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(invokeMethod, nodeToFix));
             }
 
             // Initialize the inputs for the RegexGenerator attribute.
@@ -223,10 +224,12 @@ namespace System.Text.RegularExpressions.Generator
             newMethod = (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
 
             // Add the method to the type.
-            newTypeDeclaration = newTypeDeclaration.AddMembers(newMethod);
+            newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit is TypeDeclarationSyntax newTypeDeclaration ?
+                newTypeDeclaration.AddMembers(newMethod) :
+                ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod }));
 
             // Replace the old type declaration with the new modified one, and return the document.
-            return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, newTypeDeclaration));
+            return document.WithSyntaxRoot(root.ReplaceNode(typeDeclarationOrCompilationUnit, newTypeDeclarationOrCompilationUnit));
 
             static IEnumerable<ISymbol> GetAllMembers(ITypeSymbol? symbol)
             {
@@ -299,6 +302,9 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 return string.Join(" | ", parts);
             }
+
+            static SyntaxNode WithTrivia(SyntaxNode method, SyntaxNode nodeToFix)
+                => method.WithLeadingTrivia(nodeToFix.GetLeadingTrivia()).WithTrailingTrivia(nodeToFix.GetTrailingTrivia());
         }
     }
 }

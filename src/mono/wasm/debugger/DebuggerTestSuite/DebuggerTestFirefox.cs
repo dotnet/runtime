@@ -8,13 +8,14 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
     internal FirefoxInspectorClient _client;
-    public DebuggerTestFirefox(string driver = "debugger-driver.html"):base(driver)
+    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html"):base(testOutput, driver)
     {
         if (insp.Client is not FirefoxInspectorClient)
             throw new Exception($"Bug: client should be {nameof(FirefoxInspectorClient)} for use with {nameof(DebuggerTestFirefox)}");
@@ -47,8 +48,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
         {
             var script_id = args?["source"]?["actor"].Value<string>();
             var url = args?["source"]?["sourceMapBaseURL"]?.Value<string>();
-            /*Console.WriteLine(script_id);
-            Console.WriteLine(args);*/
+            /*_testOutput.WriteLine(script_id);
+            _testOutput.WriteLine(args);*/
             if (script_id.StartsWith("dotnet://"))
             {
                 var dbgUrl = args?["source"]?["dotNetUrl"]?.Value<string>();
@@ -186,7 +187,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         var res = await cli.SendCommand(method, args, token);
         if (!res.IsOk)
         {
-            Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
+            _testOutput.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
             Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
         }
         var wait_res = await WaitFor(waitForEvent);

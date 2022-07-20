@@ -41,7 +41,7 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     // other DLLs call Release() on us in their detach [dangerous!], etc.
     GCX_PREEMP_NO_DTOR();
 
-    FastInterlockExchange((LONG*)&g_fForbidEnterEE, TRUE);
+    InterlockedExchange((LONG*)&g_fForbidEnterEE, TRUE);
 
     // Note that for free and retail builds StressLog must also be enabled
     if (g_pConfig && g_pConfig->StressLog())

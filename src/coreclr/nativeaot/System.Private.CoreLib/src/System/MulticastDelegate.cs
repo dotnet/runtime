@@ -46,7 +46,7 @@ namespace System
             return true;
         }
 
-        public override sealed bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -61,9 +61,9 @@ namespace System
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = Unsafe.As<MulticastDelegate>(obj);
 
-            // there are 2 kind of delegate kinds for comparision
+            // there are 2 kind of delegate kinds for comparison
             // 1- Multicast (m_helperObject is Delegate[])
-            // 2- Single-cast delegate, which can be compared with a structural comparision
+            // 2- Single-cast delegate, which can be compared with a structural comparison
 
             IntPtr multicastThunk = GetThunk(MulticastThunk);
             if (m_functionPointer == multicastThunk)
@@ -90,7 +90,7 @@ namespace System
             }
         }
 
-        public override sealed int GetHashCode()
+        public sealed override int GetHashCode()
         {
             Delegate[]? invocationList = m_helperObject as Delegate[];
             if (invocationList == null)

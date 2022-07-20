@@ -488,7 +488,7 @@ namespace System.IO.Compression
             }
             else
             {
-                WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                WriteCore(new ReadOnlySpan<byte>(in value));
             }
         }
 

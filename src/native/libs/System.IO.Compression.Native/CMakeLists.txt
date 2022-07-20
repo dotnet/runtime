@@ -38,6 +38,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     # Disable implicit fallthrough warning for Brotli
     set(FLAGS -Wno-implicit-fallthrough)
 
+    if (CMAKE_C_COMPILER_ID STREQUAL Clang)
+        add_compile_options(-Wno-strict-prototypes)
+    endif ()
+
     # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
     # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
     set(FLAGS "${FLAGS} -Wno-vla-parameter")

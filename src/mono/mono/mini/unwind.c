@@ -393,7 +393,7 @@ guint8*
 mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enable_extensions)
 {
 	MonoUnwindOp *op;
-	int loc = 0;
+	guint32 loc = 0;
 	guint8 buf [4096];
 	guint8 *p, *res;
 
@@ -1041,7 +1041,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	/* Decode FDE */
 
 	p = fde;
-	// FIXME: Endianess ?
+	// FIXME: Endianness ?
 	fde_len = *(guint32*)p;
 	g_assert (fde_len != 0xffffffff && fde_len != 0);
 	p += 4;

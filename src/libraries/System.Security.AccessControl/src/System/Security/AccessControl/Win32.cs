@@ -168,18 +168,12 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (privilege != null)
-                {
-                    privilege.Revert();
-                }
+                privilege?.Revert();
                 throw;
             }
             finally
             {
-                if (privilege != null)
-                {
-                    privilege.Revert();
-                }
+                privilege?.Revert();
             }
 
             //
@@ -321,18 +315,12 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (securityPrivilege != null)
-                {
-                    securityPrivilege.Revert();
-                }
+                securityPrivilege?.Revert();
                 throw;
             }
             finally
             {
-                if (securityPrivilege != null)
-                {
-                    securityPrivilege.Revert();
-                }
+                securityPrivilege?.Revert();
             }
 
             return 0;

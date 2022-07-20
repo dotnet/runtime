@@ -549,28 +549,19 @@ namespace System.Security.AccessControl
             }
 
             int thisLength = this.BinaryLength;
-            int aceLength = ace.BinaryLength;
 
-            if (thisLength != aceLength)
+            if (thisLength != ace.BinaryLength)
             {
                 return false;
             }
 
             byte[] array1 = new byte[thisLength];
-            byte[] array2 = new byte[aceLength];
-
             this.GetBinaryForm(array1, 0);
+
+            byte[] array2 = new byte[thisLength];
             ace.GetBinaryForm(array2, 0);
 
-            for (int i = 0; i < array1.Length; i++)
-            {
-                if (array1[i] != array2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return array1.AsSpan().SequenceEqual(array2);
         }
 
         public sealed override int GetHashCode()

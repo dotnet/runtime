@@ -140,7 +140,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         VmReadMemory = 16,
         VmWriteMemory = 17,
         GetAssemblyByName = 18,
-        GetModuleByGUID = 19
+        GetModuleByGUID = 19,
+        GetAssemblyAndPdbBytes = 20
     }
 
     internal enum CmdFrame {
@@ -227,7 +228,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         Assembly = 12,
         ClassToken = 13,
         AsyncDebugInfo = 14,
-        GetNameFull = 15
+        GetNameFull = 15,
+        GetPrettyName = 16
     }
 
     internal enum CmdType {
@@ -444,6 +446,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ReadString()
         {
             var valueLen = ReadInt32();
+            if (valueLen == 0)
+                return string.Empty;
             byte[] value = new byte[valueLen];
             Read(value, 0, valueLen);
 
@@ -750,6 +754,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
+        private int VmMinorVersion { get; set; }
+        private int VmMajorVersion { get; set; }
+
         private Dictionary<int, MethodInfoWithDebugInformation> methods;
         private Dictionary<int, AssemblyInfo> assemblies;
         private Dictionary<int, TypeInfoWithDebugInformation> types;
@@ -759,7 +766,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SessionId sessionId;
 
         private readonly ILogger logger;
-        private Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
+        private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
+        private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
         public JObjectValueCreator ValueCreator { get; init; }
 
         public static int GetNewId() { return cmdId++; }
@@ -770,6 +780,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.proxy = proxy;
             this.logger = logger;
             this.sessionId = sessionId;
+            this.VmMajorVersion = -1;
+            this.VmMinorVersion = -1;
             ValueCreator = new(this, logger);
             ResetStore(null);
         }
@@ -799,13 +811,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    logger.LogDebug($"Unable to find assembly: {assemblyName}");
-                    return null;
+                    asm = new AssemblyInfo(assemblyName, logger);
+                    logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
             asm.SetDebugId(assemblyId);
             assemblies[assemblyId] = asm;
             return asm;
+        }
+        public static string GetPrettierMethodName(string methodName)
+        {
+            methodName = methodName.Replace(':', '.');
+            methodName = methodName.Replace('/', '.');
+            methodName = regexForGenericArgs.Replace(methodName, "");
+            return methodName;
         }
 
         public async Task<MethodInfoWithDebugInformation> GetMethodInfo(int methodId, CancellationToken token)
@@ -840,17 +859,53 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
+            string methodName = await GetMethodName(methodId, token);
             if (method == null)
             {
-                logger.LogDebug($"Unable to find method token: {methodToken} assembly name: {asm.Name}");
-                return null;
+                //get information from runtime
+                method = await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
             }
-
-            string methodName = await GetMethodName(methodId, token);
+            var type = await GetTypeFromMethodIdAsync(methodId, token);
+            var typeInfo = await GetTypeInfo(type, token);
+            try {
+                (int MajorVersion, int MinorVersion) = await GetVMVersion(token);
+                if (MajorVersion == 2 && MinorVersion >= 62)
+                {
+                    if (typeInfo.Info.IsCompilerGenerated || method.IsCompilerGenerated)
+                    {
+                        methodName = await GetPrettyMethodName(methodId, isAnonymous: true, token);
+                    }
+                    else if (await GetIsAsyncFromMethodId(methodId, token))
+                    {
+                        methodName = await GetPrettyMethodName(methodId, isAnonymous: false, token);
+                        method.IsAsync = 1;
+                    }
+                    else
+                    {
+                        methodName = GetPrettierMethodName(methodName);
+                    }
+                }
+                else
+                {
+                    methodName = GetPrettierMethodName(methodName);
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unable to generate a pretty method name: {methodName} - {e}");
+                methodName = GetPrettierMethodName(methodName);
+            }
             methods[methodId] = new MethodInfoWithDebugInformation(method, methodId, methodName);
             return methods[methodId];
         }
 
+        public async Task<MethodInfo> CreateMethodInfoFromRuntimeInformation (AssemblyInfo asm, int methodId, string methodName, int methodToken, CancellationToken token )
+        {
+            var typeToken = await GetTypeTokenFromMethodId(methodId, token);
+            TypeInfo typeInfo = asm.TypesByToken[typeToken];
+            var attrs =  await GetAttributesFromMethodId(methodId, token);
+            return new MethodInfo(asm, methodName, methodToken, typeInfo, attrs);
+        }
         public async Task<TypeInfoWithDebugInformation> GetTypeInfo(int typeId, CancellationToken token)
         {
             if (types.TryGetValue(typeId, out TypeInfoWithDebugInformation typeDebugInfo))
@@ -873,8 +928,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (type == null)
             {
-                logger.LogDebug($"Unable to find type token: {typeName} assembly name: {asm.Name}");
-                return null;
+                type = asm.CreateTypeInfo(typeName, typeToken);
             }
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);
@@ -882,6 +936,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public void ClearCache() => ValueCreator.ClearCache();
+
+        public async Task<(int, int)> GetVMVersion(CancellationToken token)
+        {
+            if (VmMajorVersion != -1)
+                return (VmMajorVersion, VmMinorVersion);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.Version, commandParamsWriter, token);
+            retDebuggerCmdReader.ReadString(); //vm version
+            VmMajorVersion = retDebuggerCmdReader.ReadInt32();
+            VmMinorVersion = retDebuggerCmdReader.ReadInt32();
+            return (VmMajorVersion, VmMinorVersion);
+        }
 
         public async Task<bool> SetProtocolVersion(CancellationToken token)
         {
@@ -949,6 +1015,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(value);
             using var stringDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAppDomain.CreateString, commandParamsWriter, token);
             return stringDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<MethodAttributes> GetAttributesFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
+            var flags = retDebuggerCmdReader.ReadInt32();
+            return (MethodAttributes) flags;
+        }
+
+        public async Task<int> GetTypeTokenFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.ClassToken, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32(); //token
         }
 
         public async Task<int> GetMethodToken(int methodId, CancellationToken token)
@@ -1111,22 +1196,95 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(methodId);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetNameFull, commandParamsWriter, token);
-            var methodName = retDebuggerCmdReader.ReadString();
-            return methodName.Substring(methodName.IndexOf(":")+1);
+            return retDebuggerCmdReader.ReadString();
         }
 
+        public async Task<string> GetPrettyMethodName(int methodId, bool isAnonymous, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetPrettyName, commandParamsWriter, token);
+            var type = (ElementType)retDebuggerCmdReader.ReadInt32();
+            switch (type)
+            {
+                case ElementType.GenericInst:
+                {
+                    var ret = retDebuggerCmdReader.ReadString();
+                    if (ret.IndexOf(':') is int index && index > 0)
+                        ret = ret.Substring(0, index);
+                    ret = regexForAsyncMethodName.Replace(ret, "$1");
+                    var numGenericTypeArgs = retDebuggerCmdReader.ReadInt32();
+                    var numGenericMethodArgs = retDebuggerCmdReader.ReadInt32();
+                    int numTotalGenericArgs = numGenericTypeArgs + numGenericMethodArgs;
+                    var genericArgs = new List<string>(capacity: numTotalGenericArgs);
+                    for (int i = 0; i < numTotalGenericArgs; i++)
+                    {
+                        var typeArgC = retDebuggerCmdReader.ReadString();
+                        typeArgC = regexForGenericArgs.Replace(typeArgC, "");
+                        genericArgs.Add(typeArgC);
+                    }
+                    var match = regexForGenericArgs.Match(ret);
+                    while (match.Success)
+                    {
+                        var countArgs = Convert.ToInt32(match.Value.Remove(0, 1));
+                        ret = ret.Remove(match.Index, match.Value.Length);
+                        ret = ret.Insert(match.Index, $"<{string.Join(", ", genericArgs.Take(countArgs))}>");
+                        genericArgs.RemoveRange(0, countArgs);
+                        match = regexForGenericArgs.Match(ret);
+                    }
+                    ret = ret.Replace('/', '.');
+                    return ret;
+                }
+                case ElementType.Class:
+                {
+                    var ret = new StringBuilder(100);
+                    var countNested = retDebuggerCmdReader.ReadInt32();
+                    var anonymousMethodId = "";
+                    for (int i = 0 ; i <= countNested; i++)
+                    {
+                        var klassName = retDebuggerCmdReader.ReadString();
+                        if (klassName.Contains("<>"))
+                        {
+                            if (anonymousMethodId.LastIndexOf('_') >= 0)
+                                anonymousMethodId = klassName.Substring(klassName.LastIndexOf('_') + 1);
+                        }
+                        else
+                        {
+                            var matchOnClassName = regexForNestedLeftRightAngleBrackets.Match(klassName);
+                            if (matchOnClassName.Success && matchOnClassName.Groups[5].Captures.Count > 0)
+                                klassName = matchOnClassName.Groups[5].Captures[0].Value;
+                            if (ret.Length > 0)
+                                ret = ret.Insert(0, ".");
+                            ret = ret.Insert(0, klassName);
+                        }
+                    }
+                    var methodName = retDebuggerCmdReader.ReadString();
+                    var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
+                    if (matchOnMethodName.Success && matchOnMethodName.Groups[5].Captures.Count > 0)
+                    {
+                        if (isAnonymous && anonymousMethodId.Length == 0 && methodName.Contains("__"))
+                            anonymousMethodId = methodName.Substring(methodName.IndexOf("__") + 2);
+                        methodName =  matchOnMethodName.Groups[5].Captures[0].Value;
+                        ret.Append($".{methodName}");
+                    }
+                    if (isAnonymous && anonymousMethodId.Length > 0)
+                        ret.Append($".AnonymousMethod__{anonymousMethodId}");
+                    return ret.ToString();
+                }
+                default:
+                {
+                    return retDebuggerCmdReader.ReadString();
+                }
+            }
+        }
         public async Task<bool> MethodIsStatic(int methodId, CancellationToken token)
         {
             var methodInfo = await GetMethodInfo(methodId, token);
             if (methodInfo != null)
                 return methodInfo.Info.IsStatic();
-
-            using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(methodId);
-
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
-            var flags = retDebuggerCmdReader.ReadInt32();
-            return (flags & 0x0010) > 0; //check method is static
+            var attrs = await GetAttributesFromMethodId(methodId, token);
+            return (attrs & MethodAttributes.Static) > 0;
         }
 
         public async Task<int> GetParamCount(int methodId, CancellationToken token)
@@ -1681,6 +1839,24 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static int GetNextDebuggerObjectId() => Interlocked.Increment(ref debuggerObjectId);
 
+        public async Task<bool> GetIsAsyncFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.AsyncDebugInfo, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadByte() == 1;
+        }
+
+        public async Task<int> GetTypeFromMethodIdAsync(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetDeclaringType, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32();
+        }
+
         public async Task<bool> IsAsyncMethod(int methodId, CancellationToken token)
         {
             var methodInfo = await GetMethodInfo(methodId, token);
@@ -1688,12 +1864,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 return methodInfo.Info.IsAsync == 1;
             }
-
-            using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(methodId);
-
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.AsyncDebugInfo, commandParamsWriter, token);
-            methodInfo.Info.IsAsync = retDebuggerCmdReader.ReadByte();
+            methodInfo.Info.IsAsync = Convert.ToInt32(await GetIsAsyncFromMethodId(methodId, token));
             return methodInfo.Info.IsAsync == 1;
         }
 
@@ -2128,6 +2299,24 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            byte[] assembly_buf = null;
+            byte[] pdb_buf = null;
+            commandParamsWriter.Write(assemblyName);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
+            int assembly_size = retDebuggerCmdReader.ReadInt32();
+            if (assembly_size > 0)
+                assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+            int pdb_size = retDebuggerCmdReader.ReadInt32();
+            if (pdb_size > 0)
+                pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
+            byte[][] ret = new byte[2][];
+            ret[0] = assembly_buf;
+            ret[1] = pdb_buf;
+            return ret;
+        }
         private static readonly string[] s_primitiveTypeNames = new[]
             {
             "bool",

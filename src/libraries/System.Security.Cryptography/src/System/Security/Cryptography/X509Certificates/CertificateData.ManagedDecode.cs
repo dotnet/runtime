@@ -243,11 +243,7 @@ namespace System.Security.Cryptography.X509Certificates
                         e = value;
                         break;
                     default:
-                        if (firstRdn == null)
-                        {
-                            firstRdn = value;
-                        }
-
+                        firstRdn ??= value;
                         break;
                 }
             }

@@ -255,7 +255,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(5, populated.GetValueOrDefault("a", 1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableDictionary.CreateBuilder<string, int>());

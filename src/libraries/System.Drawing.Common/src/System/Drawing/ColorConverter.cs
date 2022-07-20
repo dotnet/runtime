@@ -134,9 +134,7 @@ namespace System.Drawing {
                     obj = GetNamedColor(text);
 
                     if (obj == null) {
-                        if (culture == null) {
-                            culture = CultureInfo.CurrentCulture;
-                        }
+                        culture ??= CultureInfo.CurrentCulture;
 
                         char sep = culture.TextInfo.ListSeparator[0];
                         bool tryMappingToKnownColor = true;
@@ -252,9 +250,7 @@ namespace System.Drawing {
                             return "'" + c.Name + "'";
                         }
                         else {
-                            if (culture == null) {
-                                culture = CultureInfo.CurrentCulture;
-                            }
+                            culture ??= CultureInfo.CurrentCulture;
                             string sep = culture.TextInfo.ListSeparator + " ";
                             TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                             string[] args;

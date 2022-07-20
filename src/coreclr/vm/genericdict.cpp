@@ -530,7 +530,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
-            FastInterlockExchangePointer(&pIMD->m_pPerInstInfo, pNewDictionary);
+            InterlockedExchangeT(&pIMD->m_pPerInstInfo, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -590,7 +590,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             // Publish the new dictionary slots to the type.
             ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
             Dictionary** pPerInstInfo = pMT->GetPerInstInfo();
-            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, pNewDictionary);
+            InterlockedExchangeT(pPerInstInfo + dictionaryIndex, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -634,7 +634,7 @@ Dictionary::PopulateEntry(
 
         BYTE fixupKind = *pBlob++;
 
-        Module * pInfoModule = pModule;
+        ModuleBase * pInfoModule = pModule;
         if (fixupKind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
@@ -657,7 +657,7 @@ Dictionary::PopulateEntry(
         if (signatureKind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
-            Module * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
+            ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
             if (pInfoModule == pModule)
             {
                 pInfoModule = pSignatureModule;
@@ -696,7 +696,7 @@ Dictionary::PopulateEntry(
         pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
     }
 
-    Module * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
+    ModuleBase * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
 
     if (pMT != NULL)
     {
@@ -887,7 +887,8 @@ Dictionary::PopulateEntry(
                     }
                     else
                     {
-                        pMethod = MemberLoader::GetMethodDescFromMethodDef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMethodDef), FALSE);
+                        _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
+                        pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
                 }
 

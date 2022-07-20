@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.IO;
+using System.Globalization;
+using System.Collections;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using MS.Internal.Xml.XPath;
+using System.Reflection;
+using System.Security;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Diagnostics;
-    using System.IO;
-    using System.Globalization;
-    using System.Collections;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Reflection;
-    using System.Security;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class XsltCompileContext : XsltContext
     {
         private InputScopeManager? _manager;
@@ -448,38 +448,41 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (ns.Length == 0)
             {
-                return (
-                    // It'll be better to get this information from XPath
-                    name == "last" ||
-                    name == "position" ||
-                    name == "name" ||
-                    name == "namespace-uri" ||
-                    name == "local-name" ||
-                    name == "count" ||
-                    name == "id" ||
-                    name == "string" ||
-                    name == "concat" ||
-                    name == "starts-with" ||
-                    name == "contains" ||
-                    name == "substring-before" ||
-                    name == "substring-after" ||
-                    name == "substring" ||
-                    name == "string-length" ||
-                    name == "normalize-space" ||
-                    name == "translate" ||
-                    name == "boolean" ||
-                    name == "not" ||
-                    name == "true" ||
-                    name == "false" ||
-                    name == "lang" ||
-                    name == "number" ||
-                    name == "sum" ||
-                    name == "floor" ||
-                    name == "ceiling" ||
-                    name == "round" ||
+                switch (name)
+                {
+                    case "last":
+                    case "position":
+                    case "name":
+                    case "namespace-uri":
+                    case "local-name":
+                    case "count":
+                    case "id":
+                    case "string":
+                    case "concat":
+                    case "starts-with":
+                    case "contains":
+                    case "substring-before":
+                    case "substring-after":
+                    case "substring":
+                    case "string-length":
+                    case "normalize-space":
+                    case "translate":
+                    case "boolean":
+                    case "not":
+                    case "true":
+                    case "false":
+                    case "lang":
+                    case "number":
+                    case "sum":
+                    case "floor":
+                    case "ceiling":
+                    case "round":
+                        return true;
+
                     // XSLT functions:
-                    (s_FunctionTable[name] != null && name != "unparsed-entity-uri")
-                );
+                    default:
+                        return s_FunctionTable[name] != null && name != "unparsed-entity-uri";
+                }
             }
             else
             {

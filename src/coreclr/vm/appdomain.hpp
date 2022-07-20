@@ -2001,14 +2001,14 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_dwIterHolders);
-        FastInterlockDecrement(&m_dwIterHolders);
+        InterlockedDecrement(&m_dwIterHolders);
     }
 
 
     void IteratorAcquire()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockIncrement(&m_dwIterHolders);
+        InterlockedIncrement(&m_dwIterHolders);
     }
 
 #endif
@@ -2152,7 +2152,7 @@ private:
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
         Stage lastStage=m_Stage;
         while (lastStage !=stage)
-            lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
+            lastStage = (Stage)InterlockedCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
 
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)

@@ -101,7 +101,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	}
-#ifndef __mono_ppc64__
+#ifndef TARGET_POWERPC64
 	case OP_LSUB_OVF: {
 		guint16 opcode;
 
@@ -1546,7 +1546,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					if (COMPILE_LLVM (cfg)) {
 						int index2_reg = alloc_preg (cfg);
 						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
-						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
+						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
 						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}

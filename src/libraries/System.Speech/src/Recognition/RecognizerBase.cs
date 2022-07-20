@@ -296,8 +296,8 @@ ISpGrammarResourceLoader
 
         void IRecognizerInternal.SetDictationContext(Grammar grammar, string precedingText, string subsequentText)
         {
-            if (precedingText == null) { precedingText = string.Empty; }
-            if (subsequentText == null) { subsequentText = string.Empty; }
+            precedingText ??= string.Empty;
+            subsequentText ??= string.Empty;
 
             SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";
@@ -1180,10 +1180,7 @@ ISpGrammarResourceLoader
                         return null;
                     }
 
-                    if (_audioFormat == null)
-                    {
-                        _audioFormat = GetSapiAudioFormat();
-                    }
+                    _audioFormat ??= GetSapiAudioFormat();
                 }
                 return _audioFormat;
             }
@@ -1590,7 +1587,7 @@ ISpGrammarResourceLoader
 
                         sapiGrammar.SetGrammarLoader(_recoThunk);
                     }
-                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri == null ? null : baseUri.ToString());
+                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri?.ToString());
                 }
                 else
                 {
@@ -1762,12 +1759,7 @@ ISpGrammarResourceLoader
             Debug.WriteLine("Raising LoadGrammarCompleted event.");
 
             Grammar grammar = (Grammar)grammarObject;
-            EventHandler<LoadGrammarCompletedEventArgs> loadGrammarCompletedHandler = LoadGrammarCompleted;
-            if (loadGrammarCompletedHandler != null)
-            {
-                // When a LoadGrammarAsync completes all we must do is raise the LoadGrammarCompleted event.
-                loadGrammarCompletedHandler(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
-            }
+            LoadGrammarCompleted?.Invoke(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
         }
 
         // Create a new sapi grammarId and SapiGrammar object.
@@ -2091,11 +2083,7 @@ ISpGrammarResourceLoader
             }
 
             // Now raise RecognizeCompleted event.
-            EventHandler<RecognizeCompletedEventArgs> recognizeCompletedHandler = RecognizeCompleted;
-            if (recognizeCompletedHandler != null)
-            {
-                recognizeCompletedHandler(this, (RecognizeCompletedEventArgs)eventArgs);
-            }
+            RecognizeCompleted?.Invoke(this, (RecognizeCompletedEventArgs)eventArgs);
         }
 
         // This method will be called asynchronously
@@ -2264,11 +2252,7 @@ ISpGrammarResourceLoader
                 {
                     object userToken = GetBookmarkItemAndRemove(bookmarkId);
 
-                    EventHandler<RecognizerUpdateReachedEventArgs> updateHandler = RecognizerUpdateReached;
-                    if (updateHandler != null)
-                    {
-                        updateHandler(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
-                    }
+                    RecognizerUpdateReached?.Invoke(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
                 }
             }
             catch (COMException e)
@@ -2918,11 +2902,8 @@ ISpGrammarResourceLoader
         {
             // In the synchronous case, fire the private event
             EventHandler<RecognizeCompletedEventArgs> recognizeCompletedHandler = RecognizeCompletedSync;
-            if (recognizeCompletedHandler == null)
-            {
-                // If not in sync mode, fire the public event.
-                recognizeCompletedHandler = RecognizeCompleted;
-            }
+            // If not in sync mode, fire the public event.
+            recognizeCompletedHandler ??= RecognizeCompleted;
 
             // Fire the completed event
             if (recognizeCompletedHandler != null)
@@ -2942,11 +2923,8 @@ ISpGrammarResourceLoader
             {
                 // In the synchronous case, fire the private event
                 emulateRecognizeCompletedHandler = EmulateRecognizeCompletedSync;
-                if (emulateRecognizeCompletedHandler == null)
-                {
-                    // If not in sync mode, fire the public event.
-                    emulateRecognizeCompletedHandler = EmulateRecognizeCompleted;
-                }
+                // If not in sync mode, fire the public event.
+                emulateRecognizeCompletedHandler ??= EmulateRecognizeCompleted;
                 _lastResult = null;
                 _lastException = null;
                 _isEmulateRecognition = false;

@@ -72,7 +72,7 @@ namespace System.Diagnostics
         private List<Process> GetChildProcesses(Process[]? processes = null)
         {
             bool internallyInitializedProcesses = processes == null;
-            processes = processes ?? GetProcesses();
+            processes ??= GetProcesses();
 
             List<Process> childProcesses = new List<Process>();
 

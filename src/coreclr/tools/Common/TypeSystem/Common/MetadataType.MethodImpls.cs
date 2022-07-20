@@ -35,10 +35,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (_allVirtualMethodImplsForType == null)
-                {
-                    _allVirtualMethodImplsForType = ComputeVirtualMethodImplsForType();
-                }
+                _allVirtualMethodImplsForType ??= ComputeVirtualMethodImplsForType();
 
                 return _allVirtualMethodImplsForType;
             }

@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
+using System.Collections;
+using System.Diagnostics;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Serialization;
+using System.Reflection;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Serialization;
-    using System.Reflection;
-
     public enum XmlSchemaDatatypeVariety
     {
         Atomic,
@@ -471,17 +471,8 @@ namespace System.Xml.Schema
 
         internal override FacetsChecker FacetsChecker { get { return miscFacetsChecker; } }
 
-        internal override XmlValueConverter ValueConverter
-        {
-            get
-            {
-                if (_valueConverter == null)
-                {
-                    _valueConverter = CreateValueConverter(_parentSchemaType!);
-                }
-                return _valueConverter;
-            }
-        }
+        internal override XmlValueConverter ValueConverter =>
+            _valueConverter ??= CreateValueConverter(_parentSchemaType!);
 
         public override XmlTokenizedType TokenizedType { get { return XmlTokenizedType.None; } }
 
@@ -882,22 +873,8 @@ namespace System.Xml.Schema
             new SchemaDatatypeMap("unsignedShort",      s_unsignedShort, 42),
         };
 
-        protected static int Compare(byte[] value1, byte[] value2)
-        {
-            int length = value1.Length;
-            if (length != value2.Length)
-            {
-                return -1;
-            }
-            for (int i = 0; i < length; i++)
-            {
-                if (value1[i] != value2[i])
-                {
-                    return -1;
-                }
-            }
-            return 0;
-        }
+        protected static int Compare(byte[] value1, byte[] value2) =>
+            value1.AsSpan().SequenceEqual(value2) ? 0 : -1;
 
 #if PRIYAL
         protected object GetValueToCheck(object value, IXmlNamespaceResolver nsmgr) {
@@ -958,10 +935,8 @@ namespace System.Xml.Schema
                 } while (simpleType != null && simpleType != DatatypeImplementation.AnySimpleType);
             }
 
-            if (listItemType == null)
-            { //Get built-in simple type for the typecode
-                listItemType = DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
-            }
+            //Get built-in simple type for the typecode
+            listItemType ??= DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
 
             return XmlListConverter.Create(listItemType.ValueConverter);
         }

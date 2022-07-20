@@ -16,8 +16,6 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
-    IMPORT LinkFrameAndThrow
-    IMPORT FixContextHandler
     IMPORT OnHijackWorker
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
@@ -1031,27 +1029,6 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 
 ; ------------------------------------------------------------------
-;
-; Helpers for async (NullRef, AccessViolation) exceptions
-;
-
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
-        PROLOG_SAVE_REG_PAIR fp,lr, #-16!
-
-        ; On entry:
-        ;
-        ; X0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
-
-        ; Target should not return.
-        EMIT_BREAKPOINT
-
-        NESTED_END NakedThrowHelper2
-
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
-
-; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
 ; This method will perform a quick chained lookup of the entry if the
@@ -1108,7 +1085,7 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
                                   ; Move this entry to head postion of the chain

@@ -134,7 +134,7 @@ namespace System.Net.Http
 
             if (IsHttp3Supported())
             {
-                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && QuicConnection.IsSupported;
             }
 
             switch (kind)
@@ -828,7 +828,7 @@ namespace System.Net.Http
         private async ValueTask<Http3Connection> GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https);
-            Debug.Assert(_http3Enabled == true);
+            Debug.Assert(_http3Enabled);
 
             Http3Connection? http3Connection = Volatile.Read(ref _http3Connection);
 
@@ -855,10 +855,7 @@ namespace System.Net.Http
             {
                 lock (SyncObj)
                 {
-                    if (_http3ConnectionCreateLock == null)
-                    {
-                        _http3ConnectionCreateLock = new SemaphoreSlim(1);
-                    }
+                    _http3ConnectionCreateLock ??= new SemaphoreSlim(1);
                 }
             }
 
@@ -885,7 +882,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -998,6 +995,7 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
+                        !request.IsWebSocketH2Request() &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                     {
                         Debug.Assert(async);
@@ -1021,6 +1019,17 @@ namespace System.Net.Http
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
+                                if (request.IsWebSocketH2Request())
+                                {
+                                    await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                                    if (!connection.IsConnectEnabled)
+                                    {
+                                        HttpRequestException exception = new(SR.net_unsupported_extended_connect);
+                                        exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
+                                        throw exception;
+                                    }
+                                }
+
                                 response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
                             }
                         }
@@ -1078,7 +1087,12 @@ namespace System.Net.Http
                     // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                        HttpRequestException exception = new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                        if (request.IsWebSocketH2Request())
+                        {
+                            exception.Data["HTTP2_ENABLED"] = false;
+                        }
+                        throw exception;
                     }
 
                     if (NetEventSource.Log.IsEnabled())
@@ -1414,7 +1428,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol.ToString()}'");
+                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
                     }
                 }
                 transportContext = sslStream.TransportContext;
@@ -1564,11 +1578,17 @@ namespace System.Net.Http
             Http2Connection http2Connection = new Http2Connection(this, stream);
             try
             {
-                await http2Connection.SetupAsync().ConfigureAwait(false);
+                await http2Connection.SetupAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 // Note, SetupAsync will dispose the connection if there is an exception.
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separatly so don't wrap it.
+                    throw;
+                }
+
                 throw new HttpRequestException(SR.net_http_client_execution_error, e);
             }
 

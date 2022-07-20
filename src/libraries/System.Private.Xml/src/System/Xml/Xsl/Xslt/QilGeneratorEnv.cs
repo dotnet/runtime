@@ -9,12 +9,11 @@ using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using FunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.Xslt.QilGenerator.FuncId>;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using FunctionInfo = XPathBuilder.FunctionInfo<QilGenerator.FuncId>;
-    using T = XmlQueryTypeFactory;
-
     internal sealed partial class QilGenerator : IXPathEnvironment
     {
         // Everywhere in this code in case of error in the stylesheet we should throw XslLoadException.
@@ -426,10 +425,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                if (_generalKey == null)
-                {
-                    _generalKey = CreateGeneralKeyFunction();
-                }
+                _generalKey ??= CreateGeneralKeyFunction();
                 QilIterator i = _f.Let(name);
                 QilNode resolvedName = ResolveQNameDynamic(/*ignoreDefaultNs:*/true, i);
                 result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()!));

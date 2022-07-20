@@ -229,7 +229,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteDoctype(BuilderInfo mainNode)
         {
-            Debug.Assert(_outputDoctype == true, "It supposed to check this condition before actual call");
+            Debug.Assert(_outputDoctype, "It supposed to check this condition before actual call");
             Debug.Assert(_output.DoctypeSystem != null || (_isHtmlOutput && _output.DoctypePublic != null), "We set outputDoctype == true only if");
             Indent(0);
             Write(s_DocType);
@@ -264,7 +264,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteXmlDeclaration()
         {
-            Debug.Assert(_outputXmlDecl == true, "It supposed to check this condition before actual call");
+            Debug.Assert(_outputXmlDecl, "It supposed to check this condition before actual call");
             Debug.Assert(_isXmlOutput && !_output.OmitXmlDeclaration, "We set outputXmlDecl == true only if");
             _outputXmlDecl = false;
 
@@ -390,10 +390,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void CacheRecord(RecordBuilder record)
         {
-            if (_outputCache == null)
-            {
-                _outputCache = new ArrayList();
-            }
+            _outputCache ??= new ArrayList();
 
             _outputCache.Add(record.MainNode.Clone());
         }

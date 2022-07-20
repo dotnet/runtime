@@ -82,6 +82,7 @@ namespace System.Reflection
             set => _cultureInfo = (value == null) ? null : new CultureInfo(value);
         }
 
+        [Obsolete(Obsoletions.AssemblyNameCodeBaseMessage, DiagnosticId = Obsoletions.AssemblyNameCodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string? CodeBase
         {
             [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
@@ -89,6 +90,7 @@ namespace System.Reflection
             set => _codeBase = value;
         }
 
+        [Obsolete(Obsoletions.AssemblyNameCodeBaseMessage, DiagnosticId = Obsoletions.AssemblyNameCodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase
         {

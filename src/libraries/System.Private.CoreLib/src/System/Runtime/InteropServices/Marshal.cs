@@ -625,6 +625,8 @@ namespace System.Runtime.InteropServices
 
         // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
@@ -995,14 +997,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1042,14 +1038,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1295,6 +1285,15 @@ namespace System.Runtime.InteropServices
         public static int GetLastWin32Error()
         {
             return GetLastPInvokeError();
+        }
+
+        /// <summary>
+        /// Gets the system error message for the last PInvoke error code.
+        /// </summary>
+        /// <returns>The error message associated with the last PInvoke error code.</returns>
+        public static string GetLastPInvokeErrorMessage()
+        {
+            return GetPInvokeErrorMessage(GetLastPInvokeError());
         }
     }
 }

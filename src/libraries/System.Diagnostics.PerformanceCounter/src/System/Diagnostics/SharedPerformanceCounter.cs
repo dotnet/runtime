@@ -193,7 +193,7 @@ namespace System.Diagnostics
             // make sure the start address is 8 byte aligned
             int startAddressMod8 = (int)(_baseAddress + oldOffset) & 0x7;
             alignmentAdjustment = (8 - startAddressMod8) & 0x7;
-            currentTotalSize = currentTotalSize + alignmentAdjustment;
+            currentTotalSize += alignmentAdjustment;
 
             int newOffset = oldOffset + currentTotalSize;
 
@@ -670,7 +670,7 @@ namespace System.Diagnostics
                             {
                                 fileMappingSize = GetFileMappingSizeFromConfig();
                                 if (data.UseUniqueSharedMemory)
-                                    fileMappingSize = fileMappingSize >> 2;  // if we have a custom filemapping, only make it 25% as large.
+                                    fileMappingSize >>= 2;  // if we have a custom filemapping, only make it 25% as large.
                             }
 
                             // now read the counter names
@@ -711,8 +711,7 @@ namespace System.Diagnostics
                         }
                         finally
                         {
-                            if (categoryKey != null)
-                                categoryKey.Close();
+                            categoryKey?.Close();
                         }
                     }
                 }
@@ -1761,8 +1760,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (securityDescriptorPointer != null)
-                        securityDescriptorPointer.Close();
+                    securityDescriptorPointer?.Close();
                 }
 
                 Interlocked.CompareExchange(ref *(int*)_fileViewAddress.DangerousGetHandle().ToPointer(), initialOffset, 0);

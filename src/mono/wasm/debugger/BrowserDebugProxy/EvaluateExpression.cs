@@ -344,8 +344,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 /*
                     Instead of invoking the method on the primitive type in the runtime,
-                    we emit a local for the primitive, and emit the the method call
-                    itself in the script. For example:
+                    we emit a local for the primitive, and emit the method call itself
+                    in the script. For example:
                     double test_propUlong_2c64c = 12;
                     return (test_propUlong_2c64c.ToString());
                 */

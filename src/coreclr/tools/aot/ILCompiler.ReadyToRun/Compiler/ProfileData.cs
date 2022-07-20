@@ -59,6 +59,7 @@ namespace ILCompiler
 
     public abstract class ProfileData
     {
+        public abstract MibcConfig Config { get; }
         public abstract bool PartialNGen { get; }
         public abstract MethodProfileData GetMethodProfileData(MethodDesc m);
         public abstract IEnumerable<MethodProfileData> GetAllMethodProfileData();
@@ -130,6 +131,8 @@ namespace ILCompiler
         private EmptyProfileData()
         {
         }
+
+        public override MibcConfig Config { get; } = new ();
 
         public override bool PartialNGen => false;
 

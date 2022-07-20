@@ -9,12 +9,16 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using Xunit;
 using System.Collections.Generic;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class CustomViewTests : DebuggerTests
     {
+        public CustomViewTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerDisplay()
         {
@@ -24,7 +28,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
-                "run");
+                "DebuggerTests.DebuggerCustomViewTest.run");
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
@@ -43,7 +47,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
-                "run");
+                "DebuggerTests.DebuggerCustomViewTest.run");
 
             var frame = pause_location["callFrames"][0];
             var locals = await GetProperties(frame["callFrameId"].Value<string>());
@@ -85,9 +89,9 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
-                "run");
+                "DebuggerTests.DebuggerCustomViewTest2.run");
 
-            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-custom-view-test.cs", bp.Value["locations"][0]["lineNumber"].Value<int>()+2, bp.Value["locations"][0]["columnNumber"].Value<int>(),  "run");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-custom-view-test.cs", bp.Value["locations"][0]["lineNumber"].Value<int>()+2, bp.Value["locations"][0]["columnNumber"].Value<int>(),  "DebuggerTests.DebuggerCustomViewTest2.run");
 
             List<Task<bool>> tasks = new();
             for (int i = 0 ; i < 10; i++)

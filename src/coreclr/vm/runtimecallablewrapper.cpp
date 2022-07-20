@@ -2293,7 +2293,7 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 }
 
 //---------------------------------------------------------------------
-// Helper function called from ReleaseAllInterfacesCallBack do do the
+// Helper function called from ReleaseAllInterfacesCallBack to do the
 // actual releases.
 void RCW::ReleaseAllInterfaces()
 {

@@ -529,7 +529,7 @@ mono_generic_param_owner (MonoGenericParam *p)
 	return p->owner;
 }
 
-static inline int
+static inline guint16
 mono_generic_param_num (MonoGenericParam *p)
 {
 	return p->num;
@@ -553,7 +553,7 @@ mono_type_get_generic_param_owner (MonoType *t)
 	return mono_generic_param_owner (t->data.generic_param);
 }
 
-static inline int
+static inline guint16
 mono_type_get_generic_param_num (MonoType *t)
 {
 	return mono_generic_param_num (t->data.generic_param);

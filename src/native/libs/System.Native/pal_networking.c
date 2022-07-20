@@ -3132,6 +3132,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     int outfd = ToFileDescriptor(out_fd);
     int infd = ToFileDescriptor(in_fd);
     off_t offtOffset = (off_t)offset;
+    int savedErrno;
 
 #if HAVE_SENDFILE_4
     ssize_t res;
@@ -3251,7 +3252,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     return Error_SUCCESS;
 
 error:
-    int savedErrno = errno;
+    savedErrno = errno;
     free(buffer);
     return SystemNative_ConvertErrorPlatformToPal(savedErrno);
 

@@ -2408,12 +2408,7 @@ namespace System
             }
 
             // Store any remaining values one-by-one
-            for (nuint i = 0; i < (length / 2); i++)
-            {
-                ref byte first = ref Unsafe.Add(ref buf, i);
-                ref byte last = ref Unsafe.Add(ref buf, length - 1 - i);
-                (last, first) = (first, last);
-            }
+            ReverseInner(ref buf, length);
         }
     }
 }

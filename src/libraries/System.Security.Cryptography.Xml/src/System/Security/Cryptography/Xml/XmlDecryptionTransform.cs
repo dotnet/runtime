@@ -26,15 +26,7 @@ namespace System.Security.Cryptography.Xml
             Algorithm = SignedXml.XmlDecryptionTransformUrl;
         }
 
-        private ArrayList ExceptUris
-        {
-            get
-            {
-                if (_arrayListUri == null)
-                    _arrayListUri = new ArrayList();
-                return _arrayListUri;
-            }
-        }
+        private ArrayList ExceptUris => _arrayListUri ??= new ArrayList();
 
         protected virtual bool IsTargetElement(XmlElement inputElement, string idValue)
         {

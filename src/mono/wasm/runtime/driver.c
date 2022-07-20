@@ -42,7 +42,6 @@
 void core_initialize_internals ();
 #endif
 
-extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
@@ -238,6 +237,24 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 	return 0;
 }
 
+const unsigned char *
+mono_wasm_get_assembly_bytes (const char *assembly_name, unsigned int *size)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		if (strcmp (entry->assembly.name, assembly_name) == 0)
+		{
+			*size = entry->assembly.size;
+			return entry->assembly.data;
+		}
+		entry = entry->next;
+	}
+	return NULL;
+}
+
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
 
 struct WasmSatelliteAssembly_ {
@@ -428,9 +445,6 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
-	// TODO: what happens when two types in different assemblies have the same FQN?
-
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 
@@ -637,6 +651,22 @@ mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, co
 	return result;
 }
 
+extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
+{
+	assert (assembly);
+	MonoError error;
+	MONO_ENTER_GC_UNSAFE;
+	MonoImage *image = mono_assembly_get_image (assembly);
+    if (!mono_runtime_run_module_cctor(image, &error)) {
+        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
+    }
+	MONO_EXIT_GC_UNSAFE;
+}
+
+
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
@@ -722,6 +752,25 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	}
 
 	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
+{
+	MonoObject *exc = NULL;
+	MonoObject *res;
+
+	void *invoke_args[1] = { args };
+
+	mono_runtime_invoke (method, NULL, invoke_args, &exc);
+	if (exc) {
+		MonoObject *exc2 = NULL;
+		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+		if (exc2)
+			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return res;
+	}
+	return NULL;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*

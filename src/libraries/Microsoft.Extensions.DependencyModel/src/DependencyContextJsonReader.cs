@@ -165,10 +165,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            if (compilationOptions == null)
-            {
-                compilationOptions = CompilationOptions.Default;
-            }
+            compilationOptions ??= CompilationOptions.Default;
 
             Target? runtimeTarget = SelectRuntimeTarget(targets, runtimeTargetName);
             runtimeTargetName = runtimeTarget?.Name;

@@ -341,10 +341,7 @@ namespace System.Configuration
         /// </summary>
         public void Reload()
         {
-            if (PropertyValues != null)
-            {
-                PropertyValues.Clear();
-            }
+            PropertyValues?.Clear();
 
             foreach (SettingsProperty sp in Properties)
             {
@@ -363,11 +360,7 @@ namespace System.Configuration
             {
                 foreach (SettingsProvider provider in Providers)
                 {
-                    IApplicationSettingsProvider clientProv = provider as IApplicationSettingsProvider;
-                    if (clientProv != null)
-                    {
-                        clientProv.Reset(Context);
-                    }
+                    (provider as IApplicationSettingsProvider)?.Reset(Context);
                 }
             }
 
@@ -434,11 +427,7 @@ namespace System.Configuration
             {
                 foreach (SettingsProvider provider in Providers)
                 {
-                    IApplicationSettingsProvider clientProv = provider as IApplicationSettingsProvider;
-                    if (clientProv != null)
-                    {
-                        clientProv.Upgrade(Context, GetPropertiesForProvider(provider));
-                    }
+                    (provider as IApplicationSettingsProvider)?.Upgrade(Context, GetPropertiesForProvider(provider));
                 }
             }
 
@@ -557,10 +546,7 @@ namespace System.Configuration
 
                 Type type = GetType();
 
-                if (_context == null)
-                {
-                    _context = new SettingsContext();
-                }
+                _context ??= new SettingsContext();
                 _context["GroupName"] = type.FullName;
                 _context["SettingsKey"] = SettingsKey;
                 _context["SettingsClassType"] = type;
@@ -568,15 +554,8 @@ namespace System.Configuration
                 PropertyInfo[] properties = SettingsFilter(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
                 _classAttributes = type.GetCustomAttributes(false);
 
-                if (_settings == null)
-                {
-                    _settings = new SettingsPropertyCollection();
-                }
-
-                if (_providers == null)
-                {
-                    _providers = new SettingsProviderCollection();
-                }
+                _settings ??= new SettingsPropertyCollection();
+                _providers ??= new SettingsProviderCollection();
 
                 for (int i = 0; i < properties.Length; i++)
                 {
@@ -628,10 +607,7 @@ namespace System.Configuration
                                 }
                                 else if (attr is SettingsGroupNameAttribute)
                                 {
-                                    if (_context == null)
-                                    {
-                                        _context = new SettingsContext();
-                                    }
+                                    _context ??= new SettingsContext();
                                     _context["GroupName"] = ((SettingsGroupNameAttribute)attr).GroupName;
                                 }
                                 else if (attr is SettingsProviderAttribute)
@@ -716,7 +692,7 @@ namespace System.Configuration
                 // on an infinite recursion when calling Properties[propertyName] as that calls this.
                 _ = base[propertyName];
                 SettingsProperty setting = Properties[propertyName];
-                SettingsProvider provider = setting != null ? setting.Provider : null;
+                SettingsProvider provider = setting?.Provider;
 
                 Debug.Assert(provider != null, "Could not determine provider from which settings were loaded");
 

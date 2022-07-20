@@ -118,7 +118,7 @@ namespace System.Data
         private static IEnumerable<Type> GetPreviouslyDeclaredDataTypes(DataSet dataSet)
         {
             return (dataSet != null)
-                ? dataSet.Tables.Cast<DataTable>().SelectMany(table => GetPreviouslyDeclaredDataTypes(table))
+                ? dataSet.Tables.Cast<DataTable>().SelectMany(GetPreviouslyDeclaredDataTypes)
                 : Enumerable.Empty<Type>();
         }
 

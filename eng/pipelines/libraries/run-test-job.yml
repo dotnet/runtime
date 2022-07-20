@@ -32,13 +32,14 @@ jobs:
       osGroup:  ${{ parameters.osGroup }}
       osSubgroup:  ${{ parameters.osSubgroup }}
       archType:  ${{ parameters.archType }}
+      crossBuild: ${{ parameters.crossBuild }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-      container: '' # we just send to helix, no need to use a container.
+      container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       testScope: ${{ parameters.testScope }}
       runTests: true
@@ -89,7 +90,7 @@ jobs:
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_buildScript)
-                    -subset libs.pretest
+                    -subset host+libs.pretest
                     $(_buildArguments)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
@@ -173,10 +174,11 @@ jobs:
               - defaultpgo
               - dynamicpgo
               - fullpgo
+              - fullpgo_methodprofiling
               - fullpgo_random_gdv
+              - fullpgo_random_gdv_methodprofiling_only
               - fullpgo_random_edge
               - fullpgo_random_gdv_edge
-              - jitosr
               - jitosr_stress
               - jitosr_stress_random
               - jitosr_pgo

@@ -4,7 +4,7 @@
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existant</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existent</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
@@ -31,7 +31,7 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
-      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
+      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
       <WasmAssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />

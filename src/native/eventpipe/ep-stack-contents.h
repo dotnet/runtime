@@ -4,6 +4,7 @@
 #include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
+#include "ep-rt.h"
 #include "ep-types.h"
 
 #undef EP_IMPL_GETTER_SETTER
@@ -109,7 +110,7 @@ ep_stack_contents_append (
 	EP_ASSERT (stack_contents != NULL);
 	uint32_t next_frame = ep_stack_contents_get_next_available_frame (stack_contents);
 	if (next_frame < EP_MAX_STACK_DEPTH) {
-		ep_stack_contents_get_stack_frames_ref (stack_contents)[next_frame] = control_pc;
+		ep_stack_contents_get_stack_frames_ref (stack_contents)[next_frame] = ep_rt_val_uintptr_t (control_pc);
 #ifdef EP_CHECKED_BUILD
 		ep_stack_contents_get_methods_ref (stack_contents)[next_frame] = method;
 #endif

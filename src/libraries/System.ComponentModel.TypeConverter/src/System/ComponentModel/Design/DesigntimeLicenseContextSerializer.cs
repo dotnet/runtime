@@ -92,7 +92,7 @@ namespace System.ComponentModel.Design
                 Debug.Assert(_stream.Position != 0, "Expected the first byte to be read first");
                 if (_stream.Position == 1)
                 {
-                    Debug.Assert(_readFirstByte == true);
+                    Debug.Assert(_readFirstByte);
                     // Add the first byte read by ReadByte into buffer here
                     buffer[0] = _firstByte;
                     return _stream.Read(buffer.Slice(1)) + 1;

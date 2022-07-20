@@ -19,6 +19,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9ContentType(ReadOnlySpan<byte> rawData)
+            : base(Oids.ContentTypeOid.CopyOid(), rawData)
+        {
+        }
+
         //
         // Public properties.
         //
