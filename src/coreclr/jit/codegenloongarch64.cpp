@@ -7081,7 +7081,16 @@ void CodeGen::genCall(GenTreeCall* call)
         }
         else if (abiInfo.IsSplit())
         {
-            NYI("unimplemented on LOONGARCH64 yet");
+            assert(compFeatureArgSplit());
+            assert(abiInfo.NumRegs == 1);
+            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
+            for (unsigned idx = 0; idx < abiInfo.NumRegs; idx++)
+            {
+                regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
+                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
+                var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
+                inst_Mov(dstType, argReg, allocReg, /* canSkip */ true);
+            }
         }
         else
         {
@@ -9294,13 +9303,13 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
                             // NOTE: `REG_R21` will be used within `emitIns_S_R`.
                             // Details see the comment for `emitIns_S_R`.
-                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_ARG_LAST, varNum, -8);
+                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, -8);
                         }
                         else
                         {
                             baseOffset = -(base - tmp_offset) - 8;
                             GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, 8);
-                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_ARG_LAST, varNum, baseOffset);
+                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, baseOffset);
                         }
                     }
                 }
