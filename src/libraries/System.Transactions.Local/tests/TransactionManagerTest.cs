@@ -13,11 +13,11 @@ namespace System.Transactions.Tests
             //Assert.Equal(TimeSpan.Parse("00:01:00"), TransactionManager.DefaultTimeout);
             //Assert.Equal(TimeSpan.Parse("00:10:00"), TransactionManager.MaximumTimeout);
 
-            TimeSpan tsDefault = TimeSpan.Parse("00:02:00");
+            TimeSpan tsDefault = TimeSpan.Parse("00:08:00");
 
             TransactionManager.DefaultTimeout = tsDefault;
 
-            Threading.Thread.Sleep(1000);
+            Threading.Thread.Sleep(5000);
 
             Assert.Equal(tsDefault, TransactionManager.DefaultTimeout);
 
