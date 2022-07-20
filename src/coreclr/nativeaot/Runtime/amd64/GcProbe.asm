@@ -105,6 +105,11 @@ EXTERN RhpPInvokeExceptionGuard : PROC
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         END_PROLOGUE
         FixupHijackedCallstack
+
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @f
+        ret
+@@:
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpGcProbe
 NESTED_END RhpGcProbeHijack, _TEXT
@@ -112,10 +117,6 @@ NESTED_END RhpGcProbeHijack, _TEXT
 EXTERN RhpThrowHwEx : PROC
 
 NESTED_ENTRY RhpGcProbe, _TEXT
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
-        jnz         @f
-        ret
-@@:
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 

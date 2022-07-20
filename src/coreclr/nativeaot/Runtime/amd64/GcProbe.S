@@ -111,15 +111,17 @@
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         END_PROLOGUE
         FixupHijackedCallstack
+
+        test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
+        jnz         LOCAL_LABEL(DoRhpGcProbe)
+        ret
+
+LOCAL_LABEL(DoRhpGcProbe):
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX
         jmp         C_FUNC(RhpGcProbe)
 NESTED_END RhpGcProbeHijack, _TEXT
 
 NESTED_ENTRY RhpGcProbe, _TEXT, NoHandler
-        test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
-        jnz         LOCAL_LABEL(RhpGcProbe_Trap)
-        ret
-LOCAL_LABEL(RhpGcProbe_Trap):
         PUSH_PROBE_FRAME r11, rax, rcx
         END_PROLOGUE
 
