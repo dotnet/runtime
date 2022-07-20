@@ -59,7 +59,7 @@ namespace System.IO.Pipelines
             AvailableMemory = arrayPoolBuffer;
         }
 
-        public void ResetMemory()
+        public void ResetMemory(bool preserveIndex = false)
         {
             IMemoryOwner<byte>? memoryOwner = _memoryOwner;
             if (memoryOwner != null)
@@ -75,7 +75,8 @@ namespace System.IO.Pipelines
             }
 
             Next = null;
-            RunningIndex = 0;
+            // RunningIndex is used to determine the total length of the linked segments and contains the length of all the previous segments (not including this one)
+            RunningIndex = preserveIndex ? RunningIndex : 0;
             Memory = default;
             _next = null;
             _end = 0;

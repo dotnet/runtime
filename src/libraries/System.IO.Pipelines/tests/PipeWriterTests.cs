@@ -182,6 +182,35 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task WriteNothingBetweenTwoFullWrites()
+        {
+            int totalWrittenLength = 0;
+            PipeWriter buffer = Pipe.Writer;
+            Memory<byte> memory = buffer.GetMemory();
+            buffer.Advance(memory.Length); // doing nothing, the hard way
+            totalWrittenLength += memory.Length;
+            await buffer.FlushAsync();
+
+            memory = buffer.GetMemory();
+            buffer.Advance(0); // doing nothing, the hard way
+            await buffer.FlushAsync();
+
+            memory = buffer.GetMemory(memory.Length + 1);
+            buffer.Advance(memory.Length);
+            totalWrittenLength += memory.Length;
+            await buffer.FlushAsync();
+
+            var res = await Pipe.Reader.ReadAsync();
+            var segmentCount = 0;
+            foreach (ReadOnlyMemory<byte> _ in res.Buffer)
+            {
+                segmentCount++;
+            }
+            Assert.Equal(2, segmentCount);
+            Assert.Equal(totalWrittenLength, res.Buffer.Length);
+        }
+
+        [Fact]
         public async Task WriteNothingThenWriteSomeBytes()
         {
             PipeWriter buffer = Pipe.Writer;

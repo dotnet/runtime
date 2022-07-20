@@ -202,7 +202,7 @@ namespace System.IO.Pipelines
                             // If we got here that means Advance was called with 0 bytes or GetMemory was called again without any writes occurring
                             // And, the newly requested memory size is greater than our unused segments internal memory buffer
                             // So we should reuse the BufferSegment and replace the memory it's holding, this way ReadAsync will not receive a buffer with one segment being empty
-                            _writingHead.ResetMemory();
+                            _writingHead.ResetMemory(preserveIndex: true);
                             SetupSegment(_writingHead, sizeHint);
                         }
                         else
