@@ -903,12 +903,7 @@ public partial class A
     private static partial Regex MyRegex();
 }
 ";
-            await new VerifyCS.Test(null, usePreviewLanguageVersion: true, 1)
-            {
-                TestCode = test,
-                FixedCode = fixedSource,
-                CodeActionValidationMode = CodeActionValidationMode.None,
-            }.RunAsync();
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         #region Test helpers
