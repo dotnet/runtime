@@ -54,6 +54,43 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 		}
 
 
+		[Fact]
+		public async Task WarningInArgument ()
+		{
+			var test = """
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+	[RequiresUnreferencedCode("message")]
+	public int M1() => 0;
+	public void M2(int x)
+	{
+	}
+	public void M3() => M2(M1());
+}
+""";
+			var fixtest = """
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+	[RequiresUnreferencedCode("message")]
+	public int M1() => 0;
+	public void M2(int x)
+	{
+	}
+
+    [RequiresUnreferencedCode()]
+    public void M3() => M2(M1());
+}
+""";
+			await VerifyRequiresUnreferencedCodeCodeFix (test, fixtest, new[] {
+				// /0/Test0.cs(9,25): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+				VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 25, 9, 29).WithArguments("C.M1()", " message.", ""),
+			}, new[] {
+				// /0/Test0.cs(10,6): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
+				DiagnosticResult.CompilerError("CS7036").WithSpan(10, 6, 10, 32).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
+			});
+		}
 
 		[Fact]
 		public async Task SimpleDiagnosticFix ()
