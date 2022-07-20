@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public static class Program
+public static class Runtime_72550
 {
     private static int retCode = 100;
 
