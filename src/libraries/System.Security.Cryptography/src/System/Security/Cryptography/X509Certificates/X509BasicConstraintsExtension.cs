@@ -60,6 +60,20 @@ namespace System.Security.Cryptography.X509Certificates
             _decoded = false;
         }
 
+        public static X509BasicConstraintsExtension CreateForCertificateAuthority(int? pathLengthConstraint = null)
+        {
+            return new X509BasicConstraintsExtension(
+                true,
+                pathLengthConstraint.HasValue,
+                pathLengthConstraint.GetValueOrDefault(),
+                true);
+        }
+
+        public static X509BasicConstraintsExtension CreateForEndEntity(bool critical = false)
+        {
+            return new X509BasicConstraintsExtension(false, false, 0, critical);
+        }
+
         private static byte[] EncodeExtension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint)
         {
             if (hasPathLengthConstraint && pathLengthConstraint < 0)
