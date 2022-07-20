@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="needs-review-translation">ネイティブ型で 'Span&lt;byte&gt;' を受け取るコンストラクターが指定されている場合、その型は 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' に BufferSize フィールドを設定して呼び出し元に割り当てられたバッファーのサイズを指定する必要があります。</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
         <source>Invalid `CustomMarshallerAttribute` usage</source>
-        <target state="needs-review-translation">無効な `CustomTypeMarshallerAttribute` の使用</target>
+        <target state="new">Invalid `CustomMarshallerAttribute` usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
-        <target state="needs-review-translation">指定されたネイティブ型は無効です</target>
+        <target state="new">Specified marshaller type is invalid</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -294,12 +294,12 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
-        <target state="needs-review-translation">'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' を持つ型には、マネージド型を指定する必要があります</target>
+        <target state="new">A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
-        <target state="needs-review-translation">型 '{0}' は、型に適用される 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' でマネージド型を指定しません</target>
+        <target state="new">The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -309,7 +309,7 @@
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
-        <target state="needs-review-translation">マネージド型 '{0}' 向けのネイティブ型 '{1}' は、閉じられたジェネリック型であるか、マネージド型と同じアリティを持つ必要があります。</target>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
@@ -324,7 +324,7 @@
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
         <source>A native type must be blittable.</source>
-        <target state="translated">ネイティブ型は blittable である必要があります。</target>
+        <target state="new">A native type must be blittable.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableMessage">
@@ -334,17 +334,17 @@
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
         <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
-        <target state="needs-review-translation">'GetPinnableReference' のピン留めされた結果をネイティブ型にキャストできるように、ネイティブ型はポインター サイズである必要があります。</target>
+        <target state="new">'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
         <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
-        <target state="needs-review-translation">マネージド型 '{1}' には 'GetPinnableReference' メソッドがあるため、ネイティブ型 '{0}' はポインター サイズにする必要があります</target>
+        <target state="new">'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
         <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="needs-review-translation">指定された型のネイティブ型は、この型をマネージド型として指定する 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' を持つ型である必要があります。</target>
+        <target state="new">An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
@@ -364,12 +364,12 @@
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
-        <target state="needs-review-translation">'ToNativeValue' の戻り値の型と 'FromNativeValue' のパラメーター型は同じである必要があります。</target>
+        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
-        <target state="needs-review-translation">'ToNativeValue' の戻り値の型と 'FromNativeValue' のパラメーター型は同じである必要があります</target>
+        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
