@@ -250,8 +250,7 @@ namespace System.Formats.Tar
             switch (_typeFlag)
             {
                 case TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes:
-                    Debug.Assert(_name != null);
-                    _extendedAttributes = await ReadExtendedAttributesBlockAsync(archiveStream, _typeFlag, _size, _name, cancellationToken).ConfigureAwait(false);
+                    await ReadExtendedAttributesBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryType.LongLink:
@@ -539,53 +538,48 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached or if an attribute is malformed.
         private void ReadExtendedAttributesBlock(Stream archiveStream)
         {
+            byte[]? buffer = CreateExtendedAttributesBufferIfSizeIsValid();
+            if (buffer != null)
+            {
+                archiveStream.ReadExactly(buffer);
+                _extendedAttributes = ReadExtendedAttributesFromBuffer(buffer, _name);
+            }
+        }
+
+        // Asynchronously collects the extended attributes found in the data section of a PAX entry of type 'x' or 'g'.
+        // Throws if end of stream is reached or if an attribute is malformed.
+        private async ValueTask ReadExtendedAttributesBlockAsync(Stream archiveStream, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[]? buffer = CreateExtendedAttributesBufferIfSizeIsValid();
+            if (buffer != null)
+            {
+                await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+                _extendedAttributes = ReadExtendedAttributesFromBuffer(buffer, _name);
+            }
+        }
+
+        // Return a byte array if the size field has a valid value for extended attributes. Otherwise, return null, or throw.
+        private byte[]? CreateExtendedAttributesBufferIfSizeIsValid()
+        {
             Debug.Assert(_typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
 
             // This should be the first time we read the extended attributes directly from the stream block
             Debug.Assert(_extendedAttributes == null);
 
-            if (_size == 0)
-            {
-                return;
-            }
-
             // It is not expected that the extended attributes data section will be longer than Array.MaxLength, considering
-            // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
+            // the size field is 12 bytes long, which fits a number with a value under int.MaxValue.
             if (_size > Array.MaxLength)
             {
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
             }
 
-            byte[] buffer = new byte[(int)_size];
-            archiveStream.ReadExactly(buffer);
-
-            _extendedAttributes = ReadExtendedAttributesFromBuffer(buffer, _name);
-        }
-
-        // Asynchronously collects the extended attributes found in the data section of a PAX entry of type 'x' or 'g'.
-        // Throws if end of stream is reached or if an attribute is malformed.
-        private static async ValueTask<Dictionary<string, string>?> ReadExtendedAttributesBlockAsync(Stream archiveStream, TarEntryType entryType, long size, string name, CancellationToken cancellationToken)
-        {
-            Debug.Assert(entryType is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // It is not expected that the extended attributes data section will be longer than Array.MaxLength, considering
-            // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
-            if (size > Array.MaxLength)
-            {
-                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, entryType.ToString()));
-            }
-
-            if (size == 0)
+            if (_size == 0)
             {
                 return null;
             }
 
-            byte[] buffer = new byte[(int)size];
-            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            return ReadExtendedAttributesFromBuffer(buffer, name);
+            return new byte[(int)_size];
         }
 
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
