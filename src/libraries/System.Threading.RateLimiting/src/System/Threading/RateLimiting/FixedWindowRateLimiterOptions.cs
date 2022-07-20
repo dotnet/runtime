@@ -10,7 +10,7 @@ namespace System.Threading.RateLimiting
     {
         /// <summary>
         /// Specifies the time window that takes in the requests.
-        /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
+        /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
         public TimeSpan Window { get; set; } = TimeSpan.Zero;
 
@@ -23,7 +23,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum number of permit counters that can be allowed in a window.
-        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
+        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
         public int PermitLimit { get; set; } = 0;
 
@@ -37,7 +37,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum cumulative permit count of queued acquisition requests.
-        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
+        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
         public int QueueLimit { get; set; } = 0;
     }
