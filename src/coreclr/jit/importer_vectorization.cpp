@@ -809,9 +809,9 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
 
     GenTree*       spanObj;
     GenTreeStrCon* cnsStr;
-    if (op2->OperIs(GT_CNS_STR))
+    if (op2Str != nullptr)
     {
-        cnsStr  = op2->AsStrCon();
+        cnsStr  = op2Str;
         spanObj = op1;
     }
     else
@@ -821,7 +821,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
             // StartsWith is not commutative
             return nullptr;
         }
-        cnsStr  = op1->AsStrCon();
+        cnsStr  = op1Str;
         spanObj = op2;
     }
 
