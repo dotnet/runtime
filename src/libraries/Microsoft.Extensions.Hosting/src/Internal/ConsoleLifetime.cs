@@ -26,12 +26,17 @@ namespace Microsoft.Extensions.Hosting.Internal
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions)
             : this(options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance) { }
 
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment!!, IHostApplicationLifetime applicationLifetime!!, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
         {
-            Options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            ThrowHelper.ThrowIfNull(options?.Value, nameof(options));
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(hostOptions?.Value, nameof(hostOptions));
+
+            Options = options.Value;
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
-            HostOptions = hostOptions?.Value ?? throw new ArgumentNullException(nameof(hostOptions));
+            HostOptions = hostOptions.Value;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
@@ -72,8 +77,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         private void OnApplicationStarted()
         {
             Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
-            Logger.LogInformation("Hosting environment: {envName}", Environment.EnvironmentName);
-            Logger.LogInformation("Content root path: {contentRoot}", Environment.ContentRootPath);
+            Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
+            Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
         }
 
         private void OnApplicationStopping()

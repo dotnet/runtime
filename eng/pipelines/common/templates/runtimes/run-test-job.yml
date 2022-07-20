@@ -134,6 +134,18 @@ jobs:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
 
+    - name: testTreeFilterArg
+      value: ''
+
+    # Only build GCSimulator tests when the gc-simulator group is specified.
+    - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - name: testTreeFilterArg
+          value: 'tree GC/Scenarios/GCSimulator'
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - name: testTreeFilterArg
+          value: '-tree:GC/Scenarios/GCSimulator'
+
     # Set job timeouts
     #
     # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
@@ -211,14 +223,17 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo', 'jit-cfg') }}:
+      ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+        timeoutInMinutes: 300
+      ${{ else }}:
+        timeoutInMinutes: 200
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'jit-cfg') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter') }}:
+    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo') }}:
       timeoutInMinutes: 510
     ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
       timeoutInMinutes: 960
@@ -287,7 +302,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
@@ -379,9 +394,16 @@ jobs:
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          scenarios:
-          - normal
-          - ${{ if ne(parameters.runtimeFlavor, 'mono') }}: # tiered compilation isn't done on mono yet
+          ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+            # tiered compilation isn't done on mono yet
+            scenarios:
+            - normal
+          ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
+            scenarios:
+            - no_tiered_compilation
+          ${{ else }}:
+            scenarios:
+            - normal
             - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
@@ -523,7 +545,9 @@ jobs:
           - defaultpgo
           - dynamicpgo
           - fullpgo
+          - fullpgo_methodprofiling
           - fullpgo_random_gdv
+          - fullpgo_random_gdv_methodprofiling_only
           - fullpgo_random_edge
           - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
@@ -546,10 +570,10 @@ jobs:
           - jitelthookenabled_tiered
         ${{ if in(parameters.testGroup, 'jit-experimental') }}:
           scenarios:
-          - jitosr
           - jitosr_stress
           - jitosr_pgo
           - jitosr_stress_random
+          - jit_stress_splitting
           - jitpartialcompilation
           - jitpartialcompilation_osr
           - jitpartialcompilation_osr_pgo

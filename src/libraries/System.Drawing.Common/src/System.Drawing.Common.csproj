@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-Unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
     <PackageDescription>Provides access to GDI+ graphics functionality.
@@ -18,8 +17,9 @@ System.Drawing.Font
 System.Drawing.Graphics
 System.Drawing.Icon
 
-Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
+Since .NET 7, non-Windows platforms are not supported, even with the runtime configuration switch. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
@@ -27,11 +27,9 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <IncludeInternalObsoleteAttribute Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework'">true</IncludeInternalObsoleteAttribute>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework' and '$(TargetPlatformIdentifier)' == ''">SR.SystemDrawingCommon_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="SRDescriptionAttribute.cs" />
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
@@ -181,72 +179,33 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\Imaging\ImageCodecInfo.cs" />
     <Compile Include="System\Drawing\Imaging\ImageCodecInfoPrivate.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileFrameUnit.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
-             Link="Common\Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.LOGFONT.cs"
-             Link="Common\Interop\Windows\User32\Interop.LOGFONT.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.RasterOp.cs"
-             Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="System\LocalAppContextSwitches.Common.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
-    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
-      <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
-    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico">
-      <LogicalName>System.Drawing.ShieldIcon.ico</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <!-- Windows-specific -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="SRDescriptionAttribute.cs" />
-    <Compile Include="System\Drawing\Bitmap.Windows.cs" />
     <Compile Include="System\Drawing\BitmapSelector.cs" />
-    <Compile Include="System\Drawing\BufferedGraphics.Windows.cs" />
-    <Compile Include="System\Drawing\BufferedGraphicsContext.Windows.cs" />
-    <Compile Include="System\Drawing\BufferedGraphicsManager.Windows.cs" />
-    <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
-    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Windows.cs" />
+    <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
+    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\DrawingCom.cs" />
-    <Compile Include="System\Drawing\Font.Windows.cs" />
-    <Compile Include="System\Drawing\FontFamily.Windows.cs" />
-    <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
-    <Compile Include="System\Drawing\Graphics.Windows.cs" />
+    <Compile Include="System\Drawing\DrawingCom.ComWrappers.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
-    <Compile Include="System\Drawing\Icon.Windows.cs" />
-    <Compile Include="System\Drawing\Image.Windows.cs" />
-    <Compile Include="System\Drawing\Imaging\BitmapData.Windows.cs" />
-    <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
-    <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
-    <Compile Include="System\Drawing\Imaging\MetaHeader.Windows.cs" />
+    <Compile Include="System\Drawing\Icon.cs" />
+    <Compile Include="System\Drawing\Icon.ComWrappers.cs" />
+    <Compile Include="System\Drawing\Imaging\MetafileHeader.cs" />
+    <Compile Include="System\Drawing\Imaging\MetaHeader.cs" />
     <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.ComWrappers.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.Windows.cs" />
-    <Compile Include="System\Drawing\Pen.Windows.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
-    <Compile Include="System\Drawing\Printing\PageSettings.Windows.cs" />
-    <Compile Include="System\Drawing\Printing\PreviewPrintController.Windows.cs" />
-    <Compile Include="System\Drawing\Printing\PrintController.Windows.cs" />
-    <Compile Include="System\Drawing\Printing\PrintDocument.Windows.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="System\Drawing\Printing\PrinterSettings.Windows.cs" />
-    <Compile Include="System\Drawing\Printing\PrintEventArgs.Windows.cs" />
-    <Compile Include="System\Drawing\Printing\PrintPageEventArgs.Windows.cs" />
+    <Compile Include="System\Drawing\Printing\PageSettings.cs" />
+    <Compile Include="System\Drawing\Printing\PrintDocument.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterSettings.cs" />
+    <Compile Include="System\Drawing\Printing\PrintEventArgs.cs" />
+    <Compile Include="System\Drawing\Printing\PrintPageEventArgs.cs" />
     <Compile Include="System\Drawing\Printing\PrintPreviewGraphics.cs" />
     <Compile Include="System\Drawing\Printing\TriState.cs" />
-    <Compile Include="System\Drawing\Region.Windows.cs" />
     <Compile Include="System\Drawing\ScreenDC.cs" />
-    <Compile Include="System\Drawing\SystemFonts.Windows.cs" />
-    <Compile Include="System\Drawing\SystemIcons.Windows.cs" />
+    <Compile Include="System\Drawing\SystemIcons.cs" />
     <Compile Include="System\Drawing\ToolboxBitmapAttribute.cs" />
-    <Compile Include="System\Drawing\Text\PrivateFontCollection.Windows.cs" />
     <Compile Include="misc\DbgUtil.cs" />
     <Compile Include="misc\DpiHelper.cs" />
     <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
@@ -262,6 +221,9 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="Interop\Windows\Interop.Shell32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
     <Compile Include="Interop\Windows\Interop.Winspool.cs" />
+
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.CombineRgn.cs"
@@ -292,10 +254,14 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
              Link="Common\Interop\Windows\Gdi32\Interop.GetRgnBox.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.GetStockObject.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.GetStockObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.ObjectType.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.ObjectType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.OffsetViewportOrgEx.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.OffsetViewportOrgEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.RasterOp.cs"
+             Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.RECT.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.RECT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.RegionType.cs"
@@ -322,6 +288,8 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
              Link="Common\Interop\Windows\Ole32\Interop.STGM.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetDC.cs"
              Link="Common\Interop\Windows\User32\Interop.GetDC.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.LOGFONT.cs"
+             Link="Common\Interop\Windows\User32\Interop.LOGFONT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.ReleaseDC.cs"
              Link="Common\Interop\Windows\User32\Interop.ReleaseDC.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.SystemParametersInfo.cs"
@@ -332,92 +300,33 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
              Link="Common\Interop\Windows\User32\Interop.WindowFromDC.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT.cs"
              Link="Common\Interop\Windows\Interop.HRESULT.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
-    <Compile Include="System\Drawing\DrawingCom.COMWrappers.cs" />
-    <Compile Include="System\Drawing\Icon.Windows.COMWrappers.cs" />
-    <Compile Include="System\Drawing\Internal\GPStream.COMWrappers.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
+
+    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp"
+                      LogicalName="System.Drawing.DefaultComponent.bmp" />
+    <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
+    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico"
+                      LogicalName="System.Drawing.ShieldIcon.ico" />
   </ItemGroup>
-  <!-- Unix specific -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
-    <Compile Include="System\Drawing\Graphics.Unix.cs" />
-    <Compile Include="System\Drawing\Icon.Unix.cs" />
-    <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\BitmapData.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\Metafile.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\MetafileHeader.Unix.cs" />
-    <Compile Include="System\Drawing\Imaging\MetaHeader.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\LibcupsNative.cs" />
-    <Compile Include="System\Drawing\Printing\PrintingServices.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PageSettings.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PreviewPrintController.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintController.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintDocument.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrinterSettings.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintEventArgs.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\PrintPageEventArgs.Unix.cs" />
-    <Compile Include="System\Drawing\Printing\StandardPrintController.Unix.cs" />
-    <Compile Include="System\Drawing\Bitmap.Unix.cs" />
-    <Compile Include="System\Drawing\BufferedGraphics.Unix.cs" />
-    <Compile Include="System\Drawing\BufferedGraphicsManager.Unix.cs" />
-    <Compile Include="System\Drawing\BufferedGraphicsContext.Unix.cs" />
-    <Compile Include="System\Drawing\macFunctions.cs" />
-    <Compile Include="System\Drawing\Font.Unix.cs" />
-    <Compile Include="System\Drawing\FontFamily.Unix.cs" />
-    <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
-    <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
-    <Compile Include="System\Drawing\LibX11Functions.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.Unix.cs" />
-    <Compile Include="System\Drawing\MarshallingHelpers.cs" />
-    <Compile Include="System\Drawing\Image.Unix.cs" />
-    <Compile Include="System\Drawing\Pen.Unix.cs" />
-    <Compile Include="System\Drawing\Region.Unix.cs" />
-    <Compile Include="System\Drawing\SRDescriptionAttribute.cs" />
-    <Compile Include="System\Drawing\SystemIcons.Unix.cs" />
-    <Compile Include="System\Drawing\ToolboxBitmapAttribute.Unix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Unix.cs" />
-    <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
-    <Compile Include="System\Drawing\LibraryResolver.cs" />
-    <Compile Include="Interop\Unix\Interop.Libraries.cs" />
-    <EmbeddedResource Include="Resources\System\Drawing\Error.ico">
-      <LogicalName>placeholder.ico</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetPlatformIdentifier)' != ''">
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.StackTrace" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Drawing.Primitives" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
 </Project>

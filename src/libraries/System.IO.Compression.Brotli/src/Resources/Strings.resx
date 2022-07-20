@@ -175,6 +175,9 @@
   <data name="BrotliStream_Decompress_InvalidStream" xml:space="preserve">
     <value>BrotliStream.BaseStream returned more bytes than requested in Read.</value>
   </data>
+  <data name="BrotliStream_Decompress_TruncatedData" xml:space="preserve">
+    <value>Decoder ran into truncated data.</value>
+  </data>
   <data name="IOCompressionBrotli_PlatformNotSupported" xml:space="preserve">
     <value>System.IO.Compression.Brotli is not supported on this platform.</value>
   </data>

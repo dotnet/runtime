@@ -35,7 +35,7 @@ check_prereqs()
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@3/lib/pkgconfig:$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
             pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
@@ -78,14 +78,14 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
-    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+    if [[ ( "$targetOS" == Android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
         fi
 
-        # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
-        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=21 $cmakeArgs"
+        # keep ANDROID_PLATFORM in sync with src/mono/Directory.Build.props
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
         __Compiler="default"
@@ -197,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -390,6 +390,10 @@ while :; do
 
         wasm|-wasm)
             __TargetArch=wasm
+            ;;
+
+        ppc64le|-ppc64le)
+            __TargetArch=ppc64le
             ;;
 
         os|-os)

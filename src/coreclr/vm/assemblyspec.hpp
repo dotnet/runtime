@@ -100,7 +100,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
 
     void InitializeSpec(PEAssembly* pPEAssembly);
-    void InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName);
 
     void AssemblyNameInit(ASSEMBLYNAMEREF* pName); //[in,out]
 

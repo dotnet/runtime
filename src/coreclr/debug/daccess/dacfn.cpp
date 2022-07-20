@@ -17,27 +17,19 @@
 
 #include "gcinterface.h"
 #include "gcinterface.dac.h"
-
-DacTableInfo g_dacTableInfo;
-DacGlobals g_dacGlobals;
-
 struct DacHostVtPtrs
 {
 #define VPTR_CLASS(name) PVOID name;
-#define VPTR_MULTI_CLASS(name, keyBase) PVOID name##__##keyBase;
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 };
 
 
 const WCHAR *g_dacVtStrings[] =
 {
 #define VPTR_CLASS(name) W(#name),
-#define VPTR_MULTI_CLASS(name, keyBase) W(#name),
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 };
 
 DacHostVtPtrs g_dacHostVtPtrs;
@@ -47,11 +39,8 @@ DacGetHostVtPtrs(void)
 {
 #define VPTR_CLASS(name) \
     g_dacHostVtPtrs.name = name::VPtrHostVTable();
-#define VPTR_MULTI_CLASS(name, keyBase) \
-    g_dacHostVtPtrs.name##__##keyBase = name::VPtrHostVTable();
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 
     return S_OK;
 }
@@ -131,6 +120,18 @@ DacGlobalBase(void)
     }
 
     return g_dacImpl->m_globalBase;
+}
+
+DacGlobals*
+DacGlobalValues(void)
+{
+    if (!g_dacImpl)
+    {
+        DacError(E_UNEXPECTED);
+        UNREACHABLE();
+    }
+
+    return &g_dacImpl->m_dacGlobals;
 }
 
 HRESULT
@@ -591,25 +592,15 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     // class identity.
     //
 
-#define VPTR_CLASS(name)                       \
-    if (vtAddr == g_dacImpl->m_globalBase +    \
-        g_dacGlobals.name##__vtAddr)           \
-    {                                          \
-        size = sizeof(name);                   \
-        hostVtPtr = g_dacHostVtPtrs.name;      \
-    }                                          \
-    else
-#define VPTR_MULTI_CLASS(name, keyBase)        \
-    if (vtAddr == g_dacImpl->m_globalBase +    \
-        g_dacGlobals.name##__##keyBase##__mvtAddr) \
-    {                                          \
-        size = sizeof(name);                   \
-        hostVtPtr = g_dacHostVtPtrs.name##__##keyBase; \
-    }                                          \
+#define VPTR_CLASS(name)                        \
+    if (vtAddr == DacGlobalValues()->name##__vtAddr) \
+    {                                           \
+        size = sizeof(name);                    \
+        hostVtPtr = g_dacHostVtPtrs.name;       \
+    }                                           \
     else
 #include <vptr_list.h>
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 
     {
         // Can't identify the vtable pointer.
@@ -1145,11 +1136,11 @@ PWSTR    DacGetVtNameW(TADDR targetVtable)
 {
     PWSTR pszRet = NULL;
 
-    ULONG *targ = &g_dacGlobals.EEJitManager__vtAddr;
-    ULONG *targStart = targ;
+    TADDR *targ = &DacGlobalValues()->EEJitManager__vtAddr;
+    TADDR *targStart = targ;
     for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
-        if (targetVtable == (*targ + DacGlobalBase()))
+        if (targetVtable == (*targ))
         {
             pszRet = (PWSTR) *(g_dacVtStrings + (targ - targStart));
             break;
@@ -1164,19 +1155,19 @@ TADDR
 DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
 {
     PVOID* host;
-    ULONG* targ;
+    TADDR* targ;
     ULONG i;
 
     // The host vtable table exactly parallels the
     // target vtable table, so just iterate to a match
     // return the matching entry.
     host = &g_dacHostVtPtrs.EEJitManager;
-    targ = &g_dacGlobals.EEJitManager__vtAddr;
+    targ = &DacGlobalValues()->EEJitManager__vtAddr;
     for (i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
         if (*host == vtHost)
         {
-            return *targ + DacGlobalBase();
+            return *targ;
         }
 
         host++;

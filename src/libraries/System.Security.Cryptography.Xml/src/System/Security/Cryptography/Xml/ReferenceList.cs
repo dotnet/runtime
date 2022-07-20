@@ -24,8 +24,13 @@ namespace System.Security.Cryptography.Xml
             get { return _references.Count; }
         }
 
-        public int Add(object value!!)
+        public int Add(object value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
@@ -47,8 +52,13 @@ namespace System.Security.Cryptography.Xml
             return _references.IndexOf(value);
         }
 
-        public void Insert(int index, object value!!)
+        public void Insert(int index, object value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 

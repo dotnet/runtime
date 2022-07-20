@@ -555,6 +555,7 @@ namespace System.IO.Tests
         [InlineData(1, false)]
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {

@@ -634,9 +634,6 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
                 rcPathName.Append(m_pResourceFile);
             }
 
-            // Feedback for debugging to eliminate unecessary loads.
-            DEBUG_STMT(DbgWriteEx(W("Loading %s to load strings.\n"), rcPath.GetUnicode()));
-
             // Load the resource library as a data file, so that the OS doesn't have
             // to allocate it as code.  This only works so long as the file contains
             // only strings.

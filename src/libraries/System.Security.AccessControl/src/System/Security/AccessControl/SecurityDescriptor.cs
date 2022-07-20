@@ -257,8 +257,10 @@ namespace System.Security.AccessControl
         // Converts the security descriptor to its binary form
         //
 
-        public void GetBinaryForm(byte[] binaryForm!!, int offset)
+        public void GetBinaryForm(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset),
@@ -461,9 +463,11 @@ namespace System.Security.AccessControl
         // Important: the representation must be in self-relative format
         //
 
-        public RawSecurityDescriptor(byte[] binaryForm!!, int offset)
+        public RawSecurityDescriptor(byte[] binaryForm, int offset)
             : base()
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             //
             // The array passed in must be valid
             //
@@ -611,8 +615,10 @@ namespace System.Security.AccessControl
 
         #region Static Methods
 
-        private static byte[] BinaryFormFromSddlForm(string sddlForm!!)
+        private static byte[] BinaryFormFromSddlForm(string sddlForm)
         {
+            ArgumentNullException.ThrowIfNull(sddlForm);
+
             int error;
             IntPtr byteArray = IntPtr.Zero;
             uint byteArraySize = 0;
@@ -868,14 +874,11 @@ namespace System.Security.AccessControl
             // Replace null DACL with an allow-all for everyone DACL
             //
 
-            if (discretionaryAcl == null)
-            {
-                //
-                // to conform to native behavior, we will add allow everyone ace for DACL
-                //
+            //
+            // to conform to native behavior, we will add allow everyone ace for DACL
+            //
 
-                discretionaryAcl = DiscretionaryAcl.CreateAllowEveryoneFullAccess(_isDS, _isContainer);
-            }
+            discretionaryAcl ??= DiscretionaryAcl.CreateAllowEveryoneFullAccess(_isDS, _isContainer);
 
             _dacl = discretionaryAcl;
 
@@ -898,7 +901,7 @@ namespace System.Security.AccessControl
                 actualFlags |= (ControlFlags.SystemAclPresent);
             }
 
-            _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl == null ? null : systemAcl.RawAcl, discretionaryAcl.RawAcl);
+            _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl?.RawAcl, discretionaryAcl.RawAcl);
         }
 
         #endregion
@@ -924,8 +927,10 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor!!, bool trusted)
+        internal CommonSecurityDescriptor(bool isContainer, bool isDS, RawSecurityDescriptor rawSecurityDescriptor, bool trusted)
         {
+            ArgumentNullException.ThrowIfNull(rawSecurityDescriptor);
+
             CreateFromParts(
                 isContainer,
                 isDS,
@@ -1179,20 +1184,18 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void PurgeAccessControl(SecurityIdentifier sid!!)
+        public void PurgeAccessControl(SecurityIdentifier sid)
         {
-            if (DiscretionaryAcl != null)
-            {
-                DiscretionaryAcl.Purge(sid);
-            }
+            ArgumentNullException.ThrowIfNull(sid);
+
+            DiscretionaryAcl?.Purge(sid);
         }
 
-        public void PurgeAudit(SecurityIdentifier sid!!)
+        public void PurgeAudit(SecurityIdentifier sid)
         {
-            if (SystemAcl != null)
-            {
-                SystemAcl.Purge(sid);
-            }
+            ArgumentNullException.ThrowIfNull(sid);
+
+            SystemAcl?.Purge(sid);
         }
 
         public void AddDiscretionaryAcl(byte revision, int trusted)

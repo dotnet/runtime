@@ -138,9 +138,11 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeServerStream from an existing server pipe handle.
-        public NamedPipeServerStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle!!)
+        public NamedPipeServerStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, PipeTransmissionMode.Byte, 0)
         {
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

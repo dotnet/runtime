@@ -1022,7 +1022,7 @@ PhaseStatus Compiler::fgCloneFinally()
         //  try { } catch { } finally { }
         //
         // will have two call finally blocks, one for the normal exit
-        // from the try, and the the other for the exit from the
+        // from the try, and the other for the exit from the
         // catch. They'll both pass the same return point which is the
         // statement after the finally, so they can share the clone.
         //

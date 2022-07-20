@@ -149,8 +149,10 @@ namespace System.Net
             }
         }
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             HttpStreamAsyncResult? ares = asyncResult as HttpStreamAsyncResult;
             if (ares == null || !ReferenceEquals(this, ares._parent))
             {

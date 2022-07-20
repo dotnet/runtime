@@ -676,8 +676,10 @@ namespace System.Reflection
         internal static void ParseAttributeArguments(ConstArray attributeBlob,
             ref CustomAttributeCtorParameter[] customAttributeCtorParameters,
             ref CustomAttributeNamedParameter[] customAttributeNamedParameters,
-            RuntimeModule customAttributeModule!!)
+            RuntimeModule customAttributeModule)
         {
+            ArgumentNullException.ThrowIfNull(customAttributeModule);
+
             Debug.Assert(customAttributeCtorParameters is not null);
             Debug.Assert(customAttributeNamedParameters is not null);
 
@@ -707,8 +709,10 @@ namespace System.Reflection
         private readonly CustomAttributeType m_type;
         private readonly CustomAttributeEncodedArgument m_encodedArgument;
 
-        public CustomAttributeNamedParameter(string argumentName!!, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
         {
+            ArgumentNullException.ThrowIfNull(argumentName);
+
             m_argumentName = argumentName;
             m_fieldOrProperty = fieldOrProperty;
             m_padding = fieldOrProperty;
@@ -1133,7 +1137,7 @@ namespace System.Reflection
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
             Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
@@ -1269,7 +1273,7 @@ namespace System.Reflection
             Justification = "Module.ResolveMethod and Module.ResolveType are marked as RequiresUnreferencedCode because they rely on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static bool FilterCustomAttributeRecord(
             MetadataToken caCtorToken,
             in MetadataImport scope,
@@ -1289,7 +1293,7 @@ namespace System.Reflection
             attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
-            if (!attributeFilterType.IsAssignableFrom(attributeType))
+            if (!MatchesTypeFilter(attributeType, attributeFilterType))
                 return false;
 
             // Ensure if attribute type must be inheritable that it is inheritable
@@ -1370,6 +1374,23 @@ namespace System.Reflection
             GC.KeepAlive(ctorWithParameters);
             return result;
         }
+
+        private static bool MatchesTypeFilter(RuntimeType attributeType, RuntimeType attributeFilterType)
+        {
+            if (attributeFilterType.IsGenericTypeDefinition)
+            {
+                for (RuntimeType? type = attributeType; type != null; type = (RuntimeType?)type.BaseType)
+                {
+                    if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == attributeFilterType)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return attributeFilterType.IsAssignableFrom(attributeType);
+        }
         #endregion
 
         #region Private Static Methods
@@ -1406,7 +1427,7 @@ namespace System.Reflection
             Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {
             RuntimeModule decoratedModule = decoratedAttribute.GetRuntimeModule();

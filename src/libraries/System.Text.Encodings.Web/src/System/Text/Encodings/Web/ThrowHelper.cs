@@ -9,6 +9,12 @@ namespace System.Text.Encodings.Web
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowArgumentNullException(ExceptionArgument argument)
+        {
+            throw new ArgumentNullException(GetArgumentName(argument));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
         {
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
@@ -26,5 +32,13 @@ namespace System.Text.Encodings.Web
     internal enum ExceptionArgument
     {
         value,
+        settings,
+        output,
+        other,
+        allowedRanges,
+        characters,
+        codePoints,
+        range,
+        ranges,
     }
 }

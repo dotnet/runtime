@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugProxy", "..\deb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmAppHost", "..\host\WasmAppHost.csproj", "{C7099764-EC2E-4FAF-9057-0321893DE4F8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmSymbolicator", "..\symbolicator\WasmSymbolicator.csproj", "{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdateReferencedAssembly", "..\debugger\tests\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj", "{75477B6F-DC8E-4002-88B8-017C992C568E}"
 EndProject
 Global
@@ -63,6 +65,10 @@ Global
 		{C7099764-EC2E-4FAF-9057-0321893DE4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7099764-EC2E-4FAF-9057-0321893DE4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7099764-EC2E-4FAF-9057-0321893DE4F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

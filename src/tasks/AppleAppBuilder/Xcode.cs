@@ -26,7 +26,7 @@ public class XcodeCreateProject : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 
@@ -73,7 +73,7 @@ public class XcodeBuildApp : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 

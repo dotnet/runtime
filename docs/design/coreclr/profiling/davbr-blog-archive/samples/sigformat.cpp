@@ -197,7 +197,7 @@ protected:
 	}
 
  	// sentinel indication the location of the "..." in the method signature
-	virtual void NotifySentinal()
+	virtual void NotifySentinel()
 	{
 		Print("...\n");
 	}
@@ -316,7 +316,7 @@ protected:
 	}
 
 	// BUG BUG lower bounds can be negative, how can this be encoded?
-	// number of dimensions with specified lower bounds followed by lower bound of each 
+	// number of dimensions with specified lower bounds followed by lower bound of each
 	virtual void NotifyNumLoBounds(sig_count count)
 	{
 		Print("Num Low Bounds: '%d'\n", count);

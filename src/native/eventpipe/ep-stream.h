@@ -16,7 +16,7 @@
 // it's sibling is defined in https://github.com/Microsoft/perfview/blob/10d1f92b242c98073b3817ac5ee6d98cd595d39b/src/FastSerialization/FastSerialization.cs#L2295
 typedef enum
 {
-	FAST_SERIALIZER_TAGS_ERROR                  = 0, // To improve debugabilty, 0 is an illegal tag.
+	FAST_SERIALIZER_TAGS_ERROR                  = 0, // To improve debugability, 0 is an illegal tag.
 	FAST_SERIALIZER_TAGS_NULL_REFERENCE         = 1, // Tag for a null object forwardReference.
 	FAST_SERIALIZER_TAGS_OBJECT_REFERENCE       = 2, // Followed by StreamLabel
 	                                                 // 3 used to belong to ForwardReference, which got removed in V3
@@ -131,21 +131,21 @@ ep_fast_serializable_object_fini (FastSerializableObject *fast_serializable_obje
 
 void
 ep_fast_serializable_object_fast_serialize (
-	FastSerializableObject *fast_serializable_ojbect,
+	FastSerializableObject *fast_serializable_object,
 	FastSerializer *fast_serializer);
 
 const ep_char8_t *
-ep_fast_serializable_object_get_type_name (FastSerializableObject *fast_serializable_ojbect);
+ep_fast_serializable_object_get_type_name (FastSerializableObject *fast_serializable_object);
 
 void
-ep_fast_serializable_object_free_vcall (FastSerializableObject *fast_serializable_ojbect);
+ep_fast_serializable_object_free_vcall (FastSerializableObject *fast_serializable_object);
 
 const ep_char8_t *
-ep_fast_serializable_object_get_type_name_vcall (FastSerializableObject *fast_serializable_ojbect);
+ep_fast_serializable_object_get_type_name_vcall (FastSerializableObject *fast_serializable_object);
 
 void
 ep_fast_serializable_object_fast_serialize_vcall (
-	FastSerializableObject *fast_serializable_ojbect,
+	FastSerializableObject *fast_serializable_object,
 	FastSerializer *fast_serializer);
 
 /*
@@ -186,10 +186,46 @@ ep_fast_serializer_write_buffer (
 	const uint8_t *buffer,
 	uint32_t buffer_len);
 
+#define EP_FAST_SERIALIZER_WRITE_INT(BITS, SIGNEDNESS) \
+static \
+inline \
+void \
+ep_fast_serializer_write_##SIGNEDNESS##int##BITS##_t ( \
+	FastSerializer *fast_serializer, \
+	SIGNEDNESS##int##BITS##_t value) \
+{ \
+	value = ep_rt_val_##SIGNEDNESS##int##BITS##_t (value); \
+	ep_fast_serializer_write_buffer (fast_serializer, (uint8_t *)&value, sizeof (value)); \
+}
+
+EP_FAST_SERIALIZER_WRITE_INT (16, )
+EP_FAST_SERIALIZER_WRITE_INT (16, u)
+EP_FAST_SERIALIZER_WRITE_INT (32, )
+EP_FAST_SERIALIZER_WRITE_INT (32, u)
+EP_FAST_SERIALIZER_WRITE_INT (64, )
+EP_FAST_SERIALIZER_WRITE_INT (64, u)
+
+#undef EP_FAST_SERIALIZER_WRITE_INT
+
+static
+inline
+void
+ep_fast_serializer_write_timestamp (
+	FastSerializer *fast_serializer,
+	ep_timestamp_t value)
+{
+	ep_fast_serializer_write_int64_t (fast_serializer, value);
+}
+
+void
+ep_fast_serializer_write_system_time (
+	FastSerializer *fast_serializer,
+	const EventPipeSystemTime *system_time);
+
 void
 ep_fast_serializer_write_object (
 	FastSerializer *fast_serializer,
-	FastSerializableObject *fast_serializable_ojbect);
+	FastSerializableObject *fast_serializable_object);
 
 void
 ep_fast_serializer_write_string (

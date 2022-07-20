@@ -4,7 +4,8 @@
 
     <!-- These projects do not need to be built during source-build. -->
     <!-- For example, they may take dependencies on pre-built packages that aren't build-from-source. e.g. 'Microsoft.DotNet.CilStrip.Sources' -->
-    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj"
+    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj;
+                              MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj"
                       Condition="'$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 

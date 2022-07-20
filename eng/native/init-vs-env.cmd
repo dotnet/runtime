@@ -45,14 +45,9 @@ set "__VSCOMNTOOLS="
 set "VSCMD_START_DIR="
 
 :VSDetected
-if "%VisualStudioVersion%"=="16.0" (
-    set __VSVersion=vs2019
-    set __PlatformToolset=v142
-    goto :SetVCEnvironment
-)
 if "%VisualStudioVersion%"=="17.0" (
     set __VSVersion=vs2022
-    set __PlatformToolset=v142
+    set __PlatformToolset=v143
     goto :SetVCEnvironment
 )
 

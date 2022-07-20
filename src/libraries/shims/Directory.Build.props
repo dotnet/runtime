@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <Nullable>disable</Nullable>
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>

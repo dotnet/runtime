@@ -30,9 +30,9 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="name">The Meter name.</param>
         /// <param name="version">The optional Meter version.</param>
-        public Meter(string name!!, string? version)
+        public Meter(string name, string? version)
         {
-            Name = name;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
 
             lock (Instrument.SyncObject)

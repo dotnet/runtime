@@ -35,3 +35,13 @@ namespace System.Drawing.Drawing2D
         public System.Numerics.Matrix3x2 MatrixElements { get { throw null; } set { } }
     }
 }
+namespace System.Drawing.Imaging
+{
+    public sealed partial class ImageFormat
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows10.0.17763.0")]
+        public static ImageFormat Heif { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows10.0.17763.0")]
+        public static ImageFormat Webp { get { throw null; } }
+    }
+}

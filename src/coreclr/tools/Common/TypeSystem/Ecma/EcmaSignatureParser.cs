@@ -471,6 +471,25 @@ namespace Internal.TypeSystem.Ecma
             return ParseType();
         }
 
+        public TypeDesc ParseFieldSignature(out EmbeddedSignatureData[] embeddedSigData)
+        {
+            try
+            {
+                _indexStack = new Stack<int>();
+                _indexStack.Push(1);
+                _indexStack.Push(0);
+                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+                TypeDesc parsedType = ParseFieldSignature();
+                embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
+                return parsedType;
+            }
+            finally
+            {
+                _indexStack = null;
+                _embeddedSignatureDataList = null;
+            }
+        }
+
         public LocalVariableDefinition[] ParseLocalsSignature()
         {
             if (_reader.ReadSignatureHeader().Kind != SignatureKind.LocalVariables)

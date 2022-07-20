@@ -32,11 +32,11 @@ namespace System.Speech.AudioFormat
         public SpeechAudioFormatInfo(int samplesPerSecond, System.Speech.AudioFormat.AudioBitsPerSample bitsPerSample, System.Speech.AudioFormat.AudioChannel channel) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public SpeechAudioFormatInfo(System.Speech.AudioFormat.EncodingFormat encodingFormat, int samplesPerSecond, int bitsPerSample, int channelCount, int averageBytesPerSecond, int blockAlign, byte[] formatSpecificData) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public int AverageBytesPerSecond { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public int BitsPerSample { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public int BlockAlign { get { throw null; } }
         public int ChannelCount { get { throw null; } }
         public System.Speech.AudioFormat.EncodingFormat EncodingFormat { get { throw null; } }
@@ -337,14 +337,14 @@ namespace System.Speech.Recognition
         public int AudioLevel { get { throw null; } }
         public System.TimeSpan AudioPosition { get { throw null; } }
         public System.Speech.Recognition.AudioState AudioState { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.TimeSpan BabbleTimeout { get { throw null; } set { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.TimeSpan EndSilenceTimeout { get { throw null; } set { } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.TimeSpan EndSilenceTimeoutAmbiguous { get { throw null; } set { } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Recognition.Grammar> Grammars { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.TimeSpan InitialSilenceTimeout { get { throw null; } set { } }
         public int MaxAlternates { get { throw null; } set { } }
         public System.TimeSpan RecognizerAudioPosition { get { throw null; } }
@@ -909,7 +909,7 @@ namespace System.Speech.Synthesis
     public partial class VoiceInfo
     {
         internal VoiceInfo() { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Collections.Generic.IDictionary<string, string> AdditionalInfo { get { throw null; } }
         public System.Speech.Synthesis.VoiceAge Age { get { throw null; } }
         public System.Globalization.CultureInfo Culture { get { throw null; } }
@@ -917,7 +917,7 @@ namespace System.Speech.Synthesis
         public System.Speech.Synthesis.VoiceGender Gender { get { throw null; } }
         public string Id { get { throw null; } }
         public string Name { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.AudioFormat.SpeechAudioFormatInfo> SupportedAudioFormats { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }

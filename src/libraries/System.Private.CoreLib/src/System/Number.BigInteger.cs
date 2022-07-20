@@ -1222,7 +1222,7 @@ namespace System
             }
 
             private void Clear(uint length) =>
-                Buffer.ZeroMemory(
+                NativeMemory.Clear(
                     (byte*)Unsafe.AsPointer(ref _blocks[0]), // This is safe to do since we are a ref struct
                     length * sizeof(uint));
 

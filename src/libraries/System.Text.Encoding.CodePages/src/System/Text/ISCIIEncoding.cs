@@ -714,8 +714,7 @@ namespace System.Text
             {
                 bLastVirama = false;
                 charLeftOver = (char)0;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our encoder?
@@ -754,8 +753,7 @@ namespace System.Text
                 bLastDevenagariStressAbbr = false;
                 cLastCharForNextNukta = '\0';
                 cLastCharForNoNextNukta = '\0';
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

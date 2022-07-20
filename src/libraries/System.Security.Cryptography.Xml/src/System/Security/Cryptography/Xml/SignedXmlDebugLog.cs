@@ -338,7 +338,7 @@ namespace System.Security.Cryptography.Xml
             {
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_CheckSignedInfo,
-                                                  signedInfo.Id != null ? signedInfo.Id : NullString);
+                                                  signedInfo.Id ?? NullString);
                 WriteLine(signedXml, TraceEventType.Information, SignedXmlDebugEvent.BeginCheckSignedInfo, logMessage);
             }
         }

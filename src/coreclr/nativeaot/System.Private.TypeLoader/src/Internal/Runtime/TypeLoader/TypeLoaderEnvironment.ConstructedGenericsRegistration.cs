@@ -52,7 +52,7 @@ namespace Internal.Runtime.TypeLoader
 
                         foreach (TypeEntryToRegister typeEntry in registrationData.TypesToRegister)
                         {
-                            // Keep track of registered type handles so that that we can rollback the registration on exception
+                            // Keep track of registered type handles so that we can rollback the registration on exception.
                             registeredTypes[registeredTypesCount++] = typeEntry;
 
                             // Information tracked in these dictionaries is (partially) redundant with information tracked by MRT.
@@ -134,7 +134,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             Debug.Assert(methodEntry._methodDictionary != IntPtr.Zero);
 
-                            // Keep track of registered method dictionaries so that that we can rollback the registration on exception
+                            // Keep track of registered method dictionaries so that we can rollback the registration on exception
                             registeredMethods[registeredMethodsCount++] = methodEntry;
 
                             // Register method dictionary -> components mapping first so that we can use it during rollback below

@@ -754,8 +754,11 @@ namespace System.Threading
         /// <param name="tokens">The <see cref="CancellationToken">CancellationToken</see> instances to observe.</param>
         /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
-        public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens!!) =>
-            tokens.Length switch
+        public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
+        {
+            ArgumentNullException.ThrowIfNull(tokens);
+
+            return tokens.Length switch
             {
                 0 => throw new ArgumentException(SR.CancellationToken_CreateLinkedToken_TokensIsEmpty),
                 1 => CreateLinkedTokenSource(tokens[0]),
@@ -765,6 +768,7 @@ namespace System.Threading
                 // hence each item cannot be null itself, and reads of the payloads cannot be torn.
                 _ => new LinkedNCancellationTokenSource(tokens),
             };
+        }
 
         private sealed class Linked1CancellationTokenSource : CancellationTokenSource
         {

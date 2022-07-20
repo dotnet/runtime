@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -28,8 +29,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(JsonDocument), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Metadata)]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues), GenerationMode = JsonSourceGenerationMode.Metadata)]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -47,6 +53,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     public sealed class MetadataWithPerTypeAttributeContextTests : RealWorldContextTests
@@ -77,6 +84,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.JsonElement.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.SerializeHandler);
@@ -93,6 +102,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.PersonStruct.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.PolymorphicClass.SerializeHandler);
         }
     }
 
@@ -119,8 +129,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
+    [JsonSerializable(typeof(JsonDocument))]
+    [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues))]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
@@ -138,6 +153,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -191,6 +207,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataContext.Default.String.SerializeHandler);
             Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MetadataContext.Default.JsonElement.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverter.SerializeHandler);
@@ -207,6 +225,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.PersonStruct.SerializeHandler);
             Assert.Null(MetadataContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.Null(MetadataContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MetadataContext.Default.PolymorphicClass.SerializeHandler);
         }
 
         [Fact]
@@ -233,7 +252,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public void EnsureHelperMethodGenerated_ImplicitPropertyFactory()
         {
             // ContextWithImplicitStringEnum does not have an entry for EnumWrittenAsString since it is
-            // implictly added by PocoWithEnum. Verify helper methods are still being created properly.
+            // implicitly added by PocoWithEnum. Verify helper methods are still being created properly.
 
             const string Json = "{\"MyEnum\":\"A\"}";
 

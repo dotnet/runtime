@@ -831,7 +831,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void SocketSendReceiveBufferSize_SetZero_ThrowsSocketException()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -999,7 +999,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
         {
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.

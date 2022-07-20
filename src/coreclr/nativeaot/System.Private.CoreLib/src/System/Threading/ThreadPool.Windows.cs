@@ -13,7 +13,6 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
-    [UnsupportedOSPlatform("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         private readonly Lock _lock;

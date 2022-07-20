@@ -37,10 +37,7 @@ namespace Internal.Win32
 
         void IDisposable.Dispose()
         {
-            if (_hkey != null)
-            {
-                _hkey.Dispose();
-            }
+            _hkey?.Dispose();
         }
 
         public void DeleteValue(string name, bool throwOnMissingValue)
@@ -97,6 +94,8 @@ namespace Internal.Win32
             {
                 return new RegistryKey(result);
             }
+
+            result.Dispose();
 
             // Return null if we didn't find the key.
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
@@ -435,8 +434,10 @@ namespace Internal.Win32
 
         // The actual api is SetValue(string name, object value) but we only need to set Strings
         // so this is a cut-down version that supports on that.
-        internal void SetValue(string name, string value!!)
+        internal void SetValue(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (name != null && name.Length > MaxValueLength)
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
 

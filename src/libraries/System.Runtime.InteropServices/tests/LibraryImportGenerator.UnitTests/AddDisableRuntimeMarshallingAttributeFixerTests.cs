@@ -34,23 +34,28 @@ namespace LibraryImportGenerator.UnitTests
             // Source will have CS8795 (Partial method must have an implementation) without generator run
             var source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 partial class Foo
 {
     [LibraryImport(""Foo"")]
     public static partial void {|CS8795:PInvoke|}(S {|#0:s|});
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) {}
+}
 
-    public S ToManaged() => new S();
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             var expectedPropertiesFile = "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]" + Environment.NewLine;
@@ -64,23 +69,28 @@ struct Native
         {
             var source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 partial class Foo
 {
     [LibraryImport(""Foo"")]
     public static partial void {|CS8795:PInvoke|}(S {|#0:s|});
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) {}
+}
 
-    public S ToManaged() => new S();
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             var propertiesFile = @"

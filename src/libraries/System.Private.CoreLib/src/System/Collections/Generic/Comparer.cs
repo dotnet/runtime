@@ -13,8 +13,10 @@ namespace System.Collections.Generic
     {
         // public static Comparer<T> Default is runtime-specific
 
-        public static Comparer<T> Create(Comparison<T> comparison!!)
+        public static Comparer<T> Create(Comparison<T> comparison)
         {
+            ArgumentNullException.ThrowIfNull(comparison);
+
             return new ComparisonComparer<T>(comparison);
         }
 
@@ -75,13 +77,24 @@ namespace System.Collections.Generic
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
-    public sealed partial class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
+    public sealed class NullableComparer<T> : Comparer<T?>, ISerializable where T : struct
     {
+        public NullableComparer() { }
+        private NullableComparer(SerializationInfo info, StreamingContext context) { }
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (!typeof(T).IsAssignableTo(typeof(IComparable<T>)))
+            {
+                // We used to use NullableComparer only for types implementing IComparable<T>
+                info.SetType(typeof(ObjectComparer<T?>));
+            }
+        }
+
         public override int Compare(T? x, T? y)
         {
             if (x.HasValue)
             {
-                if (y.HasValue) return x.value.CompareTo(y.value);
+                if (y.HasValue) return Comparer<T>.Default.Compare(x.value, y.value);
                 return 1;
             }
             if (y.HasValue) return -1;

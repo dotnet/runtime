@@ -1,18 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-#endif
-
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// IncrementingPollingCounter is a variant of EventCounter for variables that are ever-increasing.
@@ -22,9 +14,6 @@ namespace System.Diagnostics.Tracing
     /// Unlike IncrementingEventCounter, this takes in a polling callback that it can call to update
     /// its own metric periodically.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public partial class IncrementingPollingCounter : DiagnosticCounter
     {
         /// <summary>
@@ -35,8 +24,13 @@ namespace System.Diagnostics.Tracing
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
         /// <param name="totalValueProvider">The delegate to invoke to get the total value for this counter.</param>
-        public IncrementingPollingCounter(string name, EventSource eventSource, Func<double> totalValueProvider!!) : base(name, eventSource)
+        public IncrementingPollingCounter(string name, EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource)
         {
+            if (totalValueProvider is null)
+            {
+                throw new ArgumentNullException(nameof(totalValueProvider));
+            }
+
             _totalValueProvider = totalValueProvider;
             Publish();
         }
@@ -67,11 +61,9 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The DynamicDependency will preserve the properties of IncrementingCounterPayload")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(IncrementingCounterPayload))]
-#endif
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             UpdateMetric();

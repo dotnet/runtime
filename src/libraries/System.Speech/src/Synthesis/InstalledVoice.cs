@@ -88,10 +88,7 @@ namespace System.Speech.Synthesis
                     {
                         return ti;
                     }
-                    if (voiceFirst == null)
-                    {
-                        voiceFirst = ti;
-                    }
+                    voiceFirst ??= ti;
                 }
             }
             return voiceFirst;

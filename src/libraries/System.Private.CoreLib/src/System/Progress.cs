@@ -45,8 +45,10 @@ namespace System
         /// could be invoked concurrently with itself.
         /// </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="handler"/> is null (Nothing in Visual Basic).</exception>
-        public Progress(Action<T> handler!!) : this()
+        public Progress(Action<T> handler) : this()
         {
+            ArgumentNullException.ThrowIfNull(handler);
+
             _handler = handler;
         }
 

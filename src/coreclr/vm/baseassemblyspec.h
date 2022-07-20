@@ -43,21 +43,22 @@ public:
     BaseAssemblySpec();
     ~BaseAssemblySpec();
 
-    HRESULT Init(LPCSTR pAssemblyName,
-                 const AssemblyMetaDataInternal* pContext,
-                 const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
-                 DWORD dwFlags);
+    void Init(LPCSTR pAssemblyName,
+              const AssemblyMetaDataInternal* pContext,
+              const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
+              DWORD dwFlags);
 
     HRESULT Init(mdToken tkAssemblyRef, IMDInternalImport *pImport);
     HRESULT Init(mdAssembly tkAssemblyRef, IMetaDataAssemblyImport* pImport);
-    HRESULT Init(LPCSTR pAssemblyDisplayName);
+
+    void Init(SString& assemblyDisplayName);
+    HRESULT InitNoThrow(SString& assemblyDisplayName);
 
     // Note that this method does not clone the fields!
     VOID CopyFrom(const BaseAssemblySpec *pSpec);
 
     VOID    CloneFields();
     VOID    CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
-    VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
     inline void SetBinder(AssemblyBinder *pBinder)
     {
@@ -73,14 +74,12 @@ public:
         return m_pBinder;
     }
 
-    HRESULT ParseName();
     DWORD Hash();
 
     LPCSTR GetName() const;
     inline void GetName(SString & ssName) const { WRAPPER_NO_CONTRACT; ssName.SetUTF8(GetName()); }
 
     void SetName(LPCSTR szName);
-    void SetName(SString const & ssName);
 
     VOID SetCulture(LPCSTR szCulture);
 

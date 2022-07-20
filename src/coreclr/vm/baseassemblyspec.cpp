@@ -16,51 +16,6 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
-VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
-    }
-    CONTRACTL_END
-
-#if _DEBUG
-    DWORD hash = Hash();
-#endif
-
-    if ((~m_ownedFlags & NAME_OWNED) &&
-        m_pAssemblyName) {
-        S_UINT32 len = S_UINT32((DWORD) strlen(m_pAssemblyName)) + S_UINT32(1);
-        if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-        LPSTR temp = (LPSTR)alloc->Alloc(len);
-        strcpy_s(temp, len.Value(), m_pAssemblyName);
-        m_pAssemblyName = temp;
-    }
-
-    if ((~m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED) &&
-        m_pbPublicKeyOrToken && m_cbPublicKeyOrToken > 0) {
-        BYTE *temp = (BYTE *)alloc->Alloc(S_UINT32(m_cbPublicKeyOrToken)) ;
-        memcpy(temp, m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
-        m_pbPublicKeyOrToken = temp;
-    }
-
-    if ((~m_ownedFlags & LOCALE_OWNED) &&
-        m_context.szLocale) {
-        S_UINT32 len = S_UINT32((DWORD) strlen(m_context.szLocale)) + S_UINT32(1);
-        if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-        LPSTR temp = (char *)alloc->Alloc(len) ;
-        strcpy_s(temp, len.Value(), m_context.szLocale);
-        m_context.szLocale = temp;
-    }
-
-    _ASSERTE(hash == Hash());
-
-}
-
 BOOL BaseAssemblySpec::IsCoreLib()
 {
     CONTRACTL
@@ -279,27 +234,4 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
     {
         return (CompareStrings(pRef->GetName(), pDef->GetName())==0);
     }
-}
-
-VOID BaseAssemblySpec::SetName(SString const & ssName)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        GC_NOTRIGGER;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    if (m_ownedFlags & NAME_OWNED)
-    {
-        delete [] m_pAssemblyName;
-        m_ownedFlags &= ~NAME_OWNED;
-    }
-
-    m_pAssemblyName = NULL;
-
-    IfFailThrow(FString::ConvertUnicode_Utf8(ssName.GetUnicode(), & ((LPSTR &) m_pAssemblyName)));
-
-    m_ownedFlags |= NAME_OWNED;
 }

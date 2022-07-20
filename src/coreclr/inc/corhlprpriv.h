@@ -605,7 +605,7 @@ public:
         HRESULT  hr     = S_OK;
         mdToken  rid    = RidFromToken(token);
         SIZE_T   index  = rid / 8;
-        BYTE     bit    = (1 << (rid % 8));
+        BYTE     bit    = (BYTE)(1 << (rid % 8));
 
         if (index >= buffer.Size())
         {
@@ -623,7 +623,7 @@ public:
     {
         mdToken rid   = RidFromToken(token);
         SIZE_T  index = rid / 8;
-        BYTE    bit   = (1 << (rid % 8));
+        BYTE    bit   = (BYTE)(1 << (rid % 8));
 
         return ((index < buffer.Size()) && (buffer[index] & bit));
     }

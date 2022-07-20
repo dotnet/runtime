@@ -680,8 +680,13 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 *   ucontext struct
 	 *   ...
 	 * 224 is the size of the red zone
+	 * 512 is the size of the red zone for ppc64
 	 */
+#ifdef TARGET_POWERPC64
+	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 16 + 512;
+#else
 	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 16 + 224;
+#endif
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (void**)(UCONTEXT_REG_Rn(uc, 1) & ~15);
@@ -779,7 +784,11 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 
 	/* Allocate a stack frame below the red zone */
 	/* Similar to mono_arch_handle_altstack_exception () */
+#ifdef TARGET_POWERPC64
+	frame_size = 512;
+#else
 	frame_size = 224;
+#endif
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (host_mgreg_t)(UCONTEXT_REG_Rn(uc, 1) & ~15);

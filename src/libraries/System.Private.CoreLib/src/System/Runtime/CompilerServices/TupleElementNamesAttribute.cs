@@ -36,8 +36,10 @@ namespace System.Runtime.CompilerServices
         /// <c>transformNames</c> value of <c>{ "name1", "name2", null, null,
         /// null }</c>.
         /// </remarks>
-        public TupleElementNamesAttribute(string?[] transformNames!!)
+        public TupleElementNamesAttribute(string?[] transformNames)
         {
+            ArgumentNullException.ThrowIfNull(transformNames);
+
             _transformNames = transformNames;
         }
 

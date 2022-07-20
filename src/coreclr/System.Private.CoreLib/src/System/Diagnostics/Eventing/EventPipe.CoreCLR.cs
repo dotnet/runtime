@@ -57,8 +57,13 @@ namespace System.Diagnostics.Tracing
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetWaitHandle")]
-        internal static unsafe partial IntPtr GetWaitHandle(ulong sessionID);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_SignalSession")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool SignalSession(ulong sessionID);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WaitForSessionSignal")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool WaitForSessionSignal(ulong sessionID, int timeoutMs);
     }
 }
 

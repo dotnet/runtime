@@ -75,7 +75,7 @@ namespace OLEDB.Test.ModuleCore
                 {
                     CKeywordParser.Tokens tokens = new CKeywordParser.Tokens();
                     tokens.Equal = " ";
-                    tokens.Seperator = "/";
+                    tokens.Separator = "/";
                     s_hashOptions = CKeywordParser.ParseKeywords(CommandLine, tokens);
                 }
                 return s_hashOptions;

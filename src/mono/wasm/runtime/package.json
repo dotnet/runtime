@@ -7,6 +7,7 @@
   },
   "version": "1.0.0",
   "main": "dotnet.js",
+  "type": "module",
   "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",
@@ -24,6 +25,7 @@
     "@typescript-eslint/eslint-plugin": "4.31.2",
     "@typescript-eslint/parser": "4.31.2",
     "eslint": "7.32.0",
+    "fast-glob": "3.2.7",
     "rollup": "2.56.3",
     "rollup-plugin-consts": "1.0.2",
     "rollup-plugin-dts": "4.0.0",

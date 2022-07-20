@@ -25,8 +25,6 @@ class PEImage;
 
 namespace BINDER_SPACE
 {
-    class AssemblyIdentityUTF8;
-
     class AssemblyBinderCommon
     {
     public:
@@ -52,11 +50,13 @@ namespace BINDER_SPACE
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pDefaultBinder,
+                                                      /* in */ AssemblyBinder *pBinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
+                                        /* in */  bool              excludeAppPaths,
                                         /* [retval] [out] */  Assembly **ppAssembly);
 #endif // !defined(DACCESS_COMPILE)
 

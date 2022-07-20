@@ -57,10 +57,7 @@ namespace System.Drawing.Printing
                 else
                 {
                     // Parse 4 integer values.
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
@@ -91,16 +88,15 @@ namespace System.Drawing.Printing
         /// type is string. If this cannot convert to the desitnation type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Margins margins)
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = GetIntConverter();
                     string?[] args = new string[4];
@@ -140,8 +136,10 @@ namespace System.Drawing.Printing
         /// for the object.  This is useful for objects that are immutable, but still
         /// want to provide changable properties.
         /// </summary>
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? left = propertyValues["Left"];
             object? right = propertyValues["Right"];
             object? top = propertyValues["Top"];

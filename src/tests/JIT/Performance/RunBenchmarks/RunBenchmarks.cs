@@ -4,13 +4,13 @@
 // RunBenchmark - .NET Benchmark Performance Harness
 //
 // Note: This harness is currently built as a CoreCLR test case for ease of running
-// against test CORE_ROOT assemblies.   As such, when run with out any parameters, 
+// against test CORE_ROOT assemblies.   As such, when run with out any parameters,
 // it will do nothing and simply return 100.   Use "-run" to actually run tests cases.
 //
 // Usage: RunBenchmarks [options]
-//  
+//
 //  options:
-//  
+//
 //     -f <xmlFile>               specify benchmark xml control file (default benchmarks.xml)
 //     -n <number>                specify number of runs for each benchmark (default is 1)
 //     -w                         specify that warmup run should be done first
@@ -30,7 +30,7 @@
 //     -norun                     prints what would be run, but don't run benchmarks
 //     -tags <tags>               specify benchmarks with tags to include
 //     -notags <tags>             specify benchmarks with tags to exclude
-//     -csvfile                   specify name of Comma Seperated Value output file (default console)
+//     -csvfile                   specify name of Comma Separated Value output file (default console)
 //
 // Benchmark .XML Control File format:
 //
@@ -159,7 +159,7 @@ namespace BenchmarkConsoleApplication
     // Benchmark Results - includes benchmark, array of times for each iteration of the benchmark
     //                     minimum time, maximum time, average time, standard deviation and number
     //                     of failures.
- 
+
     internal class Results
     {
         public Benchmark Benchmark;
@@ -186,7 +186,7 @@ namespace BenchmarkConsoleApplication
         }
     }
 
-    // Controls - command line controls used to 
+    // Controls - command line controls used to
 
     internal class Controls
     {
@@ -448,7 +448,7 @@ namespace BenchmarkConsoleApplication
             Console.WriteLine("   -norun         prints what would be run, but don't run benchmarks");
             Console.WriteLine("   -tags <tags>   specify benchmarks with tags to include");
             Console.WriteLine("   -notags <tags> specify benchmarks with tags to exclude");
-            Console.WriteLine("   -csvfile       specify name of Comma Seperated Value output file (default coreclr_benchmarks.csv)");
+            Console.WriteLine("   -csvfile       specify name of Comma Separated Value output file (default coreclr_benchmarks.csv)");
 
             Exit(-1);
         }
@@ -514,7 +514,7 @@ namespace BenchmarkConsoleApplication
 
         // Constructed platform specific field name given either Unix style or Windows style
         // directory name.
-   
+
         public string PlatformSpecificDirectoryName
         (
             string directoryName
@@ -610,7 +610,7 @@ namespace BenchmarkConsoleApplication
             // If we aren't being asked to run benchmarks or print results
             // then we must be being executed as a simple CoreCLR test case.
             // Don't bother reading XML file.
- 
+
             if (doRunAsTestCase)
             {
                 return;
@@ -622,13 +622,13 @@ namespace BenchmarkConsoleApplication
 
             XElement benchmarkXml = XElement.Load(benchmarkXmlFullFileName);
 
-            // Get root directory for benchmark system.  Command line argument overrides 
+            // Get root directory for benchmark system.  Command line argument overrides
             // specification in benchmark control file.
 
             benchmarkRootDirectoryName = Controls.BenchmarksRootDirectory;
             if (benchmarkRootDirectoryName == "")
             {
-                benchmarkRootDirectoryName = 
+                benchmarkRootDirectoryName =
                 Controls.BenchmarksRootDirectory = benchmarkRootDirectoryName;
             }
             benchmarkRootDirectoryName = PlatformSpecificDirectoryName(benchmarkRootDirectoryName);
@@ -745,7 +745,7 @@ namespace BenchmarkConsoleApplication
             }
         }
 
-        // Select benchmarks to run based on controls for suite, tag, or specfic 
+        // Select benchmarks to run based on controls for suite, tag, or specfic
         // benchmark inclusion/exclusion.
 
         public void SelectBenchmarks()
@@ -1054,13 +1054,13 @@ namespace BenchmarkConsoleApplication
                 {
                     string name = results.Benchmark.Name;
                     outputFile.Write("{0},", name);
-    
+
                     long minimum = results.Minimum;
                     long maximum = results.Maximum;
                     long average = results.Average;
                     double standardDeviation = results.StandardDeviation;
                     outputFile.Write("{0},{1},{2},{3}", minimum, maximum, average, standardDeviation);
-    
+
                     numberOfFailuresPerBenchmark = results.Failures;
                     numberOfPasses = (numberOfPasses < 0) ? 0 : numberOfPasses;
                     if (numberOfFailuresPerBenchmark > 0)
@@ -1073,7 +1073,7 @@ namespace BenchmarkConsoleApplication
                     }
                     outputFile.WriteLine("");
                 }
-    
+
                 outputFile.WriteLine("TOTAL BENCHMARKS({0}), PASSED({1}), FAILED({2})",
                         numberOfBenchmarksRun, numberOfPasses, numberOfFailures);
             }

@@ -161,7 +161,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     int       simdSize;
     var_types simdType;
 
-    NamedIntrinsic niZero;
     NamedIntrinsic niEquals;
 
     GenTree* cnsVec1     = nullptr;
@@ -192,7 +191,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         simdSize = 32;
         simdType = TYP_SIMD32;
 
-        niZero   = NI_Vector256_get_Zero;
         niEquals = NI_Vector256_op_Equality;
 
         // Special case: use a single vector for Length == 16
@@ -217,7 +215,6 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         simdSize = 16;
         simdType = TYP_SIMD16;
 
-        niZero   = NI_Vector128_get_Zero;
         niEquals = NI_Vector128_op_Equality;
 
         // Special case: use a single vector for Length == 8
@@ -239,7 +236,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         return nullptr;
     }
 
-    GenTree* zero = gtNewSimdHWIntrinsicNode(simdType, niZero, baseType, simdSize);
+    GenTree* zero = gtNewZeroConNode(simdType, baseType);
 
     GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
     GenTree* offset2  = gtNewIconNode(dataOffset + len * sizeof(USHORT) - simdSize, TYP_I_IMPL);
@@ -583,7 +580,7 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
             assert(argCall->gtArgs.CountArgs() == 1);
-            GenTree* arg = argCall->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+            GenTree* arg = argCall->gtArgs.GetArgByIndex(0)->GetNode();
             if (arg->OperIs(GT_CNS_STR))
             {
                 return arg->AsStrCon();

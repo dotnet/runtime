@@ -781,7 +781,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
 
             ReadBase64EncryptedPkcs8(
                 base64,
-                Encoding.UTF8.GetBytes("rc2"),
+                "rc2"u8.ToArray(),
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes192Cbc,
                     HashAlgorithmName.SHA256,

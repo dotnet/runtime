@@ -32,8 +32,10 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContractSet(DataContractSet dataContractSet!!)
+        internal DataContractSet(DataContractSet dataContractSet)
         {
+            ArgumentNullException.ThrowIfNull(dataContractSet);
+
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
             _referencedCollectionTypes = dataContractSet._referencedCollectionTypes;
@@ -52,39 +54,14 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private Dictionary<XmlQualifiedName, DataContract> Contracts
-        {
-            get
-            {
-                if (_contracts == null)
-                {
-                    _contracts = new Dictionary<XmlQualifiedName, DataContract>();
-                }
-                return _contracts;
-            }
-        }
+        private Dictionary<XmlQualifiedName, DataContract> Contracts =>
+            _contracts ??= new Dictionary<XmlQualifiedName, DataContract>();
 
-        private Dictionary<DataContract, object> ProcessedContracts
-        {
-            get
-            {
-                if (_processedContracts == null)
-                {
-                    _processedContracts = new Dictionary<DataContract, object>();
-                }
-                return _processedContracts;
-            }
-        }
+        private Dictionary<DataContract, object> ProcessedContracts =>
+            _processedContracts ??= new Dictionary<DataContract, object>();
+
 #if SUPPORT_SURROGATE
-        private Hashtable SurrogateDataTable
-        {
-            get
-            {
-                if (_surrogateDataTable == null)
-                    _surrogateDataTable = new Hashtable();
-                return _surrogateDataTable;
-            }
-        }
+        private Hashtable SurrogateDataTable => _surrogateDataTable ??= new Hashtable();
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

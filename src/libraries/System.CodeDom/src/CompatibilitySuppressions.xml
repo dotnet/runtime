@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.CodeDom.Compiler.Executor.ExecWaitWithCapture(System.IntPtr,System.String,System.CodeDom.Compiler.TempFileCollection,System.String@,System.String@)</Target>
+    <Left>lib/net6.0/System.CodeDom.dll</Left>
+    <Right>lib/net7.0/System.CodeDom.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.CodeDom.Compiler.Executor.ExecWaitWithCapture(System.IntPtr,System.String,System.String,System.CodeDom.Compiler.TempFileCollection,System.String@,System.String@)</Target>
+    <Left>lib/net6.0/System.CodeDom.dll</Left>
+    <Right>lib/net7.0/System.CodeDom.dll</Right>
+  </Suppression>
+</Suppressions>

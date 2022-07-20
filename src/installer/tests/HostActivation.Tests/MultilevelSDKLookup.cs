@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private readonly string _regSdkBaseDir;
         private readonly string _exeSelectedMessage;
         private readonly string _regSelectedMessage;
-        private readonly string _multilevelDir;
+        private readonly TestArtifact _multilevelDir;
 
         private const string _dotnetSdkDllMessageTerminator = "dotnet.dll]";
 
@@ -36,15 +36,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // The dotnetMultilevelSDKLookup dir will contain some folders and files that will be
             // necessary to perform the tests
             string baseMultilevelDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetMultilevelSDKLookup");
-            _multilevelDir = SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir);
+            _multilevelDir = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir));
 
             // The tested locations will be the cwd, exe dir, and registered directory. cwd is no longer supported.
             //     All dirs will be placed inside the multilevel folder
-            _currentWorkingDir = Path.Combine(_multilevelDir, "cwd");
-            _exeDir = Path.Combine(_multilevelDir, "exe");
-            _regDir = Path.Combine(_multilevelDir, "reg");
+            _currentWorkingDir = Path.Combine(_multilevelDir.Location, "cwd");
+            _exeDir = Path.Combine(_multilevelDir.Location, "exe");
+            _regDir = Path.Combine(_multilevelDir.Location, "reg");
 
-            DotNet = new DotNetBuilder(_multilevelDir, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
+            DotNet = new DotNetBuilder(_multilevelDir.Location, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
 
@@ -70,11 +70,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Dispose()
         {
             _testOnlyProductBehaviorMarker?.Dispose();
-
-            if (!TestArtifact.PreserveTestRuns())
-            {
-                Directory.Delete(_multilevelDir, true);
-            }
+            _multilevelDir.Dispose();
         }
 
         [Fact]

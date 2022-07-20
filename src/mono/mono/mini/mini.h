@@ -41,6 +41,7 @@
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/ftnptr.h>
+#include <mono/utils/options.h>
 #include <mono/metadata/icalls.h>
 
 // Forward declare so that mini-*.h can have pointers to them.
@@ -204,7 +205,7 @@ enum {
 
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = (MonoInst *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = (op);	\
+		(dest)->opcode = GINT_TO_OPCODE ((op));	\
 		(dest)->dreg = -1;			    \
 		MONO_INST_NULLIFY_SREGS ((dest));	    \
         (dest)->cil_code = (cfg)->ip;  \
@@ -212,7 +213,7 @@ enum {
 
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
 		(dest) = (MonoCallInst *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
-		(dest)->inst.opcode = (op);	\
+		(dest)->inst.opcode = GINT_TO_OPCODE ((op));	\
 		(dest)->inst.dreg = -1;					\
 		MONO_INST_NULLIFY_SREGS (&(dest)->inst);		\
         (dest)->inst.cil_code = (cfg)->ip;  \
@@ -632,6 +633,8 @@ typedef enum {
 	LLVMArgInFPReg,
 	/* Valuetype passed in 1-2 consecutive register */
 	LLVMArgVtypeInReg,
+	/* Pass vector types in SIMD registers */
+	LLVMArgVtypeInSIMDReg,
 	LLVMArgVtypeByVal,
 	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
 	LLVMArgGSharedVt,
@@ -1280,12 +1283,12 @@ typedef enum {
 #define MONO_REGION_FLAGS(region) ((region) & 0x7)
 #define MONO_REGION_CLAUSE_INDEX(region) (((region) >> 8) - 1)
 
-#define get_vreg_to_inst(cfg, vreg) ((vreg) < (cfg)->vreg_to_inst_len ? (cfg)->vreg_to_inst [(vreg)] : NULL)
+#define get_vreg_to_inst(cfg, vreg) (GINT32_TO_UINT32(vreg) < (cfg)->vreg_to_inst_len ? (cfg)->vreg_to_inst [(vreg)] : NULL)
 
 #define vreg_is_volatile(cfg, vreg) (G_UNLIKELY (get_vreg_to_inst ((cfg), (vreg)) && (get_vreg_to_inst ((cfg), (vreg))->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))))
 
-#define vreg_is_ref(cfg, vreg) ((vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
-#define vreg_is_mp(cfg, vreg) ((vreg) < (cfg)->vreg_is_mp_len ? (cfg)->vreg_is_mp [(vreg)] : 0)
+#define vreg_is_ref(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
+#define vreg_is_mp(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_mp_len ? (cfg)->vreg_is_mp [(vreg)] : 0)
 
 /*
  * Control Flow Graph and compilation unit information
@@ -1393,6 +1396,7 @@ typedef struct {
 
 	/* Points to the call to mini_init_method_rgctx () */
 	MonoInst *init_method_rgctx_ins;
+	MonoInst *init_method_rgctx_ins_arg;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -1478,6 +1482,7 @@ typedef struct {
 	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
+	guint            gsharedvt_min : 1;
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
@@ -1923,7 +1928,7 @@ set_code_cursor (MonoCompile *cfg, void* void_code)
 {
 	guint8* code = (guint8*)void_code;
 	g_assert (code <= (cfg->native_code + cfg->code_size));
-	set_code_len (cfg, code - cfg->native_code);
+	set_code_len (cfg, GPTRDIFF_TO_INT (code - cfg->native_code));
 }
 
 #endif
@@ -2204,7 +2209,7 @@ MonoInst* mono_emit_jit_icall_id (MonoCompile *cfg, MonoJitICallId jit_icall_id,
 MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *info, MonoInst **args);
 MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this_ins);
 gboolean  mini_should_insert_breakpoint (MonoMethod *method);
-int mono_target_pagesize (void);
+guint     mono_target_pagesize (void);
 
 gboolean  mini_class_is_system_array (MonoClass *klass);
 
@@ -2332,24 +2337,20 @@ MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
 MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
-CompRelation mono_opcode_to_cond (int opcode);
+CompRelation      mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
 CompRelation      mono_negate_cond (CompRelation cond);
 int               mono_op_imm_to_op (int opcode);
 void              mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins);
-MonoUnwindOp     *mono_create_unwind_op (int when,
-										 int tag, int reg,
-										 int val);
-void              mono_emit_unwind_op (MonoCompile *cfg, int when,
-									   int tag, int reg,
-									   int val);
+MonoUnwindOp*     mono_create_unwind_op (gsize when, guint8 tag, guint16 reg, int val);
+void              mono_emit_unwind_op (MonoCompile *cfg, gsize when, guint8 tag, guint16 reg, int val);
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops);
 void              mono_tramp_info_free (MonoTrampInfo *info);
 void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
 void              mono_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
-int mini_exception_id_by_name (const char *name);
-gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
+int               mini_exception_id_by_name (const char *name);
+gboolean          mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 
 int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock,
 									 MonoInst *return_var, MonoInst **inline_args,
@@ -2932,7 +2933,11 @@ static inline gboolean
 mini_safepoints_enabled (void)
 {
 #if defined (TARGET_WASM)
-	return FALSE;
+	#ifndef DISABLE_THREADS
+		return TRUE;
+	#else
+		return mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	return TRUE;
 #endif

@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.Hosting
                         // build to throw
                         _hostTcs.TrySetException(new InvalidOperationException("The entry point exited without ever building an IHost."));
                     }
-                    catch (TargetInvocationException tie) when (tie.InnerException is StopTheHostException)
+                    catch (TargetInvocationException tie) when (tie.InnerException?.GetType().Name == "HostAbortedException")
                     {
                         // The host was stopped by our own logic
                     }
@@ -341,14 +341,29 @@ namespace Microsoft.Extensions.Hosting
                     if (_stopApplication)
                     {
                         // Stop the host from running further
-                        throw new StopTheHostException();
+                        ThrowHostAborted();
                     }
                 }
             }
 
-            private sealed class StopTheHostException : Exception
+            // HostFactoryResolver is used by tools that explicitly don't want to reference Microsoft.Extensions.Hosting assemblies.
+            // So don't depend on the public HostAbortedException directly. Instead, load the exception type dynamically if it can
+            // be found. If it can't (possibly because the app is using an older version), throw a private exception with the same name.
+            private void ThrowHostAborted()
             {
+                Type? publicHostAbortedExceptionType = Type.GetType("Microsoft.Extensions.Hosting.HostAbortedException, Microsoft.Extensions.Hosting.Abstractions", throwOnError: false);
+                if (publicHostAbortedExceptionType != null)
+                {
+                    throw (Exception)Activator.CreateInstance(publicHostAbortedExceptionType)!;
+                }
+                else
+                {
+                    throw new HostAbortedException();
+                }
+            }
 
+            private sealed class HostAbortedException : Exception
+            {
             }
         }
     }

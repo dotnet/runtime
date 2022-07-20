@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
@@ -29,12 +28,10 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

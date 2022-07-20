@@ -25,18 +25,29 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to compress.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="System.IO.Compression.BrotliStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream!!, CompressionMode mode, bool leaveOpen)
+        public BrotliStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             switch (mode)
             {
                 case CompressionMode.Compress:
                     if (!stream.CanWrite)
+                    {
                         throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
+                    }
+
+                    _encoder.SetQuality(BrotliUtils.Quality_Default);
+                    _encoder.SetWindow(BrotliUtils.WindowBits_Default);
                     break;
+
                 case CompressionMode.Decompress:
                     if (!stream.CanRead)
+                    {
                         throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
+                    }
                     break;
+
                 default:
                     throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
             }

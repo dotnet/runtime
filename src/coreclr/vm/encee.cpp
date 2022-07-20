@@ -321,7 +321,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
 
     // Reset any flags relevant to the old code
     //
-    // Note that this only works since we've very carefullly made sure that _all_ references
+    // Note that this only works since we've very carefully made sure that _all_ references
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //
@@ -568,9 +568,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             errorMessage.AppendASCII("**Error: Probable rude edit.**\n\n"
                                 "EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n");
             errorMessage.Append(exceptionMessage);
-            StackScratchBuffer buffer;
-            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetANSI(buffer));
-            LOG((LF_ENC, LL_INFO100, errorMessage.GetANSI(buffer)));
+            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetUTF8());
+            LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
         }
 #endif
     } EX_END_CATCH(SwallowAllExceptions)
@@ -609,7 +608,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     SIZE_T newILOffset,
     CONTEXT *pOrigContext)
 {
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
     return E_NOTIMPL;
 #else
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ",
@@ -653,8 +652,27 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
     _ASSERTE(oldCodeInfo.GetCodeManager() == newCodeInfo.GetCodeManager());
 
+#ifdef TARGET_ARM64
+    // GCInfo for old method
+    GcInfoDecoder oldGcDecoder(
+        oldCodeInfo.GetGCInfoToken(),
+        GcInfoDecoderFlags(DECODE_EDIT_AND_CONTINUE),
+        0       // Instruction offset (not needed)
+        );
+
+    // GCInfo for new method
+    GcInfoDecoder newGcDecoder(
+        newCodeInfo.GetGCInfoToken(),
+        GcInfoDecoderFlags(DECODE_EDIT_AND_CONTINUE),
+        0       // Instruction offset (not needed)
+        );
+
+    DWORD oldFrameSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+    DWORD newFrameSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+#else
     DWORD oldFrameSize = oldCodeInfo.GetFixedStackSize();
     DWORD newFrameSize = newCodeInfo.GetFixedStackSize();
+#endif
 
     // FixContextAndResume() will replace the old stack frame of the function with the new
     // one and will initialize that new frame to null. Anything on the stack where that new
@@ -694,7 +712,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return hr;
-#endif // #if define(TARGET_ARM64) || defined(TARGET_ARM)
+#endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 }
 
 //---------------------------------------------------------------------------------------
@@ -715,7 +733,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 //   WARNING: This method cannot access any stack-data below its frame on the stack
 //   (i.e. anything allocated in a caller frame), so all stack-based arguments must
 //   EXPLICITLY be copied by value and this method cannot be inlined.  We may need to expand
-//   the stack frame to accomodate the new method, and so extra buffer space must have
+//   the stack frame to accommodate the new method, and so extra buffer space must have
 //   been allocated on the stack.  Note that passing a struct by value (via C++) is not
 //   enough to ensure its data is really copied (on x64, large structs may internally be
 //   passed by reference).  Thus we explicitly make copies of structs passed in, at the
@@ -733,12 +751,15 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     STATIC_CONTRACT_GC_TRIGGERS; // Sends IPC event
     STATIC_CONTRACT_THROWS;
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD64 ssp = GetSSP(pContext);
+#endif
     // Create local copies of all structs passed as arguments to prevent them from being overwritten
     CONTEXT context;
     memcpy(&context, pContext, sizeof(CONTEXT));
     pContext = &context;
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // Since we made a copy of the incoming CONTEXT in context, clear any new flags we
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
     // on this copy to ClrRestoreNonvolatileContext, and this copy doesn't have the extra info
@@ -813,6 +834,8 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
+#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    ClrRestoreNonvolatileContextWorker(pContext, ssp);
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif
@@ -1339,7 +1362,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
 
         // put at front of list so the list is in order of most recently added
         pEntry->m_pNext = m_pList;
-        if (FastInterlockCompareExchangePointer(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
+        if (InterlockedCompareExchangeT(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
             break;
 
         // There was a race and another thread modified the list here, so we need to try again

@@ -239,6 +239,20 @@ def generateClrEventPipeWriteEventsImpl(
 
 
 def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
+    def winTypeToFixedWidthType(t):
+        return {'win:Int8': 'int8_t',
+                'win:UInt8': 'uint8_t',
+                'win:Int16': 'int16_t',
+                'win:UInt16': 'uint16_t',
+                'win:Int32': 'int32_t',
+                'win:UInt32': 'uint32_t',
+                'win:Int64': 'int64_t',
+                'win:UInt64': 'uint64_t',
+                'win:Pointer': 'uintptr_t',
+                'win:AnsiString': 'UTF8String',
+                'win:UnicodeString': 'UTF16String'
+                }[t]
+
     fnSig = template.signature
     pack_list = []
 
@@ -267,9 +281,33 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
             if runtimeFlavor.mono:
+                pack_list.append("#if BIGENDIAN")
+                pack_list.append("    const uint8_t *valuePtr = %s;" % paramName)
+                pack_list.append("    for (uint32_t i = 0; i < %s; ++i) {" % template.structs[paramName])
+                types = [winTypeToFixedWidthType(t) for t in template.structTypes[paramName]]
+                for t in set(types) - {"UTF8String", "UTF16String"}:
+                    pack_list.append("        %(type)s value_%(type)s;" % {'type': t})
+                if "UTF8String" in types or "UTF16String" in types:
+                    pack_list.append("        size_t value_len;")
+                for t in types:
+                    if t == "UTF8String":
+                        pack_list.append("        value_len = strlen((const char *)valuePtr);")
+                        pack_list.append("        success &= write_buffer_string_utf8_t((const ep_char8_t *)valuePtr, value_len, &buffer, &offset, &size, &fixedBuffer);")
+                        pack_list.append("        valuePtr += value_len + 1;")
+                    elif t == "UTF16String":
+                        pack_list.append("        value_len = strlen((const char *)valuePtr);")
+                        pack_list.append("        success &= write_buffer_string_utf8_to_utf16_t((const ep_char8_t *)valuePtr, value_len, &buffer, &offset, &size, &fixedBuffer);")
+                        pack_list.append("        valuePtr += value_len + 1;")
+                    else:
+                        pack_list.append("        memcpy (&value_%(type)s, valuePtr, sizeof (value_%(type)s));" % {'type': t})
+                        pack_list.append("        valuePtr += sizeof (%s);" % t)
+                        pack_list.append("        success &= write_buffer_%(type)s (value_%(type)s, &buffer, &offset, &size, &fixedBuffer);" % {'type': t})
+                pack_list.append("    }")
+                pack_list.append("#else")
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
+                pack_list.append("#endif // BIGENDIAN")
                 emittedWriteToBuffer = True
             elif runtimeFlavor.coreclr:
                 pack_list.append(
@@ -278,14 +316,21 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 emittedWriteToBuffer = True
         elif paramName in template.arrays:
             size = "sizeof(%s) * (int)%s" % (
-                lttngDataTypeMapping[parameter.winType],
+                getLttngDataTypeMapping(runtimeFlavor)[parameter.winType],
                 parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
             if runtimeFlavor.mono:
+                t = winTypeToFixedWidthType(parameter.winType)
+                pack_list.append("#if BIGENDIAN")
+                pack_list.append("    for (uint32_t i = 0; i < %s; ++i) {" % template.arrays[paramName])
+                pack_list.append("        success &= write_buffer_%(type)s (%(name)s[i], &buffer, &offset, &size, &fixedBuffer);" % {'name': paramName, 'type': t})
+                pack_list.append("    }")
+                pack_list.append("#else")
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
+                pack_list.append("#endif // BIGENDIAN")
                 emittedWriteToBuffer = True
             elif runtimeFlavor.coreclr:
                 pack_list.append(
@@ -304,13 +349,13 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             emittedWriteToBuffer = True
         elif parameter.winType == "win:AnsiString" and runtimeFlavor.mono:
             pack_list.append(
-                    "    success &= write_buffer_string_utf8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
-                    (parameter.name,))
+                    "    success &= write_buffer_string_utf8_t(%s, strlen((const char *)%s), &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name, parameter.name))
             emittedWriteToBuffer = True
         elif parameter.winType == "win:UnicodeString" and runtimeFlavor.mono:
             pack_list.append(
-                    "    success &= write_buffer_string_utf8_to_utf16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
-                    (parameter.name,))
+                    "    success &= write_buffer_string_utf8_to_utf16_t(%s, strlen((const char *)%s), &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name, parameter.name))
             emittedWriteToBuffer = True
         elif parameter.winType == "win:UInt8" and runtimeFlavor.mono:
             pack_list.append(
@@ -558,6 +603,7 @@ write_buffer (
 bool
 write_buffer_string_utf8_to_utf16_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -566,6 +612,7 @@ write_buffer_string_utf8_to_utf16_t (
 bool
 write_buffer_string_utf8_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -640,6 +687,7 @@ ep_on_error:
 bool
 write_buffer_string_utf8_to_utf16_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -653,12 +701,12 @@ write_buffer_string_utf8_to_utf16_t (
     custom_alloc_data.buffer_size = *size - *offset;
     custom_alloc_data.req_buffer_size = 0;
 
-    if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
+    if (!g_utf8_to_utf16le_custom_alloc (value, (glong)value_len, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
         ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
         custom_alloc_data.buffer = *buffer + *offset;
         custom_alloc_data.buffer_size = *size - *offset;
         custom_alloc_data.req_buffer_size = 0;
-        ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
+        ep_raise_error_if_nok (g_utf8_to_utf16le_custom_alloc (value, (glong)value_len, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
     }
 
     *offset += custom_alloc_data.req_buffer_size;
@@ -671,6 +719,7 @@ ep_on_error:
 bool
 write_buffer_string_utf8_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -678,10 +727,6 @@ write_buffer_string_utf8_t (
 {
     if (!value)
         return true;
-
-    size_t value_len = 0;
-    while (value [value_len])
-        value_len++;
 
     return write_buffer ((const uint8_t *)value, (value_len + 1) * sizeof(*value), buffer, offset, size, fixed_buffer);
 }
@@ -802,6 +847,7 @@ write_buffer (
 bool
 write_buffer_string_utf8_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -810,6 +856,7 @@ write_buffer_string_utf8_t (
 bool
 write_buffer_string_utf8_to_utf16_t (
     const ep_char8_t *value,
+    size_t value_len,
     uint8_t **buffer,
     size_t *offset,
     size_t *size,
@@ -851,6 +898,7 @@ write_buffer_uint16_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uint16_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uint16_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -864,6 +912,7 @@ write_buffer_uint32_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uint32_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uint32_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -877,6 +926,7 @@ write_buffer_int32_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_int32_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (int32_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -890,6 +940,7 @@ write_buffer_uint64_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uint64_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uint64_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -903,6 +954,7 @@ write_buffer_int64_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_int64_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (int64_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -916,6 +968,12 @@ write_buffer_double_t (
     size_t *size,
     bool *fixed_buffer)
 {
+#if BIGENDIAN
+    uint64_t value_as_uint64_t;
+    memcpy (&value_as_uint64_t, &value, sizeof (uint64_t));
+    value_as_uint64_t = ep_rt_val_uint64_t (value_as_uint64_t);
+    memcpy (&value, &value_as_uint64_t, sizeof (uint64_t));
+#endif
     return write_buffer ((const uint8_t *)&value, sizeof (double), buffer, offset, size, fixed_buffer);
 }
 
@@ -942,6 +1000,7 @@ write_buffer_uintptr_t (
     size_t *size,
     bool *fixed_buffer)
 {
+    value = ep_rt_val_uintptr_t (value);
     return write_buffer ((const uint8_t *)&value, sizeof (uintptr_t), buffer, offset, size, fixed_buffer);
 }
 
@@ -1041,7 +1100,7 @@ def generateEventPipeImplFiles(
                 )
 
                 eventpipeImpl.write(
-                    "EventPipeProvider *EventPipeProvider" + providerPrettyName + 
+                    "EventPipeProvider *EventPipeProvider" + providerPrettyName +
                     (" = nullptr;\n" if target_cpp else " = NULL;\n")
                 )
                 templateNodes = providerNode.getElementsByTagName('template')
@@ -1103,7 +1162,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man', type=str, required=True,
-                          help='full path to manifest containig the description of events')
+                          help='full path to manifest containing the description of events')
     required.add_argument('--exc',  type=str, required=True,
                                     help='full path to exclusion list')
     required.add_argument('--inc',  type=str,default="",

@@ -17,8 +17,10 @@ namespace System.IO.Pipes
             return new PipeSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity!!)
+        public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity)
         {
+            ArgumentNullException.ThrowIfNull(pipeSecurity);
+
             // Checks that State != WaitingToConnect and State != Closed
             var handle = stream.SafePipeHandle;
 

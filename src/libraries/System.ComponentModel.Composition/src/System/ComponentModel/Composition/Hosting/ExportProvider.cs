@@ -205,8 +205,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private ExportCardinalityCheckResult TryGetExportsCore(ImportDefinition definition!!, AtomicComposition? atomicComposition, out IEnumerable<Export>? exports)
+        private ExportCardinalityCheckResult TryGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition, out IEnumerable<Export>? exports)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             exports = GetExportsCore(definition, atomicComposition);
 
             var checkResult = ExportServices.CheckCardinality(definition, exports);
@@ -222,10 +224,7 @@ namespace System.ComponentModel.Composition.Hosting
                 exports = null;
             }
 
-            if (exports == null)
-            {
-                exports = Array.Empty<Export>();
-            }
+            exports ??= Array.Empty<Export>();
 
             return checkResult;
         }

@@ -303,7 +303,7 @@ bool CrawlFrame::IsGcSafe()
     return GetCodeManager()->IsGcSafe(&codeInfo, GetRelOffset());
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 bool CrawlFrame::HasTailCalls()
 {
     CONTRACTL {
@@ -314,7 +314,7 @@ bool CrawlFrame::HasTailCalls()
 
     return GetCodeManager()->HasTailCalls(&codeInfo);
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 inline void CrawlFrame::GotoNextFrame()
 {
@@ -635,10 +635,20 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = *(ULONGLONG*)pContext->Rsp;
     pContext->Rsp += sizeof(ULONGLONG);
+#ifdef TARGET_WINDOWS
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(ULONGLONG));
+    }
+#endif // TARGET_WINDOWS
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 
     uControlPc = TADDR(pContext->Lr);
+
+#elif defined(TARGET_LOONGARCH64)
+    uControlPc = TADDR(pContext->Ra);
 
 #else
     PORTABILITY_ASSERT("Thread::VirtualUnwindLeafCallFrame");

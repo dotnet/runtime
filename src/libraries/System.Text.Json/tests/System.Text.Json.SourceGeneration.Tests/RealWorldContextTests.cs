@@ -111,6 +111,40 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyRepeatedLocation(expected, obj);
         }
 
+        [Theory]
+        [InlineData("0")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("[1,2,3]")]
+        [InlineData("{ \"key\" : \"value\" }")]
+        public void RoundtripJsonDocument(string json)
+        {
+            JsonDocument jsonDocument = JsonDocument.Parse(json);
+
+            string actualJson = JsonSerializer.Serialize(jsonDocument, DefaultContext.JsonDocument);
+            JsonTestHelper.AssertJsonEqual(json, actualJson);
+
+            JsonDocument actualJsonDocument = JsonSerializer.Deserialize(actualJson, DefaultContext.JsonDocument);
+            JsonTestHelper.AssertJsonEqual(jsonDocument.RootElement, actualJsonDocument.RootElement);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("[1,2,3]")]
+        [InlineData("{ \"key\" : \"value\" }")]
+        public void RoundtripJsonElement(string json)
+        {
+            JsonElement jsonElement = JsonDocument.Parse(json).RootElement;
+
+            string actualJson = JsonSerializer.Serialize(jsonElement, DefaultContext.JsonElement);
+            JsonTestHelper.AssertJsonEqual(json, actualJson);
+
+            JsonElement actualJsonElement = JsonSerializer.Deserialize(actualJson, DefaultContext.JsonElement);
+            JsonTestHelper.AssertJsonEqual(jsonElement, actualJsonElement);
+        }
+
         [Fact]
         public virtual void RoundTripValueTuple()
         {
@@ -803,6 +837,44 @@ namespace System.Text.Json.SourceGeneration.Tests
                 Assert.Equal(expected.NullablePocoParameter, actual.NullablePocoParameter);
             }
         }
+
+#if NETCOREAPP
+        [Fact]
+        public virtual void ClassWithDateOnlyAndTimeOnlyValues_Roundtrip()
+        {
+            RunTest(new ClassWithDateOnlyAndTimeOnlyValues
+            {
+                DateOnly = DateOnly.Parse("2022-05-10"),
+                NullableDateOnly = DateOnly.Parse("2022-05-10"),
+
+                TimeOnly = TimeOnly.Parse("21:51:51"),
+                NullableTimeOnly = TimeOnly.Parse("21:51:51"),
+            });
+
+            RunTest(new ClassWithDateOnlyAndTimeOnlyValues());
+
+            void RunTest(ClassWithDateOnlyAndTimeOnlyValues expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithDateOnlyAndTimeOnlyValues);
+                ClassWithDateOnlyAndTimeOnlyValues actual = JsonSerializer.Deserialize(json, DefaultContext.ClassWithDateOnlyAndTimeOnlyValues);
+
+                Assert.Equal(expected.DateOnly, actual.DateOnly);
+                Assert.Equal(expected.NullableDateOnly, actual.NullableDateOnly);
+
+                Assert.Equal(expected.TimeOnly, actual.TimeOnly);
+                Assert.Equal(expected.NullableTimeOnly, actual.NullableTimeOnly);
+            }
+        }
+
+        public class ClassWithDateOnlyAndTimeOnlyValues
+        {
+            public DateOnly DateOnly { get; set; }
+            public DateOnly? NullableDateOnly { get; set; }
+
+            public TimeOnly TimeOnly { get; set; }
+            public TimeOnly? NullableTimeOnly { get; set; }
+        }
+#endif
 
         public class ClassWithNullableProperties
         {

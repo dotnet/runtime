@@ -9,13 +9,12 @@ using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
+using XPathFunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.XPath.XPathBuilder.FuncId>;
+using XsltFunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.Xslt.QilGenerator.FuncId>;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using TypeFactory = XmlQueryTypeFactory;
-    using XPathFunctionInfo = XPathBuilder.FunctionInfo<XPathBuilder.FuncId>;
-    using XsltFunctionInfo = XPathBuilder.FunctionInfo<QilGenerator.FuncId>;
-
     // ------------------------------- XslAstAnalyzer -------------------------------
 
     internal sealed class XslAstAnalyzer : XslVisitor<XslFlags>

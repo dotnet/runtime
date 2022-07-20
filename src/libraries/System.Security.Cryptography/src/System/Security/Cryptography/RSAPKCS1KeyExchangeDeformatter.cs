@@ -12,8 +12,10 @@ namespace System.Security.Cryptography
 
         public RSAPKCS1KeyExchangeDeformatter() { }
 
-        public RSAPKCS1KeyExchangeDeformatter(AsymmetricAlgorithm key!!)
+        public RSAPKCS1KeyExchangeDeformatter(AsymmetricAlgorithm key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             _rsaKey = (RSA)key;
         }
 
@@ -37,8 +39,10 @@ namespace System.Security.Cryptography
             return _rsaKey.Decrypt(rgbIn, RSAEncryptionPadding.Pkcs1);
         }
 
-        public override void SetKey(AsymmetricAlgorithm key!!)
+        public override void SetKey(AsymmetricAlgorithm key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             _rsaKey = (RSA)key;
         }
     }

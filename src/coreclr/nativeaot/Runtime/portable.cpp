@@ -36,7 +36,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 struct gc_alloc_context
 {
@@ -406,18 +406,6 @@ void * ReturnFromCallDescrThunk;
 // Return address hijacking
 //
 #if !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackByref, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
 COOP_PINVOKE_HELPER(void, RhpGcStressHijackScalar, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
@@ -496,7 +484,7 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 }
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     return NULL;
 }

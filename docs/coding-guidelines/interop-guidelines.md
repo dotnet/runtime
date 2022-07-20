@@ -192,7 +192,7 @@ Guidelines for shim C++ API:
   - If an export point has a 1:1 correspondence to the platform API, then name it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
   - If an export is not 1:1, then spell things out as we typically would in dotnet/runtime code (i.e. don't use abbreviations unless they come from the underlying API.
   - At first, it seemed that we'd want to use 1:1 names throughout, but it turns out there are many cases where being strictly 1:1 isn't practical.
-  - In order to reduce the chance of collisions when linking with CoreRT, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique. See https://github.com/dotnet/runtime/issues/15854.
+  - In order to reduce the chance of collisions when linking single-file form factors, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique.
 - Stick to data types which are guaranteed not to vary in size across flavors.
   - Use int32_t, int64_t, etc. from stdint.h and not int, long, etc.
   - Use char* for ASCII or UTF-8 strings and uint8_t* for byte buffers.

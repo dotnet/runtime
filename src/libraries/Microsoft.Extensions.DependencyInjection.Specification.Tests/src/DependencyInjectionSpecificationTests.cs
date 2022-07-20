@@ -398,6 +398,26 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ServiceScopeFactoryIsSingleton()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var scopeFactory1 = provider.GetService<IServiceScopeFactory>();
+            var scopeFactory2 = provider.GetService<IServiceScopeFactory>();
+            using (var scope = provider.CreateScope())
+            {
+                var scopeFactory3 = scope.ServiceProvider.GetService<IServiceScopeFactory>();
+
+                // Assert
+                Assert.Same(scopeFactory1, scopeFactory2);
+                Assert.Same(scopeFactory1, scopeFactory3);
+            }
+        }
+
+        [Fact]
         public void ScopedServiceCanBeResolved()
         {
             // Arrange
@@ -473,6 +493,24 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
                 Assert.True(outerScopedService.Disposed);
             }
+        }
+
+        [Fact]
+        public void ScopesAreFlatNotHierarchical()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddSingleton<IFakeSingletonService, FakeService>();
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var outerScope = provider.CreateScope();
+            using var innerScope = outerScope.ServiceProvider.CreateScope();
+            outerScope.Dispose();
+            var innerScopedService = innerScope.ServiceProvider.GetService<IFakeSingletonService>();
+
+            // Assert
+            Assert.NotNull(innerScopedService);
         }
 
         [Fact]

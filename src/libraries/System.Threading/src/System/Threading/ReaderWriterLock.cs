@@ -243,7 +243,7 @@ namespace System.Threading
                                 readerEvent.Reset();
                                 Interlocked.Add(ref _state, LockStates.Reader - LockStates.ReaderSignaled);
 
-                                // Honor the orginal status
+                                // Honor the original status
                                 ++threadLocalLockEntry._readerLevel;
                                 ReleaseReaderLock();
                             }
@@ -414,7 +414,7 @@ namespace System.Threading
                                 Debug.Assert((knownState & LockStates.WriterSignaled) != 0);
                                 Debug.Assert((knownState & LockStates.Writer) == 0);
 
-                                // Honor the orginal status
+                                // Honor the original status
                                 _writerID = threadID;
                                 Debug.Assert(_writerLevel == 0);
                                 _writerLevel = 1;

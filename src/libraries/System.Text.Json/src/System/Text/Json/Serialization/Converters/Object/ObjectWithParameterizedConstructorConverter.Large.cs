@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options!, ref state, out object? arg);
 
-            if (success && !(arg == null && jsonParameterInfo.IgnoreDefaultValuesOnRead))
+            if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.ClrInfo.Position] = arg!;
             }
@@ -54,13 +54,12 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(typeInfo.ParameterCache != null);
 
-            List<KeyValuePair<string, JsonParameterInfo?>> cache = typeInfo.ParameterCache.List;
+            List<KeyValuePair<string, JsonParameterInfo>> cache = typeInfo.ParameterCache.List;
             object?[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
 
             for (int i = 0; i < typeInfo.ParameterCount; i++)
             {
-                JsonParameterInfo? parameterInfo = cache[i].Value;
-                Debug.Assert(parameterInfo != null);
+                JsonParameterInfo parameterInfo = cache[i].Value;
                 arguments[parameterInfo.ClrInfo.Position] = parameterInfo.DefaultValue;
             }
 

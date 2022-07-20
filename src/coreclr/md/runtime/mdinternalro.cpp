@@ -936,7 +936,7 @@ HRESULT MDInternalRO::FindParamOfMethod(// S_OK or error.
 
 //*****************************************************************************
 // return a pointer which points to meta data's internal string
-// return the the type name in utf8
+// return the type name in utf8
 //*****************************************************************************
 __checkReturn
 HRESULT
@@ -3146,87 +3146,6 @@ mdModule MDInternalRO::GetModuleFromScope(void)
 {
     return TokenFromRid(1, mdtModule);
 } // MDInternalRO::GetModuleFromScope
-
-//*****************************************************************************
-// Fill a variant given a MDDefaultValue
-// This routine will create a bstr if the ELEMENT_TYPE of default value is STRING
-//*****************************************************************************
-__checkReturn
-HRESULT _FillVariant(
-    MDDefaultValue  *pMDDefaultValue,
-    VARIANT     *pvar)
-{
-    HRESULT     hr = NOERROR;
-
-    _ASSERTE(pMDDefaultValue);
-
-    switch (pMDDefaultValue->m_bType)
-    {
-    case ELEMENT_TYPE_BOOLEAN:
-        V_VT(pvar) = VT_BOOL;
-        V_BOOL(pvar) = pMDDefaultValue->m_bValue;
-        break;
-    case ELEMENT_TYPE_I1:
-        V_VT(pvar) = VT_I1;
-        V_I1(pvar) = pMDDefaultValue->m_cValue;
-        break;
-    case ELEMENT_TYPE_U1:
-        V_VT(pvar) = VT_UI1;
-        V_UI1(pvar) = pMDDefaultValue->m_byteValue;
-        break;
-    case ELEMENT_TYPE_I2:
-        V_VT(pvar) = VT_I2;
-        V_I2(pvar) = pMDDefaultValue->m_sValue;
-        break;
-    case ELEMENT_TYPE_U2:
-    case ELEMENT_TYPE_CHAR:             // char is stored as UI2 internally
-        V_VT(pvar) = VT_UI2;
-        V_UI2(pvar) = pMDDefaultValue->m_usValue;
-        break;
-    case ELEMENT_TYPE_I4:
-        V_VT(pvar) = VT_I4;
-        V_I4(pvar) = pMDDefaultValue->m_lValue;
-        break;
-    case ELEMENT_TYPE_U4:
-        V_VT(pvar) = VT_UI4;
-        V_UI4(pvar) = pMDDefaultValue->m_ulValue;
-        break;
-    case ELEMENT_TYPE_R4:
-        V_VT(pvar) = VT_R4;
-        V_R4(pvar) = pMDDefaultValue->m_fltValue;
-        break;
-    case ELEMENT_TYPE_R8:
-        V_VT(pvar) = VT_R8;
-        V_R8(pvar) = pMDDefaultValue->m_dblValue;
-        break;
-    case ELEMENT_TYPE_STRING:
-        // allocated bstr here
-        V_BSTR(pvar) = ::SysAllocStringLen(pMDDefaultValue->m_wzValue, pMDDefaultValue->m_cbSize / sizeof(WCHAR));
-        if (V_BSTR(pvar) == NULL)
-            hr = E_OUTOFMEMORY;
-        V_VT(pvar) = VT_BSTR;
-        break;
-    case ELEMENT_TYPE_CLASS:
-        V_VT(pvar) = VT_UNKNOWN;
-        V_UNKNOWN(pvar) = pMDDefaultValue->m_unkValue;
-        break;
-    case ELEMENT_TYPE_I8:
-        V_VT(pvar) = VT_I8;
-        V_CY(pvar).int64 = pMDDefaultValue->m_llValue;
-        break;
-    case ELEMENT_TYPE_U8:
-        V_VT(pvar) = VT_UI8;
-        V_CY(pvar).int64 = pMDDefaultValue->m_ullValue;
-        break;
-    case ELEMENT_TYPE_VOID:
-        V_VT(pvar) = VT_EMPTY;
-        break;
-    default:
-        _ASSERTE(!"bad constant value type!");
-    }
-
-    return hr;
-} // _FillVariant
 
 
 //*****************************************************************************

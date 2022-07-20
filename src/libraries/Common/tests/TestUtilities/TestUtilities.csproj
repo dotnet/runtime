@@ -47,6 +47,8 @@
 
     <Compile Include="RandomTestCaseOrderer.cs" />
     <Compile Include="RandomTestCollectionOrderer.cs" />
+
+    <Compile Include="TestEventListener.cs" />
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>

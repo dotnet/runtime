@@ -765,7 +765,7 @@ StgStringPool::InitNew(
     HRESULT hr;
     UINT32  nEmptyStringOffset;
 
-    // Let base class intialize.
+    // Let base class initialize.
     IfFailRet(StgPool::InitNew());
 
     // Set initial table sizes, if specified.
@@ -1399,7 +1399,7 @@ StgBlobPool::InitNew(
 
     HRESULT hr;
 
-    // Let base class intialize.
+    // Let base class initialize.
     IfFailRet(StgPool::InitNew());
 
     // Set initial table sizes, if specified.

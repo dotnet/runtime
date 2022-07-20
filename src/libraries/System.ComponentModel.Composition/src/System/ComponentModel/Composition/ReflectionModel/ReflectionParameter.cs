@@ -11,8 +11,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly ParameterInfo _parameter;
 
-        public ReflectionParameter(ParameterInfo parameter!!)
+        public ReflectionParameter(ParameterInfo parameter)
         {
+            ArgumentNullException.ThrowIfNull(parameter);
+
             _parameter = parameter;
         }
 

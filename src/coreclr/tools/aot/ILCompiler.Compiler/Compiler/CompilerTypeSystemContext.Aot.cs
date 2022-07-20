@@ -33,6 +33,7 @@ namespace ILCompiler
         private readonly RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
         private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private readonly VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
+        private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
 
         private TypeDesc[] _arrayOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -45,6 +46,7 @@ namespace ILCompiler
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
+            _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
 
@@ -72,6 +74,8 @@ namespace ILCompiler
                 return _vectorOfTFieldLayoutAlgorithm;
             else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
                 return _vectorFieldLayoutAlgorithm;
+            else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
+                return _int128FieldLayoutAlgorithm;
             else
                 return _metadataFieldLayoutAlgorithm;
         }
@@ -182,7 +186,7 @@ namespace ILCompiler
             {
                 if (!type.IsArrayTypeWithoutGenericInterfaces())
                 {
-                    MetadataType arrayShadowType = _arrayOfTType ?? (_arrayOfTType = SystemModule.GetType("System", "Array`1"));
+                    MetadataType arrayShadowType = _arrayOfTType ??= SystemModule.GetType("System", "Array`1");
                     return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
                 }
 
@@ -220,8 +224,8 @@ namespace ILCompiler
         // method table.
         public long UniversalCanonReflectionMethodRootHeuristic_InstantiationCount { get; }
 
-        // To avoid infinite generic recursion issues during debug type record generation, attempt to 
-        // use canonical form for types with high generic complexity. 
+        // To avoid infinite generic recursion issues during debug type record generation, attempt to
+        // use canonical form for types with high generic complexity.
         public long MaxGenericDepthOfDebugRecord { get; }
 
         public SharedGenericsConfiguration()

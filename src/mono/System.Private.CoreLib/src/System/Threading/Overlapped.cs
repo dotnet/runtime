@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -83,8 +84,7 @@ namespace System.Threading
                     }
                 }
 
-                //CORERT: NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Interop.MemAlloc((UIntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
-                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Marshal.AllocHGlobal((IntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
+                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)NativeMemory.Alloc((nuint)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
 
                 *(GCHandle*)(pNativeOverlapped + 1) = default;
                 _pNativeOverlapped = pNativeOverlapped;
@@ -98,6 +98,12 @@ namespace System.Threading
                 *(GCHandle*)(_pNativeOverlapped + 1) = GCHandle.Alloc(this);
 
                 success = true;
+#if FEATURE_PERFTRACING
+#if !(TARGET_BROWSER && !FEATURE_WASM_THREADS)
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
+#endif
+#endif
                 return _pNativeOverlapped;
             }
             finally
@@ -133,8 +139,7 @@ namespace System.Threading
                 if (handle.IsAllocated)
                     handle.Free();
 
-                Marshal.FreeHGlobal((IntPtr)_pNativeOverlapped);
-                //CORERT: Interop.MemFree((IntPtr)_pNativeOverlapped);
+                NativeMemory.Free(_pNativeOverlapped);
                 _pNativeOverlapped = null;
             }
         }
@@ -242,8 +247,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!;
         }
@@ -251,8 +255,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!._overlappedData = null!;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);

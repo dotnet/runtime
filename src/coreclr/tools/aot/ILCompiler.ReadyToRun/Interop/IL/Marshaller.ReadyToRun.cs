@@ -9,6 +9,7 @@ namespace Internal.TypeSystem.Interop
     {
         protected static Marshaller CreateMarshaller(MarshallerKind kind)
         {
+            // ReadyToRun only supports emitting IL for blittable types
             switch (kind)
             {
                 case MarshallerKind.Enum:
@@ -16,23 +17,8 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.UnicodeChar:
                     return new BlittableValueMarshaller();
-                case MarshallerKind.BlittableStructPtr:
-                    return new BlittableStructPtrMarshaller();
-                case MarshallerKind.BlittableArray:
-                    return new BlittableArrayMarshaller();
-                case MarshallerKind.Bool:
-                case MarshallerKind.CBool:
-                    return new BooleanMarshaller();
-                case MarshallerKind.AnsiString:
-                    return new AnsiStringMarshaller();
-                case MarshallerKind.SafeHandle:
-                    return new SafeHandleMarshaller();
-                case MarshallerKind.UnicodeString:
-                    return new UnicodeStringMarshaller();
                 case MarshallerKind.VoidReturn:
                     return new VoidReturnMarshaller();
-                case MarshallerKind.FunctionPointer:
-                    return new DelegateMarshaller();
                 default:
                     // ensures we don't throw during create marshaller. We will throw NSE
                     // during EmitIL which will be handled.

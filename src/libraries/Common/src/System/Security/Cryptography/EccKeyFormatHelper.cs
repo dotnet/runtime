@@ -765,24 +765,57 @@ namespace System.Security.Cryptography
         private static void WriteUncompressedBasePoint(in ECParameters ecParameters, AsnWriter writer)
         {
             int basePointLength = ecParameters.Curve.G.X!.Length * 2 + 1;
-            byte[] tmp = CryptoPool.Rent(basePointLength);
-            tmp[0] = 0x04;
-            ecParameters.Curve.G.X.CopyTo(tmp.AsSpan(1));
-            ecParameters.Curve.G.Y.CopyTo(tmp.AsSpan(1 + ecParameters.Curve.G.X.Length));
-            writer.WriteOctetString(tmp.AsSpan(0, basePointLength));
-            // Non-sensitive data.
-            CryptoPool.Return(tmp, clearSize: 0);
+
+            // A NIST P-521 G will be at most 133 bytes (NIST 186-4 defines G.)
+            // 256 should be plenty for all but very atypical uses.
+            const int MaxStackAllocSize = 256;
+            Span<byte> basePointBytes = stackalloc byte[MaxStackAllocSize];
+            byte[]? rented = null;
+
+            if (basePointLength > MaxStackAllocSize)
+            {
+                basePointBytes = rented = CryptoPool.Rent(basePointLength);
+            }
+
+            basePointBytes[0] = 0x04;
+            ecParameters.Curve.G.X.CopyTo(basePointBytes.Slice(1));
+            ecParameters.Curve.G.Y.CopyTo(basePointBytes.Slice(1 + ecParameters.Curve.G.X.Length));
+
+            writer.WriteOctetString(basePointBytes.Slice(0, basePointLength));
+
+            if (rented is not null)
+            {
+                // G contains public EC parameters that are not sensitive.
+                CryptoPool.Return(rented, clearSize: 0);
+            }
         }
 
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
             int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
-            byte[] publicKeyBytes = CryptoPool.Rent(publicKeyLength);
-            publicKeyBytes[0] = 0x04;
-            ecParameters.Q.X.AsSpan().CopyTo(publicKeyBytes.AsSpan(1));
-            ecParameters.Q.Y.AsSpan().CopyTo(publicKeyBytes.AsSpan(1 + ecParameters.Q.X!.Length));
 
-            writer.WriteBitString(publicKeyBytes.AsSpan(0, publicKeyLength));
+            // A NIST P-521 Q will encode to 133 bytes: (521 + 7)/8 * 2 + 1.
+            // 256 should be plenty for all but very atypical uses.
+            const int MaxStackAllocSize = 256;
+            Span<byte> publicKeyBytes = stackalloc byte[MaxStackAllocSize];
+            byte[]? rented = null;
+
+            if (publicKeyLength > MaxStackAllocSize)
+            {
+                publicKeyBytes = rented = CryptoPool.Rent(publicKeyLength);
+            }
+
+            publicKeyBytes[0] = 0x04;
+            ecParameters.Q.X.CopyTo(publicKeyBytes.Slice(1));
+            ecParameters.Q.Y.CopyTo(publicKeyBytes.Slice(1 + ecParameters.Q.X!.Length));
+
+            writer.WriteBitString(publicKeyBytes.Slice(0, publicKeyLength));
+
+            if (rented is not null)
+            {
+                // Q contains public EC parameters that are not sensitive.
+                CryptoPool.Return(rented, clearSize: 0);
+            }
         }
 
         internal static AsnWriter WriteECPrivateKey(in ECParameters ecParameters)

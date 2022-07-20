@@ -1797,7 +1797,7 @@ ErrExit:
 
 //*****************************************************************************
 // return a pointer which points to meta data's internal string
-// return the the type name in utf8
+// return the type name in utf8
 //*****************************************************************************
 __checkReturn
 HRESULT

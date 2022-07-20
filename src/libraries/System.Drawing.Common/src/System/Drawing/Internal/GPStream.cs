@@ -129,8 +129,13 @@ namespace System.Drawing.Internal
             _dataStream.SetLength(checked((long)value));
         }
 
-        public unsafe void Stat(Interop.Ole32.STATSTG* pstatstg!!, Interop.Ole32.STATFLAG grfStatFlag)
+        public unsafe void Stat(Interop.Ole32.STATSTG* pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
         {
+            if (pstatstg == null)
+            {
+                throw new ArgumentNullException(nameof(pstatstg));
+            }
+
             *pstatstg = new Interop.Ole32.STATSTG
             {
                 cbSize = (ulong)_dataStream.Length,

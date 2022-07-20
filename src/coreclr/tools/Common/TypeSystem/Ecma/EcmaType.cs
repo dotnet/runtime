@@ -374,7 +374,12 @@ namespace Internal.TypeSystem.Ecma
                     && stringComparer.Equals(methodDefinition.Name, ".ctor"))
                 {
                     var method = (EcmaMethod)_module.GetObject(handle);
-                    if (method.Signature.Length != 0)
+                    MethodSignature sig = method.Signature;
+
+                    if (sig.Length != 0)
+                        continue;
+
+                    if ((sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
                         continue;
 
                     return method;

@@ -46,7 +46,7 @@ namespace System.Xml
         {
             get { return _encoding; }
             [MemberNotNull(nameof(_encoding))]
-            set { _encoding = ((value == null) ? string.Empty : value); }
+            set { _encoding = value ?? string.Empty; }
         }
 
         // Specifies the value of the standalone attribute.
@@ -79,7 +79,7 @@ namespace System.Xml
         {
             get
             {
-                StringBuilder strb = StringBuilderCache.Acquire();
+                var strb = new ValueStringBuilder(stackalloc char[256]);
                 strb.Append("version=\"");
                 strb.Append(Version);
                 strb.Append('"');
@@ -96,7 +96,7 @@ namespace System.Xml
                     strb.Append('"');
                 }
 
-                return StringBuilderCache.GetStringAndRelease(strb);
+                return strb.ToString();
             }
 
             set

@@ -63,7 +63,7 @@ namespace System.Linq.Expressions
         public NewArrayExpression Update(IEnumerable<Expression> expressions)
         {
             // Explicit null check here as otherwise wrong parameter name will be used.
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
 
             if (ExpressionUtils.SameElements(ref expressions!, Expressions))
             {
@@ -128,8 +128,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayInit"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
         public static NewArrayExpression NewArrayInit(Type type, IEnumerable<Expression> initializers)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
-            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(initializers);
             if (type == typeof(void))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
@@ -195,8 +195,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayBounds"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
         public static NewArrayExpression NewArrayBounds(Type type, IEnumerable<Expression> bounds)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
-            ContractUtils.RequiresNotNull(bounds, nameof(bounds));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(bounds);
 
             if (type == typeof(void))
             {

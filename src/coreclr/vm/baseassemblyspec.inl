@@ -46,7 +46,7 @@ inline BaseAssemblySpec::~BaseAssemblySpec()
         delete [] m_context.szLocale;
 }
 
-inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyName,
+inline void BaseAssemblySpec::Init(LPCSTR pAssemblyName,
                          const AssemblyMetaDataInternal* pContext,
                          const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
                          DWORD dwFlags)
@@ -62,16 +62,6 @@ inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyName,
     m_ownedFlags = 0;
 
     m_context = *pContext;
-
-    return S_OK;
-}
-
-inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyDisplayName)
-{
-    WRAPPER_NO_CONTRACT;
-    m_pAssemblyName = pAssemblyDisplayName;
-    // We eagerly parse the name to allow FusionBind::Hash to avoid throwing.
-    return ParseName();
 }
 
 inline VOID BaseAssemblySpec::CloneFields()

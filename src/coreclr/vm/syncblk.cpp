@@ -879,7 +879,7 @@ void SyncBlockCache::Grow()
         // note: we do not care if another thread does not see the new size
         // however we really do not want it to see the new size without seeing the new array
         //@TODO do we still leak here if two threads come here at the same time ?
-        FastInterlockExchangePointer(&SyncTableEntry::GetSyncTableEntryByRef(), newSyncTable.GetValue());
+        InterlockedExchangeT(&SyncTableEntry::GetSyncTableEntryByRef(), newSyncTable.GetValue());
 
         m_FreeSyncTableIndex++;
 
@@ -1652,7 +1652,11 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             }
 
             LONG newValue = oldValue | tid;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#else
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#endif
             {
                 return AwareLock::EnterHelperResult_Entered;
             }
@@ -1904,7 +1908,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
         {
             // try to take the lock
             LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
-            LONG result = FastInterlockCompareExchange((LONG*)&m_SyncBlockValue, newValue, curValue);
+            LONG result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newValue, curValue);
             if (result == curValue)
                 break;
         }
@@ -1952,7 +1956,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
         {
             // try to take the lock
             LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
-            LONG result = FastInterlockCompareExchange((LONG*)&m_SyncBlockValue, newValue, curValue);
+            LONG result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newValue, curValue);
             if (result == curValue)
                 break;
         }
@@ -1972,7 +1976,7 @@ DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
     INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
 
-    FastInterlockAnd(&m_SyncBlockValue, ~BIT_SBLK_SPIN_LOCK);
+    InterlockedAnd((LONG*)&m_SyncBlockValue, ~BIT_SBLK_SPIN_LOCK);
 }
 
 #endif //!DACCESS_COMPILE
@@ -2918,7 +2922,7 @@ bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
               m_dwAppDomainIndex == GetAppDomain()->GetIndex());
     m_dwAppDomainIndex = GetAppDomain()->GetIndex();
 */
-    return (FastInterlockCompareExchangePointer(&m_pInteropInfo,
+    return (InterlockedCompareExchangeT(&m_pInteropInfo,
                                                 pInteropInfo,
                                                 NULL) == NULL);
 }

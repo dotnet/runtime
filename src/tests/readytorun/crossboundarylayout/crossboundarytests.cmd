@@ -1,5 +1,5 @@
 echo off
-setlocal 
+setlocal
 set TESTDIR=%~dp0\..\..\..\..\..\..\artifacts\tests\coreclr\windows.x64.Debug\readytorun\crossboundarylayout\crossboundarytest\crossboundarytest
 set TESTBATCHROOT=%~dp0
 
@@ -175,10 +175,10 @@ call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble_A
 goto done
 
 :testCG2SingleInputBubbleCompiledWithoutReferenceToBCE
-echo TEST All combinations of the 5 dlls compiled with Crossgen2 with input bubble enabled and all assemblies passed as 
-echo reference inputs to crossgen2 when compiled b, crossboundarytest and e. a, and d are compiled with the reference 
+echo TEST All combinations of the 5 dlls compiled with Crossgen2 with input bubble enabled and all assemblies passed as
+echo reference inputs to crossgen2 when compiled b, crossboundarytest and e. a, and d are compiled with the reference
 echo set limited to a and d. This simulates a the model of two different sets of input bubble matched assemblies where there is a
-echo root set such as the runtime repo worth of libraries, and a seperately compiled application set.
+echo root set such as the runtime repo worth of libraries, and a separately compiled application set.
 
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble2_A____ a CG2SingleBubbleADOnly d CG2NoMethods
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble2__B___ b CG2SingleInputBubble  a CG2NoMethods  d CG2NoMethods e CG2NoMethods
@@ -216,7 +216,7 @@ goto done
 
 :testCG2SingleMixedInputBubble
 echo TEST All combinations of the 5 dlls compiled with Crossgen2 with input bubble enabled for the root set and not
-echo for the more derived set of assemblies. b, crossboundarytest, and e are compiled as standard R2R and 
+echo for the more derived set of assemblies. b, crossboundarytest, and e are compiled as standard R2R and
 echo a, and d are compiled with the reference echo set limited to a and d with input bubble enabled. This simulates a the model
 echo of a framework that ships with input bubble enabled, and the application with standard R2R rules.
 

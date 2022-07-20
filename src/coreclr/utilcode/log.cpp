@@ -75,9 +75,11 @@ VOID InitLogging()
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogWithPid))
     {
-        WCHAR szPid[20];
-        swprintf_s(szPid, ARRAY_SIZE(szPid), W(".%d"), GetCurrentProcessId());
-        wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), szPid);
+        WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
+        DWORD pid = GetCurrentProcessId();
+        FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
+        // Append the format ".%u" to the end of the file name
+        wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), pidSuffix);
     }
 
     if ((LogFlags & LOG_ENABLE) &&
@@ -136,8 +138,6 @@ VOID InitLogging()
                 WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), msg, (DWORD)strlen(msg), &written, 0);
             }
         }
-        if (LogFileHandle == INVALID_HANDLE_VALUE)
-            UtilMessageBoxNonLocalized(NULL, W("Could not open log file"), W("CLR logging"), MB_OK | MB_ICONINFORMATION, FALSE, TRUE);
         if (LogFileHandle != INVALID_HANDLE_VALUE)
         {
             if (LogFlags & LOG_ENABLE_APPEND_FILE)

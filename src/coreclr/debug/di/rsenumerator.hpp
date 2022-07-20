@@ -222,7 +222,7 @@ HRESULT CordbEnumerator<ElemType,
 }
 
 // ICorDebugEnum::GetCount
-// Gets the number of items in the the list that is being enumerated
+// Gets the number of items in the list that is being enumerated
 //
 //   Arguments:
 //     pcelt - on return the number of items being enumerated

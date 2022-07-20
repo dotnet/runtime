@@ -7,11 +7,14 @@ import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
 import consts from "rollup-plugin-consts";
+import { createFilter } from "@rollup/pluginutils";
+import * as fast_glob from "fast-glob";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "7.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
+const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const terserConfig = {
     compress: {
         defaults: false,// too agressive minification breaks subsequent emcc compilation
@@ -37,6 +40,7 @@ const terserConfig = {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
         // and unit test at src\libraries\System.Private.Runtime.InteropServices.JavaScript\tests\timers.js
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
+        keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
@@ -45,6 +49,20 @@ const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const format = "iife";
 const name = "__dotnet_runtime";
+const inlineAssert = [
+    {
+        pattern: /mono_assert\(([^,]*), *"([^"]*)"\);/gm,
+        // eslint-disable-next-line quotes
+        replacement: 'if (!($1)) throw new Error("Assert failed: $2"); // inlined mono_assert'
+    },
+    {
+        pattern: /mono_assert\(([^,]*), \(\) => *`([^`]*)`\);/gm,
+        replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined mono_assert"
+    }, {
+        pattern: /^\s*mono_assert/gm,
+        failure: "previous regexp didn't inline all mono_assert statements"
+    }];
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads }), typescript()];
 
 const iffeConfig = {
     treeshake: !isDebug,
@@ -65,14 +83,7 @@ const iffeConfig = {
             plugins,
         }
     ],
-    onwarn: (warning, handler) => {
-        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
-            return;
-        }
-
-        handler(warning);
-    },
-    plugins: [consts({ productVersion, configuration }), typescript()]
+    plugins: outputCodePlugins
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -98,10 +109,30 @@ if (isDebug) {
     });
 }
 
-export default defineConfig([
+/* Web Workers */
+function makeWorkerConfig(workerName, workerInputSourcePath) {
+    const workerConfig = {
+        input: workerInputSourcePath,
+        output: [
+            {
+                file: nativeBinDir + `/src/dotnet-${workerName}-worker.js`,
+                format: "iife",
+                banner,
+                plugins
+            },
+        ],
+        plugins: outputCodePlugins,
+    };
+    return workerConfig;
+}
+
+const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
+
+const allConfigs = [
     iffeConfig,
-    typesConfig
-]);
+    typesConfig,
+].concat(workerConfigs);
+export default defineConfig(allConfigs);
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 function writeOnChangePlugin() {
@@ -159,4 +190,69 @@ function checkFileExists(file) {
     return fs.promises.access(file, fs.constants.F_OK)
         .then(() => true)
         .catch(() => false);
+}
+
+function regexReplace(replacements = []) {
+    const filter = createFilter("**/*.ts");
+
+    return {
+        name: "replace",
+
+        renderChunk(code, chunk) {
+            const id = chunk.fileName;
+            if (!filter(id)) return null;
+            return executeReplacement(this, code, id);
+        },
+
+        transform(code, id) {
+            if (!filter(id)) return null;
+            return executeReplacement(this, code, id);
+        }
+    };
+
+    function executeReplacement(self, code, id) {
+        // TODO use MagicString for sourcemap support
+        let fixed = code;
+        for (const rep of replacements) {
+            const { pattern, replacement, failure } = rep;
+            if (failure) {
+                const match = pattern.test(fixed);
+                if (match) {
+                    self.error(failure + " " + id, pattern.lastIndex);
+                    return null;
+                }
+            }
+            else {
+                fixed = fixed.replace(pattern, replacement);
+            }
+        }
+
+        if (fixed == code) {
+            return null;
+        }
+
+        return { code: fixed };
+    }
+}
+
+// Finds all files that look like a webworker toplevel input file in the given path.
+// Does not look recursively in subdirectories.
+// Returns an array of objects {"workerName": "foo", "path": "/path/dotnet-foo-worker.ts"}
+//
+// A file looks like a webworker toplevel input if it's `dotnet-{name}-worker.ts` or `.js`
+function findWebWorkerInputs(basePath) {
+    const glob = "dotnet-*-worker.[tj]s";
+    const files = fast_glob.sync(glob, { cwd: basePath });
+    if (files.length == 0) {
+        return [];
+    }
+    const re = /^dotnet-(.*)-worker\.[tj]s$/;
+    let results = [];
+    for (const file of files) {
+        const match = file.match(re);
+        if (match) {
+            results.push({ "workerName": match[1], "path": path.join(basePath, file) });
+        }
+    }
+    return results;
 }

@@ -26,6 +26,9 @@
   <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoWasmBuildVariant)' != ''">
+    <RuntimeSpecificFrameworkSuffix>Mono.$(MonoWasmBuildVariant)</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
@@ -50,12 +53,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- Mobile uses a different hosting model, so we don't include the .NET host components. -->
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" PackOnly="true" />
-  </ItemGroup>
-
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
@@ -66,7 +63,7 @@
         <TargetPath>tools</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <RuntimeFiles
         Include="@(MonoIncludeFiles)"
         ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>

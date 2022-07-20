@@ -15,12 +15,20 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         private readonly StringComparison _comparisonType;
 
-        public WildcardPathSegment(string beginsWith!!, List<string> contains!!, string endsWith!!, StringComparison comparisonType)
+        public WildcardPathSegment(string beginsWith, List<string> contains, string endsWith, StringComparison comparisonType)
         {
+            ThrowHelper.ThrowIfNull(beginsWith);
+            ThrowHelper.ThrowIfNull(contains);
+            ThrowHelper.ThrowIfNull(endsWith);
+
+            _comparisonType = comparisonType switch
+            {
+                StringComparison.OrdinalIgnoreCase or StringComparison.Ordinal => comparisonType,
+                _ => throw new InvalidOperationException(SR.Format(SR.StringComparisonTypeShouldBeOrdinal, comparisonType)),
+            };
             BeginsWith = beginsWith;
             Contains = contains;
             EndsWith = endsWith;
-            _comparisonType = comparisonType;
         }
 
         public bool CanProduceStem { get { return true; } }

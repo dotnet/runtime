@@ -65,7 +65,7 @@ static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 struct DotNetRuntimeDebugHeader
 {
     // The cookie serves as a sanity check against process corruption or being requested
-    // to treat some other non-.Net module as though it did contain the coreRT runtime.
+    // to treat some other non-.Net module as though it did contain the .Net runtime.
     // It can also be changed if we want to make a breaking change so drastic that
     // earlier debuggers should treat the module as if it had no .Net runtime at all.
     // If the cookie is valid a debugger is safe to assume the Major/Minor version fields
@@ -74,16 +74,16 @@ struct DotNetRuntimeDebugHeader
     const uint8_t Cookie[4] = { 0x44, 0x4E, 0x44, 0x48 };
 
     // This counter can be incremented to indicate breaking changes
-    // This field must be encoded little endian, regardless of the typical endianess of
+    // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
     const uint16_t MajorVersion = 1;
 
     // This counter can be incremented to indicate back-compatible changes
-    // This field must be encoded little endian, regardless of the typical endianess of
+    // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
     const uint16_t MinorVersion = 0;
 
-    // These flags must be encoded little endian, regardless of the typical endianess of
+    // These flags must be encoded little endian, regardless of the typical endianness of
     // the machine. Ie Bit 0 is the least significant bit of the first byte.
     // Bit 0 - Set if the pointer size is 8 bytes, otherwise pointer size is 4 bytes
     // Bit 1 - Set if the machine is big endian
@@ -95,9 +95,9 @@ struct DotNetRuntimeDebugHeader
     // follow but future usage will be considered a back-compatible change.
     const uint32_t ReservedPadding1 = 0;
 
-    // Header pointers below here are encoded using the defined pointer size and endianess
+    // Header pointers below here are encoded using the defined pointer size and endianness
     // specified in the Flags field. The data within the contracts they point to also uses
-    // the same pointer size and endianess encoding unless otherwise specified.
+    // the same pointer size and endianness encoding unless otherwise specified.
 
     // A pointer to an array describing important types and their offsets
     DebugTypeEntry (* volatile DebugTypeEntries)[DebugTypeEntriesArraySize] = nullptr;

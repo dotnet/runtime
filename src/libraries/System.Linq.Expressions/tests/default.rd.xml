@@ -1,0 +1,170 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Collections">
+      <Type Name="System.Collections.Generic.List`1" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="System.Runtime">
+      <Type Name="System.Decimal" Dynamic="Required All" />
+      <Type Name="System.DateTimeOffset" Dynamic="Required All" />
+      <Type Name="System.TimeSpan" Dynamic="Required All" />
+      <Type Name="System.DateTime" Dynamic="Required All" />
+
+      <Type Name="System.Text.StringBuilder" Dynamic="Required All" />
+      <Type Name="System.Array" Dynamic="Required All" />
+
+      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Number, System.Linq.Expressions.Tests]]">
+        <Method Name="Equals" Dynamic="Required All">
+        </Method>
+      </Type>
+      <Type Name="System.Func`1[[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Func`2[[System.SByte,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Byte,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Int16,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.UInt16,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Int32,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.UInt32,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Int64,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.UInt64,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Single,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Double,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Decimal,System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Func`2[[System.Nullable`1[[System.SByte,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Byte,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Int16,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.UInt16,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Int32,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.UInt32,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Int64,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.UInt64,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Single,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Double,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`2[[System.Nullable`1[[System.Decimal,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]]" Dynamic="Required All" />
+
+
+      <Type Name="System.Func`2[[System.Linq.Expressions.Tests.InvocationTests+NoThread,System.Linq.Expressions.Tests],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`3[[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Func`4[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`5[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`6[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`7[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`8[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Object,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Func`3[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.DateTime,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`4[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.DateTime,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`5[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.DateTime,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`6[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.DateTime,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`7[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.DateTime,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`8[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.DateTime,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Func`4[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`6[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`7[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Func`8[[System.Runtime.CompilerServices.CallSite,System.Linq.Expressions],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Action" Dynamic="Required All" />
+      <Type Name="System.Action`1[[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Scs, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
+      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Sp, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
+      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Ss, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
+      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.S, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
+      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Sc, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
+
+    </Assembly>
+    <Assembly Name="System.Linq">
+      <Type Name="System.Linq.Enumerable">
+        <Method Name="Where" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+    <Assembly Name="System.Linq.Queryable">
+      <Type Name="System.Linq.Queryable">
+        <Method Name="Aggregate" Dynamic="Required All">
+          <GenericArgument Name="System.Object, System.Private.CoreLib" />
+          <GenericArgument Name="System.Object, System.Private.CoreLib" />
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+    <Assembly Name="System.Linq.Expressions">
+      <Type Name="System.Linq.Expressions.Expression`1[[System.Func`6[[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]],System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Linq.Expressions.Expression`1[[System.Func`7[[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]],System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Linq.Expressions.Expression`1[[System.Func`3[[System.Nullable`1[[System.Boolean,System.Private.CoreLib]],System.Private.CoreLib],[System.Nullable`1[[System.Boolean,System.Private.CoreLib]],System.Private.CoreLib],[System.Boolean,System.Private.CoreLib]],System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Runtime.CompilerServices.CallSite`1" Dynamic="Required All" />
+      <Type Name="System.Runtime.CompilerServices.IRuntimeVariables" Dynamic="Required All" />
+    </Assembly>
+    <Assembly Name="System.Linq.Expressions.Tests">
+      <Type Name="System.Dynamic.Tests.InvokeMemberBindingTests+TestBaseClass">
+        <Method Name="TellType" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.OpAssign+Box`1[[System.Double,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Linq.Expressions.Tests.OpAssign+Box`1[[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Linq.Expressions.Tests.GeneralBinaryTests+GenericClassWithNonGenericMethod`1[[System.Boolean, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Linq.Expressions.Tests.CallTests+Wrapper`1[[System.Linq.Expressions.Tests.CallTests+Mutable]]" Dynamic="Required All" />
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ParameterTests">
+        <Method Name="AssertReadAndWriteRefParameters" Dynamic="Required All">
+          <GenericArgument Name="System.TimeSpan, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.Expression_Tests">
+        <Method Name="SomeMethod" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+          <GenericArgument Name="System.String, System.Private.CoreLib" />
+        </Method>
+      </Type>
+      <Type Name="System.Linq.Expressions.Tests.ListInitExpressionTests+AnyTypeList">
+        <Method Name="Add" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

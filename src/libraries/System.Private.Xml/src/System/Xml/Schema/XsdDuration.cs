@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System;
+using System.Diagnostics;
+using System.Text;
 
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Diagnostics;
-    using System.Text;
-
     /// <summary>
     /// This structure holds components of an Xsd Duration.  It is used internally to support Xsd durations without loss
     /// of fidelity.  XsdDuration structures are immutable once they've been created.
@@ -633,7 +632,7 @@ namespace System.Xml.Schema
             result = 0;
             numDigits = 0;
 
-            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
             {
                 digit = s[offset] - '0';
 
@@ -647,7 +646,7 @@ namespace System.Xml.Schema
                     // Skip past any remaining digits
                     numDigits = offset - offsetStart;
 
-                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
                     {
                         offset++;
                     }

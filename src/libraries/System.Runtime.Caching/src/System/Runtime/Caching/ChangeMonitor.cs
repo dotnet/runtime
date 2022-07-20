@@ -219,8 +219,13 @@ namespace System.Runtime.Caching
         // on subsequent calls.  The OnChangedCallback is guaranteed to be called exactly once.
         // It will be called when the dependency changes, or if it has already changed, it will
         // be called immediately (on the same thread??).
-        public void NotifyOnChanged(OnChangedCallback onChangedCallback!!)
+        public void NotifyOnChanged(OnChangedCallback onChangedCallback)
         {
+            if (onChangedCallback is null)
+            {
+                throw new ArgumentNullException(nameof(onChangedCallback));
+            }
+
             if (Interlocked.CompareExchange(ref _onChangedCallback, onChangedCallback, null) != null)
             {
                 throw new InvalidOperationException(SR.Method_already_invoked);

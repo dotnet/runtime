@@ -1011,7 +1011,7 @@ namespace System.Dynamic.Runtime.Tests
 
         // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass034.regclass034
         [Fact]
-        public static void CalledFrom_ImplicitlyTypeArrayInitalizer()
+        public static void CalledFrom_ImplicitlyTypeArrayInitializer()
         {
             string p1 = "Test";
             dynamic mc = new MemberClass();

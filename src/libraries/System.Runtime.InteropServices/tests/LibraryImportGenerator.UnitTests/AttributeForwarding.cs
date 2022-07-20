@@ -25,6 +25,7 @@ namespace LibraryImportGenerator.UnitTests
             string source = @$"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {{
@@ -33,16 +34,21 @@ partial class C
     public static partial S Method1();
 }}
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {{
 }}
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {{
-    public Native(S s) {{ }}
-    public S ToManaged() {{ return default; }}
+}}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -67,6 +73,7 @@ struct Native
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -75,16 +82,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -111,6 +123,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -119,16 +132,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -159,6 +177,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -167,16 +186,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -211,6 +235,7 @@ struct Native
             string source = @$"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {{
@@ -219,16 +244,21 @@ partial class C
     public static partial S Method1();
 }}
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {{
 }}
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {{
-    public Native(S s) {{ }}
-    public S ToManaged() {{ return default; }}
+}}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -257,6 +287,7 @@ struct Native
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 class OtherAttribute : Attribute {}
@@ -268,16 +299,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);

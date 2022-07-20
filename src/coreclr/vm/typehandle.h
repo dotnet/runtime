@@ -423,7 +423,7 @@ public:
     PTR_Module GetModule() const;
 
     // The module where this type lives for the purposes of loading and prejitting
-    // Note: NGen time result might differ from runtime result for parametrized types (generics, arrays, etc.)
+    // Note: NGen time result might differ from runtime result for parameterized types (generics, arrays, etc.)
     // See code:ClassLoader::ComputeLoaderModule or file:clsload.hpp#LoaderModule for more information
     PTR_Module GetLoaderModule() const;
 
@@ -473,9 +473,6 @@ public:
 
     // Does this type have zap-encoded components (generic arguments, etc)?
     BOOL HasUnrestoredTypeKey() const;
-
-    // True if this type handle is a zap-encoded fixup
-    BOOL IsEncodedFixup() const;
 
     void DoRestoreTypeKey();
 

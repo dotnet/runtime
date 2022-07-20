@@ -13,6 +13,9 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
              Link="Common\System\Reflection\MockParameterInfo.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs"
@@ -23,6 +26,7 @@
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="CustomAttributeTests.cs" />
+    <Compile Include="DefaultBinderTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />
@@ -37,6 +41,7 @@
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="PointerTests.cs" />
+    <Compile Include="TypeTests.Constraints.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">

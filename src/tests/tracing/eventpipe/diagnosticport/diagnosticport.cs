@@ -40,9 +40,9 @@ namespace Tracing.Tests.DiagnosticPortValidation
             int subprocessId = -1;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                { 
-                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
+                environment: new Dictionary<string,string>
+                {
+                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts }
                 },
                 duringExecution: async (int pid) =>
                 {
@@ -52,7 +52,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     {
                         var (server, _) = serverAndNames[i];
                         int serverIndex = i;
-                        tasks.Add(Task.Run(async () => 
+                        tasks.Add(Task.Run(async () =>
                         {
                             Stream stream = await server.AcceptAsync();
                             IpcAdvertise advertise = IpcAdvertise.Parse(stream);
@@ -102,21 +102,21 @@ namespace Tracing.Tests.DiagnosticPortValidation
             int subprocessId = -1;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                { 
-                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
+                environment: new Dictionary<string,string>
+                {
+                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts }
                 },
                 duringExecution: async (int pid) =>
                 {
                     subprocessId = pid;
-                    // Create an eventpipe session that will tell us when 
+                    // Create an eventpipe session that will tell us when
                     // the EEStartupStarted event happens.  This will tell us
-                    // the the runtime has been resumed.  This should only happen
+                    // the runtime has been resumed.  This should only happen
                     // AFTER all suspend ports have sent the resume command.
                     var config = new SessionConfiguration(
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
-                        providers: new List<Provider> { 
+                        providers: new List<Provider> {
                             new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
                             // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
                             // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
@@ -131,7 +131,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
 
                     var mre = new ManualResetEvent(false);
 
-                    Task readerTask = Task.Run(async () => 
+                    Task readerTask = Task.Run(async () =>
                     {
                         Logger.logger.Log($"Creating EventPipeEventSource");
                         using var source = new EventPipeEventSource(eventStream);
@@ -207,21 +207,21 @@ namespace Tracing.Tests.DiagnosticPortValidation
             int subprocessId = -1;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                { 
-                    { Utils.DiagnosticPortSuspend, "1" } 
+                environment: new Dictionary<string,string>
+                {
+                    { Utils.DiagnosticPortSuspend, "1" }
                 },
                 duringExecution: async (int pid) =>
                 {
                     subprocessId = pid;
-                    // Create an eventpipe session that will tell us when 
+                    // Create an eventpipe session that will tell us when
                     // the EEStartupStarted event happens.  This will tell us
-                    // the the runtime has been resumed.  This should only happen
+                    // the runtime has been resumed.  This should only happen
                     // AFTER all suspend ports have sent the resume command.
                     var config = new SessionConfiguration(
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
-                        providers: new List<Provider> { 
+                        providers: new List<Provider> {
                             new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
                             // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
                             // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
@@ -236,7 +236,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
 
                     var mre = new ManualResetEvent(false);
 
-                    Task readerTask = Task.Run(async () => 
+                    Task readerTask = Task.Run(async () =>
                     {
                         Logger.logger.Log($"Creating EventPipeEventSource");
                         using var source = new EventPipeEventSource(eventStream);
@@ -347,9 +347,9 @@ namespace Tracing.Tests.DiagnosticPortValidation
             int subprocessId = -1;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
-                { 
-                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts } 
+                environment: new Dictionary<string,string>
+                {
+                    { Utils.DiagnosticPortsEnvKey, dotnetDiagnosticPorts }
                 },
                 duringExecution: async (int pid) =>
                 {
@@ -359,7 +359,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     {
                         var (server, _) = serverAndNames[i];
                         int serverIndex = i;
-                        tasks.Add(Task.Run(async () => 
+                        tasks.Add(Task.Run(async () =>
                         {
                             Stream stream = await server.AcceptAsync();
                             IpcAdvertise advertise = IpcAdvertise.Parse(stream);
@@ -393,7 +393,7 @@ namespace Tracing.Tests.DiagnosticPortValidation
             bool fSuccess = true;
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> 
+                environment: new Dictionary<string,string>
                 {
                     { Utils.DiagnosticPortSuspend, "1" }
                 },

@@ -12,6 +12,14 @@ class CrashInfo;
 #define MCREG_Cpsr(mc)    ((mc).pstate)
 #endif
 
+#if defined(__loongarch64)
+// See src/coreclr/pal/src/include/pal/context.h
+#define MCREG_Ra(mc)      ((mc).gpr[1])
+#define MCREG_Fp(mc)      ((mc).gpr[22])
+#define MCREG_Sp(mc)      ((mc).gpr[3])
+#define MCREG_Pc(mc)      ((mc).pc)
+#endif
+
 #define FPREG_ErrorOffset(fpregs) *(DWORD*)&((fpregs).rip)
 #define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
 #define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
@@ -19,6 +27,14 @@ class CrashInfo;
 #if defined(__arm__)
 #define user_regs_struct user_regs
 #define user_fpregs_struct user_fpregs
+#elif defined(__loongarch64)
+// struct user_regs_struct {} defined `/usr/include/loongarch64-linux-gnu/sys/user.h`
+
+struct user_fpregs_struct
+{
+  unsigned long long  fpregs[32];
+  unsigned long       fpscr;
+} __attribute__((__packed__));
 #endif
 
 #if defined(__aarch64__)
@@ -127,6 +143,10 @@ public:
     inline const uint64_t GetStackPointer() const { return m_gpRegisters.rsp; }
     inline const uint64_t GetFramePointer() const { return m_gpRegisters.rbp; }
 #elif defined(__aarch64__)
+    inline const uint64_t GetInstructionPointer() const { return MCREG_Pc(m_gpRegisters); }
+    inline const uint64_t GetStackPointer() const { return MCREG_Sp(m_gpRegisters); }
+    inline const uint64_t GetFramePointer() const { return MCREG_Fp(m_gpRegisters); }
+#elif defined(__loongarch64)
     inline const uint64_t GetInstructionPointer() const { return MCREG_Pc(m_gpRegisters); }
     inline const uint64_t GetStackPointer() const { return MCREG_Sp(m_gpRegisters); }
     inline const uint64_t GetFramePointer() const { return MCREG_Fp(m_gpRegisters); }

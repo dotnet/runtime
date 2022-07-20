@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
         [ThreadStatic]
         private static RandomDataGenerator t_randomDataGenerator;
 
-        private static RandomDataGenerator Generator => t_randomDataGenerator ?? (t_randomDataGenerator = new RandomDataGenerator());
+        private static RandomDataGenerator Generator => t_randomDataGenerator ??= new RandomDataGenerator();
 
         private static readonly int[] s_daysPerMonthLeapYear = new int[]
         {

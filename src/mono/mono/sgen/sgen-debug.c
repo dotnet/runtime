@@ -733,8 +733,7 @@ scan_object_for_specific_ref (GCObject *obj, GCObject *key)
 	} else {
 		mword *words = (mword*)obj;
 		size_t size = safe_object_get_size (obj);
-		int i;
-		for (i = 0; i < size / sizeof (mword); ++i) {
+		for (gsize i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
 				GCVTable vtable = SGEN_LOAD_VTABLE (obj);
 				g_print ("found possible ref to %p in object %p (%s.%s) at offset %ld\n",
@@ -1136,7 +1135,6 @@ void
 sgen_debug_dump_heap (const char *type, int num, const char *reason)
 {
 	SgenPointerQueue *pinned_objects;
-	int i;
 
 	if (!heap_dump_file)
 		return;
@@ -1155,7 +1153,7 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 
 	fprintf (heap_dump_file, "<pinned-objects>\n");
 	pinned_objects = sgen_pin_stats_get_object_list ();
-	for (i = 0; i < pinned_objects->next_slot; ++i)
+	for (gsize i = 0; i < pinned_objects->next_slot; ++i)
 		dump_object ((GCObject *)pinned_objects->data [i], TRUE);
 	fprintf (heap_dump_file, "</pinned-objects>\n");
 

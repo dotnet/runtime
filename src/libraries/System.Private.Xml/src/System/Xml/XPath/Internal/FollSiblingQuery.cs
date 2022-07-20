@@ -68,10 +68,7 @@ namespace MS.Internal.Xml.XPath
             {
                 if (currentNode == null)
                 {
-                    if (_nextInput == null)
-                    {
-                        _nextInput = FetchInput(); // This can happen at the beginning and at the end
-                    }
+                    _nextInput ??= FetchInput(); // This can happen at the beginning and at the end
                     if (_elementStk.Count == 0)
                     {
                         if (_nextInput == null)

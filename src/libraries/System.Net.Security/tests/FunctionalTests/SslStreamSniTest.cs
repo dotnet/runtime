@@ -18,9 +18,10 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [SkipOnPlatform(TestPlatforms.Android, "Host name is not sent on Android")]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
-            X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             await WithVirtualConnection(async (server, client) =>
                 {
@@ -54,7 +55,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ServerCallbackAndLocalCertificateSelectionSet_Throws(string hostName)
         {
-            X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
 
@@ -95,9 +96,10 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [SkipOnPlatform(TestPlatforms.Android, "TODO: this test would work with GetServerCertificate(). Is there something wrong with the PEMs?")]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
-            X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
 

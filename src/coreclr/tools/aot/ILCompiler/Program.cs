@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -16,6 +17,7 @@ using Internal.CommandLine;
 
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -53,9 +55,8 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
-        private bool _disableReflection;
+        private string _reflectionData;
         private bool _completeTypesMetadata;
-        private bool _reflectedOnly;
         private bool _scanReflection;
         private bool _methodBodyFolding;
         private int _parallelism = Environment.ProcessorCount;
@@ -111,7 +112,7 @@ namespace ILCompiler
         private void Help(string helpText)
         {
             Console.WriteLine();
-            Console.Write("Microsoft (R) .NET Native IL Compiler");
+            Console.Write(".NET Native IL Compiler");
             Console.Write(" ");
             Console.Write(typeof(Program).GetTypeInfo().Assembly.GetName().Version);
             Console.WriteLine();
@@ -159,6 +160,8 @@ namespace ILCompiler
 
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
+            var validReflectionDataOptions = new string[] { "all", "none" };
+
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
@@ -201,9 +204,8 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
-                syntax.DefineOption("disablereflection", ref _disableReflection, "Disable generation of reflection metadata");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
-                syntax.DefineOption("reflectedonly", ref _reflectedOnly, "Generate metadata only for reflected members");
+                syntax.DefineOption("reflectiondata", ref _reflectionData, $"Reflection data to generate (one of: {string.Join(", ", validReflectionDataOptions)})");
                 syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
@@ -215,7 +217,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("feature", ref _featureSwitches, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
                 syntax.DefineOption("parallelism", ref _parallelism, "Maximum number of threads to use during compilation");
-                syntax.DefineOption("instructionset", ref _instructionSet, "Instruction set to allow or disallow");
+                syntax.DefineOption("instruction-set", ref _instructionSet, "Instruction set to allow or disallow");
                 syntax.DefineOption("guard", ref _guard, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
                 syntax.DefineOption("preinitstatics", ref _preinitStatics, "Interpret static constructors at compile time if possible (implied by -O)");
                 syntax.DefineOption("nopreinitstatics", ref _noPreinitStatics, "Do not interpret static constructors at compile time");
@@ -305,6 +307,10 @@ namespace ILCompiler
                     extraHelp.Add(archString.ToString());
                 }
 
+                extraHelp.Add("");
+                extraHelp.Add("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
+                extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
+
                 argSyntax.ExtraHelpParagraphs = extraHelp;
             }
 
@@ -342,22 +348,27 @@ namespace ILCompiler
                 Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist" });
             }
 
+            if (_reflectionData != null && Array.IndexOf(validReflectionDataOptions, _reflectionData) < 0)
+            {
+                Console.WriteLine($"Warning: option '{_reflectionData}' not recognized");
+            }
+
             return argSyntax;
         }
 
         private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
-            List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
+            List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
             // Build a list of assemblies that have an initializer that needs to run before
             // any user code runs.
             foreach (string initAssemblyName in _initAssemblies)
             {
                 ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName), throwIfNotFound: true);
-                assembliesWithInitalizers.Add(assembly);
+                assembliesWithInitializers.Add(assembly);
             }
 
-            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitalizers);
+            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
             List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
 
@@ -429,13 +440,19 @@ namespace ILCompiler
             // The runtime expects certain baselines that the codegen can assume as well.
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
 
             if (_instructionSet != null)
@@ -462,7 +479,7 @@ namespace ILCompiler
                 Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+                    string instructionSet = instructionSetSpecifier.Substring(1);
 
                     bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
                     if (enabled)
@@ -487,22 +504,18 @@ namespace ILCompiler
             // Optimistically assume some instruction sets are present.
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                // We set these hardware features as enabled always, as most
-                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
-                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
-                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions.
+                // We set these hardware features as opportunistically enabled as most of hardware in the wild supports them.
+                // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
+                // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                // The compiler is able to generate runtime IsSupported checks for the following instruction sets.
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("ssse3");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
 
-                // If AVX was enabled, we can opportunistically enable FMA/BMI/VNNI
+                // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
@@ -533,7 +546,7 @@ namespace ILCompiler
                                                                   InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
                                                                   _targetArchitecture);
 
-            bool supportsReflection = !_disableReflection && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = _reflectionData != "none" && _systemModuleName == DefaultSystemModule;
 
             //
             // Initialize type system context
@@ -542,9 +555,9 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = TargetAbi.CoreRT;
+            var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            CompilerTypeSystemContext typeSystemContext = 
+            CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);
 
             //
@@ -553,7 +566,7 @@ namespace ILCompiler
             //
             // See: https://github.com/dotnet/corert/issues/2785
             //
-            // When we undo this this hack, replace this foreach with
+            // When we undo this hack, replace the foreach with
             //  typeSystemContext.InputFilePaths = _inputFilePaths;
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
@@ -730,7 +743,7 @@ namespace ILCompiler
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
 
-            ILProvider ilProvider = new CoreRTILProvider();
+            ILProvider ilProvider = new NativeAotILProvider();
 
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in _featureSwitches)
@@ -743,7 +756,8 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var logger = new Logger(Console.Out, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -764,8 +778,8 @@ namespace ILCompiler
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (_scanReflection)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectionILScanning;
-                if (_reflectedOnly)
-                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectedMembersOnly;
+                if (_reflectionData == "all")
+                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts;
                 if (_rootDefaultAssemblies)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.RootDefaultAssemblies;
             }
@@ -777,7 +791,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            var flowAnnotations = new Dataflow.FlowAnnotations(logger, ilProvider);
+            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
@@ -816,8 +830,20 @@ namespace ILCompiler
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
 
-            ILScanResults scanResults = null;
+#if DEBUG
+            List<TypeDesc> scannerConstructedTypes = null;
+            List<MethodDesc> scannerCompiledMethods = null;
+#endif
+
             if (useScanner)
+            {
+                // Run the scanner in a separate stack frame so that there's no dangling references to
+                // it once we're done with it and it can be garbage collected.
+                RunScanner();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void RunScanner()
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
@@ -831,11 +857,43 @@ namespace ILCompiler
 
                 IILScanner scanner = scannerBuilder.ToILScanner();
 
-                scanResults = scanner.Scan();
+                ILScanResults scanResults = scanner.Scan();
+
+#if DEBUG
+                scannerCompiledMethods = new List<MethodDesc>(scanResults.CompiledMethodBodies);
+                scannerConstructedTypes = new List<TypeDesc>(scanResults.ConstructedEETypes);
+#endif
+
+                if (_scanDgmlLogFileName != null)
+                    scanResults.WriteDependencyLog(_scanDgmlLogFileName);
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
+
+                // If we have a scanner, feed the vtable analysis results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
+
+                // If we have a scanner, feed the generic dictionary results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
+
+                // If we have a scanner, we can drive devirtualization using the information
+                // we collected at scanning time (effectively sealing unsealed types if possible).
+                // This could be a command line switch if we really wanted to.
+                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
+
+                // If we use the scanner's result, we need to consult it to drive inlining.
+                // This prevents e.g. devirtualizing and inlining methods on types that were
+                // never actually allocated.
+                builder.UseInliningPolicy(scanResults.GetInliningPolicy());
+
+                // Use an error provider that prevents us from re-importing methods that failed
+                // to import with an exception during scanning phase. We would see the same failure during
+                // compilation, but before RyuJIT gets there, it might ask questions that we don't
+                // have answers for because we didn't scan the entire method.
+                builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
             }
 
             DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
@@ -863,33 +921,6 @@ namespace ILCompiler
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(_useDwarf5);
 
-            if (scanResults != null)
-            {
-                // If we have a scanner, feed the vtable analysis results to the compilation.
-                // This could be a command line switch if we really wanted to.
-                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
-
-                // If we have a scanner, feed the generic dictionary results to the compilation.
-                // This could be a command line switch if we really wanted to.
-                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
-
-                // If we have a scanner, we can drive devirtualization using the information
-                // we collected at scanning time (effectively sealing unsealed types if possible).
-                // This could be a command line switch if we really wanted to.
-                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
-
-                // If we use the scanner's result, we need to consult it to drive inlining.
-                // This prevents e.g. devirtualizing and inlining methods on types that were
-                // never actually allocated.
-                builder.UseInliningPolicy(scanResults.GetInliningPolicy());
-
-                // Use an error provider that prevents us from re-importing methods that failed
-                // to import with an exception during scanning phase. We would see the same failure during
-                // compilation, but before RyuJIT gets there, it might ask questions that we don't
-                // have answers for because we didn't scan the entire method.
-                builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
-            }
-
             builder.UseResilience(_resilient);
 
             ICompilation compilation = builder.ToCompilation();
@@ -914,11 +945,9 @@ namespace ILCompiler
             if (_dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(_dgmlLogFileName);
 
-            if (scanResults != null)
+#if DEBUG
+            if (scannerConstructedTypes != null)
             {
-                if (_scanDgmlLogFileName != null)
-                    scanResults.WriteDependencyLog(_scanDgmlLogFileName);
-
                 // If the scanner and compiler don't agree on what to compile, the outputs of the scanner might not actually be usable.
                 // We are going to check this two ways:
                 // 1. The methods and types generated during compilation are a subset of method and types scanned
@@ -926,9 +955,9 @@ namespace ILCompiler
 
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
-                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
+                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scannerCompiledMethods,
                     "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method));
-                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
+                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scannerConstructedTypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 
                 static bool IsRelatedToInvalidInput(MethodDesc method)
@@ -952,15 +981,16 @@ namespace ILCompiler
 
                     // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
                     // doesn't expand them. They would show up as noisy diffs.
-                    DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
+                    DiffCompilationResults(ref dummy, scannerCompiledMethods, compilationResults.CompiledMethodBodies,
                     "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.OwningType.IsIntrinsic);
-                    DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
+                    DiffCompilationResults(ref dummy, scannerConstructedTypes, compilationResults.ConstructedEETypes,
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }
 
                 if (scanningFail)
                     throw new Exception("Scanning failure");
             }
+#endif
 
             if (debugInfoProvider is IDisposable)
                 ((IDisposable)debugInfoProvider).Dispose();
@@ -970,7 +1000,6 @@ namespace ILCompiler
             return 0;
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
         private void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
             string set1name, string set2name, Predicate<T> filter)
         {

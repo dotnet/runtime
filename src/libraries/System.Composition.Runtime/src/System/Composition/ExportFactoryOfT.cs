@@ -15,9 +15,9 @@ namespace System.Composition
         /// Construct an ExportFactory.
         /// </summary>
         /// <param name="exportCreator">Action invoked upon calls to the Create() method.</param>
-        public ExportFactory(Func<Tuple<T, Action>> exportCreator!!)
+        public ExportFactory(Func<Tuple<T, Action>> exportCreator)
         {
-            _exportLifetimeContextCreator = exportCreator;
+            _exportLifetimeContextCreator = exportCreator ?? throw new ArgumentNullException(nameof(exportCreator));
         }
 
         /// <summary>

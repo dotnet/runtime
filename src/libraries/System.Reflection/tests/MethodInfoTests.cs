@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -383,6 +382,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
@@ -708,6 +708,150 @@ namespace System.Reflection.Tests
                 name, BindingFlags.Public | BindingFlags.Static)!;
         }
 
+        [Fact]
+        public static void InvokeNullableEnumParameterDefaultNo()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNo", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { Type.Missing }));
+        } 
+
+        [Fact]
+        public static void InvokeNullableEnumParameterDefaultYes()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultYes", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void InvokeNonNullableEnumParameterDefaultYes()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NonNullableEnumDefaultYes", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Equal(YesNo.No, method.Invoke(null, new object[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object[] { YesNo.Yes }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void InvokeNullableEnumParameterDefaultNull()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNull", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Null(method.Invoke(null, new object?[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void InvokeNullableEnumParameterNoDefault()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumNoDefault", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
+        }
+
+        [Fact]
+        public void ValueTypeMembers_WithOverrides()
+        {
+            ValueTypeWithOverrides obj = new() { Id = 1 };
+
+            // ToString is overridden.
+            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
+                Invoke(obj, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
+                Invoke(obj, null));
+        }
+
+        [Fact]
+        public void ValueTypeMembers_WithoutOverrides()
+        {
+            ValueTypeWithoutOverrides obj = new() { Id = 1 };
+
+            // ToString is not overridden.
+            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
+                Invoke(obj, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
+                Invoke(obj, null));
+        }
+
+        [Fact]
+        public void NullableOfTMembers()
+        {
+            // Ensure calling a method on Nullable<T> works.
+            MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
+            Assert.Equal(42, mi.Invoke(42, null));
+        }
+
+        [Fact]
+        public void CopyBackWithByRefArgs()
+        {
+            object i = 42;
+            object[] args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
+
+            i = 42;
+            args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]);
+
+            object o = null;
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
+            Assert.NotNull(args[0]);
+
+            o = new object();
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
+            Assert.Null(args[0]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static void CallStackFrame_AggressiveInlining()
+        {
+            MethodInfo mi = typeof(System.Reflection.TestAssembly.ClassToInvoke).GetMethod(nameof(System.Reflection.TestAssembly.ClassToInvoke.CallMe_AggressiveInlining),
+                BindingFlags.Public | BindingFlags.Static)!;
+
+            // Although the target method has AggressiveInlining, currently reflection should not inline the target into any generated IL.
+            FirstCall(mi);
+            SecondCall(mi);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void FirstCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void SecondCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
+
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
@@ -1000,6 +1144,29 @@ namespace System.Reflection.Tests
         }
     }
 
+    public static class CopyBackMethods
+    {
+        public static void IncrementByRef(ref int i)
+        {
+            i++;
+        }
+
+        public static void IncrementByNullableRef(ref int? i)
+        {
+            i++;
+        }
+
+        public static void SetToNullByRef(ref object o)
+        {
+            o = null;
+        }
+
+        public static void SetToNonNullByRef(ref object o)
+        {
+            o = new object();
+        }
+    }
+
     public enum ColorsInt : int
     {
         Red = 1
@@ -1015,6 +1182,25 @@ namespace System.Reflection.Tests
         Red = 1
     }
 
+    public struct ValueTypeWithOverrides
+    {
+        public int Id;
+        public override string ToString() => "Hello";
+        public int GetId() => Id;
+    }
+
+    public struct ValueTypeWithoutOverrides
+    {
+        public int Id;
+        public int GetId() => Id;
+    }
+
+    public enum YesNo
+    {
+        No = 0,
+        Yes = 1,
+    }
+
     public static class EnumMethods
     {
         public static bool PassColorsInt(ColorsInt color)
@@ -1027,6 +1213,31 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(ColorsShort.Red, color);
             return true;
+        }
+
+        static YesNo NonNullableEnumDefaultYes(YesNo yesNo = YesNo.Yes)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumDefaultNo(YesNo? yesNo = YesNo.No)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumDefaultYes(YesNo? yesNo = YesNo.Yes)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumDefaultNull(YesNo? yesNo = null)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumNoDefault(YesNo? yesNo)
+        {
+            return yesNo;
         }
     }
 #pragma warning restore 0414

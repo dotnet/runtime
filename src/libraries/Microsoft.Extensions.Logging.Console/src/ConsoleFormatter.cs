@@ -12,8 +12,10 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public abstract class ConsoleFormatter
     {
-        protected ConsoleFormatter(string name!!)
+        protected ConsoleFormatter(string name)
         {
+            ThrowHelper.ThrowIfNull(name);
+
             Name = name;
         }
 

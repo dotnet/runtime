@@ -124,8 +124,6 @@ namespace Wasm.Build.Tests
             subject.Exited += (s, a) =>
             {
                 taskCompletionSource.SetResult(null);
-
-                subject.Dispose();
             };
 
             subject.Start();

@@ -6,7 +6,7 @@
 ** Source:  test4.c
 **
 ** Purpose: Tests the PAL implementation of the CopyFileA function
-**          to see if a file can through different users belonging to 
+**          to see if a file can through different users belonging to
 **          different groups.
 **
 
@@ -14,7 +14,7 @@
 
 /* USECASE
     Copy a file from a different user, belonging to a different group to
-    the the current user, who is a member of the current group.  Then check
+    the current user, who is a member of the current group.  Then check
     to see that the current user has the basic access rights to the copied
     file.
 
@@ -41,7 +41,7 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
     HANDLE hFile = NULL;
     DWORD dwBytesWritten=0;
     DWORD dwBytesRead=0;
-    
+
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
@@ -53,13 +53,13 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
     {
         Fail("CopyFileA: Cannot copy a file with error, %u",GetLastError());
     }
-    
+
     /* try to get file attributes of destination file */
     if (GetFileAttributesA(szDest) == -1)
     {
         Fail("CopyFileA: GetFileAttributes of destination file "
             "failed with error code %u. \n",
-            GetLastError());  
+            GetLastError());
     }
 
     /* set the attributes of the destination file to normal again */
@@ -71,7 +71,7 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
     }
 
     /* open the file for write purposes */
-    hFile = CreateFile(szDest, 
+    hFile = CreateFile(szDest,
         GENERIC_WRITE,
         0,
         NULL,
@@ -81,7 +81,7 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
 
     if(hFile == INVALID_HANDLE_VALUE)
     {
-        Fail("CopyFileA: ERROR -> Unable to create file \"%s\".\n", 
+        Fail("CopyFileA: ERROR -> Unable to create file \"%s\".\n",
             szDest);
     }
 
@@ -109,9 +109,9 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
             ".\n",szDest,GetLastError());
     }
 
- 
+
     /* open the file for read purposes */
-    hFile = CreateFile(szDest, 
+    hFile = CreateFile(szDest,
         GENERIC_READ,
         0,
         NULL,
@@ -121,7 +121,7 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
 
     if(hFile == INVALID_HANDLE_VALUE)
     {
-        Fail("CopyFileA: ERROR -> Unable to create file \"%s\".\n", 
+        Fail("CopyFileA: ERROR -> Unable to create file \"%s\".\n",
             szDest);
     }
 
@@ -153,7 +153,7 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
                 "error %u.\n",szDest, GetLastError());
         }
         Fail("");
-    }        
+    }
 
     /* Close the file handle */
     bRc = CloseHandle(hFile);
@@ -169,11 +169,11 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
     {
         Fail("CopyFileA: Could not remove copied file with error %u\n",
             GetLastError());
-    }  
-  
+    }
+
     PAL_Terminate();
     return PASS;
 
 #endif
-    
+
 }

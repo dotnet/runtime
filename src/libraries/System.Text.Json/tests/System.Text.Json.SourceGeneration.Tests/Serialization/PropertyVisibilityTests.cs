@@ -255,10 +255,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedBigInteger))]
+#endif
         [JsonSerializable(typeof(ClassWithThingsToIgnore))]
         [JsonSerializable(typeof(ClassWithMixedPropertyAccessors_PropertyAttributes))]
         [JsonSerializable(typeof(ClassWithPropertyPolicyConflictWhichThrows))]
@@ -298,6 +300,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public override async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
             // Exception messages direct users to use JsonSourceGenerationMode.Metadata to see a more detailed error.
@@ -428,10 +431,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedBigInteger))]
+#endif
         [JsonSerializable(typeof(ClassWithThingsToIgnore))]
         [JsonSerializable(typeof(ClassWithMixedPropertyAccessors_PropertyAttributes))]
         [JsonSerializable(typeof(ClassWithPropertyPolicyConflictWhichThrows))]
