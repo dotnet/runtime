@@ -28,11 +28,6 @@ namespace System.Data.SqlTypes
         private Guid? _value; // the SqlGuid is null if _value is null
 
         // constructor
-        // construct a SqlGuid.Null
-        private SqlGuid(bool fNull)
-        {
-            _value = null;
-        }
 
         public SqlGuid(byte[] value)
         {
@@ -59,7 +54,6 @@ namespace System.Data.SqlTypes
 
         private SqlGuid(SerializationInfo si, StreamingContext sc)
         {
-            ArgumentNullException.ThrowIfNull(si);
             byte[]? value = (byte[]?)si.GetValue("m_value", typeof(byte[]));
             if (value is null)
                 _value = null;
@@ -71,16 +65,7 @@ namespace System.Data.SqlTypes
         public bool IsNull => _value is null;
 
         // property: Value
-        public Guid Value
-        {
-            get
-            {
-                if (_value is null)
-                    throw new SqlNullValueException();
-                else
-                    return _value.GetValueOrDefault();
-            }
-        }
+        public Guid Value => _value ?? throw new SqlNullValueException();
 
         // Implicit conversion from Guid to SqlGuid
         public static implicit operator SqlGuid(Guid x)
@@ -118,7 +103,7 @@ namespace System.Data.SqlTypes
         }
 
         // Comparison operators
-        private static EComparison Compare(SqlGuid x, SqlGuid y)
+        private static unsafe EComparison Compare(SqlGuid x, SqlGuid y)
         {
             // Comparison orders.
             ReadOnlySpan<byte> rgiGuidOrder = new byte[16] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
@@ -141,7 +126,7 @@ namespace System.Data.SqlTypes
                 byte b2 = yBytes[rgiGuidOrder[i]];
                 if (b1 != b2)
                 {
-                    return b1 < b2 ? EComparison.LT : EComparison.GT;
+                    return (b1 < b2) ? EComparison.LT : EComparison.GT;
                 }
             }
 
@@ -167,7 +152,7 @@ namespace System.Data.SqlTypes
         // Overloading comparison operators
         public static SqlBoolean operator ==(SqlGuid x, SqlGuid y)
         {
-            return x.IsNull || y.IsNull ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.EQ);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.EQ);
         }
 
         public static SqlBoolean operator !=(SqlGuid x, SqlGuid y)
@@ -177,12 +162,12 @@ namespace System.Data.SqlTypes
 
         public static SqlBoolean operator <(SqlGuid x, SqlGuid y)
         {
-            return x.IsNull || y.IsNull ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.LT);
+            return (x.IsNull || y.) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.LT);
         }
 
         public static SqlBoolean operator >(SqlGuid x, SqlGuid y)
         {
-            return x.IsNull || y.IsNull ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.GT);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.GT);
         }
 
         public static SqlBoolean operator <=(SqlGuid x, SqlGuid y)
@@ -210,37 +195,37 @@ namespace System.Data.SqlTypes
         // Alternative method for operator ==
         public static SqlBoolean Equals(SqlGuid x, SqlGuid y)
         {
-            return x == y;
+            return (x == y);
         }
 
         // Alternative method for operator !=
         public static SqlBoolean NotEquals(SqlGuid x, SqlGuid y)
         {
-            return x != y;
+            return (x != y);
         }
 
         // Alternative method for operator <
         public static SqlBoolean LessThan(SqlGuid x, SqlGuid y)
         {
-            return x < y;
+            return (x < y);
         }
 
         // Alternative method for operator >
         public static SqlBoolean GreaterThan(SqlGuid x, SqlGuid y)
         {
-            return x > y;
+            return (x > y);
         }
 
         // Alternative method for operator <=
         public static SqlBoolean LessThanOrEqual(SqlGuid x, SqlGuid y)
         {
-            return x <= y;
+            return (x <= y);
         }
 
         // Alternative method for operator >=
         public static SqlBoolean GreaterThanOrEqual(SqlGuid x, SqlGuid y)
         {
-            return x >= y;
+            return (x >= y);
         }
 
         // Alternative method for conversions.
@@ -335,10 +320,9 @@ namespace System.Data.SqlTypes
 
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext sc)
         {
-            ArgumentNullException.ThrowIfNull(si);
             si.AddValue("m_value", ToByteArray());
         }
 
-        public static readonly SqlGuid Null = new SqlGuid(true);
+        public static readonly SqlGuid Null = default;
     } // SqlGuid
 } // namespace System.Data.SqlTypes
