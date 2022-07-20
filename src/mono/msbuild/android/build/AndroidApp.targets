@@ -48,7 +48,6 @@
   
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(_AOTMode)' == 'Full'" Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
       <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
@@ -56,8 +55,6 @@
       <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
       <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=31000" />
-
-      <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
     </ItemGroup>
 
     <PropertyGroup>
