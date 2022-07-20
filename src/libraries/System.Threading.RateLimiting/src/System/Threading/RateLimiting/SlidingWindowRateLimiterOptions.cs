@@ -10,13 +10,13 @@ namespace System.Threading.RateLimiting
     {
         /// <summary>
         /// Specifies the minimum period between replenishments.
-        /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
+        /// Must be set to a nonzero value by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
         public TimeSpan Window { get; set; } = TimeSpan.Zero;
 
         /// <summary>
         /// Specifies the maximum number of segments a window is divided into.
-        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
         public int SegmentsPerWindow { get; set; }
 
@@ -31,7 +31,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum number of requests that can be served in a window.
-        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
         public int PermitLimit { get; set; }
 
@@ -45,7 +45,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum cumulative permit count of queued acquisition requests.
-        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
         public int QueueLimit { get; set; }
     }
