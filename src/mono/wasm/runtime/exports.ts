@@ -100,9 +100,8 @@ const MONO = {
     mono_run_main_and_exit,
     mono_wasm_get_assembly_exports,
 
-    // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
-    mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
+    mono_wasm_load_runtime,
 
     config: <MonoConfig | MonoConfigError>runtimeHelpers.config,
     loaded_files: <string[]>[],
@@ -193,26 +192,21 @@ export type BINDINGType = typeof BINDING;
 
 let exportedAPI: DotnetPublicAPI;
 
-// We need to replace some of the methods in the Emscripten PThreads support with our own
-type PThreadReplacements = {
-    loadWasmModuleToWorker: Function,
-    threadInitTLS: Function
-}
-
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
-    exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
+    imports: EarlyImports,
+    exports: EarlyExports,
+    replacements: EarlyReplacements,
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    setImportsAndExports(imports, exports);
+    init_polyfills();
+    setImportsAndExports(imports, exports, replacements);
 
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, MONO);
@@ -241,49 +235,6 @@ function initializeImportsAndExports(
     }
     if (!module.printErr) {
         module.printErr = console.error.bind(console);
-    }
-    module.imports = module.imports || <DotnetModuleConfigImports>{};
-    if (!module.imports.require) {
-        module.imports.require = (name) => {
-            const resolved = (<any>module.imports)[name];
-            if (resolved) {
-                return resolved;
-            }
-            if (replacements.require) {
-                return replacements.require(name);
-            }
-            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
-        };
-    }
-
-    if (module.imports.fetch) {
-        runtimeHelpers.fetch = module.imports.fetch;
-    }
-    else {
-        runtimeHelpers.fetch = fetch_like;
-    }
-    replacements.fetch = runtimeHelpers.fetch;
-    replacements.readAsync = readAsync_like;
-    replacements.requireOut = module.imports.require;
-    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
-        originalUpdateGlobalBufferAndViews(buffer);
-        afterUpdateGlobalBufferAndViews(buffer);
-    };
-
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
-
-    if (replacements.pthreadReplacements) {
-        const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-        replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-            originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-            afterLoadWasmModuleToWorker(worker);
-        };
-        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-        replacements.pthreadReplacements.threadInitTLS = (): void => {
-            originalThreadInitTLS();
-            afterThreadInitTLS();
-        };
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {

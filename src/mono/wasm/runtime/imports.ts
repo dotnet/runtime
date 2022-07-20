@@ -49,7 +49,7 @@ export function setImportsAndExports(
     ENVIRONMENT_IS_WEB = imports.isWeb;
     ENVIRONMENT_IS_WORKER = imports.isWorker;
     ENVIRONMENT_IS_PTHREAD = imports.isPThread;
-    runtimeHelpers.locateFile = imports.locateFile;
+    runtimeHelpers.locateFile = anyModule["locateFile"];
     runtimeHelpers.quit = imports.quit_;
     runtimeHelpers.ExitStatus = imports.ExitStatus;
     runtimeHelpers.requirePromise = imports.requirePromise;
@@ -77,13 +77,8 @@ export function setImportsAndExports(
     }
 
     // script location
-    runtimeHelpers.scriptDirectoryPromise = replacements.scriptDirectoryPromise = detectScriptDirectory(replacements);
-    // if it returns dummy, we know this is out placeholder, which prevents URL class from being used until we could polyfil it
-    if (anyModule.locateFile("", "") == "_dummy_") {
-        runtimeHelpers.locateFile = anyModule.locateFile = (path: string) => {
-            return runtimeHelpers.scriptDirectory + path;
-        };
-    }
+    replacements.scriptDirectory = detectScriptDirectory(replacements);
+    runtimeHelpers.scriptDirectoryPromise = replacements.scriptDirectoryPromise = detectScriptDirectoryAsync(replacements);
 
     // fetch poly
     if (Module.imports.fetch) {
@@ -120,7 +115,16 @@ export function setImportsAndExports(
     };
 }
 
-export async function detectScriptDirectory(replacements: EarlyReplacements): Promise<string> {
+function normalizeFileUrl(filename: string) {
+    // unix vs windows
+    return filename.replace(/\\/g, "/");
+}
+
+function normalizeDirectoryUrl(dir: string) {
+    return dir.slice(0, dir.lastIndexOf("/")) + "/";
+}
+
+export function detectScriptDirectory(replacements: EarlyReplacements): string {
     if (ENVIRONMENT_IS_WEB) {
         if (
             (typeof (globalThis.document) === "object") &&
@@ -137,29 +141,36 @@ export async function detectScriptDirectory(replacements: EarlyReplacements): Pr
             }
         }
     }
-    let scriptDirectory = replacements.scriptUrl
-        ? (replacements.scriptUrl.slice(0, replacements.scriptUrl.lastIndexOf("/")) + "/")
-        : "./";
-    if (ENVIRONMENT_IS_NODE) {
-        const someRequire = await runtimeHelpers.requirePromise;
-        const path = someRequire("path");
-        const url = someRequire("url");
-        if (!replacements.scriptUrl) {
-            const process = someRequire("process");
-            replacements.scriptUrl = "file://" + process.argv[1];
-            scriptDirectory = path.dirname(url.fileURLToPath(replacements.scriptUrl)) + "/";
-        }
-        else {
-            scriptDirectory = path.dirname(url.fileURLToPath(replacements.scriptUrl)) + "/";
+    if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_ESM) {
+        if (typeof __filename !== "undefined") {
+            // unix vs windows
+            replacements.scriptUrl = __filename;
         }
     }
     if (!replacements.scriptUrl) {
+        // probably V8 shell in non ES6
         replacements.scriptUrl = "./dotnet.js";
     }
+    replacements.scriptUrl = normalizeFileUrl(replacements.scriptUrl);
+    return normalizeDirectoryUrl(replacements.scriptUrl);
+}
 
-    console.debug(`MONO_WASM: starting ${replacements.scriptUrl} at ${scriptDirectory}`);
+export async function detectScriptDirectoryAsync(replacements: EarlyReplacements): Promise<string> {
+    let scriptDirectory = detectScriptDirectory(replacements);
+    if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
+        console.log("ENVIRONMENT_IS_ESM" + ENVIRONMENT_IS_ESM);
+        const someRequire = await runtimeHelpers.requirePromise;
+        const process = someRequire("process");
+
+        replacements.scriptUrl = normalizeFileUrl(process.argv[1]);
+        scriptDirectory = normalizeDirectoryUrl(replacements.scriptUrl);
+    }
+
     (<any>Module)["mainScriptUrlOrBlob"] = replacements.scriptUrl;// this is needed by worker threads
     runtimeHelpers.scriptDirectory = scriptDirectory;
+
+    console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
+    console.debug(`MONO_WASM: starting in ${scriptDirectory}`);
     return scriptDirectory;
 }
 
