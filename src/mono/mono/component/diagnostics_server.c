@@ -77,6 +77,7 @@ ds_server_wasm_init (void)
 static bool
 ds_server_wasm_shutdown (void)
 {
+	mono_coop_sem_destroy (&wasm_ds_options.suspend_resume);
 	return true;
 }
 
@@ -85,21 +86,22 @@ ds_server_wasm_pause_for_diagnostics_monitor (void)
 {
 	/* wait until the DS receives a resume */
 	if (wasm_ds_options.suspend) {
-		const guint timeout = 50;
-		const guint warn_threshold = 5000;
-		guint cumulative_timeout = 0;
-		while (true) {
-			MonoSemTimedwaitRet res = mono_coop_sem_timedwait (&wasm_ds_options.suspend_resume, timeout, MONO_SEM_FLAGS_ALERTABLE);
-			if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS || res == MONO_SEM_TIMEDWAIT_RET_ALERTED)
-				break;
-			else {
-				/* timed out */
-				cumulative_timeout += timeout;
-				if (cumulative_timeout > warn_threshold) {
-					cumulative_timeout = 0;
-				}
-			}
-		}
+		/* WISH: it would be better if we split mono_runtime_init_checked() (and runtime
+		 * initialization in general) into two separate functions that we could call from
+		 * JS, and wait for the resume event in JS.  That would allow the browser to remain
+		 * responsive.
+		 *
+		 * (We can't pause earlier because we need to start up enough of the runtime that DS
+		 * can call ep_enable_2() and get session IDs back.  Which seems to require
+		 * mono_jit_init_version() to be called. )
+		 *
+		 * With the current setup we block the browser UI.  Emscripten still processes its
+		 * queued work in futex_wait_busy, so at least other pthreads aren't waiting for us.
+		 * But the user can't interact with the browser tab at all. Even the JS console is
+		 * not displayed.
+		 */
+		int res = mono_coop_sem_wait(&wasm_ds_options.suspend_resume, MONO_SEM_FLAGS_NONE);
+		g_assert (res == 0);
 	}
 }
 
@@ -107,6 +109,9 @@ ds_server_wasm_pause_for_diagnostics_monitor (void)
 static void
 ds_server_wasm_disable (void)
 {
+	/* DS disable seems to only be called for the AOT compiler, which should never get here on
+	 * HOST_WASM */
+	g_assert_not_reached ();
 }
 
 /* Allocated by mono_wasm_diagnostic_server_create_thread,
@@ -120,6 +125,7 @@ extern void mono_wasm_diagnostic_server_on_server_thread_created (char *websocke
 static void*
 server_thread (void* unused_arg G_GNUC_UNUSED)
 {
+	g_assert (ds_websocket_url != NULL);
 	char* ws_url = g_strdup (ds_websocket_url);
 	g_free (ds_websocket_url);
 	ds_websocket_url = NULL;
@@ -132,6 +138,9 @@ gboolean
 mono_wasm_diagnostic_server_create_thread (const char *websocket_url, pthread_t *out_thread_id)
 {
 	pthread_t thread;
+
+	if (!websocket_url)
+		return FALSE;
 
 	g_assert (!ds_websocket_url);
 	ds_websocket_url = g_strdup (websocket_url);
@@ -323,5 +332,4 @@ MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void)
 {
 	return &fn_table;
-
 }
