@@ -26,6 +26,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AsyncIteratorStateMachines.Test ();
 			Lambdas.Test ();
 			LocalFunctions.Test ();
+
+			LambdaWhichMarksItself.Test ();
 		}
 
 		class BaseTypeWithIteratorStateMachines
@@ -393,6 +395,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (Lambdas).RequiresAll ();
 
 				test.GetType ().RequiresAll ();
+			}
+		}
+
+		class LambdaWhichMarksItself
+		{
+			static void RequiresAllOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> () { }
+
+			public static void Test ()
+			{
+				var a = () => {
+					// https://github.com/dotnet/linker/issues/2903
+					//RequiresAllOnT<LambdaWhichMarksItself> ();
+				};
+
+				a ();
 			}
 		}
 
