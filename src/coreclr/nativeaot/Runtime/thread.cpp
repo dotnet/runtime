@@ -727,7 +727,7 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
 
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
-    PTR_PTR_VOID ppvRetAddrLocation;
+    void** ppvRetAddrLocation;
     GCRefKind retValueKind;
 
     frameIterator->CalculateCurrentMethodState();
@@ -738,14 +738,11 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
     {
         ASSERT(ppvRetAddrLocation != NULL);
 
-        // check if hijack location is the same
+        // if the new hijack location is the same, we do nothing
         if (m_ppvHijackedReturnAddressLocation == ppvRetAddrLocation)
             return;
 
-        // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
-        // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
-        // via LR register modification. Therefore it is important to check our ability to hijack the thread before
-        // unhijacking it.
+        // we only unhijack if we are going to install a new or better hijack.
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
@@ -755,7 +752,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
         m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
-        *ppvRetAddrLocation = pfnHijackFunction;
+        *ppvRetAddrLocation = (void*)pfnHijackFunction;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());

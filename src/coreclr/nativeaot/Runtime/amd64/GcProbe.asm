@@ -3,9 +3,6 @@
 
 include AsmMacros.inc
 
-PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH
-PROBE_SAVE_FLAGS_RAX_IS_GCREF   equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
-
 ;;
 ;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX and accepts the register
 ;; bitmask in RCX
@@ -83,37 +80,27 @@ endm
 ;;  RAX: preserved, other volatile regs trashed
 ;;
 FixupHijackedCallstack macro
-
         ;; rdx <- GetThread(), TRASHES rcx
         INLINE_GETTHREAD rdx, rcx
 
-        ;;
         ;; Fix the stack by pushing the original return address
-        ;;
         mov         rcx, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
         ;; Fetch the return address flags
         mov         rcx, [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
-        ;;
         ;; Clear hijack state
-        ;;
         xor         r9, r9
         mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
         mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
         mov         [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
-
 endm
 
 EXTERN RhpPInvokeExceptionGuard : PROC
 
 ;;
-;;
-;;
 ;; GC Probe Hijack target
-;;
-
 ;;
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         END_PROLOGUE
@@ -170,9 +157,7 @@ NESTED_END RhpGcPollRare, _TEXT
 ifdef FEATURE_GC_STRESS
 
 ;;
-;;
 ;; GC Stress Hijack targets
-;;
 ;;
 LEAF_ENTRY RhpGcStressHijack, _TEXT
         FixupHijackedCallstack

@@ -91,32 +91,23 @@
         pop rdx
         pop rax
 
-        //
         // Fix the stack by pushing the original return address
-        //
         mov         rcx, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
         // Fetch the return address flags
         mov         rcx, [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
-        //
         // Clear hijack state
-        //
         xor         r9, r9
         mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
         mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
         mov         [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
-
 .endm
 
 //
-//
-//
 // GC Probe Hijack target
 //
-//
-
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         END_PROLOGUE
         FixupHijackedCallstack
