@@ -405,7 +405,7 @@ namespace System.Formats.Tar
             _size = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             if (_size < 0)
             {
-                throw new FormatException(string.Format(SR.TarSizeFieldNegative, _name));
+                throw new FormatException(string.Format(SR.TarSizeFieldNegative));
             }
 
             // Continue with the rest of the fields that require no special checks
