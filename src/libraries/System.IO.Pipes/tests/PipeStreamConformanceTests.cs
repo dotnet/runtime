@@ -808,7 +808,9 @@ namespace System.IO.Pipes.Tests
     {
         protected override PipeOptions Options => PipeOptions.None;
 
-        // TODO: The ConcurrentBidirectionalReadsWrites_Success test hangs with this configuration.
+        // TODO https://github.com/dotnet/runtime/issues/72526:
+        // The ConcurrentBidirectionalReadsWrites_Success test hangs on Windows with PipeOptions.None and InOut named pipes.
+        // Disabling for now.
         protected override bool SupportsConcurrentBidirectionalUse => !OperatingSystem.IsWindows();
     }
 

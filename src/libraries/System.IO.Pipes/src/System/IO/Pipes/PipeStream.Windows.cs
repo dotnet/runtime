@@ -282,7 +282,10 @@ namespace System.IO.Pipes
             }
         }
 
-        /// <summary>State object used for <see cref="AsyncOverSyncRead"/> and <see cref="AsyncOverSyncWrite"/>.</summary>
+        /// <summary>
+        /// State object used for implementing async pipe operations as async-over-sync
+        /// (queueing a work item to invoke a synchronous operation).
+        /// </summary>
         private protected sealed class SyncAsyncWorkItem : IThreadPoolWorkItem, ICriticalNotifyCompletion
         {
             /// <summary>A thread handle for the current OS thread.</summary>
@@ -327,7 +330,8 @@ namespace System.IO.Pipes
 
                 // Get a handle for the current thread. This is stored and used to cancel the I/O on this thread
                 // in response to the cancellation token having cancellation requested.  If the handle is invalid,
-                // which could happen if OpenThread fails, skip attempts at cancellation.
+                // which could happen if OpenThread fails, skip attempts at cancellation. The handle needs to be
+                // opened with THREAD_TERMINATE in order to be able to call CancelSynchronousIo.
                 ThreadHandle = t_currentThreadHandle ??= Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_TERMINATE, bInheritHandle: false, Interop.Kernel32.GetCurrentThreadId());
                 if (ThreadHandle.IsInvalid)
                 {
