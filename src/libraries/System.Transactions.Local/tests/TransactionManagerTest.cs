@@ -10,8 +10,15 @@ namespace System.Transactions.Tests
         [Fact]
         public void DefaultTimeout_MaxTimeout_Set_Get()
         {
+            //Assert.Equal(TimeSpan.Parse("00:01:00"), TransactionManager.DefaultTimeout);
+            //Assert.Equal(TimeSpan.Parse("00:10:00"), TransactionManager.MaximumTimeout);
+
             TimeSpan tsDefault = TimeSpan.Parse("00:02:00");
+
             TransactionManager.DefaultTimeout = tsDefault;
+
+            Threading.Thread.Sleep(1000);
+
             Assert.Equal(tsDefault, TransactionManager.DefaultTimeout);
 
             //TimeSpan tsMax = TimeSpan.Parse("00:30:00");
