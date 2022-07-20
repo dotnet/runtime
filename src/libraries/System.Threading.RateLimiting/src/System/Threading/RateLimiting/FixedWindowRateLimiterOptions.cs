@@ -17,8 +17,10 @@ namespace System.Threading.RateLimiting
         /// <summary>
         /// Specified whether the <see cref="FixedWindowRateLimiter"/> is automatically refresh counters or if someone else
         /// will be calling <see cref="FixedWindowRateLimiter.TryReplenish"/> to refresh counters.
-        // 'true' by default.
         /// </summary>
+        /// <value>
+        /// 'true' by default.
+        /// </value>
         public bool AutoReplenishment { get; set; } = true;
 
         /// <summary>
