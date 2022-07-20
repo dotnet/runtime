@@ -1,0 +1,77 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace System.Buffers.Text
+{
+    public static partial class Ascii
+    {
+        /// <summary>
+        /// Returns the index of the first non-ASCII byte in a buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to scan.</param>
+        /// <returns>The index in <paramref name="buffer"/> where the first non-ASCII
+        /// byte appears, or -1 if the buffer contains only ASCII bytes.</returns>
+        public static unsafe int GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte> buffer)
+        {
+            nuint bufferLength = (uint)buffer.Length;
+            fixed (byte* pBuffer = &MemoryMarshal.GetReference(buffer))
+            {
+                nuint idxOfFirstNonAsciiElement = ASCIIUtility.GetIndexOfFirstNonAsciiByte(pBuffer, bufferLength);
+                Debug.Assert(idxOfFirstNonAsciiElement <= bufferLength);
+                return (idxOfFirstNonAsciiElement == bufferLength) ? -1 : (int)idxOfFirstNonAsciiElement;
+            }
+        }
+
+        /// <summary>
+        /// Returns the index of the first non-ASCII char in a buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to scan.</param>
+        /// <returns>The index in <paramref name="buffer"/> where the first non-ASCII
+        /// char appears, or -1 if the buffer contains only ASCII char.</returns>
+        public static unsafe int GetIndexOfFirstNonAsciiChar(ReadOnlySpan<char> buffer)
+        {
+            nuint bufferLength = (uint)buffer.Length;
+            fixed (char* pBuffer = &MemoryMarshal.GetReference(buffer))
+            {
+                nuint idxOfFirstNonAsciiElement = ASCIIUtility.GetIndexOfFirstNonAsciiChar(pBuffer, bufferLength);
+                Debug.Assert(idxOfFirstNonAsciiElement <= bufferLength);
+                return (idxOfFirstNonAsciiElement == bufferLength) ? -1 : (int)idxOfFirstNonAsciiElement;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the provided value contains only ASCII bytes.
+        /// </summary>
+        /// <param name="value">The value to inspect.</param>
+        /// <returns>True if <paramref name="value"/> contains only ASCII bytes or is
+        /// empty; False otherwise.</returns>
+        public static unsafe bool IsAscii(ReadOnlySpan<byte> value)
+        {
+            nuint valueLength = (uint)value.Length;
+            fixed (byte* pValue = &MemoryMarshal.GetReference(value))
+            {
+                return ASCIIUtility.GetIndexOfFirstNonAsciiByte(pValue, valueLength) == valueLength;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the provided value contains only ASCII chars.
+        /// </summary>
+        /// <param name="value">The value to inspect.</param>
+        /// <returns>True if <paramref name="value"/> contains only ASCII chars or is
+        /// empty; False otherwise.</returns>
+        public static unsafe bool IsAscii(ReadOnlySpan<char> value)
+        {
+            nuint valueLength = (uint)value.Length;
+            fixed (char* pValue = &MemoryMarshal.GetReference(value))
+            {
+                return ASCIIUtility.GetIndexOfFirstNonAsciiChar(pValue, valueLength) == valueLength;
+            }
+        }
+    }
+}
