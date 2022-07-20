@@ -544,63 +544,17 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 #ifndef DACCESS_COMPILE
 
 EXTERN_C void FASTCALL RhpSuspendRedirected();
-
-#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
 EXTERN_C void FASTCALL RhpGcProbeHijack();
-
-static void* NormalHijackTargets[1] =
-{
-    reinterpret_cast<void*>(RhpGcProbeHijack)
-};
-#else // TARGET_ARM64 || TARGET_UNIX
-EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
-EXTERN_C void FASTCALL RhpGcProbeHijackObject();
-EXTERN_C void FASTCALL RhpGcProbeHijackByref();
-
-static void* NormalHijackTargets[3] =
-{
-    reinterpret_cast<void*>(RhpGcProbeHijackScalar), // GCRK_Scalar = 0,
-    reinterpret_cast<void*>(RhpGcProbeHijackObject), // GCRK_Object = 1,
-    reinterpret_cast<void*>(RhpGcProbeHijackByref)   // GCRK_Byref  = 2,
-};
-#endif // TARGET_ARM64 || TARGET_UNIX
-
-#ifdef FEATURE_GC_STRESS
-#ifndef TARGET_ARM64
-EXTERN_C void FASTCALL RhpGcStressHijackScalar();
-EXTERN_C void FASTCALL RhpGcStressHijackObject();
-EXTERN_C void FASTCALL RhpGcStressHijackByref();
-
-static void* GcStressHijackTargets[3] =
-{
-    reinterpret_cast<void*>(RhpGcStressHijackScalar), // GCRK_Scalar = 0,
-    reinterpret_cast<void*>(RhpGcStressHijackObject), // GCRK_Object = 1,
-    reinterpret_cast<void*>(RhpGcStressHijackByref)   // GCRK_Byref  = 2,
-};
-#else // TARGET_ARM64
 EXTERN_C void FASTCALL RhpGcStressHijack();
 
-static void* GcStressHijackTargets[1] =
-{
-    reinterpret_cast<void*>(RhpGcStressHijack)
-};
-#endif // TARGET_ARM64
-#endif // FEATURE_GC_STRESS
-
 // static
-bool Thread::IsHijackTarget(void * address)
+bool Thread::IsHijackTarget(void* address)
 {
-    for (size_t i = 0; i < ARRAY_SIZE(NormalHijackTargets); i++)
-    {
-        if (NormalHijackTargets[i] == address)
+        if (&RhpGcProbeHijack == address)
             return true;
-    }
 #ifdef FEATURE_GC_STRESS
-    for (size_t i = 0; i < ARRAY_SIZE(GcStressHijackTargets); i++)
-    {
-        if (GcStressHijackTargets[i] == address)
+        if (&RhpGcStressHijack == address)
             return true;
-    }
 #endif // FEATURE_GC_STRESS
     return false;
 }
@@ -693,7 +647,7 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    pThread->HijackReturnAddress(pThreadContext, NormalHijackTargets);
+    pThread->HijackReturnAddress(pThreadContext, &RhpGcProbeHijack);
 }
 
 #ifdef FEATURE_GC_STRESS
@@ -734,7 +688,7 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
     }
     if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
     {
-        pCurrentThread->HijackReturnAddress(pSuspendCtx, GcStressHijackTargets);
+        pCurrentThread->HijackReturnAddress(pSuspendCtx, &RhpGcStressHijack);
     }
 }
 #endif // FEATURE_GC_STRESS
@@ -742,7 +696,7 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
 // This function is called from a thread to place a return hijack onto its own stack for GC stress cases
 // via Thread::HijackForGcStress above. The only constraint on the suspension is that the
 // stack be crawlable enough to yield the location of the return address.
-void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijackTargets[])
+void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction)
 {
     if (IsDoNotTriggerGcSet())
         return;
@@ -753,7 +707,7 @@ void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijac
         return;
     }
 
-    HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
+    HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
 // This function is called in one of two scenarios:
@@ -761,17 +715,17 @@ void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijac
 //    thread is OS suspended at pSuspendCtx in managed code.
 // 2) from a thread to place a return hijack onto its own stack for GC suspension. In this case the target
 //    thread is interrupted at pSuspendCtx in managed code via a signal or similar.
-void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void * pvHijackTargets[])
+void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction)
 {
     ASSERT(!IsDoNotTriggerGcSet());
 
     StackFrameIterator frameIterator(this, pSuspendCtx);
     ASSERT(frameIterator.IsValid());
 
-    HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
+    HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
-void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[])
+void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     PTR_PTR_VOID ppvRetAddrLocation;
     GCRefKind retValueKind;
@@ -800,14 +754,8 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
-#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
         m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
-        *ppvRetAddrLocation = pvHijackTargets[0];
-#else
-        void* pvHijackTarget = pvHijackTargets[retValueKind];
-        ASSERT_MSG(IsHijackTarget(pvHijackTarget), "unexpected method used as hijack target");
-        *ppvRetAddrLocation = pvHijackTarget;
-#endif
+        *ppvRetAddrLocation = pfnHijackFunction;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());

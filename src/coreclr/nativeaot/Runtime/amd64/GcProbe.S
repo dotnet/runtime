@@ -80,7 +80,7 @@
 //  RAX, RDX preserved, other volatile regs trashed
 //
 .macro FixupHijackedCallstack
-        // preserve RAX, RDX as they may contain retuvalues
+        // preserve RAX, RDX as they may contain return values
         push rax
         push rdx
 
@@ -97,6 +97,7 @@
         mov         rcx, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
+        // Fetch the return address flags
         mov         rcx, [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
         //
@@ -155,7 +156,6 @@ LEAF_ENTRY RhpGcPoll, _TEXT
         ret
 LOCAL_LABEL(RhpGcPoll_RarePath):
         jmp C_FUNC(RhpGcPollRare)
-
 LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler

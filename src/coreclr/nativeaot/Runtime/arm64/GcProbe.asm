@@ -239,7 +239,7 @@ __PPF_ThreadReg SETS "x2"
 ;;
 ;;
 ;;
-;; GC Probe Hijack targets
+;; GC Probe Hijack target
 ;;
 ;;
     EXTERN RhpPInvokeExceptionGuard
@@ -253,41 +253,6 @@ __PPF_ThreadReg SETS "x2"
         orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
         b           RhpGcProbe
     NESTED_END RhpGcProbeHijackWrapper
-
-#ifdef FEATURE_GC_STRESS
-;;
-;;
-;; GC Stress Hijack targets
-;;
-;;
-    LEAF_ENTRY RhpGcStressHijack
-        FixupHijackedCallstack
-        orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijack
-;;
-;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
-;; This worker performs the GC Stress work and returns to the original return address.
-;;
-;; Register state on entry:
-;;  x0: hijacked function return value
-;;  x1: hijacked function return value
-;;  x2: thread pointer
-;;  w12: register bitmask
-;;
-;; Register state on exit:
-;;  Scratch registers, except for x0, have been trashed
-;;  All other registers restored as they were when the hijack was first reached.
-;;
-    NESTED_ENTRY RhpGcStressProbe
-        PROLOG_PROBE_FRAME x2, x3, x12,
-
-        bl          $REDHAWKGCINTERFACE__STRESSGC
-
-        EPILOG_PROBE_FRAME
-    NESTED_END RhpGcStressProbe
-#endif ;; FEATURE_GC_STRESS
 
     LEAF_ENTRY RhpGcProbe
         ldr         x3, =RhpTrapThreads
@@ -330,7 +295,41 @@ __PPF_ThreadReg SETS "x2"
         ret
     NESTED_END RhpGcPollRare
 
+
 #ifdef FEATURE_GC_STRESS
+;;
+;;
+;; GC Stress Hijack target
+;;
+;;
+    LEAF_ENTRY RhpGcStressHijack
+        FixupHijackedCallstack
+        orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
+        b           RhpGcStressProbe
+    LEAF_END RhpGcStressHijack
+;;
+;; Worker for our GC stress probes.  Do not call directly!!
+;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
+;; This worker performs the GC Stress work and returns to the original return address.
+;;
+;; Register state on entry:
+;;  x0: hijacked function return value
+;;  x1: hijacked function return value
+;;  x2: thread pointer
+;;  w12: register bitmask
+;;
+;; Register state on exit:
+;;  Scratch registers, except for x0, have been trashed
+;;  All other registers restored as they were when the hijack was first reached.
+;;
+    NESTED_ENTRY RhpGcStressProbe
+        PROLOG_PROBE_FRAME x2, x3, x12,
+
+        bl          $REDHAWKGCINTERFACE__STRESSGC
+
+        EPILOG_PROBE_FRAME
+    NESTED_END RhpGcStressProbe
+
     NESTED_ENTRY RhpHijackForGcStress
         ;; This function should be called from right before epilog
 

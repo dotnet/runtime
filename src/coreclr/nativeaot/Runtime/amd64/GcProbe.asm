@@ -78,8 +78,9 @@ endm
 ;;  All registers correct for return to the original return address.
 ;;
 ;; Register state on exit:
-;;  RCX: trashed
 ;;  RDX: thread pointer
+;;  RCX: return value flags
+;;  RAX: preserved, other volatile regs trashed
 ;;
 FixupHijackedCallstack macro
 
@@ -92,12 +93,16 @@ FixupHijackedCallstack macro
         mov         rcx, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
+        ;; Fetch the return address flags
+        mov         rcx, [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
+
         ;;
         ;; Clear hijack state
         ;;
-        xor         ecx, ecx
-        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
-        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
+        xor         r9, r9
+        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
+        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
+        mov         [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
 
 endm
 
@@ -106,78 +111,16 @@ EXTERN RhpPInvokeExceptionGuard : PROC
 ;;
 ;;
 ;;
-;; GC Probe Hijack targets
+;; GC Probe Hijack target
 ;;
+
 ;;
-NESTED_ENTRY RhpGcProbeHijackScalar, _TEXT, RhpPInvokeExceptionGuard
+NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         END_PROLOGUE
         FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS
+        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpGcProbe
-NESTED_END RhpGcProbeHijackScalar, _TEXT
-
-NESTED_ENTRY RhpGcProbeHijackObject, _TEXT, RhpPInvokeExceptionGuard
-        END_PROLOGUE
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
-        jmp         RhpGcProbe
-NESTED_END RhpGcProbeHijackObject, _TEXT
-
-NESTED_ENTRY RhpGcProbeHijackByref, _TEXT, RhpPInvokeExceptionGuard
-        END_PROLOGUE
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_BYREF
-        jmp         RhpGcProbe
-NESTED_END RhpGcProbeHijackByref, _TEXT
-
-ifdef FEATURE_GC_STRESS
-;;
-;;
-;; GC Stress Hijack targets
-;;
-;;
-LEAF_ENTRY RhpGcStressHijackScalar, _TEXT
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS
-        jmp         RhpGcStressProbe
-LEAF_END RhpGcStressHijackScalar, _TEXT
-
-LEAF_ENTRY RhpGcStressHijackObject, _TEXT
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
-        jmp         RhpGcStressProbe
-LEAF_END RhpGcStressHijackObject, _TEXT
-
-LEAF_ENTRY RhpGcStressHijackByref, _TEXT
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_BYREF
-        jmp         RhpGcStressProbe
-LEAF_END RhpGcStressHijackByref, _TEXT
-
-;;
-;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
-;; This worker performs the GC Stress work and returns to the original return address.
-;;
-;; Register state on entry:
-;;  RDX: thread pointer
-;;  RCX: register bitmask
-;;
-;; Register state on exit:
-;;  Scratch registers, except for RAX, have been trashed
-;;  All other registers restored as they were when the hijack was first reached.
-;;
-NESTED_ENTRY RhpGcStressProbe, _TEXT
-        PUSH_PROBE_FRAME rdx, rax, rcx
-        END_PROLOGUE
-
-        call        REDHAWKGCINTERFACE__STRESSGC
-
-        POP_PROBE_FRAME
-        ret
-NESTED_END RhpGcStressProbe, _TEXT
-
-endif ;; FEATURE_GC_STRESS
+NESTED_END RhpGcProbeHijack, _TEXT
 
 EXTERN RhpThrowHwEx : PROC
 
@@ -206,8 +149,60 @@ Abort:
 
 NESTED_END RhpGcProbe, _TEXT
 
+LEAF_ENTRY RhpGcPoll, _TEXT
+        cmp         [RhpTrapThreads], TrapThreadsFlags_None
+        jne         @F                  ; forward branch - predicted not taken
+        ret
+@@:
+        jmp         RhpGcPollRare
+LEAF_END RhpGcPoll, _TEXT
+
+NESTED_ENTRY RhpGcPollRare, _TEXT
+        PUSH_COOP_PINVOKE_FRAME rcx
+        END_PROLOGUE
+        call        RhpGcPoll2
+        POP_COOP_PINVOKE_FRAME
+        ret
+NESTED_END RhpGcPollRare, _TEXT
+
+
 
 ifdef FEATURE_GC_STRESS
+
+;;
+;;
+;; GC Stress Hijack targets
+;;
+;;
+LEAF_ENTRY RhpGcStressHijack, _TEXT
+        FixupHijackedCallstack
+        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
+        jmp         RhpGcStressProbe
+LEAF_END RhpGcStressHijack, _TEXT
+
+;;
+;; Worker for our GC stress probes.  Do not call directly!!
+;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
+;; This worker performs the GC Stress work and returns to the original return address.
+;;
+;; Register state on entry:
+;;  RDX: thread pointer
+;;  RCX: register bitmask
+;;
+;; Register state on exit:
+;;  Scratch registers, except for RAX, have been trashed
+;;  All other registers restored as they were when the hijack was first reached.
+;;
+NESTED_ENTRY RhpGcStressProbe, _TEXT
+        PUSH_PROBE_FRAME rdx, rax, rcx
+        END_PROLOGUE
+
+        call        REDHAWKGCINTERFACE__STRESSGC
+
+        POP_PROBE_FRAME
+        ret
+NESTED_END RhpGcStressProbe, _TEXT
+
 ;; PAL_LIMITED_CONTEXT, 6 xmm regs to save, 2 scratch regs to save, plus 20h bytes for scratch space
 RhpHijackForGcStress_FrameSize equ SIZEOF__PAL_LIMITED_CONTEXT + 6*10h + 2*8h + 20h
 
@@ -301,25 +296,14 @@ NESTED_ENTRY RhpHijackForGcStress, _TEXT
         ret
 NESTED_END RhpHijackForGcStress, _TEXT
 
-endif ;; FEATURE_GC_STRESS
-
-
-;;
-ifdef FEATURE_GC_STRESS
-
 g_pTheRuntimeInstance equ ?g_pTheRuntimeInstance@@3PEAVRuntimeInstance@@EA
 EXTERN g_pTheRuntimeInstance : QWORD
 RuntimeInstance__ShouldHijackLoopForGcStress equ ?ShouldHijackLoopForGcStress@RuntimeInstance@@QEAA_N_K@Z
 EXTERN RuntimeInstance__ShouldHijackLoopForGcStress : PROC
 
-endif ;; FEATURE_GC_STRESS
-
 EXTERN g_fGcStressStarted : DWORD
 EXTERN g_fHasFastFxsave : BYTE
 
-FXSAVE_SIZE             equ 512
-
-ifdef FEATURE_GC_STRESS
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.
 ;;
@@ -330,29 +314,9 @@ LEAF_ENTRY RhpSuppressGcStress, _TEXT
         ret
 
 LEAF_END RhpSuppressGcStress, _TEXT
+
 endif ;; FEATURE_GC_STRESS
 
-LEAF_ENTRY RhpGcPoll, _TEXT
 
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
-        jne         @F                  ; forward branch - predicted not taken
-        ret
-@@:
-        jmp         RhpGcPollRare
-
-LEAF_END RhpGcPoll, _TEXT
-
-NESTED_ENTRY RhpGcPollRare, _TEXT
-
-        PUSH_COOP_PINVOKE_FRAME rcx
-        END_PROLOGUE
-
-        call        RhpGcPoll2
-
-        POP_COOP_PINVOKE_FRAME
-
-        ret
-
-NESTED_END RhpGcPollRare, _TEXT
 
         end
