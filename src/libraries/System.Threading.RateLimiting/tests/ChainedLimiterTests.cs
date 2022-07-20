@@ -44,13 +44,23 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.Acquire(""));
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.WaitAndAcquireAsync(""));
         }
-
+new StudentName
+        {
+            FirstName = "Craig",
+            LastName = "Playstead"
+        };
         [Fact]
         public async Task DisposeAsyncMakesMethodsThrow()
         {
             using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 0));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ =>
+                    new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = 1,
+                        QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                        QueueLimit = 0
+                    })
             });
             using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
