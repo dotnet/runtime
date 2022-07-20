@@ -4,7 +4,7 @@
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal.h"
 // TODO: PRobably shouldn't directly refer to a header in a component like this?
-#include "component/marshal_ilgen.h"
+#include "component/marshal-ilgen.h"
 #include "utils/mono-compiler.h"
 
 #ifndef ENABLE_ILGEN
@@ -410,7 +410,7 @@ mono_marshal_noilgen_init_lightweight (void)
 void
 mono_marshal_noilgen_init_heavyweight (void)
 {
-	MonoMarshalIlgenCallbacks ilgen_cb;
+	MonoMarshalILgenCallbacks ilgen_cb;
 
 	ilgen_cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	ilgen_cb.emit_marshal_array = emit_marshal_array_noilgen;

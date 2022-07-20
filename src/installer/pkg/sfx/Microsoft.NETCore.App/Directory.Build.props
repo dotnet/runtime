@@ -206,13 +206,13 @@
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen-stub-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-marshal_ilgen-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
@@ -249,7 +249,6 @@
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
-
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />

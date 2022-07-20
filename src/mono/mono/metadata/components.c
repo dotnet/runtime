@@ -53,7 +53,7 @@ MonoComponentDebugger *mono_component_debugger_private_ptr = NULL;
 MonoComponentEventPipe *mono_component_event_pipe_private_ptr = NULL;
 MonoComponentDiagnosticsServer *mono_component_diagnostics_server_private_ptr = NULL;
 
-MonoComponentMarshalIlgen* mono_component_marshal_ilgen_private_ptr = NULL;
+MonoComponentMarshalILgen* mono_component_marshal_ilgen_private_ptr = NULL;
 
 // DiagnosticsServer/EventPipe components currently hosted by diagnostics_tracing library.
 #define DIAGNOSTICS_TRACING_LIBRARY_NAME "diagnostics_tracing"

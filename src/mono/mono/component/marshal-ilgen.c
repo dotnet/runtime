@@ -1,6 +1,6 @@
 #include "mono/metadata/debug-helpers.h"
 #include "metadata/marshal.h"
-#include "component/marshal_ilgen.h"
+#include "component/marshal-ilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/method-builder-ilgen.h"
@@ -10,8 +10,6 @@
 #include "metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/component/component.h"
-
-
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -32,7 +30,7 @@ static void emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 static void mono_marshal_ilgen_legacy_init (void);
 
 static gboolean ilgen_cb_inited = FALSE;
-static MonoMarshalIlgenCallbacks ilgen_marshal_cb;
+static MonoMarshalILgenCallbacks ilgen_marshal_cb;
 
 static IlgenCallbacksToMono *cb_to_mono;
 
@@ -42,7 +40,7 @@ marshal_ilgen_available (void)
 	return true;
 }
 
-static MonoComponentMarshalIlgen component_func_table = {
+static MonoComponentMarshalILgen component_func_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &marshal_ilgen_available },
 	&mono_marshal_ilgen_init,
 	&mono_emit_marshal_ilgen,
@@ -50,18 +48,18 @@ static MonoComponentMarshalIlgen component_func_table = {
 }; 
 
 
-MonoComponentMarshalIlgen*
+MonoComponentMarshalILgen*
 mono_component_marshal_ilgen_init (void) 
 {
 	return &component_func_table;
 }
 
 void
-mono_install_marshal_callbacks_ilgen (MonoMarshalIlgenCallbacks *cb)
+mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb)
 {
 	g_assert (!ilgen_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&ilgen_marshal_cb, cb, sizeof (MonoMarshalIlgenCallbacks));
+	memcpy (&ilgen_marshal_cb, cb, sizeof (MonoMarshalILgenCallbacks));
 	ilgen_cb_inited = TRUE;
 }
 
@@ -867,8 +865,8 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 
 static int
 emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		  MonoMarshalSpec *spec, int conv_arg,
-		  MonoType **conv_arg_type, MarshalAction action)
+			MonoMarshalSpec *spec, int conv_arg,
+			MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 	switch (action) {
@@ -899,9 +897,9 @@ emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		      MonoMarshalSpec *spec,
-		      int conv_arg, MonoType **conv_arg_type,
-		      MarshalAction action)
+			MonoMarshalSpec *spec,
+			int conv_arg, MonoType **conv_arg_type,
+			MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 	MonoType *int_type = cb_to_mono->get_int_type ();
@@ -1050,8 +1048,8 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_char_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		   MonoMarshalSpec *spec, int conv_arg,
-		   MonoType **conv_arg_type, MarshalAction action)
+			MonoMarshalSpec *spec, int conv_arg,
+			MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 
@@ -1101,9 +1099,9 @@ emit_marshal_custom_ilgen_throw_exception (MonoMethodBuilder *mb, const char *ex
 
 static int
 emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					 MonoMarshalSpec *spec,
-					 int conv_arg, MonoType **conv_arg_type,
-					 MarshalAction action)
+				MonoMarshalSpec *spec,
+				int conv_arg, MonoType **conv_arg_type,
+				MarshalAction action)
 {
 	ERROR_DECL (error);
 	MonoType *mtype;
@@ -1383,9 +1381,9 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_asany_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					MonoMarshalSpec *spec,
-					int conv_arg, MonoType **conv_arg_type,
-					MarshalAction action)
+			MonoMarshalSpec *spec,
+			int conv_arg, MonoType **conv_arg_type,
+			MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 
@@ -1718,9 +1716,9 @@ emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 
 static int
 emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					 MonoMarshalSpec *spec,
-					 int conv_arg, MonoType **conv_arg_type,
-					 MarshalAction action)
+					MonoMarshalSpec *spec,
+					int conv_arg, MonoType **conv_arg_type,
+					MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 	MonoMarshalNative encoding = cb_to_mono->get_string_encoding (m->piinfo, spec);
@@ -1882,8 +1880,8 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-			 MonoMarshalSpec *spec, int conv_arg,
-			 MonoType **conv_arg_type, MarshalAction action)
+			MonoMarshalSpec *spec, int conv_arg,
+			MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 	MonoType *int_type = cb_to_mono->get_int_type ();
@@ -2142,9 +2140,9 @@ emit_marshal_handleref_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		     MonoMarshalSpec *spec,
-		     int conv_arg, MonoType **conv_arg_type,
-		     MarshalAction action)
+			MonoMarshalSpec *spec,
+			int conv_arg, MonoType **conv_arg_type,
+			MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type_internal (t);
@@ -2644,9 +2642,9 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		     MonoMarshalSpec *spec,
-		     int conv_arg, MonoType **conv_arg_type,
-		     MarshalAction action)
+			MonoMarshalSpec *spec,
+			int conv_arg, MonoType **conv_arg_type,
+			MarshalAction action)
 {
 #ifndef DISABLE_COM
 	MonoMethodBuilder *mb = m->mb;
@@ -2743,7 +2741,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
-static MonoMarshalIlgenCallbacks *
+static MonoMarshalILgenCallbacks *
 get_marshal_cb (void)
 {
 	if (G_UNLIKELY (!ilgen_cb_inited)) {
@@ -2758,8 +2756,8 @@ get_marshal_cb (void)
 
 int
 mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-	      MonoMarshalSpec *spec, int conv_arg,
-	      MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweigth_cb)
+		MonoMarshalSpec *spec, int conv_arg,
+		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweigth_cb)
 {
 	if (spec && spec->native == MONO_NATIVE_CUSTOM)
 		return get_marshal_cb ()->emit_marshal_custom (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -2835,7 +2833,7 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 void
 mono_marshal_ilgen_init (void)
 {
-	MonoMarshalIlgenCallbacks cb;
+	MonoMarshalILgenCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	cb.emit_marshal_array = emit_marshal_array_ilgen;
 	cb.emit_marshal_ptr = emit_marshal_ptr_ilgen;

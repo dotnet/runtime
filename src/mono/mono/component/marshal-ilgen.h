@@ -6,7 +6,7 @@
 #include "metadata/marshal.h"
 #include "mono/component/component.h"
 
-typedef struct MonoComponentMarshalIlgen {
+typedef struct MonoComponentMarshalILgen {
 	MonoComponent component;
 	void (*ilgen_init) (void);
 	int (*emit_marshal_ilgen) (EmitMarshalContext *m, int argnum, MonoType *t,
@@ -14,7 +14,7 @@ typedef struct MonoComponentMarshalIlgen {
 	      MonoType **conv_arg_type, MarshalAction action,  MonoMarshalLightweightCallbacks* lightweigth_cb);
 	void (*install_callbacks_mono) (IlgenCallbacksToMono *callbacks);
 
-} MonoComponentMarshalIlgen;
+} MonoComponentMarshalILgen;
 
 typedef struct {
 	int version;
@@ -30,13 +30,13 @@ typedef struct {
 	int (*emit_marshal_custom) (EmitMarshalContext *m, int argnum, MonoType *t, MonoMarshalSpec *spec, int conv_arg, MonoType **conv_arg_type, MarshalAction action);
 	int (*emit_marshal_asany) (EmitMarshalContext *m, int argnum, MonoType *t, MonoMarshalSpec *spec, int conv_arg, MonoType **conv_arg_type, MarshalAction action);
 	int (*emit_marshal_handleref) (EmitMarshalContext *m, int argnum, MonoType *t, MonoMarshalSpec *spec, int conv_arg, MonoType **conv_arg_type, MarshalAction action);
-} MonoMarshalIlgenCallbacks;
+} MonoMarshalILgenCallbacks;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentMarshalIlgen* mono_component_marshal_ilgen_init (void);
+MonoComponentMarshalILgen* mono_component_marshal_ilgen_init (void);
 
 void
-mono_install_marshal_callbacks_ilgen (MonoMarshalIlgenCallbacks *cb);
+mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb);
 
 MONO_API void
 mono_marshal_ilgen_init (void);
