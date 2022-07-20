@@ -779,7 +779,7 @@ namespace System.Security.Cryptography.Xml
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo!.CacheValid)
             {
-                string? baseUri = _containingDocument!.BaseURI;
+                string? baseUri = _containingDocument?.BaseURI;
                 XmlResolver? resolver = (_bResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
                 XmlDocument doc = Utils.PreProcessElementInput(SignedInfo!.GetXml(), resolver!, baseUri );
 

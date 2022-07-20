@@ -224,7 +224,7 @@ namespace System.Security.Cryptography.Xml
             return doc;
         }
 
-        internal static XmlDocument PreProcessElementInput(XmlElement elem, XmlResolver xmlResolver, string baseUri)
+        internal static XmlDocument PreProcessElementInput(XmlElement elem, XmlResolver xmlResolver, string? baseUri)
         {
             if (elem is null)
             {
