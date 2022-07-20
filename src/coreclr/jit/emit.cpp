@@ -4461,7 +4461,7 @@ AGAIN:
     {
 #if defined(DEBUG) && defined(TARGET_XARCH)
         if (jmp->idInsFmt() == IF_RWR_LABEL && (jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL) &&
-            jmp->idAddr()->iiaBBlabel->bbJumpKind == BBJ_NONE)
+            jmp->idAddr()->iiaBBlabel->bbJumpKind == BBJ_NONE && !jmp->idIsBound())
         {
             assert(jmp->idAddr()->iiaBBlabel->bbEmitCookie);
         }
