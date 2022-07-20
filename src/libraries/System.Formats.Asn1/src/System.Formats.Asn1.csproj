@@ -63,6 +63,7 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
