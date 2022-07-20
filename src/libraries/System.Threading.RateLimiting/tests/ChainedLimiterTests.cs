@@ -56,7 +56,7 @@ namespace System.Threading.RateLimiting.Tests
                         PermitLimit = 1,
                         QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                         QueueLimit = 0
-                    })
+                    });
             });
             using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
