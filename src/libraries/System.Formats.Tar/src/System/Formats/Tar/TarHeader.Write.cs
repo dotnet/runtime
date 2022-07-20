@@ -204,7 +204,7 @@ namespace System.Formats.Tar
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
-        internal async Task<int> WriteAsGnuAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsGnuAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -225,7 +225,7 @@ namespace System.Formats.Tar
             }
 
             // Third, we write this header as a normal one
-            return await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
@@ -276,7 +276,7 @@ namespace System.Formats.Tar
         // Writes the current header as a GNU entry into the archive stream.
         internal void WriteAsGnuInternal(Stream archiveStream, Span<byte> buffer)
         {
-            WriteAsGnuSharedInternal(buffer, out long actualLength, out _checksum);
+            WriteAsGnuSharedInternal(buffer, out long actualLength);
 
             archiveStream.Write(buffer);
 
@@ -287,11 +287,11 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously writes the current header as a GNU entry into the archive stream.
-        internal async Task<int> WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            WriteAsGnuSharedInternal(buffer.Span, out long actualLength, out int checksum);
+            WriteAsGnuSharedInternal(buffer.Span, out long actualLength);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -299,12 +299,10 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
-
-            return checksum;
         }
 
         // Shared checksum and data length calculations for GNU entry writing.
-        private void WriteAsGnuSharedInternal(Span<byte> buffer, out long actualLength, out int checksum)
+        private void WriteAsGnuSharedInternal(Span<byte> buffer, out long actualLength)
         {
             actualLength = GetTotalDataBytesToWrite();
 
@@ -313,7 +311,8 @@ namespace System.Formats.Tar
             tmpChecksum += WriteGnuMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
             tmpChecksum += WriteGnuFields(buffer);
-            checksum = WriteChecksum(tmpChecksum, buffer);
+
+            _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.

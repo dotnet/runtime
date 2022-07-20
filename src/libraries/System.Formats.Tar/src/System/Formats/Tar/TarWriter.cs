@@ -363,7 +363,7 @@ namespace System.Formats.Tar
                     break;
 
                 case TarEntryFormat.Gnu:
-                    entry._header._checksum = await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryFormat.Unknown:
