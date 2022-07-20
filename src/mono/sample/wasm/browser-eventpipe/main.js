@@ -60,25 +60,27 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 
         if (typeof (sessions) !== "object" || sessions.length === "undefined")
             console.error("expected an array of sessions, got ", sessions);
-        if (sessions.length === 0)
-            return; // assume no sessions means they were turned off in the csproj file
-        if (sessions.length != 1)
-            console.error("expected one startup session, got ", sessions);
-        let eventSession = sessions[0];
-
-        console.debug("eventSession state is ", eventSession._state); // ooh protected member access
+        let eventSession = null;
+        if (sessions.length !== 0) {
+            if (sessions.length != 1)
+                console.error("expected one startup session, got ", sessions);
+            eventSession = sessions[0];
+            console.debug("eventSession state is ", eventSession._state); // ooh protected member access
+        }
 
         const ret = await doWork(startWork, stopWork, getIterationsDone);
 
+        if (eventSession !== null) {
+            eventSession.stop();
 
-        eventSession.stop();
+            const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
 
+            const blob = eventSession.getTraceBlob();
+            const uri = URL.createObjectURL(blob);
+            downloadData(uri, filename);
+        }
 
-        const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-
-        const blob = eventSession.getTraceBlob();
-        const uri = URL.createObjectURL(blob);
-        downloadData(uri, filename);
+        console.debug("sample onclick handler done");
     }
 }
 
