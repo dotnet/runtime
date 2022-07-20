@@ -61,6 +61,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary>
+        ///   Gets the serial number of the certificate, in big-endian byte order.
+        /// </summary>
+        /// <value>
+        ///   The serial number of the certificate, in big-endian byte order.
+        /// </value>
         public ReadOnlyMemory<byte> SubjectKeyIdentifierBytes
         {
             get
