@@ -2987,10 +2987,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.compLongAddress = true;
         }
 
-        if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-        {
-            opts.optRepeat = true;
-        }
+        opts.optRepeat = true;
 
         // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
         // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
@@ -4898,7 +4895,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doCse           = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
-        int  iterations      = 1;
+        int  iterations      = 2;
 
 #if defined(OPT_CONFIG)
         doSsa           = (JitConfig.JitDoSsa() != 0);
