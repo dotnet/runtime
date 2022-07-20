@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace Rotate
+namespace Rotate_explicit5_cs
 {
-    internal class App
+    public class App
     {
         public static int s_weightCount = 1;
 
@@ -253,7 +254,8 @@ namespace Rotate
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

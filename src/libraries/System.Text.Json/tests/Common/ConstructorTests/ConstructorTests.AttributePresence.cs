@@ -115,6 +115,7 @@ namespace System.Text.Json.Serialization.Tests
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS // These are compile-time warnings from the source generator.
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task MultipleAttributes_NotSupported()
         {
             async Task RunTestAsync<T>()

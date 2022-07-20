@@ -105,14 +105,7 @@ namespace System.Xml.Serialization
         internal XmlSerializerImplementation Contract
         {
             [RequiresUnreferencedCode("calls GetTypeFromAssembly")]
-            get
-            {
-                if (_contract == null)
-                {
-                    _contract = (XmlSerializerImplementation)Activator.CreateInstance(GetTypeFromAssembly(_assembly!, "XmlSerializerContract"))!;
-                }
-                return _contract;
-            }
+            get => _contract ??= (XmlSerializerImplementation)Activator.CreateInstance(GetTypeFromAssembly(_assembly!, "XmlSerializerContract"))!;
         }
 
         internal void InitAssemblyMethods(XmlMapping[] xmlMappings)
@@ -162,7 +155,6 @@ namespace System.Xml.Serialization
                     serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                     // use strong name
                     name.Name = serializerName;
-                    name.CodeBase = null;
                     name.CultureInfo = CultureInfo.InvariantCulture;
 
                     try
@@ -624,10 +616,7 @@ namespace System.Xml.Serialization
                 reader.Init(xmlReader, events, encodingStyle, this);
                 if (_methods![mapping.Key!].readMethod == null)
                 {
-                    if (_readerMethods == null)
-                    {
-                        _readerMethods = Contract.ReadMethods;
-                    }
+                    _readerMethods ??= Contract.ReadMethods;
                     string? methodName = (string?)_readerMethods[mapping.Key!];
                     if (methodName == null)
                     {
@@ -654,10 +643,7 @@ namespace System.Xml.Serialization
                 writer.Init(xmlWriter, namespaces, encodingStyle, id, this);
                 if (_methods![mapping.Key!].writeMethod == null)
                 {
-                    if (_writerMethods == null)
-                    {
-                        _writerMethods = Contract.WriteMethods;
-                    }
+                    _writerMethods ??= Contract.WriteMethods;
                     string? methodName = (string?)_writerMethods[mapping.Key!];
                     if (methodName == null)
                     {

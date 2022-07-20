@@ -61,5 +61,27 @@ ds_dump_protocol_helper_handle_ipc_message (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
 
+/*
+* DiagnosticsGenerateCoreDumpResponsePayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_DUMP_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsGenerateCoreDumpResponsePayload {
+#else
+struct _DiagnosticsGenerateCoreDumpResponsePayload_Internal {
+#endif
+	// uint = 4 little endian bytes
+	// string = (array<char> where the last char must = 0) or (length = 0)
+
+	ds_ipc_result_t error;
+	ep_char16_t *error_message;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_DUMP_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsGenerateCoreDumpResponsePayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsGenerateCoreDumpResponsePayload_Internal)];
+};
+#endif
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_DUMP_PROTOCOL_H__ */

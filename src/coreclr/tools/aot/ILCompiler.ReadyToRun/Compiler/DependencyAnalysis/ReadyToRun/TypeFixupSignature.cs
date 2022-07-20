@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
+                IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
 
@@ -140,11 +140,48 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencies = new DependencyList();
 
-            if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition && (factory.CompilationCurrentPhase == 0))
+            if (_typeDesc.HasInstantiation &&
+                !_typeDesc.IsGenericDefinition &&
+                (factory.CompilationCurrentPhase == 0) &&
+                factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
             {
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
+
+            if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
+            {
+                AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);
+            }
             return dependencies;
+        }
+
+        public static void AddDependenciesForAsyncStateMachineBox(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)type.Context;
+            // If adding a typehandle to the AsyncStateMachineBox, pre-compile the most commonly used methods.
+            // As long as we haven't already reached compilation phase 7, which is an arbitrary number of phases of compilation chosen so that
+            // simple examples of async will get compiled
+            if (factory.OptimizationFlags.OptimizeAsyncMethods && type.GetTypeDefinition() == context.AsyncStateMachineBoxType && !type.IsGenericDefinition && factory.CompilationCurrentPhase <= 7)
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                // This is the async state machine box, compile the cctor, and the MoveNext method.
+                foreach (MethodDesc method in type.ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethods())
+                {
+                    if (!method.IsGenericMethodDefinition &&
+                        factory.CompilationModuleGroup.ContainsMethodBody(method, false))
+                    {
+                        switch (method.Name)
+                        {
+                            case "MoveNext":
+                            case ".cctor":
+                                dependencies.Add(factory.CompiledMethodNode(method), $"AsyncStateMachineBox Method on type {type.ToString()}");
+                                break;
+                        }
+                    }
+                }
+            }
         }
     }
 }

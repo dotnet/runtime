@@ -3,7 +3,10 @@
 
 
 using System;
-internal unsafe class testout1
+using Xunit;
+namespace Test_10w250d
+{
+public unsafe class testout1
 {
     public struct VT_0_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1_1
     {
@@ -4283,7 +4286,8 @@ internal unsafe class testout1
         return retval_0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_arr2d_0[2, 0] = -0.000244140625;
 
@@ -4296,4 +4300,5 @@ internal unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

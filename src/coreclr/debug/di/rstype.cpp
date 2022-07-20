@@ -2138,7 +2138,7 @@ static inline bool _IsNonGCRootHelper(CordbType * pType)
 //-----------------------------------------------------------------------------
 bool CordbType::IsGCRoot()
 {
-    // If it's a E_T_PTR type, then look at what it's a a pointer of.
+    // If it's a E_T_PTR type, then check its pointer type.
     CordbType * pPtr = this->GetPointerElementType();
     if (pPtr == NULL)
     {
@@ -2599,7 +2599,7 @@ void CordbType::CountTypeDataNodes(unsigned int *count)
 //    genericArgsCount - size of the genericArgs array in elements.
 //    genericArgs - array of type parameters.
 //    count - IN/OUT - will increment with total number of generic args.
-//        caller must intialize this (likely to 0).
+//        caller must initialize this (likely to 0).
 //-----------------------------------------------------------------------------
 void CordbType::CountTypeDataNodesForInstantiation(unsigned int genericArgsCount, ICorDebugType *genericArgs[], unsigned int *count)
 {

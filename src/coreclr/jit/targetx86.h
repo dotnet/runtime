@@ -15,7 +15,7 @@
 
   #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     128     // Upper bound to let the code generator to loop unroll InitBlk.
-  #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the the threshold of the number
+  #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
                                            // of contiguous non-gc slots that trigger generating rep movsq instead of
                                            // sequences of movsq instructions
 
@@ -30,6 +30,7 @@
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
                                            // the flags need to be set
+  #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
@@ -166,15 +167,61 @@
   #define REG_R2R_INDIRECT_PARAM   REG_EAX // Indirection cell for R2R fast tailcall, not currently used in x86.
   #define RBM_R2R_INDIRECT_PARAM   RBM_EAX
 
-#if NOGC_WRITE_BARRIERS
-  #define REG_WRITE_BARRIER        REG_EDX
-  #define RBM_WRITE_BARRIER        RBM_EDX
+  // x86 write barrier ABI (see vm\i386\jithelp.asm, vm\i386\jithelp.S):
+  // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
+  //     On entry:
+  //       edx: the destination address (object reference written here)
+  //       For optimized write barriers, one of eax, ecx, ebx, esi, or edi contains the source (object to write).
+  //       (There is a separate write barrier for each of these source options.)
+  //     On exit:
+  //       edx: trashed
+  // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
+  //     On entry:
+  //       esi: the source address (points to object reference to write)
+  //       edi: the destination address (object reference written here)
+  //     On exit:
+  //       ecx: trashed
+  //       edi: incremented by 8
+  //       esi: incremented by 8
+  //
 
-  // We don't allow using ebp as a source register. Maybe we should only prevent this for ETW_EBP_FRAMED (but that is always set right now).
-  #define RBM_WRITE_BARRIER_SRC    (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ESI|RBM_EDI)
+  #define REG_WRITE_BARRIER_DST          REG_ARG_0
+  #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
+
+  #define REG_WRITE_BARRIER_SRC          REG_ARG_1
+  #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
+
+#if NOGC_WRITE_BARRIERS
+  #define REG_OPTIMIZED_WRITE_BARRIER_DST   REG_EDX
+  #define RBM_OPTIMIZED_WRITE_BARRIER_DST   RBM_EDX
+
+  // We don't allow using ebp as a source register. Maybe we should only prevent this for ETW_EBP_FRAMED
+  // (but that is always set right now).
+  #define RBM_OPTIMIZED_WRITE_BARRIER_SRC   (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ESI|RBM_EDI)
+#endif // NOGC_WRITE_BARRIERS
 
   #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
-#endif // NOGC_WRITE_BARRIERS
+
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
+  // a call to a "general" write barrier.
+  CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)
+#else // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH
+#endif // !FEATURE_USE_ASM_GC_WRITE_BARRIERS
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_EDX
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_ESI | RBM_EDI | RBM_ECX)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+  // Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_ECX
 
   // GenericPInvokeCalliHelper unmanaged target parameter
   #define REG_PINVOKE_TARGET_PARAM REG_EAX

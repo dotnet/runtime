@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
@@ -558,5 +559,143 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(json));
         }
+
+#if NETCOREAPP
+        [Theory]
+        [InlineData("1970-01-01")]
+        [InlineData("2002-02-13")]
+        [InlineData("2022-05-10")]
+        [InlineData("\\u0032\\u0030\\u0032\\u0032\\u002D\\u0030\\u0035\\u002D\\u0031\\u0030", "2022-05-10")]
+        [InlineData("0001-01-01")] // DateOnly.MinValue
+        [InlineData("9999-12-31")] // DateOnly.MaxValue
+        public static void DateOnly_Read_Success(string json, string? actual = null)
+        {
+            DateOnly value = JsonSerializer.Deserialize<DateOnly>($"\"{json}\"");
+            Assert.Equal(DateOnly.Parse(actual ?? json), value);
+        }
+
+        [Theory]
+        [InlineData("1970-01-01")]
+        [InlineData("2002-02-13")]
+        [InlineData("2022-05-10")]
+        [InlineData("\\u0032\\u0030\\u0032\\u0032\\u002D\\u0030\\u0035\\u002D\\u0031\\u0030", "2022-05-10")]
+        [InlineData("0001-01-01")] // DateOnly.MinValue
+        [InlineData("9999-12-31")] // DateOnly.MaxValue
+        public static void DateOnly_ReadDictionaryKey_Success(string json, string? actual = null)
+        {
+            Dictionary<DateOnly, int> expectedDict = new() { [DateOnly.Parse(actual ?? json)] = 0 };
+            Dictionary<DateOnly, int> actualDict = JsonSerializer.Deserialize<Dictionary<DateOnly, int>>($@"{{""{json}"":0}}");
+            Assert.Equal(expectedDict, actualDict);
+        }
+
+        [Fact]
+        public static void DateOnly_Read_Nullable_Tests()
+        {
+            DateOnly? value = JsonSerializer.Deserialize<DateOnly?>("null");
+            Assert.False(value.HasValue);
+
+            value = JsonSerializer.Deserialize<DateOnly?>("\"2022-05-10\"");
+            Assert.True(value.HasValue);
+            Assert.Equal(DateOnly.Parse("2022-05-10"), value);
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateOnly>("null"));
+        }
+
+        [Theory]
+        [InlineData("05/10/2022")] // 'd' Format
+        [InlineData("Tue, 10 May 2022")] // 'r' Format
+        [InlineData("\t2022-05-10")] // Otherwise valid but has invalid json character
+        [InlineData("\\t2022-05-10")] // Otherwise valid but has leading whitespace
+        [InlineData("2022-05-10   ")] // Otherwise valid but has trailing whitespace
+        // Fail on arbitrary ISO dates
+        [InlineData("2022-05-10T20:53:01")]
+        [InlineData("2022-05-10T20:53:01.3552286")]
+        [InlineData("2022-05-10T20:53:01.3552286+01:00")]
+        [InlineData("2022-05-10T20:53Z")]
+        [InlineData("\\u0030\\u0035\\u002F\\u0031\\u0030\\u002F\\u0032\\u0030\\u0032\\u0032")]
+        [InlineData("00:00:01")]
+        [InlineData("23:59:59")]
+        [InlineData("23:59:59.00000009")]
+        [InlineData("1.00:00:00")]
+        [InlineData("1:2:00:00")]
+        [InlineData("+00:00:00")]
+        [InlineData("1$")]
+        [InlineData("-2020-05-10")]
+        [InlineData("0000-12-31")] // DateOnly.MinValue - 1
+        [InlineData("10000-01-01")] // DateOnly.MaxValue + 1
+        [InlineData("1234", false)]
+        [InlineData("{}", false)]
+        [InlineData("[]", false)]
+        [InlineData("true", false)]
+        [InlineData("null", false)]
+        public static void DateOnly_Read_Failure(string json, bool addQuotes = true)
+        {
+            if (addQuotes)
+                json = $"\"{json}\"";
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateOnly>(json));
+        }
+
+        [Theory]
+        [InlineData("23:59:59")]
+        [InlineData("23:59:59.9", "23:59:59.9000000")]
+        [InlineData("02:48:05.4775807")]
+        [InlineData("02:48:05.4775808")]
+        [InlineData("\\u0032\\u0033\\u003A\\u0035\\u0039\\u003A\\u0035\\u0039", "23:59:59")]
+        [InlineData("00:00:00.0000000", "00:00:00")] // TimeOnly.MinValue
+        [InlineData("23:59:59.9999999")] // TimeOnly.MaxValue
+        public static void TimeOnly_Read_Success(string json, string? actual = null)
+        {
+            TimeOnly value = JsonSerializer.Deserialize<TimeOnly>($"\"{json}\"");
+            Assert.Equal(TimeOnly.Parse(actual ?? json), value);
+        }
+
+        [Fact]
+        public static void TimeOnly_Read_Nullable_Tests()
+        {
+            TimeOnly? value = JsonSerializer.Deserialize<TimeOnly?>("null");
+            Assert.False(value.HasValue);
+
+            value = JsonSerializer.Deserialize<TimeOnly?>("\"23:59:59\"");
+            Assert.True(value.HasValue);
+            Assert.Equal(TimeOnly.Parse("23:59:59"), value);
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeOnly>("null"));
+        }
+
+        [Theory]
+        [InlineData("00:00")]
+        [InlineData("23:59")]
+        [InlineData("\t23:59:59")] // Otherwise valid but has invalid json character
+        [InlineData("\\t23:59:59")] // Otherwise valid but has leading whitespace
+        [InlineData("23:59:59   ")] // Otherwise valid but has trailing whitespace
+        [InlineData("\\u0032\\u0034\\u003A\\u0030\\u0030\\u003A\\u0030\\u0030")]
+        [InlineData("00:60:00")]
+        [InlineData("00:00:60")]
+        [InlineData("-00:00:00")]
+        [InlineData("00:00:00.00000009")]
+        [InlineData("900000000.00:00:00")]
+        [InlineData("1.00:00:00")]
+        [InlineData("0.00:00:00")]
+        [InlineData("1:00:00")] // 'g' Format
+        [InlineData("1:2:00:00")] // 'g' Format
+        [InlineData("+00:00:00")]
+        [InlineData("2021-06-18")]
+        [InlineData("1$")]
+        [InlineData("-00:00:00.0000001")] // TimeOnly.MinValue - 1
+        [InlineData("24:00:00.0000000")] // TimeOnly.MaxValue + 1
+        [InlineData("10675199.02:48:05.4775807")] // TimeSpan.MaxValue
+        [InlineData("-10675199.02:48:05.4775808")] // TimeSpan.MinValue
+        [InlineData("1234", false)]
+        [InlineData("{}", false)]
+        [InlineData("[]", false)]
+        [InlineData("true", false)]
+        [InlineData("null", false)]
+        public static void TimeOnly_Read_Failure(string json, bool addQuotes = true)
+        {
+            if (addQuotes)
+                json = $"\"{json}\"";
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeOnly>(json));
+        }
+#endif
     }
 }

@@ -36,7 +36,7 @@ struct statistics{
     unsigned int processId;
     unsigned int operationsFailed;
     unsigned int operationsPassed;
-    unsigned int operationsTotal; 
+    unsigned int operationsTotal;
     DWORD        operationTime;
     unsigned int relationId;
 };
@@ -71,7 +71,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	//Variable Declaration
 	pthread_t pthreads[640];
 	int threadID[640];
-	int i=0; 
+	int i=0;
 	int j=0;
 	int rtn=0;
 	ULONGLONG startTicks = 0;
@@ -87,7 +87,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	char mainFileName[MAX_PATH];
     FILE *hMainFile;
 
-	//Get perfCallibrationValue 
+	//Get perfCallibrationValue
 
 	callibrationValue = getPerfCallibrationValue();
 	printf("Callibration Value for this Platform %llu \n", callibrationValue);
@@ -97,7 +97,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	if(GetParameters(argc, argv))
     {
      printf("Error in obtaining the parameters\n");
-	 exit(-1);	
+	 exit(-1);
     }
 
 	//Assign Values to Application Statistics Members
@@ -114,12 +114,12 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 	printf("Repeat Count : %d\n", appStats.repeatCount);
 
 
-	//Open file for Application Statistics Collection 
+	//Open file for Application Statistics Collection
 	snprintf(mainFileName, MAX_PATH, "main_nativecriticalsection_%d_.txt",appStats.relationId);
 	hMainFile = fopen(mainFileName, "w+");
 
 	if(hMainFile == NULL)
-	{ 
+	{
 	    printf("Error in opening main file for write\n");
 	}
 
@@ -128,14 +128,14 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 		{
 			threadID[i] = i;
 		}
-	
+
 	statisticsSize = sizeof(struct statistics);
 
 	snprintf(fileName, MAX_PATH, "%d_thread_nativecriticalsection_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
 	hFile = fopen(fileName, "w+");
 
 	if(hFile == NULL)
-	{ 
+	{
 	    printf("Error in opening file for write for process [%d]\n", USE_PROCESS_COUNT);
 	}
 
@@ -161,12 +161,12 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
     }
 
 	//USE NATIVE METHOD TO GET TICK COUNT
-	startTicks = GetTicks();	
-	
+	startTicks = GetTicks();
+
 	/*Loop to create number THREAD_COUNT number of threads*/
 	for (i=0;i< THREAD_COUNT;i++)
 	{
-		
+
 		//printf("Creating Thread Count %d\n", i);
 		//printf("Thread arrary value = %d\n", threadID[i]);
 		rtn=pthread_create(&pthreads[i], NULL, waitforworkerthreads, &threadID[i]);
@@ -175,10 +175,10 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 				printf("Error:  pthread Creat, %s \n", strerror(rtn));
 				exit(-1);
 			}
-		
+
 	}
 
-	
+
 	//printf("Main Thread waits to recevie signal when all threads are done\n");
 	pthread_cond_wait(&g_cv2,&g_mutex);
 
@@ -195,7 +195,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 			printf("Error Broadcasting Conditional Event\n");
 			exit(-1);
 		}
-	
+
 	//Release the lock
 	if (0!=pthread_mutex_unlock(&g_mutex))
 		{
@@ -220,13 +220,13 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
    /*Write Application Results to File*/
    //CAPTURE NATIVE TICK COUNT HERE
    appStats.operationTime = (DWORD)(GetTicks() - startTicks)/callibrationValue;
-   
+
 
 	/* Write Results to a file*/
     if(hFile!= NULL)
-    { 
+    {
         for( i = 0; i < THREAD_COUNT; i++ )
-        {  
+        {
             buffer = (struct statistics *)resultBuffer->getResultBuffer(i);
             fprintf(hFile, "%d,%d,%d,%d,%lu,%d\n", buffer->processId, buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime, buffer->relationId );
             //printf("Iteration %d over\n", i);
@@ -234,7 +234,7 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
     }
     fclose(hFile);
 
-	
+
 
 	//Call Test Case Cleanup Routine
 	if (0!=cleanuptest())
@@ -246,10 +246,10 @@ PALTEST(composite_synchronization_nativecs_interlocked_paltest_synchronization_n
 
 
    if(hMainFile!= NULL)
-    { 
-        printf("Writing to Main File \n");    
+    {
+        printf("Writing to Main File \n");
 		fprintf(hMainFile, "%lu,%d,%d,%d,%d,%s\n", appStats.operationTime, appStats.relationId, appStats.processCount, appStats.threadCount, appStats.repeatCount, appStats.buildNumber);
-		
+
     }
     fclose(hMainFile);
 	return 0;
@@ -259,10 +259,10 @@ void * waitforworkerthreads(void * threadId)
 {
 
 	int *threadParam = (int*) threadId;
-	
+
 //	printf("Thread ID : %d \n", *threadParam);
-	
-	//Accquire Lock 
+
+	//Accquire Lock
        if (0!=pthread_mutex_lock(&g_mutex))
        	{
        		//Error Condition
@@ -272,7 +272,7 @@ void * waitforworkerthreads(void * threadId)
 
 	//Increment Global Counter
 	GLOBAL_COUNTER++;
-	
+
 
 	//If global counter is equal to thread count then signal main thread
 	if (GLOBAL_COUNTER == THREAD_COUNT)
@@ -301,14 +301,14 @@ void * waitforworkerthreads(void * threadId)
 			exit(-1);
 		}
 
-	//Start the test  
+	//Start the test
 	starttests(*threadParam);
-	
+
 }
 
 void starttests(int threadID)
 {
-	/*All threads beign executing tests cases*/	
+	/*All threads beign executing tests cases*/
 	int i = 0;
 	int Id = threadID;
 	struct statistics stats;
@@ -326,10 +326,10 @@ void starttests(int threadID)
 	stats.operationsPassed = 0;
 	stats.operationsTotal  = 0;
 	stats.operationTime    = 0;
-		
+
 	//Enter and Leave Critical Section in a loop REPEAT_COUNT Times
-	
-	
+
+
 	startTime = GetTicks();
 
 	for (i=0;i<REPEAT_COUNT;i++)
@@ -347,23 +347,23 @@ void starttests(int threadID)
 		  }
 
 	}
-		  
+
 
 	stats.operationTime = (DWORD)(GetTicks() - startTime)/callibrationValue;
 
 //	printf("Operation Time %d \n", stats.operationTime);
-	
+
 	if(resultBuffer->LogResult(Id, (char *)&stats))
 	{
 		printf("Error while writing to shared memory, Thread Id is[??] and Process id is [%d]\n", USE_PROCESS_COUNT);
 	}
-	
+
 }
 
 int setuptest(void)
 {
-	
-	//Initalize Critical Section
+
+	//Initialize Critical Section
   /*
 	if (0!=MTXInitializeCriticalSection( &g_cs))
 		{
@@ -375,11 +375,11 @@ int setuptest(void)
 
 int cleanuptest(void)
 {
-	
+
 	//Delete Critical Section
   /*
 	if (0!=MTXDeleteCriticalSection(&g_cs))
-		{	
+		{
 			return -1;
 		}
   */
@@ -389,42 +389,42 @@ int cleanuptest(void)
 int GetParameters( int argc, char **argv)
 {
 
-	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?")) 
+	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         printf("PAL -Composite Native Critical Section Test\n");
         printf("Usage:\n");
-	 printf("\t[PROCESS_ID ( greater than 1] \n"); 
-	 printf("\t[THREAD_COUNT ( greater than 1] \n"); 
+	 printf("\t[PROCESS_ID ( greater than 1] \n");
+	 printf("\t[THREAD_COUNT ( greater than 1] \n");
         printf("\t[REPEAT_COUNT ( greater than 1]\n");
-	 printf("\t[RELATION_ID  [greater than or Equal to 1]\n"); 
+	 printf("\t[RELATION_ID  [greater than or Equal to 1]\n");
         return -1;
     }
- 
-    
+
+
     USE_PROCESS_COUNT = atoi(argv[1]);
-    if( USE_PROCESS_COUNT < 0) 
+    if( USE_PROCESS_COUNT < 0)
     {
         printf("\nInvalid THREAD_COUNT number, Pass greater than 1\n");
         return -1;
     }
 
     THREAD_COUNT = atoi(argv[2]);
-    if( THREAD_COUNT < 1) 
+    if( THREAD_COUNT < 1)
     {
         printf("\nInvalid THREAD_COUNT number, Pass greater than 1\n");
         return -1;
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         printf("\nInvalid REPEAT_COUNT number, Pass greater than 1\n");
         return -1;
     }
 
     RELATION_ID = atoi(argv[4]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         printf("\nInvalid RELATION_ID number, Pass greater than 1\n");
         return -1;
@@ -440,7 +440,7 @@ void incrementCounter(void)
 }
 
 
-//Implementation borrowed from pertrace.c 
+//Implementation borrowed from pertrace.c
 ULONGLONG GetTicks(void)
 {
 #ifdef i386
@@ -459,11 +459,11 @@ ULONGLONG getPerfCallibrationValue(void)
 {
 	ULONGLONG startTicks;
 	ULONGLONG endTicks;
-	
-	startTicks = GetTicks(); 
+
+	startTicks = GetTicks();
 	sleep(1);
 	endTicks = GetTicks();
-	
+
 	return ((endTicks-startTicks)/1000);  //Return number of Ticks in One Milliseconds
 
 }

@@ -132,7 +132,7 @@ typedef enum {
  * The first variable (the one "on the left of the expression") is implicit.
  * relation: the relation between the variable and the value
  * related_value: the related value
- * relation_is_static_definition: TRUE if the relation comes from a veriable
+ * relation_is_static_definition: TRUE if the relation comes from a variable
  *                                definition, FALSE if it comes from a branch
  *                                condition
  * next: pointer to the next relation of this variable in the evaluation area

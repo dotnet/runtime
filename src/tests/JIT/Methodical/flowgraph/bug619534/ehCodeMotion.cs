@@ -15,10 +15,14 @@
 
 
 using System;
+using Xunit;
 
-internal class Program
+namespace Test_ehCodeMotion_cs
 {
-    private static int Main()
+public class Program
+{
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Console.WriteLine("Main: " + new C().M());
         if (new C().M()) return 100; else return 101;
@@ -48,4 +52,5 @@ internal class C
 
         return ret;
     }
+}
 }

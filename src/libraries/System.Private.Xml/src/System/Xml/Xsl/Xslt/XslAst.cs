@@ -7,12 +7,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Xml.Xsl.Qil;
+using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
+using XPathQilFactory = System.Xml.Xsl.XPath.XPathQilFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ContextInfo = XsltInput.ContextInfo;
-    using XPathQilFactory = System.Xml.Xsl.XPath.XPathQilFactory;
-
     // Set of classes that represent XSLT AST
 
     // XSLT AST is a tree of nodes that represent content of xsl template.
@@ -118,10 +117,7 @@ namespace System.Xml.Xsl.Xslt
         public void AddContent(XslNode node)
         {
             Debug.Assert(node != null);
-            if (_content == null)
-            {
-                _content = new List<XslNode>();
-            }
+            _content ??= new List<XslNode>();
             _content.Add(node);
         }
 
@@ -159,14 +155,7 @@ namespace System.Xml.Xsl.Xslt
 
         public AttributeSet(QilName name, XslVersion xslVer) : base(XslNodeType.AttributeSet, name, xslVer) { }
 
-        public override string GetDebugName()
-        {
-            StringBuilder dbgName = new StringBuilder();
-            dbgName.Append("<xsl:attribute-set name=\"");
-            dbgName.Append(Name!.QualifiedName);
-            dbgName.Append("\">");
-            return dbgName.ToString();
-        }
+        public override string GetDebugName() => $"<xsl:attribute-set name=\"{Name!.QualifiedName}\">";
 
         public new void AddContent(XslNode node)
         {

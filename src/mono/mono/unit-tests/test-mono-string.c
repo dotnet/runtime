@@ -59,7 +59,7 @@ int
 test_mono_string_main (void)
 {
 
-	mono_jit_init_version_for_test_only ("test-mono-string", "v4.0.30319");
+	mono_jit_init_version_for_test_only ("test-mono-string", NULL);
 
 	int res = 0;
 

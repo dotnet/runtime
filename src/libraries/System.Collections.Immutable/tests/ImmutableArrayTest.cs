@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Collections.Immutable.Tests
 {
@@ -79,7 +80,7 @@ namespace System.Collections.Immutable.Tests
         public void AsSpanRoundTripEmptyArrayTests()
         {
             ImmutableArray<int> immutableArray = ImmutableArray.Create(Array.Empty<int>());
-            
+
             ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.Equal(immutableArray, span.ToArray());
             Assert.Equal(immutableArray.Length, span.Length);
@@ -94,7 +95,7 @@ namespace System.Collections.Immutable.Tests
         {
             ImmutableArray<int> immutableArray = new ImmutableArray<int>();
             Assert.True(immutableArray.IsDefault);
-            
+
             ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
@@ -119,7 +120,7 @@ namespace System.Collections.Immutable.Tests
         {
             ImmutableArray<string> immutableArray = new ImmutableArray<string>();
             Assert.True(immutableArray.IsDefault);
-            
+
             ReadOnlySpan<string> span = immutableArray.AsSpan();
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
@@ -1154,11 +1155,39 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
+        [InlineData(new int[] { }, new int[] { 1, 2, 3 }, 2)]
+        [InlineData(new int[] { 1, 2 }, new int[] { 1, 2, 3 }, 2)]
+        [InlineData(new int[] { }, new int[] { 1, 2 }, 0)]
+        [InlineData(new int[] { 1, 2 }, new int[] { 1, 2 }, 0)]
+        public void AddRangeWithLength(IEnumerable<int> source, IEnumerable<int> items, int length)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(source.Concat(items.Take(length)), array.AddRange(items.ToArray(), length)); // Array overload
+            Assert.Equal(source.Concat(items.Take(length)), array.AddRange(items.ToImmutableArray(), length)); // ImmutableArray overload
+            Assert.Equal(source, array); // Make sure the original array wasn't affected.
+        }
+
+        [Theory]
+        [InlineData(new object[] { }, new int[] { 1, 2, 3 })]
+        [InlineData(new object[] { 1, 2 }, new int[] { 1, 2, 3 })]
+        [InlineData(new object[] { }, new int[] { 1, 2 })]
+        [InlineData(new object[] { 1, 2 }, new int[] { 1, 2 })]
+        public void AddRangeDerivedArray(IEnumerable<object> source, IEnumerable<int> items)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(source.Concat(items.Cast<object>()), array.AddRange(items.ToArray())); // Array overload
+            Assert.Equal(source.Concat(items.Cast<object>()), array.AddRange(items.ToImmutableArray())); // ImmutableArray overload
+            Assert.Equal(source, array); // Make sure the original array wasn't affected.
+        }
+
+        [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         public void AddRangeEmptyOptimization(IEnumerable<int> source)
         {
             ImmutableArray<int> array = source.ToImmutableArray();
-            
+
             // Verify that underlying array is reference-equal as original array
             Assert.True(array.AddRange(Array.Empty<int>()) == array);
             Assert.True(array.AddRange(ReadOnlySpan<int>.Empty) == array);
@@ -1193,11 +1222,34 @@ namespace System.Collections.Immutable.Tests
             int[] sourceArray = source.ToArray();
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(sourceArray)); // Array overload
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(new ReadOnlySpan<int>(sourceArray))); // ReadOnlySpan overload
-            
+
             Assert.Throws<InvalidOperationException>(() => source.ToImmutableArray().AddRange((IEnumerable<int>)s_emptyDefault)); // Enumerable overload
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(s_emptyDefault));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange((IEnumerable<int>)s_emptyDefault));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void AddRangeWithLengthInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            var items = new int[] { 1, 2 };
+
+            AssertExtensions.Throws<ArgumentNullException>("items", () => array.AddRange(null, 3));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.AddRange(items, items.Length + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.AddRange(items, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.AddRange(items.ToImmutableArray(), -1));
+        }
+
+        [Fact]
+        public void AddRangeDerivedArrayInvalid()
+        {
+            var array = new object[] { 1, 2 }.ToImmutableArray();
+            int[] items = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("items", () => array.AddRange(items));
         }
 
         [Theory]
@@ -1255,7 +1307,7 @@ namespace System.Collections.Immutable.Tests
             int[] array = s_oneElement.ToArray();
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(immutableArray.Length + 1, array));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(-1, array));
-            
+
             var span = new ReadOnlySpan<int>(array);
             AssertExtensions.Throws<ArgumentOutOfRangeException, int>("index", span, s => immutableArray.InsertRange(immutableArray.Length + 1, s));
             AssertExtensions.Throws<ArgumentOutOfRangeException, int>("index", span, s => immutableArray.InsertRange(-1, s));
@@ -1321,7 +1373,7 @@ namespace System.Collections.Immutable.Tests
                 {
                     array = it.ToArray();
                 }
-                
+
                 Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload
                 Assert.Equal(expected, immutableArray.InsertRange(index, new ReadOnlySpan<int>(array))); // Span overload
 
@@ -1329,7 +1381,7 @@ namespace System.Collections.Immutable.Tests
                 {
                     // Insertion at the end is equivalent to adding.
                     expected = source.Concat(items);
-                    
+
                     Assert.Equal(expected, immutableArray.InsertRange(index, it)); // Enumerable overload
                     Assert.Equal(expected, immutableArray.InsertRange(index, it.ToImmutableArray())); // ImmutableArray overload
                     Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload
@@ -2187,7 +2239,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IStructuralEquatableEqualsNullComparerInvalid()
         {
-            // This was not fixed for compatability reasons. See https://github.com/dotnet/runtime/issues/19265
+            // This was not fixed for compatibility reasons. See https://github.com/dotnet/runtime/issues/19265
             Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)ImmutableArray.Create(1, 2, 3)).Equals(ImmutableArray.Create(1, 2, 3), comparer: null));
             Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)s_emptyDefault).Equals(other: null, comparer: null));
         }
@@ -2314,7 +2366,7 @@ namespace System.Collections.Immutable.Tests
 
         public static IEnumerable<object[]> IStructuralComparableCompareToNullComparerNullReferenceInvalidData()
         {
-            // This was not fixed for compatability reasons. See https://github.com/dotnet/runtime/issues/19265
+            // This was not fixed for compatibility reasons. See https://github.com/dotnet/runtime/issues/19265
             yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 } };
             yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3) };
             // Cache this into a local so the comparands are reference-equal.
@@ -2459,14 +2511,14 @@ namespace System.Collections.Immutable.Tests
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(Int32EnumerableData))]
         public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create<int>());

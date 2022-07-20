@@ -8,6 +8,8 @@
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Certificates.cs" />
     <Compile Include="CertLoader.cs" />
@@ -27,6 +29,7 @@
     <Compile Include="Oids.cs" />
     <Compile Include="Pkcs9AttributeTests.cs" />
     <Compile Include="RecipientInfoCollectionTests.cs" />
+    <Compile Include="SignatureSupport.cs" />
     <Compile Include="SignedCms\CmsSignerTests.cs" />
     <Compile Include="SignedCms\CounterSigningDerOrder.cs" />
     <Compile Include="SignedCms\SignedCmsTests.cs" />
@@ -68,9 +71,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />

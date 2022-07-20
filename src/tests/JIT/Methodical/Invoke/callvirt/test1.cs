@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace Test
+namespace Test_test1_cs
 {
-    internal class Base
+    public class Base
     {
         public double m;
         public Base() { m = 1.0; }
@@ -19,7 +20,7 @@ namespace Test
         }
     }
 
-    internal class Derived : Base
+    public class Derived : Base
     {
         public Derived() { m = 2.0; }
 
@@ -31,7 +32,8 @@ namespace Test
             return arr;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Base bas = new Derived();
             bas = bas.Clone(11)[10];

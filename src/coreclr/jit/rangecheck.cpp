@@ -24,6 +24,7 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     , m_pCompiler(pCompiler)
     , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
     , m_nVisitBudget(MAX_VISIT_BUDGET)
+    , m_updateStmt(false)
 {
 }
 
@@ -255,6 +256,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         {
             JITDUMP("Removing range check\n");
             m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+            m_updateStmt = true;
             return;
         }
     }
@@ -296,8 +298,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+        m_updateStmt = true;
     }
-    return;
 }
 
 void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
@@ -945,14 +947,14 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             return range;
         }
         // Generalized range computation not implemented for these operators
-        else if (binop->OperIs(GT_AND, GT_UMOD, GT_RSH))
+        else if (binop->OperIs(GT_AND, GT_UMOD))
         {
             return Range(Limit::keUnknown);
         }
     }
 
     // other operators are expected to be handled above.
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
+    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_RSH));
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
@@ -1022,7 +1024,41 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
                 convertedOp2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 r.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
+    else if (binop->OperIs(GT_RSH))
+    {
+        r = RangeOps::ShiftRight(op1Range, op2Range);
+        JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
     return r;
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromType: Compute the range from the given type
+//
+// Arguments:
+//   type - input type
+//
+// Return value:
+//   range that represents the values given type allows
+//
+Range RangeCheck::GetRangeFromType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, BYTE_MAX));
+        case TYP_BYTE:
+            return Range(Limit(Limit::keConstant, INT8_MIN), Limit(Limit::keConstant, INT8_MAX));
+        case TYP_USHORT:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT16_MAX));
+        case TYP_SHORT:
+            return Range(Limit(Limit::keConstant, INT16_MIN), Limit(Limit::keConstant, INT16_MAX));
+        default:
+            return Range(Limit(Limit::keUnknown));
+    }
 }
 
 // Compute the range for a local var definition.
@@ -1056,13 +1092,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     return range;
 }
 
-// https://msdn.microsoft.com/en-us/windows/apps/hh285054.aspx
-// CLR throws IDS_EE_ARRAY_DIMENSIONS_EXCEEDED if array length is > INT_MAX.
-// new byte[INT_MAX]; still throws OutOfMemoryException on my system with 32 GB RAM.
-// I believe practical limits are still smaller than this number.
-#define ARRLEN_MAX (0x7FFFFFFF)
-
-// Get the limit's maximum possible value, treating array length to be ARRLEN_MAX.
+// Get the limit's maximum possible value.
 bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
 {
     int& max1 = *pMax;
@@ -1077,7 +1107,21 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
             int tmp = GetArrLength(limit.vn);
             if (tmp <= 0)
             {
-                tmp = ARRLEN_MAX;
+                // If we can't figure out the array length, use the maximum array length,
+                // CORINFO_Array_MaxLength (0x7FFFFFC7). However, we get here also when
+                // we can't find a Span/ReadOnlySpan bounds check length, and these have
+                // a maximum length of INT_MAX (0x7FFFFFFF). If limit.vn refers to a
+                // GT_ARR_LENGTH node, then it's an array length, otherwise use the INT_MAX value.
+
+                if (m_pCompiler->vnStore->IsVNArrLen(limit.vn))
+                {
+                    tmp = CORINFO_Array_MaxLength;
+                }
+                else
+                {
+                    const int MaxSpanLength = 0x7FFFFFFF;
+                    tmp                     = MaxSpanLength;
+                }
             }
             if (IntAddOverflows(tmp, limit.GetConstant()))
             {
@@ -1158,7 +1202,8 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
         return true;
     }
 
-    JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
+    JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()),
+            op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
 
     if (binop->OperIs(GT_ADD))
@@ -1232,11 +1277,11 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = false;
     }
-    else if (expr->OperGet() == GT_IND)
+    else if (expr->OperIs(GT_IND))
     {
         overflows = false;
     }
-    else if (expr->OperGet() == GT_COMMA)
+    else if (expr->OperIs(GT_COMMA))
     {
         overflows = ComputeDoesOverflow(block, expr->gtEffectiveVal());
     }
@@ -1246,7 +1291,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
         overflows = DoesVarDefOverflow(expr->AsLclVarCommon());
     }
     // Check if add overflows.
-    else if (expr->OperGet() == GT_ADD || expr->OperGet() == GT_MUL)
+    else if (expr->OperIs(GT_ADD, GT_MUL))
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
@@ -1257,9 +1302,13 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
         overflows = false;
     }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
-    else if (expr->OperGet() == GT_PHI)
+    else if (expr->OperIs(GT_PHI))
     {
         overflows = DoesPhiOverflow(block, expr);
+    }
+    else if (expr->OperIs(GT_CAST))
+    {
+        overflows = ComputeDoesOverflow(block, expr->gtGetOp1());
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);
@@ -1347,7 +1396,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
-    else if (expr->OperGet() == GT_PHI)
+    else if (expr->OperIs(GT_PHI))
     {
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
@@ -1372,30 +1421,19 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (varTypeIsSmallInt(expr->TypeGet()))
     {
-        switch (expr->TypeGet())
-        {
-            case TYP_UBYTE:
-                range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 255));
-                break;
-            case TYP_BYTE:
-                range = Range(Limit(Limit::keConstant, -128), Limit(Limit::keConstant, 127));
-                break;
-            case TYP_USHORT:
-                range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 65535));
-                break;
-            case TYP_SHORT:
-                range = Range(Limit(Limit::keConstant, -32768), Limit(Limit::keConstant, 32767));
-                break;
-            default:
-                range = Range(Limit(Limit::keUnknown));
-                break;
-        }
-
+        range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
-    else if (expr->OperGet() == GT_COMMA)
+    else if (expr->OperIs(GT_COMMA))
     {
         range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
+    }
+    else if (expr->OperIs(GT_CAST))
+    {
+        GenTreeCast* castTree = expr->AsCast();
+        // TODO: consider computing range for CastOp and intersect it
+        // with this
+        range = GetRangeFromType(castTree->CastToType());
     }
     else
     {
@@ -1425,7 +1463,7 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing 
     if (m_pCompiler->verbose)
     {
         Indent(indent);
-        JITDUMP("[RangeCheck::GetRange] " FMT_BB, block->bbNum);
+        JITDUMP("[RangeCheck::GetRange] " FMT_BB " ", block->bbNum);
         m_pCompiler->gtDispTree(expr);
         Indent(indent);
         JITDUMP("{\n", expr);
@@ -1545,13 +1583,22 @@ void RangeCheck::OptimizeRangeChecks()
     {
         for (Statement* const stmt : block->Statements())
         {
+            m_updateStmt = false;
+
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (IsOverBudget())
+                if (IsOverBudget() && !m_updateStmt)
                 {
                     return;
                 }
+
                 OptimizeRangeCheck(block, stmt, tree);
+            }
+
+            if (m_updateStmt)
+            {
+                m_pCompiler->gtSetStmtInfo(stmt);
+                m_pCompiler->fgSetStmtSeq(stmt);
             }
         }
     }

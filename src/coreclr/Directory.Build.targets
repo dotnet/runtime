@@ -2,19 +2,28 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <ItemGroup>
-    <BuiltBinary Include="$(TargetPath)" />
+    <_DebugSymbolToMove Include="@(DebugSymbolsProjectOutputGroupOutput->Metadata('FinalOutputPath'))"
+                        FolderName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+    <_DebugSymbolToMoveToExclude Include="@(_DebugSymbolToMove->WithMetadataValue('FolderName', 'aotsdk'))" />
+    <_DebugSymbolToMoveToUpdate Include="@(_DebugSymbolToMove)"
+                                Exclude="@(_DebugSymbolToMoveToExclude)" />
+    <!-- Remove the FolderName metadata for projects that don't reside under an aotsdk folder. -->
+    <_DebugSymbolToMove Update="@(_DebugSymbolToMoveToUpdate)"
+                        FolderName="" />
+    <_DebugSymbolToMove Update="@(_DebugSymbolToMove)"
+                        Destination="$(RuntimeBinDir)PDB\%(FolderName)\%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- Target used to consolidate all PDBs into a single location -->
+  <!-- Consolidate all PDBs into a single location, except the aotsdk PDBs, as S.P.C will overwrite the coreclr PDBs. -->
   <Target Name="MoveSymbolFiles"
-          AfterTargets="Build"
-          Condition="Exists(@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb'))"
-          Inputs="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
-          Outputs="@(BuiltBinary -> '$(RuntimeBinDir)PDB/%(Filename).pdb')">
-
-    <Move SourceFiles="@(BuiltBinary -> '%(RootDir)%(Directory)%(Filename).pdb')"
-          DestinationFolder="$(RuntimeBinDir)PDB" />
-
+          AfterTargets="CopyFilesToOutputDirectory"
+          DependsOnTargets="_CheckForCompileOutputs"
+          Inputs="@(_DebugSymbolToMove)"
+          Outputs="@(_DebugSymbolToMove->Metadata('Destination'))"
+          Condition="'$(_DebugSymbolsProduced)' == 'true'">
+    <Copy SourceFiles="@(_DebugSymbolToMove)"
+          DestinationFiles="@(_DebugSymbolToMove->Metadata('Destination'))"
+          UseHardlinksIfPossible="false" />
   </Target>
 
   <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->

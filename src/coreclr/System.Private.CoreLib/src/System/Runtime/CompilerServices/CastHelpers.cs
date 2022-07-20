@@ -477,7 +477,12 @@ namespace System.Runtime.CompilerServices
         private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-            Debug.Assert(mt != toTypeHnd, "The check for the trivial cases should be inlined by the JIT");
+
+            // Normally, this case is expected to be handled by JIT inline.
+            // However, with PGO data JIT might decide to check a different type instead
+            // so this one has to be always checked here
+            if (toTypeHnd == mt)
+                goto done;
 
             for (; ; )
             {
@@ -548,7 +553,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static ref object? LdelemaRef(Array array, int index, void* type)
+        private static ref object? LdelemaRef(Array array, nint index, void* type)
         {
             // this will throw appropriate exceptions if array is null or access is out of range.
             ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
@@ -564,7 +569,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static void StelemRef(Array array, int index, object? obj)
+        private static void StelemRef(Array array, nint index, object? obj)
         {
             // this will throw appropriate exceptions if array is null or access is out of range.
             ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;

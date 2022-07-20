@@ -24,6 +24,7 @@ public class ApkBuilder
     public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
+    public bool IncludeNetworkSecurityConfig { get; set; }
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
@@ -55,6 +56,12 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(mainLibraryFileName) && !File.Exists(Path.Combine(AppDir, mainLibraryFileName)))
         {
             throw new ArgumentException($"MainLibraryFileName='{mainLibraryFileName}' was not found in AppDir='{AppDir}'");
+        }
+
+        var networkSecurityConfigFilePath = Path.Combine(AppDir, "res", "xml", "network_security_config.xml");
+        if (IncludeNetworkSecurityConfig && !File.Exists(networkSecurityConfigFilePath))
+        {
+            throw new ArgumentException($"IncludeNetworkSecurityConfig is set but the file '{networkSecurityConfigFilePath}' was not found");
         }
 
         if (string.IsNullOrEmpty(abi))
@@ -172,6 +179,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
+        Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
         if (StripDebugSymbols)
@@ -183,6 +191,7 @@ public class ApkBuilder
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
         var assetsToZipDirectory = Path.Combine(OutputDir, "assets-tozip");
+
         Utils.DirectoryCopy(AppDir, assetsToZipDirectory, file =>
         {
             string fileName = Path.GetFileName(file);
@@ -199,8 +208,19 @@ public class ApkBuilder
                 // aapt complains on such files
                 return false;
             }
+            if (file.Contains("/res/"))
+            {
+                // exclude everything in the `res` folder
+                return false;
+            }
             return true;
         });
+
+        // copy the res directory as is
+        if (Directory.Exists(Path.Combine(AppDir, "res")))
+        {
+            Utils.DirectoryCopy(Path.Combine(AppDir, "res"), Path.Combine(OutputDir, "res"));
+        }
 
         // add AOT .so libraries
         foreach (var aotlib in aotLibraryFiles)
@@ -210,6 +230,7 @@ public class ApkBuilder
 
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
+        string d8 = Path.Combine(buildToolsFolder, "d8");
         string aapt = Path.Combine(buildToolsFolder, "aapt");
         string zipalign = Path.Combine(buildToolsFolder, "zipalign");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
@@ -291,9 +312,9 @@ public class ApkBuilder
                 nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
             }
 
-            // There's a circular dependecy between static mono runtime lib and static component libraries.
+            // There's a circular dependency between static mono runtime lib and static component libraries.
             // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-            // due to circular dependecy.
+            // due to circular dependency.
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 
@@ -333,7 +354,7 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
 
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
-            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
+            $"-DANDROID_PLATFORM=android-{MinApiLevel} -B monodroid";
 
         string cmakeBuildArgs = "--build monodroid";
 
@@ -372,6 +393,11 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 
+        string networkSecurityConfigAttribute =
+            IncludeNetworkSecurityConfig
+                ? "a:networkSecurityConfig=\"@xml/network_security_config\""
+                : string.Empty;
+
         string envVariables = "";
         foreach (ITaskItem item in EnvironmentVariables)
         {
@@ -389,18 +415,33 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
+                .Replace("%NetworkSecurityConfig%", networkSecurityConfigAttribute)
                 .Replace("%MinSdkLevel%", MinApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+
+        if (File.Exists(d8))
+        {
+            string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
+
+            if (!classFiles.Any())
+                throw new InvalidOperationException("Didn't find any .class files");
+
+            Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
+        }
+        else
+        {
+            Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+        }
 
         // 3. Generate APK
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        string resources = IncludeNetworkSecurityConfig ? "-S res" : string.Empty;
+        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets {resources} -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));

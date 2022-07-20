@@ -134,11 +134,7 @@ namespace System.Linq.Parallel
 
             QueryResults<TOutput> queryResults = GetQueryResults(querySettings);
 
-            if (mergeOptions == null)
-            {
-                mergeOptions = querySettings.MergeOptions;
-            }
-
+            mergeOptions ??= querySettings.MergeOptions;
             Debug.Assert(mergeOptions != null);
 
             // Top-level preemptive cancellation test.

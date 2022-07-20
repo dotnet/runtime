@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private readonly string _builtSharedUberFxDir;
 
         private readonly string _sharedFxVersion;
-        private readonly string _baseDir;
+        private readonly TestArtifact _baseDirArtifact;
         private readonly string _builtDotnet;
 
         public SharedFxLookup()
@@ -39,12 +39,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // The dotnetSharedFxLookup dir will contain some folders and files that will be
             // necessary to perform the tests
             string baseDir = Path.Combine(artifactsDir, "dotnetSharedFxLookup");
-            _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
+            _baseDirArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(baseDir));
 
             // The two tested locations will be the cwd and the exe dir. Both cwd and exe dir
             // are easily overwritten, so they will be placed inside the multilevel folder.
-            _currentWorkingDir = Path.Combine(_baseDir, "cwd");
-            _executableDir = Path.Combine(_baseDir, "exe");
+            _currentWorkingDir = Path.Combine(_baseDirArtifact.Location, "cwd");
+            _executableDir = Path.Combine(_baseDirArtifact.Location, "exe");
 
             RepoDirectories = new RepoDirectoriesProvider(builtDotnet: _executableDir);
 
@@ -76,11 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Dispose()
         {
             SharedFxLookupPortableAppFixture.Dispose();
-
-            if (!TestProject.PreserveTestRuns())
-            {
-                Directory.Delete(_baseDir, true);
-            }
+            _baseDirArtifact.Dispose();
         }
 
         [Fact]
@@ -114,9 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //           7777.0.0
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Replacing deps entry [{uberFile}, AssemblyVersion:0.0.0.1, FileVersion:0.0.0.2] with [{netCoreAppFile}");
@@ -148,9 +142,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //           7777.0.0
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))

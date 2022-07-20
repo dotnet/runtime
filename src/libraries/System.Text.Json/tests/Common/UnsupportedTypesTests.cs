@@ -31,14 +31,6 @@ namespace System.Text.Json.Serialization.Tests
             await RunTest<IntPtr>(json);
             await RunTest<IntPtr?>(json); // One nullable variation.
             await RunTest<UIntPtr>(json);
-#if NETCOREAPP
-            await RunTest<DateOnly>(json);
-            await RunTest<TimeOnly>(json);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest<IAsyncEnumerable<int>>(json);
-            await RunTest<ClassThatImplementsIAsyncEnumerable>(json);
-#endif
 
             async Task RunTest<T>(string json)
             {
@@ -78,13 +70,6 @@ namespace System.Text.Json.Serialization.Tests
             await RunTest((IntPtr)123);
             await RunTest<IntPtr?>(new IntPtr(123)); // One nullable variation.
             await RunTest((UIntPtr)123);
-#if NETCOREAPP
-            await RunTest(DateOnly.MaxValue);
-            await RunTest(TimeOnly.MinValue);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest(new ClassThatImplementsIAsyncEnumerable());
-#endif
 
             async Task RunTest<T>(T value)
             {

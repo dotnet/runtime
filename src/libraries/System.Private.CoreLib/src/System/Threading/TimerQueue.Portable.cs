@@ -40,7 +40,7 @@ namespace System.Threading
             // using UnsafeStart() instead of Start()
             Thread timerThread = new Thread(TimerThread)
             {
-                Name = ".NET Timers",
+                Name = ".NET Timer",
                 IsBackground = true
             };
             timerThread.UnsafeStart();
@@ -59,11 +59,7 @@ namespace System.Threading
             {
                 if (!_isScheduled)
                 {
-                    List<TimerQueue>? timers = s_scheduledTimers;
-                    if (timers == null)
-                    {
-                        timers = InitializeScheduledTimerManager_Locked();
-                    }
+                    List<TimerQueue> timers = s_scheduledTimers ?? InitializeScheduledTimerManager_Locked();
 
                     timers.Add(this);
                     _isScheduled = true;

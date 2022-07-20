@@ -99,7 +99,8 @@ namespace System.Text
                 lock (s_streamLock)
                 {
                     s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset, SeekOrigin.Begin);
-                    s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                    int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                    Debug.Assert(bytesRead == buffer.Length, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                 }
 
                 fixed (byte* pBuffer = &buffer[0])
@@ -143,7 +144,7 @@ namespace System.Text
         }
 
         // Read in our best fit table
-        protected unsafe override void ReadBestFitTable()
+        protected override unsafe void ReadBestFitTable()
         {
             // Lock so we don't confuse ourselves.
             lock (InternalSyncObject)
@@ -162,7 +163,8 @@ namespace System.Text
                     lock (s_streamLock)
                     {
                         s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset + 512, SeekOrigin.Begin);
-                        s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                        int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                        Debug.Assert(bytesRead == buffer.Length, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                     }
 
                     fixed (byte* pBuffer = buffer)

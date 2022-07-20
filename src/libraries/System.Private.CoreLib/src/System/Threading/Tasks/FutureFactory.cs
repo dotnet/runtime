@@ -1602,7 +1602,6 @@ namespace System.Threading.Tasks
             Func<Task<TAntecedentResult>[], TResult>? continuationFunction, Action<Task<TAntecedentResult>[]>? continuationAction,
             TaskContinuationOptions continuationOptions, CancellationToken cancellationToken, TaskScheduler scheduler)
         {
-            // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             // ArgumentNullException of continuationFunction or continuationAction is checked by the caller
@@ -1646,7 +1645,6 @@ namespace System.Threading.Tasks
             Func<Task[], TResult>? continuationFunction, Action<Task[]>? continuationAction,
             TaskContinuationOptions continuationOptions, CancellationToken cancellationToken, TaskScheduler scheduler)
         {
-            // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             // ArgumentNullException of continuationFunction or continuationAction is checked by the caller
@@ -1969,7 +1967,6 @@ namespace System.Threading.Tasks
             Func<Task, TResult>? continuationFunction, Action<Task>? continuationAction,
             TaskContinuationOptions continuationOptions, CancellationToken cancellationToken, TaskScheduler scheduler)
         {
-            // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
@@ -2021,7 +2018,6 @@ namespace System.Threading.Tasks
             Func<Task<TAntecedentResult>, TResult>? continuationFunction, Action<Task<TAntecedentResult>>? continuationAction,
             TaskContinuationOptions continuationOptions, CancellationToken cancellationToken, TaskScheduler scheduler)
         {
-            // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);

@@ -21,8 +21,10 @@ namespace System
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
 
-        public static string? GetEnvironmentVariable(string variable!!)
+        public static string? GetEnvironmentVariable(string variable)
         {
+            ArgumentNullException.ThrowIfNull(variable);
+
             return GetEnvironmentVariableCore(variable);
         }
 
@@ -78,19 +80,14 @@ namespace System
             }
         }
 
-        public static string ExpandEnvironmentVariables(string name!!)
+        public static string ExpandEnvironmentVariables(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
                 return name;
 
             return ExpandEnvironmentVariablesCore(name);
-        }
-
-        private static string[]? s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] cmdLineArgs) // invoked from VM
-        {
-            s_commandLineArgs = cmdLineArgs;
         }
 
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);

@@ -45,10 +45,10 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
-            SslProtocols serverProtocol,
-            Type expectedException)
+            SslProtocols serverProtocol)
         {
             Exception e = await Record.ExceptionAsync(
                 () =>
@@ -60,7 +60,7 @@ namespace System.Net.Security.Tests
                 });
 
             Assert.NotNull(e);
-            Assert.IsAssignableFrom(expectedException, e);
+            Assert.IsType<AuthenticationException>(e);
         }
 
         [Theory]
@@ -336,7 +336,7 @@ namespace System.Net.Security.Tests
 
                     if (clientProtocol != serverProtocol)
                     {
-                        yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
+                        yield return new object[] { clientProtocol, serverProtocol };
                     }
                 }
             }

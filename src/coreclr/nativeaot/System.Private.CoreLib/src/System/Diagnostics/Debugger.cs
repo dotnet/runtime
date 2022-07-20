@@ -63,7 +63,7 @@ namespace System.Diagnostics
         {
             if (IsLogging())
             {
-                throw new NotImplementedException(); // TODO: CoreRT issue# 3235: NS2.0 - implement Debugger.Log, IsLogging
+                throw new NotImplementedException(); // TODO: Implement Debugger.Log, IsLogging
             }
         }
 
@@ -74,7 +74,7 @@ namespace System.Diagnostics
         {
             if (string.Empty.Length != 0)
             {
-                throw new NotImplementedException(); // TODO: CoreRT issue# 3235: NS2.0 - implement Debugger.Log, IsLogging
+                throw new NotImplementedException(); // TODO: Implement Debugger.Log, IsLogging
             }
             return false;
         }

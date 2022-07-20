@@ -123,9 +123,9 @@ namespace ILCompiler
             return null;
         }
 
-        public EcmaModule GetModuleFromPath(string filePath)
+        public EcmaModule GetModuleFromPath(string filePath, bool throwOnFailureToLoad = true)
         {
-            return GetOrAddModuleFromPath(filePath, true);
+            return GetOrAddModuleFromPath(filePath, true, throwOnFailureToLoad: throwOnFailureToLoad);
         }
 
         public EcmaModule GetMetadataOnlyModuleFromPath(string filePath)
@@ -133,7 +133,7 @@ namespace ILCompiler
             return GetOrAddModuleFromPath(filePath, false);
         }
 
-        private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding)
+        private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding, bool throwOnFailureToLoad = true)
         {
             filePath = Path.GetFullPath(filePath);
 
@@ -144,7 +144,7 @@ namespace ILCompiler
                     return entry.Module;
             }
 
-            return AddModule(filePath, null, useForBinding);
+            return AddModule(filePath, null, useForBinding, throwOnFailureToLoad: throwOnFailureToLoad);
         }
 
         public static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
@@ -182,7 +182,7 @@ namespace ILCompiler
             }
         }
 
-        private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding, ModuleData oldModuleData = null)
+        private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding, ModuleData oldModuleData = null, bool throwOnFailureToLoad = true)
         {
             filePath = Path.GetFullPath(filePath);
 
@@ -208,6 +208,11 @@ namespace ILCompiler
                     peReader = oldModuleData.Module.PEReader;
                     mappedViewAccessor = oldModuleData.MappedViewAccessor;
                     pdbReader = oldModuleData.Module.PdbReader;
+                }
+
+                if (!peReader.HasMetadata && !throwOnFailureToLoad)
+                {
+                    return null;
                 }
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
@@ -238,7 +243,7 @@ namespace ILCompiler
                             return actualModuleData.Module;
                         }
                     }
-                    mappedViewAccessor = null; // Ownership has been transfered
+                    mappedViewAccessor = null; // Ownership has been transferred
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
@@ -337,7 +342,7 @@ namespace ILCompiler
                     if (!File.Exists(candidatePath))
                         continue;
                 }
-                
+
                 pdbFileName = candidatePath;
                 pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
                 break;

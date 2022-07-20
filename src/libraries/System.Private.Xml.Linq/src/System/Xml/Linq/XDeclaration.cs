@@ -48,8 +48,10 @@ namespace System.Xml.Linq
         /// <param name="other">
         /// The <see cref="XDeclaration"/> used to initialize this <see cref="XDeclaration"/> object.
         /// </param>
-        public XDeclaration(XDeclaration other!!)
+        public XDeclaration(XDeclaration other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             _version = other._version;
             _encoding = other._encoding;
             _standalone = other._standalone;

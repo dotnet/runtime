@@ -437,7 +437,7 @@ namespace System.Net.Tests
             // prevent problems where the input array is changed if
             // the output one is modified.
 
-            byte[] input = Encoding.UTF8.GetBytes("Dont.Need.Encoding");
+            byte[] input = "Dont.Need.Encoding"u8.ToArray();
             byte[] output = WebUtility.UrlEncodeToBytes(input, 0, input.Length);
             Assert.NotSame(input, output);
         }
@@ -445,7 +445,7 @@ namespace System.Net.Tests
         [Fact]
         public static void UrlDecodeToBytes_NoDecodingNeeded_ReturnsNewClonedArray()
         {
-            byte[] input = Encoding.UTF8.GetBytes("Dont.Need.Decoding");
+            byte[] input = "Dont.Need.Decoding"u8.ToArray();
             byte[] output = WebUtility.UrlDecodeToBytes(input, 0, input.Length);
             Assert.NotSame(input, output);
         }

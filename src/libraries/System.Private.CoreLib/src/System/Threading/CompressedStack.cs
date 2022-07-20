@@ -31,8 +31,10 @@ namespace System.Threading
             return new CompressedStack();
         }
 
-        public static void Run(CompressedStack compressedStack!!, ContextCallback callback, object? state)
+        public static void Run(CompressedStack compressedStack, ContextCallback callback, object? state)
         {
+            ArgumentNullException.ThrowIfNull(compressedStack);
+
             // The original code was not checking for a null callback and would throw NullReferenceException
             callback(state);
         }

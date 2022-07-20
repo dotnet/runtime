@@ -18,8 +18,10 @@ namespace System.Security.Cryptography
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
         //
-        public static string? ToFriendlyName(string oid!!, OidGroup oidGroup, bool fallBackToAllGroups)
+        public static string? ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
+            ArgumentNullException.ThrowIfNull(oid);
+
             string? mappedName;
             bool shouldUseCache = ShouldUseCache(oidGroup);
 
@@ -54,8 +56,10 @@ namespace System.Security.Cryptography
         //
         // Attempts to retrieve the friendly name for an OID. Returns null if not a known or valid OID.
         //
-        public static string? ToOid(string friendlyName!!, OidGroup oidGroup, bool fallBackToAllGroups)
+        public static string? ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
+            ArgumentNullException.ThrowIfNull(friendlyName);
+
             if (friendlyName.Length == 0)
                 return null;
 

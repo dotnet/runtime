@@ -32,19 +32,19 @@ namespace System.Security.Cryptography
             Reset(null, rawData);
         }
 
-        public AsnEncodedData(AsnEncodedData asnEncodedData!!)
+        public AsnEncodedData(AsnEncodedData asnEncodedData)
         {
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 
-        public AsnEncodedData(Oid? oid, byte[] rawData)
+        public AsnEncodedData(Oid? oid, byte[] rawData) : this(oid, rawData, skipCopy: false)
         {
-            Reset(oid, rawData);
         }
 
-        public AsnEncodedData(string oid, byte[] rawData)
+        public AsnEncodedData(string oid, byte[] rawData) : this(new Oid(oid), rawData, skipCopy: false)
         {
-            Reset(new Oid(oid), rawData);
         }
 
         /// <summary>
@@ -77,6 +77,21 @@ namespace System.Security.Cryptography
             Reset(new Oid(oid), rawData);
         }
 
+        internal AsnEncodedData(Oid? oid, byte[] rawData, bool skipCopy)
+        {
+            if (skipCopy)
+            {
+                ArgumentNullException.ThrowIfNull(rawData);
+                Oid = oid;
+                _rawData = rawData;
+            }
+            else
+            {
+                Reset(oid, rawData);
+            }
+
+        }
+
         public Oid? Oid
         {
             get => _oid;
@@ -99,8 +114,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual void CopyFrom(AsnEncodedData asnEncodedData!!)
+        public virtual void CopyFrom(AsnEncodedData asnEncodedData)
         {
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 

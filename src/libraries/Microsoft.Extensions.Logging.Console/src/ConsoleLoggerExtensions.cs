@@ -44,8 +44,10 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
-        public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure!!)
+        public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddConsole();
             builder.Services.Configure(configure);
 
@@ -103,9 +105,11 @@ namespace Microsoft.Extensions.Logging
         public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder) =>
             builder.AddFormatterWithName(ConsoleFormatterNames.Systemd);
 
-        internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure!!)
+        internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
         {
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddFormatterWithName(name);
             builder.Services.Configure(configure);
 
@@ -139,10 +143,12 @@ namespace Microsoft.Extensions.Logging
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure options 'TOptions' for custom formatter 'TFormatter'.</param>
         [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
-        public static ILoggingBuilder AddConsoleFormatter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this ILoggingBuilder builder, Action<TOptions> configure!!)
+        public static ILoggingBuilder AddConsoleFormatter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFormatter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this ILoggingBuilder builder, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
             where TFormatter : ConsoleFormatter
         {
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddConsoleFormatter<TFormatter, TOptions>();
             builder.Services.Configure(configure);
             return builder;

@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Attributes_TestData))]
-        public void DefineUninitalizedData_CreateGlobalFunctionsAlreadyCalled_ThrowsInvalidOperationException(FieldAttributes attributes)
+        public void DefineUninitializedData_CreateGlobalFunctionsAlreadyCalled_ThrowsInvalidOperationException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             module.CreateGlobalFunctions();

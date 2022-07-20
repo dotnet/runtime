@@ -22,8 +22,5 @@
     <PackageReference Include="System.CommandLine">
       <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>$(SystemReflectionMetadataVersion)</Version>
-    </PackageReference>
   </ItemGroup>
 </Project>

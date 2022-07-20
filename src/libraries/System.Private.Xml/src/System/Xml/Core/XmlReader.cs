@@ -1484,11 +1484,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            if (sb == null)
-                            {
-                                sb = new StringBuilder();
-                                sb.Append(value);
-                            }
+                            sb ??= new StringBuilder().Append(value);
                             sb.Append(Value);
                         }
                         break;
@@ -1634,8 +1630,10 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according for parsing XML from the given stream.
-        public static XmlReader Create(Stream input!!)
+        public static XmlReader Create(Stream input)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             // Avoid using XmlReader.Create(Stream, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             return new XmlTextReaderImpl(input, null, 0, XmlReaderSettings.s_defaultReaderSettings, null, string.Empty, null, false);
@@ -1662,8 +1660,10 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according for parsing XML from the given TextReader.
-        public static XmlReader Create(TextReader input!!)
+        public static XmlReader Create(TextReader input)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             // Avoid using XmlReader.Create(TextReader, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             return new XmlTextReaderImpl(input, XmlReaderSettings.s_defaultReaderSettings, string.Empty, null);
@@ -1699,8 +1699,10 @@ namespace System.Xml
         // !!!!!!
         // NOTE: This method is called via reflection from System.Data.Common.dll.
         // !!!!!!
-        internal static XmlReader CreateSqlReader(Stream input!!, XmlReaderSettings? settings, XmlParserContext inputContext)
+        internal static XmlReader CreateSqlReader(Stream input, XmlReaderSettings? settings, XmlParserContext inputContext)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
 
             XmlReader reader;
@@ -1708,13 +1710,8 @@ namespace System.Xml
             // allocate byte buffer
             byte[] bytes = new byte[CalcBufferSize(input)];
 
-            int byteCount = 0;
-            int read;
-            do
-            {
-                read = input.Read(bytes, byteCount, bytes.Length - byteCount);
-                byteCount += read;
-            } while (read > 0 && byteCount < 2);
+            int bytesToRead = Math.Min(bytes.Length, 2);
+            int byteCount = input.ReadAtLeast(bytes, bytesToRead, throwOnEndOfStream: false);
 
             // create text or binary XML reader depending on the stream first 2 bytes
             if (byteCount >= 2 && bytes[0] == 0xdf && bytes[1] == 0xff)

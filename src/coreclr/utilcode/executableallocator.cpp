@@ -195,7 +195,7 @@ void ExecutableAllocator::ResetLazyPreferredRangeHint()
     g_lazyPreferredRangeHint = g_lazyPreferredRangeStart;
 #endif
 }
-// Returns TRUE if p is is located in the memory area where we prefer to put
+// Returns TRUE if p is located in the memory area where we prefer to put
 // executable code and static fields. This area is typically close to the
 // coreclr library.
 bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
@@ -249,7 +249,8 @@ bool ExecutableAllocator::Initialize()
     {
         if (!VMToOSInterface::CreateDoubleMemoryMapper(&m_doubleMemoryMapperHandle, &m_maxExecutableCodeSize))
         {
-            return false;
+            g_isWXorXEnabled = false;
+            return true;
         }
 
         m_CriticalSection = ClrCreateCriticalSection(CrstExecutableAllocatorLock,CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -285,7 +286,7 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
         m_cachedMapping = pBlock;
         pBlock->refCount++;
     }
-#endif // ENABLE_CACHED_MAPPINGS    
+#endif // ENABLE_CACHED_MAPPINGS
 }
 
 void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
@@ -584,7 +585,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
             block->baseRX = result;
             AddRXBlock(block);
         }
-        else 
+        else
         {
             BackoutBlock(block, isFreeBlock);
         }
@@ -676,7 +677,7 @@ void* ExecutableAllocator::Reserve(size_t size)
                 block->baseRX = result;
                 AddRXBlock(block);
             }
-            else 
+            else
             {
                 BackoutBlock(block, isFreeBlock);
             }
@@ -727,7 +728,7 @@ void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
             block->baseRX = result;
             AddRXBlock(block);
         }
-        else 
+        else
         {
             BackoutBlock(block, isFreeBlock);
         }

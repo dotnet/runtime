@@ -2334,3 +2334,9 @@ ws2_32!WSCUnInstallNameSpace
 ws2_32!WSCUpdateProvider
 ws2_32!WSCWriteNameSpaceOrder
 ws2_32!WSCWriteProviderOrder
+ucrtbase!_aligned_malloc
+ucrtbase!_aligned_free
+ucrtbase!_aligned_realloc
+ucrtbase!calloc
+ucrtbase!free
+ucrtbase!malloc

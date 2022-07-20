@@ -4,7 +4,7 @@ Dump generation on Windows, Linux and other non-Windows platforms has several ch
 
 Our goal is to generate core dumps that are on par with WER (Windows Error Reporting) crash dumps on any supported Linux platform. To the very least we want to enable the following:
 - automatic generation of minimal size minidumps. The quality and quantity of the information contained in the dump should be on par with the information contained in a traditional Windows mini-dump.
-- simple configurabilty by the user (not _su_!).
+- simple configurability by the user (not _su_!).
 
 Our solution at this time is to intercept any unhandled exception in the PAL layer of the runtime and have coreclr itself trigger and generate a "mini" core dump.
 

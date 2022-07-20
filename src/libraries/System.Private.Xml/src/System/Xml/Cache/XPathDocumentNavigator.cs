@@ -126,11 +126,7 @@ namespace MS.Internal.Xml.Cache
                     }
                     else
                     {
-                        if (bldr == null)
-                        {
-                            bldr = new StringBuilder();
-                            bldr.Append(s);
-                        }
+                        bldr ??= new StringBuilder().Append(s);
                         bldr.Append(value);
                     }
                 }

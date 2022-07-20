@@ -122,9 +122,9 @@ namespace System.Net.Test.Common
         }
     }
 
-    public abstract class GenericLoopbackConnection : IDisposable
+    public abstract class GenericLoopbackConnection : IAsyncDisposable
     {
-        public abstract void Dispose();
+        public abstract ValueTask DisposeAsync();
 
         public abstract Task InitializeConnectionAsync();
 

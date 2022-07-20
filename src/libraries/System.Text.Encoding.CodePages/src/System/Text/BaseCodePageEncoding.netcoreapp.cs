@@ -1,18 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Buffers.Binary;
-using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
     internal abstract partial class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
-        internal static unsafe void ReadCodePageIndex(Stream stream, Span<byte> codePageIndex)
+        private static unsafe void ReadCodePageIndex(Stream stream, Span<byte> codePageIndex)
         {
-            stream.Read(codePageIndex);
+            Debug.Assert(stream is UnmanagedMemoryStream, "UnmanagedMemoryStream will read a full buffer on one call to Read.");
+            int bytesRead = stream.Read(codePageIndex);
+            Debug.Assert(bytesRead == codePageIndex.Length);
+
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageIndex[0])
@@ -21,7 +25,7 @@ namespace System.Text
                     char *pCodePageName = &p->CodePageName;
                     for (int i = 0; i < 16; i++)
                     {
-                            pCodePageName[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)pCodePageName[i]);
+                        pCodePageName[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)pCodePageName[i]);
                     }
                     p->CodePage = BinaryPrimitives.ReverseEndianness(p->CodePage);
                     p->ByteCount = BinaryPrimitives.ReverseEndianness(p->ByteCount);

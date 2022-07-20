@@ -17,7 +17,7 @@
 #define STDCALL
 #endif
 
-#define REDHAWK_API
+#define NATIVEAOT_API
 #define REDHAWK_CALLCONV FASTCALL
 
 #ifdef _MSC_VER
@@ -178,10 +178,10 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
 //
-#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype REDHAWK_CALLCONV _method _args
+#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #ifdef HOST_X86
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
-#define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype __cdecl _method _args
+#define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype __cdecl _method _args
 #else
 #define COOP_PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER
 #endif
@@ -249,5 +249,34 @@ typedef int32_t HRESULT;
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 #endif // !defined(_INC_WINDOWS)
 #endif // __GCENV_BASE_INCLUDED__
+
+// PAL Numbers
+// Used to ensure cross-compiler compatibility when declaring large
+// integer constants. 64-bit integer constants should be wrapped in the
+// declarations listed here.
+//
+// Each of the #defines here is wrapped to avoid conflicts with pal.h.
+
+#if defined(_MSC_VER)
+
+// MSVC's way of declaring large integer constants
+// If you define these in one step, without the _HELPER macros, you
+// get extra whitespace when composing these with other concatenating macros.
+#ifndef I64
+#define I64_HELPER(x) x ## i64
+#define I64(x)        I64_HELPER(x)
+#endif
+
+#else
+
+// GCC's way of declaring large integer constants
+// If you define these in one step, without the _HELPER macros, you
+// get extra whitespace when composing these with other concatenating macros.
+#ifndef I64
+#define I64_HELPER(x) x ## LL
+#define I64(x)        I64_HELPER(x)
+#endif
+
+#endif
 
 #endif // __COMMONMACROS_H__

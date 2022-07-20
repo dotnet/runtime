@@ -270,13 +270,16 @@ struct insGroup
 #define IGF_FUNCLET_PROLOG 0x0008 // this group belongs to a funclet prolog
 #define IGF_FUNCLET_EPILOG 0x0010 // this group belongs to a funclet epilog.
 #define IGF_EPILOG 0x0020         // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT 0x0040  // this IG is is a no-interrupt region (prolog, epilog, etc.)
+#define IGF_NOGCINTERRUPT 0x0040  // this IG is in a no-interrupt region (prolog, epilog, etc.)
 #define IGF_UPD_ISZ 0x0080        // some instruction sizes updated
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
 #define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
+                                  // without updating the IG's size/offsets.
+#define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -352,6 +355,16 @@ struct insGroup
     bool endsWithAlignInstr() const
     {
         return (igFlags & IGF_HAS_ALIGN) != 0;
+    }
+
+    //  hadAlignInstr: Checks if this IG was ever marked as aligned and later
+    //                 decided to not align. Sometimes, a loop is marked as not
+    //                 needing alignment, but the igSize was not adjusted immediately.
+    //                 This method is used during loopSize calculation, where we adjust
+    //                 the loop size by removed alignment bytes.
+    bool hadAlignInstr() const
+    {
+        return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
 }; // end of struct insGroup
@@ -510,7 +523,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -541,7 +554,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-#ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
+#ifdef DEBUG // This information is used in DEBUG builds for additional diagnostics
 
     struct instrDesc;
 
@@ -984,7 +997,7 @@ protected:
                 case IF_LARGELDC:
                     if (isVectorRegister(idReg1()))
                     {
-                        // adrp + ldr + fmov
+                        // (adrp + ldr + fmov) or (adrp + add + ld1)
                         size = 12;
                     }
                     else
@@ -1386,6 +1399,7 @@ protected:
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_50C 50.0f   // slower - 50 cycles
 #define PERFSCORE_THROUGHPUT_52C 52.0f   // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C 57.0f   // slower - 57 cycles
 #define PERFSCORE_THROUGHPUT_140C 140.0f // slower - 140 cycles
@@ -1521,13 +1535,21 @@ protected:
             BYTE* idjAddr; // address of jump ins (for patching)
         } idjTemp;
 
-        unsigned idjOffs : 30;    // Before jump emission, this is the byte offset within IG of the jump instruction.
-                                  // After emission, for forward jumps, this is the target offset -- in bytes from the
-                                  // beginning of the function -- of the target instruction of the jump, used to
-                                  // determine if this jump needs to be patched.
-        unsigned idjShort : 1;    // is the jump known to be a short  one?
-        unsigned idjKeepLong : 1; // should the jump be kept long? (used for
-                                  // hot to cold and cold to hot jumps)
+        // Before jump emission, this is the byte offset within IG of the jump instruction.
+        // After emission, for forward jumps, this is the target offset -- in bytes from the
+        // beginning of the function -- of the target instruction of the jump, used to
+        // determine if this jump needs to be patched.
+        unsigned idjOffs :
+#if defined(TARGET_XARCH)
+            29;
+        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+        // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+#else
+            30;
+#endif
+        unsigned idjShort : 1;    // is the jump known to be a short one?
+        unsigned idjKeepLong : 1; // should the jump be kept long? (used for hot to cold and cold to hot jumps)
     };
 
 #if FEATURE_LOOP_ALIGN
@@ -1553,6 +1575,7 @@ protected:
         void removeAlignFlags()
         {
             idaIG->igFlags &= ~IGF_HAS_ALIGN;
+            idaIG->igFlags |= IGF_REMOVED_ALIGN;
         }
     };
     void emitCheckAlignFitInCurIG(unsigned nAlignInstr);
@@ -1709,6 +1732,7 @@ protected:
     void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
     void emitDispIGlist(bool verbose = false);
     void emitDispGCinfo();
+    void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
     void emitDispInsAddr(BYTE* code);
@@ -1914,6 +1938,9 @@ public:
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
+    CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
@@ -1984,6 +2011,8 @@ private:
     instrDescJmp* emitJumpList;       // list of local jumps in method
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
+    bool          emitContainsRemovableJmpCandidates;
+    void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
     instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
@@ -2014,8 +2043,9 @@ private:
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
-    bool emitFwdJumps;   // forward jumps present?
-    bool emitNoGCIG;     // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitFwdJumps;         // forward jumps present?
+    unsigned emitNoGCRequestCount; // Count of number of nested "NO GC" region requests we have.
+    bool     emitNoGCIG;           // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
     bool emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new emitAdd
                          // instruction group.
 
@@ -2114,6 +2144,12 @@ private:
     void emitEnableGC();
 #endif // !defined(JIT32_GCENCODER)
 
+#if defined(TARGET_XARCH)
+    static bool emitAlignInstHasNoCode(instrDesc* id);
+    static bool emitInstHasNoCode(instrDesc* id);
+    static bool emitJmpInstHasNoCode(instrDesc* id);
+#endif
+
     void emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool extend = false);
@@ -2134,7 +2170,7 @@ private:
 #endif
 
     // Terminates any in-progress instruction group, making the current IG a new empty one.
-    // Mark this instruction group as having a label; return the the new instruction group.
+    // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.  The "isFinallyTarget" parameter indicates that the current location is
     // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
@@ -2332,6 +2368,11 @@ public:
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
     void emitSetFrameRangeArgs(int offsLo, int offsHi);
 
+    bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
+    }
+
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
@@ -2519,7 +2560,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
 #ifdef DEBUG
-    void emitDispDataSec(dataSecDsc* section);
+    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
 #endif
 
     /************************************************************************/
@@ -3308,38 +3349,6 @@ inline void emitter::emitNewIG()
 
     emitGenIG(ig);
 }
-
-#if !defined(JIT32_GCENCODER)
-// Start a new instruction group that is not interruptable
-inline void emitter::emitDisableGC()
-{
-    emitNoGCIG = true;
-
-    if (emitCurIGnonEmpty())
-    {
-        emitNxtIG(true);
-    }
-    else
-    {
-        emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
-    }
-}
-
-// Start a new instruction group that is interruptable
-inline void emitter::emitEnableGC()
-{
-    emitNoGCIG = false;
-
-    // The next time an instruction needs to be generated, force a new instruction group.
-    // It will be an emitAdd group in that case. Note that the next thing we see might be
-    // a label, which will force a non-emitAdd group.
-    //
-    // Note that we can't just create a new instruction group here, because we don't know
-    // if there are going to be any instructions added to it, and we don't support empty
-    // instruction groups.
-    emitForceNewIG = true;
-}
-#endif // !defined(JIT32_GCENCODER)
 
 /*****************************************************************************/
 #endif // _EMIT_H_

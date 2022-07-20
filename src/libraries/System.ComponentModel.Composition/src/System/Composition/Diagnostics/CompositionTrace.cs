@@ -12,8 +12,10 @@ namespace System.Composition.Diagnostics
 {
     internal static class CompositionTrace
     {
-        internal static void PartDefinitionResurrected(ComposablePartDefinition definition!!)
+        internal static void PartDefinitionResurrected(ComposablePartDefinition definition)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Rejection_DefinitionResurrected,
@@ -22,8 +24,11 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void PartDefinitionRejected(ComposablePartDefinition definition!!, ChangeRejectedException exception!!)
+        internal static void PartDefinitionRejected(ComposablePartDefinition definition, ChangeRejectedException exception)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(exception);
+
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Rejection_DefinitionRejected,
@@ -33,8 +38,12 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void AssemblyLoadFailed(DirectoryCatalog catalog!!, string fileName!!, Exception exception!!)
+        internal static void AssemblyLoadFailed(DirectoryCatalog catalog, string fileName, Exception exception)
         {
+            ArgumentNullException.ThrowIfNull(catalog);
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(exception);
+
             if (fileName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(fileName)), nameof(fileName));
@@ -50,8 +59,10 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void DefinitionMarkedWithPartNotDiscoverableAttribute(Type type!!)
+        internal static void DefinitionMarkedWithPartNotDiscoverableAttribute(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Discovery_DefinitionMarkedWithPartNotDiscoverableAttribute,
@@ -60,8 +71,11 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void DefinitionMismatchedExportArity(Type type!!, MemberInfo member!!)
+        internal static void DefinitionMismatchedExportArity(Type type, MemberInfo member)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(member);
+
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Discovery_DefinitionMismatchedExportArity,
@@ -70,8 +84,10 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void DefinitionContainsNoExports(Type type!!)
+        internal static void DefinitionContainsNoExports(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Discovery_DefinitionContainsNoExports,
@@ -80,8 +96,10 @@ namespace System.Composition.Diagnostics
             }
         }
 
-        internal static void MemberMarkedWithMultipleImportAndImportMany(ReflectionItem item!!)
+        internal static void MemberMarkedWithMultipleImportAndImportMany(ReflectionItem item)
         {
+            ArgumentNullException.ThrowIfNull(item);
+
             if (CompositionTraceSource.CanWriteError)
             {
                 CompositionTraceSource.WriteError(CompositionTraceId.Discovery_MemberMarkedWithMultipleImportAndImportMany,

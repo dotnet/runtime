@@ -429,22 +429,14 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (strcmp (m_class_get_name (klass), "CategoryAttribute") || mono_method_signature_internal (centry->ctor)->param_count != 1)
 			continue;
 
-		gpointer *typed_args, *named_args;
-		int num_named_args;
-		CattrNamedArg *arginfo;
-
-		mono_reflection_create_custom_attr_data_args_noalloc (
-			mono_defaults.corlib, centry->ctor, centry->data, centry->data_size,
-			&typed_args, &named_args, &num_named_args, &arginfo, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, centry->ctor, centry->data, centry->data_size, error);
 		if (!is_ok (error))
 			continue;
 
-		const char *arg = (const char*)typed_args [0];
+		const char *arg = (const char*)decoded_args->typed_args[0]->value.primitive;
 		mono_metadata_decode_value (arg, &arg);
 		char *utf8_str = (char*)arg; //this points into image memory that is constant
-		g_free (typed_args);
-		g_free (named_args);
-		g_free (arginfo);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 		if (interp && !strcmp (utf8_str, "!INTERPRETER")) {
 			g_print ("skip %s...\n", method->name);
@@ -478,7 +470,6 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	int result, expected, failed, cfailed, run, code_size;
 	double elapsed, comp_time, start_time;
 	char *n;
-	int i;
 
 	mono_set_defaults (verbose, opt_flags);
 	n = mono_opt_descr (opt_flags);
@@ -497,7 +488,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	g_timer_start (timer);
 	if (mini_stats_fd)
 		fprintf (mini_stats_fd, "[");
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -597,7 +588,6 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 static int
 mini_regression (MonoImage *image, int verbose, int *total_run)
 {
-	guint32 i, opt;
 	MonoMethod *method;
 	char *n;
 	GTimer *timer = g_timer_new ();
@@ -611,7 +601,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
 
 		fprintf (mini_stats_fd, "$graph->set_legend(qw(");
-		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); opt++) {
+		for (guint32 opt = 0; opt < G_N_ELEMENTS (opt_sets); opt++) {
 			guint32 opt_flags = opt_sets [opt];
 			n = mono_opt_descr (opt_flags);
 			if (!n [0])
@@ -629,7 +619,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	}
 
 	/* load the metadata */
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -672,7 +662,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 				return total;
 		}
 	} else {
-		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
+		for (guint32 opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
 			/* aot-tests.cs need OPT_INTRINS enabled */
 			if (!strcmp ("aot-tests", image->assembly_name))
 				if (!(opt_sets [opt] & MONO_OPT_INTRINS))
@@ -731,7 +721,6 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 {
 	int result, expected, failed, cfailed, run;
 	double elapsed, transform_time;
-	int i;
 	MonoObject *result_obj;
 	int local_skip_index = 0;
 
@@ -750,7 +739,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	mini_get_interp_callbacks ()->invalidate_transformed ();
 
 	g_timer_start (timer);
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -811,11 +800,10 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 {
 	MonoMethod *method;
 	GTimer *timer = g_timer_new ();
-	guint32 i;
 	int total;
 
 	/* load the metadata */
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -1214,9 +1202,9 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 	MonoImage *image = mono_assembly_get_image_internal (ass);
 	MonoMethod *method;
 	MonoCompile *cfg;
-	int i, count = 0, fail_count = 0;
+	int count = 0, fail_count = 0;
 
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		MonoMethodSignature *sig;
@@ -1470,7 +1458,7 @@ load_agent (MonoDomain *domain, char *desc)
 	MonoImageOpenStatus open_status;
 
 	if (col) {
-		agent = (char *)g_memdup (desc, col - desc + 1);
+		agent = (char *)g_memdup (desc, GPTRDIFF_TO_UINT (col - desc + 1));
 		agent [col - desc] = '\0';
 		args = col + 1;
 	} else {
@@ -2070,7 +2058,6 @@ mono_main (int argc, char* argv[])
 	int mini_verbose_level = 0;
 	char *trace_options = NULL;
 	char *aot_options = NULL;
-	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
 	char *extra_bindings_config_file = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
@@ -2306,7 +2293,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
 		} else if (strncmp (argv [i], "--runtime=", 10) == 0) {
-			forced_version = &argv [i][10];
+			// ignore
 		} else if (strcmp (argv [i], "--jitmap") == 0) {
 			mono_enable_jit_map ();
 #ifdef ENABLE_JIT_DUMP
@@ -2393,8 +2380,7 @@ mono_main (int argc, char* argv[])
 			mono_gc_set_desktop_mode ();
 			/* Put more desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
-			mono_config_set_server_mode (TRUE);
-			/* Put more server-specific optimizations here */
+			// ignore
 		} else if (strcmp (argv [i], "--inside-mdb") == 0) {
 			action = DO_DEBUGGER;
 		} else if (strncmp (argv [i], "--wapi=", 7) == 0) {
@@ -2521,18 +2507,11 @@ mono_main (int argc, char* argv[])
 #endif
 #endif
 
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
-		g_set_prgname (argv[i]);
-	}
-
 	mono_counters_init ();
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 #endif
-
-	/* Set rootdir before loading config */
-	mono_set_rootdir ();
 
 	if (trace_options != NULL){
 		/*
@@ -2565,7 +2544,7 @@ mono_main (int argc, char* argv[])
 
 	mono_set_defaults (mini_verbose_level, opt);
 
-	domain = mini_init (argv [i], forced_version);
+	domain = mini_init (argv [i]);
 
 	mono_gc_set_stack_end (&domain);
 
@@ -2643,8 +2622,6 @@ mono_main (int argc, char* argv[])
 
 	if (mono_compile_aot || action == DO_EXEC) {
 		const char *version_error;
-
-		//mono_set_rootdir ();
 
 		version_error = mono_check_corlib_version ();
 		if (version_error) {
@@ -2796,47 +2773,41 @@ mono_main (int argc, char* argv[])
 
 /**
  * mono_jit_init:
+ * \param root_domain_name Friendly name to give to the initial domain
+ *
+ * \returns the \c MonoDomain representing the domain where the assembly
+ * was loaded.
  */
 MonoDomain *
-mono_jit_init (const char *file)
+mono_jit_init (const char *root_domain_name)
 {
-	MonoDomain *ret = mini_init (file, NULL);
+	MonoDomain *ret = mini_init (root_domain_name);
 	MONO_ENTER_GC_SAFE_UNBALANCED; //once it is not executing any managed code yet, it's safe to run the gc
 	return ret;
 }
 
 /**
  * mono_jit_init_version:
- * \param domain_name the name of the root domain
- * \param runtime_version the version of the runtime to load
+ * \param root_domain_name Friendly name to give to the initial domain
+ * \param runtime_version ignored
  *
- * Use this version when you want to force a particular runtime
- * version to be used.  By default Mono will pick the runtime that is
- * referenced by the initial assembly (specified in \p file), this
- * routine allows programmers to specify the actual runtime to be used
- * as the initial runtime is inherited by all future assemblies loaded
- * (since Mono does not support having more than one mscorlib runtime
- * loaded at once).
- *
- * The \p runtime_version can be one of these strings: "v4.0.30319" for
- * desktop, "mobile" for mobile or "moonlight" for Silverlight compat.
- * If an unrecognized string is input, the vm will default to desktop.
+ * Deprecated. Use mono_jit_init instead.
  *
  * \returns the \c MonoDomain representing the domain where the assembly
  * was loaded.
  */
 MonoDomain *
-mono_jit_init_version (const char *domain_name, const char *runtime_version)
+mono_jit_init_version (const char *root_domain_name, const char *runtime_version)
 {
-	MonoDomain *ret = mini_init (domain_name, runtime_version);
+	MonoDomain *ret = mini_init (root_domain_name);
 	MONO_ENTER_GC_SAFE_UNBALANCED; //once it is not executing any managed code yet, it's safe to run the gc
 	return ret;
 }
 
 MonoDomain *
-mono_jit_init_version_for_test_only (const char *domain_name, const char *runtime_version)
+mono_jit_init_version_for_test_only (const char *root_domain_name, const char *runtime_version)
 {
-	MonoDomain *ret = mini_init (domain_name, runtime_version);
+	MonoDomain *ret = mini_init (root_domain_name);
 	return ret;
 }
 
@@ -3048,7 +3019,6 @@ merge_parsed_options (GPtrArray *parsed_options, int *ref_argc, char **ref_argv 
 		int new_argc = parsed_options->len + argc;
 		char **new_argv = g_new (char *, new_argc + 1);
 		guint i;
-		guint j;
 
 		new_argv [0] = argv [0];
 
@@ -3059,10 +3029,10 @@ merge_parsed_options (GPtrArray *parsed_options, int *ref_argc, char **ref_argv 
 				new_argv [i+1] = (char *)g_ptr_array_index (parsed_options, i);
 			i++;
 		}
-		for (j = 1; j < argc; j++)
+		for (int j = 1; j < argc; j++)
 			new_argv [i++] = argv [j];
 		if (!prepend){
-			for (j = 0; j < parsed_options->len; j++)
+			for (guint j = 0; j < parsed_options->len; j++)
 				new_argv [i++] = (char *)g_ptr_array_index (parsed_options, j);
 		}
 		new_argv [i] = NULL;

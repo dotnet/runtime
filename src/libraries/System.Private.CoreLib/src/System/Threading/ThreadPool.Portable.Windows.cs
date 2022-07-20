@@ -37,8 +37,10 @@ namespace System.Threading
         }
 
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(SafeHandle osHandle!!)
+        public static bool BindHandle(SafeHandle osHandle)
         {
+            ArgumentNullException.ThrowIfNull(osHandle);
+
             bool mustReleaseSafeHandle = false;
             try
             {

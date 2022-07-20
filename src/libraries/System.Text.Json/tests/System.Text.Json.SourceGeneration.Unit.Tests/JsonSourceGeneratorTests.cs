@@ -324,7 +324,7 @@ namespace System.Text.Json.Serialization
 
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags,  Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
 
         [Fact]
@@ -450,6 +450,7 @@ namespace System.Text.Json.Serialization
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public void Record()
         {
             // Compile the referenced assembly first.
@@ -511,6 +512,7 @@ namespace System.Text.Json.Serialization
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public void RecordInExternalAssembly()
         {
             // Compile the referenced assembly first.
@@ -645,7 +647,7 @@ namespace System.Text.Json.Serialization
                 receivedFields = fields.ToArray();
                 receivedProperties = props.ToArray();
             }
-                
+
             string[] receivedMethods = type.GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();
 
             Array.Sort(receivedFields);
@@ -720,7 +722,7 @@ namespace System.Text.Json.Serialization
         [Fact]
         public static void NoWarningsDueToObsoleteMembers()
         {
-                string source = @"using System;
+            string source = @"using System;
 using System.Text.Json.Serialization;
 
 namespace Test
@@ -736,6 +738,66 @@ namespace Test
 }
 ";
 
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out _, generator);
+            ImmutableArray<Diagnostic> generatorDiags = newCompilation.GetDiagnostics();
+
+            // No diagnostics expected.
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        public static void NoErrorsWhenUsingReservedCSharpKeywords()
+        {
+            string source = @"using System;
+using System.Text.Json.Serialization;
+
+namespace Test
+{
+    [JsonSerializable(typeof(ClassWithPropertiesAndFieldsThatAreReservedKeywords))]
+    public partial class JsonContext : JsonSerializerContext { }
+
+    public class ClassWithPropertiesAndFieldsThatAreReservedKeywords
+    {
+        public int @class;
+        public string @event { get; set; }
+    }
+}
+";
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out _, generator);
+            ImmutableArray<Diagnostic> generatorDiags = newCompilation.GetDiagnostics();
+
+            // No diagnostics expected.
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        public static void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
+        {
+            string source = @"using System;
+using System.Text.Json.Serialization;
+
+namespace Test
+{
+    [JsonSerializable(typeof(ClassWithPropertyNameThatIsAReservedKeyword))]
+    public partial class JsonContext : JsonSerializerContext { }
+
+    public class ClassWithPropertyNameThatIsAReservedKeyword
+    {
+        [JsonIgnore]
+        public string @event { get; set; }
+    }
+}
+";
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGenerator generator = new JsonSourceGenerator();
 

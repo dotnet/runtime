@@ -17,7 +17,9 @@ namespace Internal.Reflection.Execution
             if ((specialConstraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
             {
                 if (!typeArg.IsValueType)
+                {
                     return false;
+                }
                 else
                 {
                     // the type argument is a value type, however if it is any kind of Nullable we want to fail
@@ -38,6 +40,9 @@ namespace Internal.Reflection.Execution
                 if (!typeArg.HasExplicitOrImplicitPublicDefaultConstructor())
                     return false;
             }
+
+            if (typeArg.IsByRefLike && (specialConstraints & (GenericParameterAttributes)0x20 /* GenericParameterAttributes.AcceptByRefLike */) == 0)
+                return false;
 
             // Now check general subtype constraints
             foreach (var constraint in genericVariable.GetGenericParameterConstraints())
@@ -82,8 +87,7 @@ namespace Internal.Reflection.Execution
 
                 if (!formalArg.SatisfiesConstraints(typeContext, actualArg))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_ConstraintFailed, actualArg, definition.ToString(), formalArg),
-                        string.Format("GenericArguments[{0}]", i));
+                    throw new ArgumentException(SR.Format(SR.Argument_ConstraintFailed, actualArg, definition.ToString(), formalArg));
                 }
             }
         }

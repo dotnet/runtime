@@ -56,7 +56,7 @@ inline ULONG PEAssembly::AddRef()
     }
     CONTRACTL_END;
 
-    return FastInterlockIncrement(&m_refCount);
+    return InterlockedIncrement(&m_refCount);
 }
 
 inline ULONG PEAssembly::Release()
@@ -70,7 +70,7 @@ inline ULONG PEAssembly::Release()
     }
     CONTRACT_END;
 
-    LONG result = FastInterlockDecrement(&m_refCount);
+    LONG result = InterlockedDecrement(&m_refCount);
     _ASSERTE(result >= 0);
     if (result == 0)
         delete this;
@@ -751,7 +751,7 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 #ifndef DACCESS_COMPILE
     AssemblySpec spec;
     spec.InitializeSpec(this);
-    spec.GetFileOrDisplayName(flags, result);
+    spec.GetDisplayName(flags, result);
 #else
     DacNotImpl();
 #endif //DACCESS_COMPILE

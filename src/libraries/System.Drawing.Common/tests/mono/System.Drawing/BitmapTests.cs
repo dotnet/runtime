@@ -45,8 +45,6 @@ using Xunit;
 
 namespace MonoTests.System.Drawing
 {
-
-    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/37082", TestPlatforms.AnyUnix, ~RuntimeConfiguration.Release)]
     public class TestBitmap
     {
 
@@ -503,34 +501,6 @@ namespace MonoTests.System.Drawing
                 Assert.Equal("E63204779B566ED01162B90B49BD9EE9", RotateBmp(bmp, RotateFlipType.Rotate90FlipX));
                 Assert.Equal("B1ECB17B5093E13D04FF55CFCF7763C9", RotateBmp(bmp, RotateFlipType.Rotate180FlipX));
                 Assert.Equal("71A173882C16755D86F4BC2653237425", RotateBmp(bmp, RotateFlipType.Rotate270FlipX));
-            }
-        }
-
-        // Rotate 1- and 4-bit bitmaps in different ways and check the
-        // resulting pixels using MD5
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipNone, "64AE60858A02228F7B1B18C7812FB683")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipX, "353E937CFF31B1BF6C3DD0A031ACB54D")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipXY, "A4DAF507C92BDE10626BC7B34FEFE5D1")]
-        [InlineData("1bit.png", RotateFlipType.Rotate180FlipY, "23947CE822C1DDE6BEA69C01F8D0D984")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipNone, "E96D3390938350F9DE2608C436442452")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipX, "AEA18A770A845E25B6A8CE28DD6DCB2E")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipXY, "C0975EAFD2FC1CC9CC7AF20B92FC9F15")]
-        [InlineData("1bit.png", RotateFlipType.Rotate270FlipY, "BE45F685BDEBD7079AA1B2CBA467234E")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipNone, "27CF5E9CE70BE9EBC47FB996721B95DC")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipX, "05A77EDDCDF20D5B0AC0169E95D7D778")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipXY, "3CC874B571902366AACED5D619E87D85")]
-        [InlineData("4bit.png", RotateFlipType.Rotate180FlipY, "545876C99ACF833E69FBFFBF4360345D")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipNone, "A919CCB8F97CAD7DC1F01026D11A5D15")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipX, "B6B6245796C836923ABAABDF368B2983")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipXY, "8DE25C7E1BE4A3B535DB5D83198D83E3")]
-        [InlineData("4bit.png", RotateFlipType.Rotate270FlipY, "5DB56687757CDEFC52D89C77CA92239B")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Rotate1bit4bit(string file, RotateFlipType type, string md5)
-        {
-            using (Bitmap bmp = new Bitmap(Helpers.GetTestBitmapPath(file)))
-            {
-                Assert.Equal(md5, RotateIndexedBmp(bmp, type));
             }
         }
 

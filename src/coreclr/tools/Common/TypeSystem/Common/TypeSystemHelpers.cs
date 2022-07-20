@@ -193,7 +193,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="type"/>'
-        /// that implements the the method.
+        /// that implements the method.
         /// </summary>
         public static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
         {

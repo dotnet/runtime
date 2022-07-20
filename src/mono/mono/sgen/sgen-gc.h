@@ -343,8 +343,6 @@ enum {
 	INTERNAL_MEM_WORKER_DATA,
 	INTERNAL_MEM_THREAD_POOL_JOB,
 	INTERNAL_MEM_BRIDGE_DATA,
-	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE,
-	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_BRIDGE_HASH_TABLE,
 	INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE,
@@ -849,7 +847,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 		obj = (GCObject*)forwarded;
 	}
 
-	return sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
+	return (guint)sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER

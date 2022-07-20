@@ -304,7 +304,7 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 //     ContextRecord - Supplies the address of a context record.
 //
 //     HandlerData - Supplies a pointer to a variable that receives a pointer
-//         the the language handler data.
+//         the language handler data.
 //
 //     EstablisherFrame - Supplies a pointer to a variable that receives the
 //         the establisher frame pointer value.
@@ -794,7 +794,7 @@ Return Value:
                     break;
 
                     //
-                    // Establish the the frame pointer register.
+                    // Establish the frame pointer register.
                     //
                     // The operation information is not used.
                     //
@@ -807,7 +807,7 @@ Return Value:
 #ifdef TARGET_UNIX
 
                     //
-                    // Establish the the frame pointer register using a large size displacement.
+                    // Establish the frame pointer register using a large size displacement.
                     // UNWIND_INFO.FrameOffset must be 15 (the maximum value, corresponding to a scaled
                     // offset of 15 * 16 == 240). The next two codes contain a 32-bit offset, which
                     // is also scaled by 16, since the stack must remain 16-bit aligned.
@@ -1054,7 +1054,7 @@ Arguments:
 
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     EstablisherFrame - Supplies a pointer to a variable that receives the
         the establisher frame pointer value.

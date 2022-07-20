@@ -81,7 +81,7 @@ mono_100ns_ticks (void)
 	QueryPerformanceCounter (&value);
 	cur_time = value.QuadPart;
 	/* we use unsigned numbers and return the difference to avoid overflows */
-	return (cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart;
+	return GDOUBLE_TO_INT64 ((cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart);
 }
 
 /* Returns the number of 100ns ticks since Jan 1, 1601, UTC timezone */

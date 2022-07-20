@@ -9,8 +9,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 {
     public abstract class PatternContextRagged : PatternContext<PatternContextRagged.FrameData>
     {
-        public PatternContextRagged(IRaggedPattern pattern!!)
+        public PatternContextRagged(IRaggedPattern pattern)
         {
+            ThrowHelper.ThrowIfNull(pattern);
+
             Pattern = pattern;
         }
 

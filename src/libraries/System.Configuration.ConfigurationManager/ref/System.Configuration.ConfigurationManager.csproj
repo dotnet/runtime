@@ -1,30 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
-  <ItemGroup >
+
+  <ItemGroup>
     <Compile Include="System.Configuration.ConfigurationManager.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
     <Compile Include="System.Configuration.ConfigurationManager.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Xml.ReaderWriter" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
   </ItemGroup>

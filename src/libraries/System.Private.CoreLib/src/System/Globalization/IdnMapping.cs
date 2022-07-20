@@ -56,17 +56,21 @@ namespace System.Globalization
         public string GetAscii(string unicode) =>
             GetAscii(unicode, 0);
 
-        public string GetAscii(string unicode!!, int index)
+        public string GetAscii(string unicode, int index)
         {
+            ArgumentNullException.ThrowIfNull(unicode);
+
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
-        public string GetAscii(string unicode!!, int index, int count)
+        public string GetAscii(string unicode, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(unicode);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > unicode.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > unicode.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(unicode), SR.ArgumentOutOfRange_IndexCountBuffer);
 
@@ -99,17 +103,21 @@ namespace System.Globalization
         public string GetUnicode(string ascii) =>
             GetUnicode(ascii, 0);
 
-        public string GetUnicode(string ascii!!, int index)
+        public string GetUnicode(string ascii, int index)
         {
+            ArgumentNullException.ThrowIfNull(ascii);
+
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
-        public string GetUnicode(string ascii!!, int index, int count)
+        public string GetUnicode(string ascii, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(ascii);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > ascii.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > ascii.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(ascii), SR.ArgumentOutOfRange_IndexCountBuffer);
 
@@ -649,7 +657,7 @@ namespace System.Globalization
                                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
 
                             // When appending make sure they get lower cased
-                            output.Append((char)(ascii[copyAscii] >= 'A' && ascii[copyAscii] <= 'Z' ? ascii[copyAscii] - 'A' + 'a' : ascii[copyAscii]));
+                            output.Append((char)(char.IsAsciiLetterUpper(ascii[copyAscii]) ? ascii[copyAscii] - 'A' + 'a' : ascii[copyAscii]));
                         }
                     }
 
@@ -809,14 +817,14 @@ namespace System.Globalization
 
         private static int DecodeDigit(char cp)
         {
-            if (cp >= '0' && cp <= '9')
+            if (char.IsAsciiDigit(cp))
                 return cp - '0' + 26;
 
             // Two flavors for case differences
-            if (cp >= 'a' && cp <= 'z')
+            if (char.IsAsciiLetterLower(cp))
                 return cp - 'a';
 
-            if (cp >= 'A' && cp <= 'Z')
+            if (char.IsAsciiLetterUpper(cp))
                 return cp - 'A';
 
             // Expected 0-9, A-Z or a-z, everything else is illegal
@@ -848,15 +856,11 @@ namespace System.Globalization
 
         private static char EncodeBasic(char bcp)
         {
-            if (HasUpperCaseFlag(bcp))
+            if (char.IsAsciiLetterUpper(bcp))
                 bcp += (char)('a' - 'A');
 
             return bcp;
         }
-
-        // Return whether a punycode code point is flagged as being upper case.
-        private static bool HasUpperCaseFlag(char punychar) =>
-            punychar >= 'A' && punychar <= 'Z';
 
         /* EncodeDigit(d,flag) returns the basic code point whose value      */
         /* (when used for representing integers) is d, which needs to be in   */

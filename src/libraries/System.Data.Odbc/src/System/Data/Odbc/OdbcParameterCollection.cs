@@ -64,7 +64,7 @@ namespace System.Data.Odbc
         }
 
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
-        [ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
+        [Obsolete("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public OdbcParameter Add(string? parameterName, object? value)
         {
             // MDAC 59206

@@ -476,10 +476,12 @@ namespace System.Drawing.Drawing2D
 
         public void MultiplyTransform(Matrix matrix) => MultiplyTransform(matrix, MatrixOrder.Prepend);
 
-        public void MultiplyTransform(Matrix matrix!!, MatrixOrder order)
+        public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
-            // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
+            // with the libgdiplus backend. Simulate a nop for compatibility with GDI+.
             if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
 

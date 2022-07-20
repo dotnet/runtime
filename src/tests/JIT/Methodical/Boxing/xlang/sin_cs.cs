@@ -1,4 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
+using Xunit;
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace SinCalc_against_sinlib_cs
@@ -6,9 +7,10 @@ namespace SinCalc_against_sinlib_cs
     using System;
     using SinCalcLib;
 
-    class SinCalc
+    public class SinCalc
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             object i;
             object Angle;

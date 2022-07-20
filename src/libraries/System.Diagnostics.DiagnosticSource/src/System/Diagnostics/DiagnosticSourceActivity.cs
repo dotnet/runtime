@@ -71,7 +71,7 @@ namespace System.Diagnostics
         /// Note that this callout is rarely used at instrumentation sites (only those sites
         /// that are on the 'boundry' of the process), and the instrumentation site will implement
         /// some default policy (it sets the activity in SOME way), and so this method does not
-        /// need to be overriden if that default policy is fine.   Thus this is call should
+        /// need to be overridden if that default policy is fine.   Thus this is call should
         /// be used rare (but often important) cases.
         ///
         /// Note that the type of 'payload' is typed as object here, but for any

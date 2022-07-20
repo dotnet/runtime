@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -12,10 +12,16 @@
              Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs"
              Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs"
+             Link="Common\System\IO\Compression\CRC.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs"
+             Link="Common\System\IO\Compression\FileData.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs"
              Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs"
              Link="Common\System\IO\Compression\StreamHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
+         Link="Common\System\IO\Compression\ZipTestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

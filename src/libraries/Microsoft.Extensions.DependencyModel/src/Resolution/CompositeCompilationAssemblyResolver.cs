@@ -10,8 +10,10 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         private readonly ICompilationAssemblyResolver[] _resolvers;
 
-        public CompositeCompilationAssemblyResolver(ICompilationAssemblyResolver[] resolvers!!)
+        public CompositeCompilationAssemblyResolver(ICompilationAssemblyResolver[] resolvers)
         {
+            ThrowHelper.ThrowIfNull(resolvers);
+
             _resolvers = resolvers;
         }
 

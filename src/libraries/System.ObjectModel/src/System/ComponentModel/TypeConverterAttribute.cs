@@ -32,8 +32,10 @@ namespace System.ComponentModel
         /// class, using the specified type as the data converter for the object this attribute
         /// is bound to.
         /// </summary>
-        public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type!!)
+        public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             ConverterTypeName = type.AssemblyQualifiedName!;
         }
 
@@ -42,8 +44,10 @@ namespace System.ComponentModel
         /// class, using the specified type name as the data converter for the object this attribute
         /// is bound to.
         /// </summary>
-        public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName!!)
+        public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+
             ConverterTypeName = typeName;
         }
 

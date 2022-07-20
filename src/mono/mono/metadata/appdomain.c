@@ -128,10 +128,10 @@ mono_install_runtime_load (MonoLoadFunc func)
 }
 
 MonoDomain*
-mono_runtime_load (const char *filename, const char *runtime_version)
+mono_runtime_load (const char *root_domain_name)
 {
 	g_assert (load_function);
-	return load_function (filename, runtime_version);
+	return load_function (root_domain_name);
 }
 
 /**
@@ -939,7 +939,7 @@ runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **
 			g_assert (*file_map);
 			file_len = mono_file_map_size (*file_map);
 			g_assert (file_len > 0);
-			buffer = (char *)mono_file_map (file_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
+			buffer = (char *)mono_file_map (GUINT64_TO_SIZE (file_len), MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
 			g_assert (buffer);
 			return buffer;
 		}

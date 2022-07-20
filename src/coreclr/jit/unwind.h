@@ -70,7 +70,7 @@ class UnwindEpilogInfo;
 class UnwindFragmentInfo;
 class UnwindInfo;
 
-// UnwindBase: A base class shared by the the unwind classes that require
+// UnwindBase: A base class shared by the unwind classes that require
 // a Compiler* for memory allocation.
 
 class UnwindBase
@@ -90,7 +90,7 @@ protected:
     Compiler* uwiComp;
 };
 
-// UnwindCodesBase: A base class shared by the the classes used to represent the prolog
+// UnwindCodesBase: A base class shared by the classes used to represent the prolog
 // and epilog unwind codes.
 
 class UnwindCodesBase

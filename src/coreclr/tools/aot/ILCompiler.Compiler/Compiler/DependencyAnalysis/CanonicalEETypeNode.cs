@@ -77,6 +77,11 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
 
+        protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);
+        }
+
         protected override int GCDescSize
         {
             get

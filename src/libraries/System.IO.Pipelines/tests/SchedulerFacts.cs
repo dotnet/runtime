@@ -68,7 +68,7 @@ namespace System.IO.Pipelines.Tests
                 Task reading = doRead();
 
                 PipeWriter buffer = pipe.Writer;
-                buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+                buffer.Write("Hello World"u8.ToArray());
 
                 // Don't run code on our sync context (we just want to make sure the callbacks)
                 // are scheduled on the sync context
@@ -112,7 +112,7 @@ namespace System.IO.Pipelines.Tests
                 Task reading = doRead();
 
                 PipeWriter buffer = pipe.Writer;
-                buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+                buffer.Write("Hello World"u8.ToArray());
 
                 // Don't run code on our sync context (we just want to make sure the callbacks)
                 // are scheduled on the sync context
@@ -160,7 +160,7 @@ namespace System.IO.Pipelines.Tests
                 Task reading = doRead();
 
                 PipeWriter buffer = pipe.Writer;
-                buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+                buffer.Write("Hello World"u8.ToArray());
 
                 // We don't want to run any code on our fake sync context
                 await buffer.FlushAsync().ConfigureAwait(false);
@@ -201,7 +201,7 @@ namespace System.IO.Pipelines.Tests
             Task reading = ExecuteOnNonThreadPoolThread(doRead);
 
             PipeWriter buffer = pipe.Writer;
-            buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+            buffer.Write("Hello World"u8.ToArray());
             await buffer.FlushAsync();
 
             pipe.Writer.Complete();
@@ -480,7 +480,7 @@ namespace System.IO.Pipelines.Tests
                     Task reading = ExecuteOnNonThreadPoolThread(doRead);
 
                     PipeWriter buffer = pipe.Writer;
-                    buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+                    buffer.Write("Hello World"u8.ToArray());
                     await buffer.FlushAsync();
 
                     await reading;
@@ -525,7 +525,7 @@ namespace System.IO.Pipelines.Tests
             null);
 #pragma warning restore CS0618 // Type or member is obsolete
 
-            buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+            buffer.Write("Hello World"u8.ToArray());
             await buffer.FlushAsync();
 
             await reading;

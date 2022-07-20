@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Drawing.Imaging;
+using System.Drawing.Internal;
 using System.IO;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -14,7 +15,7 @@ namespace System.Drawing
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    public sealed partial class Bitmap : Image
+    public sealed class Bitmap : Image
     {
         private static readonly Color s_defaultTransparentColor = Color.LightGray;
 
@@ -53,12 +54,37 @@ namespace System.Drawing
         {
         }
 
+        public unsafe Bitmap(Stream stream, bool useIcm)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+
+            IntPtr bitmap = IntPtr.Zero;
+            if (useIcm)
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStreamICM(streamWrapper.Ptr, &bitmap));
+            }
+            else
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStream(streamWrapper.Ptr, &bitmap));
+            }
+
+            ValidateImage(bitmap);
+
+            SetNativeImage(bitmap);
+            EnsureSave(this, null, stream);
+        }
+
         public Bitmap(Type type, string resource) : this(GetResourceStream(type, resource))
         {
         }
 
-        private static Stream GetResourceStream(Type type!!, string resource!!)
+        private static Stream GetResourceStream(Type type, string resource)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(resource);
+
             Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {
@@ -72,8 +98,10 @@ namespace System.Drawing
         {
         }
 
-        public Bitmap(int width, int height, Graphics g!!)
+        public Bitmap(int width, int height, Graphics g)
         {
+            ArgumentNullException.ThrowIfNull(g);
+
             IntPtr bitmap;
             int status = Gdip.GdipCreateBitmapFromGraphics(width, height, new HandleRef(g, g.NativeGraphics), out bitmap);
             Gdip.CheckStatus(status);
@@ -107,8 +135,10 @@ namespace System.Drawing
         {
         }
 
-        public Bitmap(Image original!!, int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
+        public Bitmap(Image original, int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
         {
+            ArgumentNullException.ThrowIfNull(original);
+
             using (Graphics g = Graphics.FromImage(this))
             {
                 g.Clear(Color.Transparent);

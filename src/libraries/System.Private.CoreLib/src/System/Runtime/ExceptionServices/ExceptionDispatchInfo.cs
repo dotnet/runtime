@@ -27,8 +27,12 @@ namespace System.Runtime.ExceptionServices
         // This static method is used to create an instance of ExceptionDispatchInfo for
         // the specified exception object and save all the required details that maybe
         // needed to be propagated when the exception is "rethrown" on a different thread.
-        public static ExceptionDispatchInfo Capture(Exception source!!) =>
-            new ExceptionDispatchInfo(source);
+        public static ExceptionDispatchInfo Capture(Exception source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return new ExceptionDispatchInfo(source);
+        }
 
         // Return the exception object represented by this ExceptionDispatchInfo instance
         public Exception SourceException => _exception;
@@ -61,8 +65,10 @@ namespace System.Runtime.ExceptionServices
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> argument was previously thrown or previously had a stack trace stored into it.</exception>
         /// <returns>The <paramref name="source"/> exception instance.</returns>
         [StackTraceHidden]
-        public static Exception SetCurrentStackTrace(Exception source!!)
+        public static Exception SetCurrentStackTrace(Exception source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             source.SetCurrentStackTrace();
 
             return source;
@@ -86,8 +92,11 @@ namespace System.Runtime.ExceptionServices
         /// The caller is responsible for canonicalizing line endings if required. <see cref="string.ReplaceLineEndings"/>
         /// can be used to canonicalize line endings.
         /// </remarks>
-        public static Exception SetRemoteStackTrace(Exception source!!, string stackTrace!!)
+        public static Exception SetRemoteStackTrace(Exception source, string stackTrace)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(stackTrace);
+
             source.SetRemoteStackTrace(stackTrace);
 
             return source;

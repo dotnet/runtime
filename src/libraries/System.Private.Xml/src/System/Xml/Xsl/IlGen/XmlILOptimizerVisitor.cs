@@ -123,10 +123,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode VisitReference(QilNode oldNode)
         {
-            QilNode? newNode = _subs.FindReplacement(oldNode);
-
-            if (newNode == null)
-                newNode = oldNode;
+            QilNode? newNode = _subs.FindReplacement(oldNode) ?? oldNode;
 
             // Fold reference to constant value
             // This is done here because "p" currently cannot match references

@@ -110,6 +110,10 @@ namespace ILCompiler
             {
                 return SimdVectorLength.None;
             }
+            else if (_targetArchitecture == TargetArchitecture.LoongArch64)
+            {
+                return SimdVectorLength.None;
+            }
             else
             {
                 Debug.Assert(false); // Unknown architecture
@@ -191,6 +195,27 @@ namespace ILCompiler
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool AddSupportedInstructionSet(string instructionSet)
         {
+            // First, check if it's a "known cpu family" group of instruction sets e.g. "haswell"
+            var sets = InstructionSetFlags.CpuNameToInstructionSets(instructionSet, _architecture);
+            if (sets != null)
+            {
+                foreach (string set in sets)
+                {
+                    if (!s_instructionSetSupport[_architecture].ContainsKey(set))
+                    {
+                        // Groups can contain other groups
+                        if (AddSupportedInstructionSet(set))
+                        {
+                            continue;
+                        }
+                        return false;
+                    }
+                    _supportedInstructionSets.Add(set);
+                    _unsupportedInstructionSets.Remove(set);
+                }
+                return true;
+            }
+
             if (!s_instructionSetSupport[_architecture].ContainsKey(instructionSet))
                 return false;
 

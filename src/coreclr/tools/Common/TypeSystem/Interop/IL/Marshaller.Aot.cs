@@ -92,6 +92,9 @@ namespace Internal.TypeSystem.Interop
                     return new VariantMarshaller();
                 case MarshallerKind.CustomMarshaler:
                     return new CustomTypeMarshaller();
+                case MarshallerKind.BlittableValueClassByRefReturn:
+                    return new BlittableValueClassByRefReturn();
+
                 default:
                     // ensures we don't throw during create marshaller. We will throw NSE
                     // during EmitIL which will be handled and an Exception method body
@@ -182,7 +185,7 @@ namespace Internal.TypeSystem.Interop
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void AllocNativeToManaged(ILCodeStream codeStream)
@@ -240,9 +243,10 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
     }
 
@@ -1276,6 +1280,17 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(lMarshaller);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.callvirt, emitter.NewToken(cleanupNativeDataMethod));
+        }
+    }
+
+    class BlittableValueClassByRefReturn : Marshaller
+    {
+        protected override void SetupArgumentsForReturnValueMarshalling()
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+
+            _managedHome = new Home(emitter.NewLocal(ManagedParameterType), ManagedParameterType, isByRef: false);
+            _nativeHome = new Home(emitter.NewLocal(NativeType), NativeType, isByRef: false);
         }
     }
 }

@@ -99,8 +99,11 @@
   <data name="Argument_CodepageNotSupported" xml:space="preserve">
     <value>{0} is not a supported code page.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="MissingEncodingNameResource" xml:space="preserve">
     <value>Could not find a resource entry for the encoding codepage '{0} - {1}'</value>

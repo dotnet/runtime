@@ -26,7 +26,7 @@ namespace System.Threading
             if (numHandles == 1)
                 waitAll = false;
 
-#if CORERT // TODO: reentrant wait support https://github.com/dotnet/runtime/issues/49518
+#if NATIVEAOT // TODO: reentrant wait support https://github.com/dotnet/runtime/issues/49518
             bool reentrantWait = Thread.ReentrantWaitsEnabled;
 
             if (reentrantWait)
@@ -48,7 +48,7 @@ namespace System.Threading
             Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
-#if CORERT
+#if NATIVEAOT
             int result;
             if (reentrantWait)
             {

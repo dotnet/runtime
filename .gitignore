@@ -283,6 +283,9 @@ Session.vim
 # Visual Studio Code
 .vscode/
 
+# Codespaces
+.venv/
+
 # Private test configuration and binaries.
 config.ps1
 **/IISApplications

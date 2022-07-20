@@ -66,9 +66,7 @@ namespace System.Drawing {
 
                     // Parse 2 integer values.
                     //
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
@@ -109,9 +107,7 @@ namespace System.Drawing {
                 if (destinationType == typeof(string)) {
                     Point pt = (Point)value;
 
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                     string[] args = new string[2];

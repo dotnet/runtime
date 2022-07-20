@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
     [SupportedOSPlatform("windows")]
     public class WindowsServiceLifetime : ServiceBase, IHostLifetime
     {
-        private readonly TaskCompletionSource<object> _delayStart = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object?> _delayStart = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
 
@@ -25,17 +25,14 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
-            Environment = environment ?? throw new ArgumentNullException(nameof(environment));
-            ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(optionsAccessor);
+            ThrowHelper.ThrowIfNull(windowsServiceOptionsAccessor);
+
+            Environment = environment;
+            ApplicationLifetime = applicationLifetime;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
-            if (optionsAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(optionsAccessor));
-            }
-            if (windowsServiceOptionsAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(windowsServiceOptionsAccessor));
-            }
             _hostOptions = optionsAccessor.Value;
             ServiceName = windowsServiceOptionsAccessor.Value.ServiceName;
             CanShutdown = true;
@@ -50,17 +47,14 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             cancellationToken.Register(() => _delayStart.TrySetCanceled());
             ApplicationLifetime.ApplicationStarted.Register(() =>
             {
-                Logger.LogInformation("Application started. Hosting environment: {envName}; Content root path: {contentRoot}",
+                Logger.LogInformation("Application started. Hosting environment: {EnvName}; Content root path: {ContentRoot}",
                     Environment.EnvironmentName, Environment.ContentRootPath);
             });
             ApplicationLifetime.ApplicationStopping.Register(() =>
             {
                 Logger.LogInformation("Application is shutting down...");
             });
-            ApplicationLifetime.ApplicationStopped.Register(() =>
-            {
-                _delayStop.Set();
-            });
+            ApplicationLifetime.ApplicationStopped.Register(_delayStop.Set);
 
             Thread thread = new Thread(Run);
             thread.IsBackground = true;

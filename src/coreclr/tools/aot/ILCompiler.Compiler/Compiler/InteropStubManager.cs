@@ -16,8 +16,8 @@ namespace ILCompiler
     /// </summary>
     public abstract class InteropStubManager : ICompilationRootProvider
     {
-        public abstract void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
-        
+        public abstract void AddDependenciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
+
         public abstract void AddInterestingInteropConstructedTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type);
 
         public abstract PInvokeILProvider CreatePInvokeILProvider();

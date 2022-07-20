@@ -224,6 +224,7 @@
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnIfAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />

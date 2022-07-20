@@ -1219,7 +1219,7 @@ lDone: ;
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        //dbprintf("Exception occured manipulating .res file %S\n", szResFileName);
+        //dbprintf("Exception occurred manipulating .res file %S\n", szResFileName);
         param.hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
     }
     PAL_ENDTRY

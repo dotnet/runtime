@@ -105,6 +105,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return _marshaledObject;
         }
 
+        private static int InvokeReturnInt()
+        {
+            return 42;
+        }
+
+        private static long InvokeReturnLong()
+        {
+            return 42L;
+        }
+
+        private static double InvokeReturnDouble()
+        {
+            return double.Pi;
+        }
+
         internal static int _valOne, _valTwo;
         private static void ManipulateObject(JSObject obj)
         {

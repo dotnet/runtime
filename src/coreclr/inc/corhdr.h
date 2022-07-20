@@ -842,11 +842,12 @@ typedef enum CorGenericParamAttr
     gpContravariant         =   0x0002,
 
     // Special constraints, applicable to any type parameters
-    gpSpecialConstraintMask =  0x001C,
+    gpSpecialConstraintMask =  0x003C,
     gpNoSpecialConstraint   =   0x0000,
     gpReferenceTypeConstraint = 0x0004,      // type argument must be a reference type
     gpNotNullableValueTypeConstraint   =   0x0008,      // type argument must be a value type but not Nullable
     gpDefaultConstructorConstraint = 0x0010, // type argument must have a public default constructor
+    gpAcceptByRefLike = 0x0020, // type argument can be ByRefLike
 } CorGenericParamAttr;
 
 // structures and enums moved from COR.H

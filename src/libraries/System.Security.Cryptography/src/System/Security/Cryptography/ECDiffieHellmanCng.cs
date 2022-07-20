@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -20,12 +21,24 @@ namespace System.Security.Cryptography
         private byte[]? _seed;
 
         [SupportedOSPlatform("windows")]
-        public ECDiffieHellmanCng(CngKey key!!)
+        public ECDiffieHellmanCng(CngKey key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        [SupportedOSPlatform("windows")]
+        internal ECDiffieHellmanCng(CngKey key, bool transferOwnership)
+        {
+            Debug.Assert(key is not null);
+            Debug.Assert(key.AlgorithmGroup == CngAlgorithmGroup.ECDiffieHellman);
+            Debug.Assert(transferOwnership);
+
+            Key = key;
         }
 
         /// <summary>
@@ -113,7 +126,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///     Use the secret agreement as the HMAC key rather than supplying a seperate one
+        ///     Use the secret agreement as the HMAC key rather than supplying a separate one
         /// </summary>
         public bool UseSecretAgreementAsHmacKey
         {
@@ -142,12 +155,30 @@ namespace System.Security.Cryptography
 
         private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
         {
-            Key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+            CngKey newKey = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+            try
+            {
+                Key = newKey;
+            }
+            catch
+            {
+                newKey.Dispose();
+                throw;
+            }
         }
 
         private void ImportKeyBlob(byte[] ecfullKeyBlob, string curveName, bool includePrivateParameters)
         {
-            Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+            CngKey newKey = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+            try
+            {
+                Key = newKey;
+            }
+            catch
+            {
+                newKey.Dispose();
+                throw;
+            }
         }
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)
@@ -162,7 +193,15 @@ namespace System.Security.Cryptography
 
         private void AcceptImport(CngPkcs8.Pkcs8Response response)
         {
-            Key = response.Key;
+            try
+            {
+                Key = response.Key;
+            }
+            catch
+            {
+                response.FreeKey();
+                throw;
+            }
         }
 
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)

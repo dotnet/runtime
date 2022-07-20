@@ -33,7 +33,7 @@ internal static partial class Interop
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
-        internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
+        internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, X509Certificate2[] chain)
         {

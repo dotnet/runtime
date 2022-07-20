@@ -42,11 +42,11 @@ namespace System.Diagnostics
 
         // sync DateTime and Stopwatch ticks every 2 hours
 #pragma warning disable CA1823 // suppress unused field warning, as it's used to keep the timer alive
-        private static readonly Timer syncTimeUpdater = InitalizeSyncTimer();
+        private static readonly Timer syncTimeUpdater = InitializeSyncTimer();
 #pragma warning restore CA1823
 
         [System.Security.SecuritySafeCritical]
-        private static Timer InitalizeSyncTimer()
+        private static Timer InitializeSyncTimer()
         {
             Timer timer;
             // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever

@@ -6,7 +6,7 @@ It describes requirements that the Just-In-Time (JIT) compiler imposes on the VM
 
 A note on the JIT codebases: JIT32 refers to the original JIT codebase that originally generated x86 code and was later ported to generate ARM code. JIT64 refers to the legacy .NET Framework codebase that supports AMD64. The RyuJIT compiler evolved from JIT32, and now supports all platforms and architectures. See [this post](https://devblogs.microsoft.com/dotnet/the-ryujit-transition-is-complete) for more RyuJIT history.
 
-[CoreRT](https://github.com/dotnet/corert) refers to an experimental runtime that is optimized for ahead-of-time compilation (AOT). The CoreRT ABI differs in a few details for simplicity and consistency across platforms. CoreRT has been superseded by [NativeAOT](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT).
+NativeAOT refers to a runtime that is optimized for ahead-of-time compilation (AOT). The NativeAOT ABI differs in a few details for simplicity and consistency across platforms.
 
 # Getting started
 
@@ -107,7 +107,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (AMD64 CoreRT ABI) `R10` / (ARM) `R4` / (ARM CoreRT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (AMD64 NativeAOT ABI) `R10` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
@@ -309,7 +309,7 @@ Note that JIT64 does not implement this properly. The C# compiler used to always
 
 The *PSPSym* (which stands for Previous Stack Pointer Symbol) is a pointer-sized local variable used to access locals from the main function body.
 
-CoreRT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
+NativeAOT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
 
 CoreCLR uses PSPSym for all platforms except x86: the frame pointer on x86 is always preserved when the handlers are invoked.
 
@@ -510,7 +510,7 @@ Filters are invoked in the 1st pass of EH processing and as such execution might
 
 Duplicated clauses are a special set of entries in the EH tables to assist the VM. Specifically, if handler 'A' is also protected by an outer EH clause 'B', then the JIT must emit a duplicated clause, a duplicate of 'B', that marks the whole handler 'A' (which is now lexically disjoint for the range of code for the corresponding try body 'A') as being protected by the handler for 'B'.
 
-Duplicated clauses are not needed for x86 and for CoreRT ABI.
+Duplicated clauses are not needed for x86 and for NativeAOT ABI.
 
 During exception dispatch the VM uses these duplicated clauses to know when to skip any frames between the handler and its parent function. After skipping to the parent function, due to a duplicated clause, the VM searches for a regular/non-duplicate clause in the parent function. The order of duplicated clauses is important. They should appear after all of the main function clauses. They should still follow the normal sorting rules (inner-to-outer, top-to-bottom), but because the try-start/try-end will all be the same for a given handler, they should maintain the ordering, regarding inner-to-outer, as the corresponding original clause.
 
@@ -653,13 +653,15 @@ Edit and Continue (EnC) is a special flavor of un-optimized code. The debugger h
 
 In the current design, the JIT does not have access to the previous versions of the method and so it has to assume the worst case. EnC is designed for simplicity, not for performance of the generated code.
 
-EnC is currently enabled on x86 and x64 only, but the same principles would apply if it is ever enabled on other platforms.
+EnC is currently enabled on x86, x64 and ARM64 only, but the same principles would apply if it is ever enabled on other platforms.
 
 The following sections describe the various Edit and Continue code conventions that must be followed.
 
 ## EnC flag in GCInfo
 
-The JIT records the fact that it has followed conventions for EnC code in GC Info. On x64, this flag is implied by recording the size of the stack frame region preserved between EnC edits (`GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea`). For normal methods on JIT64, the size of this region is 2 slots (saved `RBP` and return address). On RyuJIT/AMD64, the size of this region is increased to include `RSI` and `RDI`, so that `rep stos` can be used for block initialization and block moves.
+The JIT records the fact that it has followed conventions for EnC code in GC Info. On x64/ARM64, this flag is implied by recording the size of the stack frame region preserved between EnC edits (`GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea`). For x64 the size of this region is increased to include `RSI` and `RDI`, so that `rep stos` can be used for block initialization and block moves. ARM64 saves only the FP and LR registers when EnC is enabled and does not use other callee saved registers.
+
+To successfully perform EnC transitions the runtime needs to know the size of the stack frames it is transitioning between. For x64 code the size can be extracted from unwind codes. This is not possible for arm64 code as the frames are set up in such a way that the unwind codes do not allow to retrieve this value. Therefore, on ARM64 the GC info contains also the size of the fixed stack frame to be used for EnC purposes.
 
 ## Allocating local variables backward
 
@@ -667,27 +669,30 @@ This is required to preserve addresses of the existing locals when an EnC edit a
 
 ## Fixed set of callee-saved registers
 
-This eliminates need to deal with the different sets in the VM, and makes preservation of local addresses easier. On x64, we choose to always save `RBP` only. There are plenty of volatile registers and so lack of non-volatile registers does not impact quality of non-optimized code.
+This eliminates need to deal with the different sets in the VM, and makes preservation of local addresses easier. There are plenty of volatile registers and so lack of non-volatile registers does not heavily impact quality of non-optimized code.
+x64 currently saves RBP, RSI and RDI while ARM64 saves just FP and LR.
 
 ## EnC is supported for methods with EH
 
 However, EnC remap is not supported inside funclets. The stack layout of funclets does not matter for EnC.
 
-## Initial RSP == RBP == PSPSym
+## Considerations with regards to PSPSym
 
-This invariant allows VM to compute new value of `RBP` and PSPSym after the edit without any additional information. Location of PSPSym is found via GC info.
+As explained previously in this document, on x64 we have Initial RSP == PSPSym. For EnC methods, as we disallow remappings after localloc (see below), we furthermore have RBP == PSPSym.
+For ARM64 we have Caller SP == PSPSym and the FP points to the previously saved FP/LR pair. For EnC the JIT always sets up the stack frame so that the FP/LR pair is at Caller SP - 16 and does not save any additional callee saves.
+These invariants allow the VM to compute new value of the frame pointer and PSPSym after the edit without any additional information. Note that the frame pointer and PSPSym do not change values or location on ARM64. However, EH may be added to a function in which case a new PSPSym needs to be materialized, even on ARM64. Location of PSPSym is found via GC info.
 
 ## Localloc
 
-Localloc is allowed in EnC code, but remap is disallowed after the method has executed a localloc instruction. VM uses the invariant above (`RSP == RBP`) to detect whether localloc was executed by the method.
+Localloc is allowed in EnC code, but remap is disallowed after the method has executed a localloc instruction. VM uses the invariants above (`RSP == RBP` on x64, `FP + 16 == SP + stack size` on ARM64) to detect whether localloc was executed by the method.
 
 ## Security object
 
-This does not require any special handling by the JIT on x64. (Different from x86). The security object is copied over by the VM during remap if necessary. Location of security object is found via GC info.
+This does not require any special handling by the JIT on x64/arm64. (Different from x86). The security object is copied over by the VM during remap if necessary. Location of security object is found via GC info.
 
 ## Synchronized methods
 
-The extra state created by the JIT for synchronized methods (original `this` and lock taken flag) must be preserved during remap. The JIT stores this state in the preserved region, and increases the size of the preserved region reported in GC info accordingly.
+The extra state created by the JIT for synchronized methods (lock taken flag) must be preserved during remap. The JIT stores this state in the preserved region, and increases the size of the preserved region reported in GC info accordingly.
 
 ## Generics
 

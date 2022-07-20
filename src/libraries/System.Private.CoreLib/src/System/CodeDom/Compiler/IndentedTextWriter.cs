@@ -21,8 +21,10 @@ namespace System.CodeDom.Compiler
 
         public IndentedTextWriter(TextWriter writer) : this(writer, DefaultTabString) { }
 
-        public IndentedTextWriter(TextWriter writer!!, string tabString) : base(CultureInfo.InvariantCulture)
+        public IndentedTextWriter(TextWriter writer, string tabString) : base(CultureInfo.InvariantCulture)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             _writer = writer;
             _tabString = tabString;
         }

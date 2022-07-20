@@ -19,15 +19,6 @@ namespace System.Security.Cryptography
         {
             private static RSAParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
                 => throw new CryptographicException();
-
-            private static void ImportPrivateKey(
-                RSAParameters rsaParameters,
-                out SafeSecKeyRefHandle privateKey,
-                out SafeSecKeyRefHandle publicKey)
-            {
-                privateKey = ImportKey(rsaParameters);
-                publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
-            }
         }
     }
 }

@@ -108,16 +108,20 @@ namespace System.Web.Util
         [return: NotNullIfNotNull("value")]
         internal static string? HtmlDecode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlDecode(value);
 
-        internal static void HtmlDecode(string? value, TextWriter output!!)
+        internal static void HtmlDecode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             output.Write(WebUtility.HtmlDecode(value));
         }
 
         [return: NotNullIfNotNull("value")]
         internal static string? HtmlEncode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlEncode(value);
 
-        internal static void HtmlEncode(string? value, TextWriter output!!)
+        internal static void HtmlEncode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             output.Write(WebUtility.HtmlEncode(value));
         }
 
@@ -165,10 +169,7 @@ namespace System.Web.Util
                 // to the string builder when special characters are detected.
                 if (CharRequiresJavaScriptEncoding(c))
                 {
-                    if (b == null)
-                    {
-                        b = new StringBuilder(value.Length + 5);
-                    }
+                    b ??= new StringBuilder(value.Length + 5);
 
                     if (count > 0)
                     {
@@ -704,10 +705,7 @@ namespace System.Web.Util
                                 else
                 */
                 {
-                    if (_byteBuffer == null)
-                    {
-                        _byteBuffer = new byte[_bufferSize];
-                    }
+                    _byteBuffer ??= new byte[_bufferSize];
 
                     _byteBuffer[_numBytes++] = b;
                 }

@@ -312,7 +312,7 @@ namespace System.DirectoryServices.AccountManagement
                     bool success = Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
-                    Debug.Assert(success == true);
+                    Debug.Assert(success);
 
                     // If user SID is the same domain as the machine domain, and the machine is not a DC then the user is a local (machine) user
                     return sameDomain ? !IsMachineDC(null) : false;
@@ -357,6 +357,7 @@ namespace System.DirectoryServices.AccountManagement
                     if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
+                        tokenHandle.Dispose();
 
                         // Current thread doesn't have a token, try the process
                         if (!Interop.Advapi32.OpenProcessToken(
@@ -449,8 +450,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (tokenHandle != null)
-                    tokenHandle.Dispose();
+                tokenHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -521,8 +521,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                policyHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Interop.Advapi32.LsaFreeMemory(pBuffer);
@@ -656,8 +655,8 @@ namespace System.DirectoryServices.AccountManagement
                         "Utils",
                         "ConstructFakePrincipalFromSID: Build principal for SID={0}, server={1}, authority={2}",
                         Utils.ByteArrayToString(sid),
-                        (serverName != null ? serverName : "NULL"),
-                        (authorityName != null ? authorityName : "NULL"));
+                        serverName ?? "NULL",
+                        authorityName ?? "NULL");
 
             Debug.Assert(ClassifySID(sid) == SidType.FakeObject);
 
@@ -728,7 +727,7 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
 
-            // Retrive the parsed username which has had the domain removed because LogonUser
+            // Retrieve the parsed username which has had the domain removed because LogonUser
             // expects creds this way.
             string userName = credential.ParsedUserName;
             string password = credential.Password;

@@ -15,7 +15,7 @@
             a) TYP_UNKNOWN means 'baseType' of SIMD vector which is not known apriori
             b) Each method maps to a unique intrinsic Id
             c) To facilitate argument types to be used as an array initializer, args are listed within "{}" braces.
-            d) Since comma is used as actual param seperator in a macro, TYP_UNDEF entries are added to keep param count constant.
+            d) Since comma is used as actual param separator in a macro, TYP_UNDEF entries are added to keep param count constant.
             e) TODO-Cleanup: when we plumb TYP_SIMD through front-end, replace TYP_STRUCT with TYP_SIMD.
      */
 

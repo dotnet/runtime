@@ -42,8 +42,21 @@ namespace System.Composition
             SatisfyImportsInternal(compositionContext, objectWithLooseImports, conventions);
         }
 
-        private static void SatisfyImportsInternal(this CompositionContext exportProvider!!, object objectWithLooseImports!!, AttributedModelProvider conventions!!)
+        private static void SatisfyImportsInternal(this CompositionContext exportProvider, object objectWithLooseImports, AttributedModelProvider conventions)
         {
+            if (exportProvider is null)
+            {
+                throw new ArgumentNullException(nameof(exportProvider));
+            }
+            if (objectWithLooseImports is null)
+            {
+                throw new ArgumentNullException(nameof(objectWithLooseImports));
+            }
+            if (conventions is null)
+            {
+                throw new ArgumentNullException(nameof(conventions));
+            }
+
             var objType = objectWithLooseImports.GetType();
 
             foreach (var pi in objType.GetRuntimeProperties())

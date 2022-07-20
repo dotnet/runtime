@@ -109,7 +109,6 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void OnStartPrint_InvokeMultipleTimes_Success()
         {
             using (var document = new PrintDocument())
@@ -132,7 +131,6 @@ namespace System.Drawing.Printing.Tests
 
         [Theory]
         [MemberData(nameof(PrintEventArgs_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fixed a NullReferenceException")]
         public void OnEndPrint_InvokeWithoutStarting_Nop(PrintEventArgs e)
         {

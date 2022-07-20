@@ -5,11 +5,12 @@
 // NDPWhidbey 10959
 
 using System;
+using Xunit;
 
-namespace Test
+namespace Test_rethrowincatchnestedinfinally_cs
 {
 
-    class Class1
+    public class Class1
     {
 
         private static TestUtil.TestLog testLog;
@@ -36,7 +37,8 @@ namespace Test
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             //Start recording
             testLog.StartRecording();

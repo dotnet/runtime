@@ -60,46 +60,45 @@ internal static partial class Interop
                     break;
                 }
 
-                ReadOnlySpan<char> name = line.Slice(0, startIndex);
                 ReadOnlySpan<char> value = line.Slice(startIndex + 1);
                 bool valueParsed = true;
 
+                switch (line.Slice(0, startIndex)) // name
+                {
 #if DEBUG
-                if (name.SequenceEqual("Pid"))
-                {
-                    valueParsed = int.TryParse(value, out results.Pid);
-                }
-                else
+                    case "Pid":
+                        valueParsed = int.TryParse(value, out results.Pid);
+                        break;
 #endif
-                if (name.SequenceEqual("VmHWM"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out results.VmHWM);
-                }
-                else if (name.SequenceEqual("VmRSS"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out results.VmRSS);
-                }
-                else if (name.SequenceEqual("VmData"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out ulong vmData);
-                    results.VmData += vmData;
-                }
-                else if (name.SequenceEqual("VmSwap"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out results.VmSwap);
-                }
-                else if (name.SequenceEqual("VmSize"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out results.VmSize);
-                }
-                else if (name.SequenceEqual("VmPeak"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out results.VmPeak);
-                }
-                else if (name.SequenceEqual("VmStk"))
-                {
-                    valueParsed = ulong.TryParse(value[..^3], out ulong vmStack);
-                    results.VmData += vmStack;
+                    case "VmHWM":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmHWM);
+                        break;
+
+                    case "VmRSS":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmRSS);
+                        break;
+
+                    case "VmData":
+                        valueParsed = ulong.TryParse(value[..^3], out ulong vmData);
+                        results.VmData += vmData;
+                        break;
+
+                    case "VmSwap":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmSwap);
+                        break;
+
+                    case "VmSize":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmSize);
+                        break;
+
+                    case "VmPeak":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmPeak);
+                        break;
+
+                    case "VmStk":
+                        valueParsed = ulong.TryParse(value[..^3], out ulong vmStack);
+                        results.VmData += vmStack;
+                        break;
                 }
 
                 Debug.Assert(valueParsed);

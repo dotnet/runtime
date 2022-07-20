@@ -17,8 +17,13 @@ namespace System.Security.Cryptography.Xml
         // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
         // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
 
-        internal CanonicalXml(Stream inputStream!!, bool includeComments, XmlResolver resolver, string strBaseUri)
+        internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver resolver, string strBaseUri)
         {
+            if (inputStream is null)
+            {
+                throw new ArgumentNullException(nameof(inputStream));
+            }
+
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
             _c14nDoc.Load(Utils.PreProcessStreamInput(inputStream, resolver, strBaseUri));
@@ -26,16 +31,26 @@ namespace System.Security.Cryptography.Xml
         }
 
         internal CanonicalXml(XmlDocument document, XmlResolver resolver) : this(document, resolver, false) { }
-        internal CanonicalXml(XmlDocument document!!, XmlResolver resolver, bool includeComments)
+        internal CanonicalXml(XmlDocument document, XmlResolver resolver, bool includeComments)
         {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
             _c14nDoc.Load(new XmlNodeReader(document));
             _ancMgr = new C14NAncestralNamespaceContextManager();
         }
 
-        internal CanonicalXml(XmlNodeList nodeList!!, XmlResolver resolver, bool includeComments)
+        internal CanonicalXml(XmlNodeList nodeList, XmlResolver resolver, bool includeComments)
         {
+            if (nodeList is null)
+            {
+                throw new ArgumentNullException(nameof(nodeList));
+            }
+
             XmlDocument doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)
                 throw new ArgumentException(nameof(nodeList));

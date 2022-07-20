@@ -17,8 +17,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// Initializes instance of <see cref="FileInfoWrapper" /> to wrap the specified object <see cref="System.IO.FileInfo" />.
         /// </summary>
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo" /></param>
-        public FileInfoWrapper(FileInfo fileInfo!!)
+        public FileInfoWrapper(FileInfo fileInfo)
         {
+            ThrowHelper.ThrowIfNull(fileInfo);
+
             _fileInfo = fileInfo;
         }
 
