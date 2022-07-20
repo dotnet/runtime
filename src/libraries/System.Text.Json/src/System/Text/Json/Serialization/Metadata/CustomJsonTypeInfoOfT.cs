@@ -18,14 +18,14 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        internal CustomJsonTypeInfo(JsonSerializerOptions options)
-            : base(options.GetConverterFromListOrBuiltInConverter(typeof(T)), options)
+        internal CustomJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
+            : base(converter, options)
         {
         }
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            // Parametrized constructors not supported yet for custom types
+            // Parameterized constructors not supported yet for custom types
             return Array.Empty<JsonParameterInfoValues>();
         }
     }

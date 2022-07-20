@@ -11,6 +11,7 @@ trigger:
     - docs/manpages/*
     exclude:
     - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT

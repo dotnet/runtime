@@ -1718,7 +1718,7 @@ BOOL Module::IsStaticStoragePrepared(mdTypeDef tkType)
 
     // Right now the design is that we do one static allocation pass during NGEN,
     // and a 2nd pass for it at module init time for modules that weren't NGENed or the NGEN
-    // pass was unsucessful. If we are loading types after that then we must use dynamic
+    // pass was unsuccessful. If we are loading types after that then we must use dynamic
     // static storage. These dynamic statics require an additional indirection so they
     // don't perform quite as well.
     //
@@ -2130,7 +2130,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
     if (pMdImport == NULL)
         return FALSE;
-    
+
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
     HENUMInternal assemblyEnum;
@@ -4766,15 +4766,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-    // If a debugger is attached, then the CLR will still send ClassLoad notifications for dynamic modules,
-    // which mean we still need to keep the metadata available. This is the same as Whidbey.
-    // An alternative (and better) design would be to suppress ClassLoad notifications too, but then we'd
-    // need some way of sending a "catchup" notification to the debugger after we re-enable notifications.
-    if (!CORDebuggerAttached())
-    {
-        return;
-    }
 
     // Do not release the emitter. This is a weak reference.
     IMetaDataEmit *pEmitter = this->GetEmitter();

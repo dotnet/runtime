@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { PromiseControl, promise_control_symbol, create_cancelable_promise } from "./cancelable-promise";
+import { createPromiseController, assertIsControllablePromise, getPromiseController } from "./promise-controller";
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
 import { Module, runtimeHelpers } from "./imports";
@@ -314,8 +314,8 @@ function _marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_
     }
     const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
     mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
-    const promise_control = promise[promise_control_symbol] as PromiseControl;
-    mono_assert(!!promise_control, () => `ERR27: promise_control not found for js_handle: ${js_handle} `);
+    assertIsControllablePromise<any>(promise);
+    const promise_control = getPromiseController(promise);
 
     const orig_resolve = promise_control.resolve;
     promise_control.resolve = (argInner: JSMarshalerArgument) => {
@@ -350,7 +350,7 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
     const js_handle = get_arg_js_handle(arg_handle);
 
     if (js_handle === JSHandleNull) {
-        const { promise, promise_control } = create_cancelable_promise();
+        const { promise, promise_control } = createPromiseController();
         const js_handle = mono_wasm_get_js_handle(promise)!;
         set_js_handle(res, js_handle);
 
@@ -370,8 +370,8 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         // resolve existing promise
         const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
         mono_assert(!!promise, () => `ERR25: promise not found for js_handle: ${js_handle} `);
-        const promise_control = promise[promise_control_symbol] as PromiseControl;
-        mono_assert(!!promise_control, () => `ERR26: promise_control not found for js_handle: ${js_handle} `);
+        assertIsControllablePromise(promise);
+        const promise_control = getPromiseController(promise);
 
         if (exc_type !== MarshalerType.None) {
             const reason = marshal_exception_to_js(exc);

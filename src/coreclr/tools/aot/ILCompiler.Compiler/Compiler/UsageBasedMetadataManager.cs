@@ -3,31 +3,29 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.PortableExecutable;
-using System.Reflection.Metadata;
 using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Xml;
+
+using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Metadata;
+using ILLink.Shared;
 
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using ILCompiler.Metadata;
-using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysisFramework;
-using ILLink.Shared;
-
-using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
-using Debug = System.Diagnostics.Debug;
+using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
+using Debug = System.Diagnostics.Debug;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
-using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
-using CustomAttributeTypeProvider = Internal.TypeSystem.Ecma.CustomAttributeTypeProvider;
-using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
-using ILCompiler.Dataflow;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 namespace ILCompiler
 {
@@ -514,8 +512,7 @@ namespace ILCompiler
             {
                 if (FlowAnnotations.RequiresDataflowAnalysis(method))
                 {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Method has annotated parameters");
+                    AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
 
                 if ((method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any)))
@@ -631,8 +628,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, writtenField))
             {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Access to interesting field");
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting field");
             }
 
             string reason = "Use of a field";
@@ -695,8 +691,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations, calledMethod))
             {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Call to interesting method");
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Call to interesting method");
             }
         }
 
@@ -705,7 +700,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection)
             {
-                return Dataflow.ReflectionMethodBodyScanner.ProcessAttributeDataflow(factory, FlowAnnotations, Logger, attributeCtor, decodedValue);
+                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(attributeCtor))).ProcessAttributeDataflow(attributeCtor, decodedValue);
             }
 
             return null;
@@ -720,7 +715,7 @@ namespace ILCompiler
                 {
                     try
                     {
-                        var deps = ILCompiler.Dataflow.ReflectionMethodBodyScanner.ProcessGenericArgumentDataFlow(factory, FlowAnnotations, Logger, genericParameter, instantiation[i], source);
+                        var deps = (new ILCompiler.Dataflow.GenericArgumentDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(source))).ProcessGenericArgumentDataFlow(genericParameter, instantiation[i]);
                         if (deps.Count > 0)
                         {
                             if (dependencies == null)
@@ -907,6 +902,22 @@ namespace ILCompiler
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts);
+        }
+
+        private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
+        {
+            MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
+            if (FlowAnnotations.CompilerGeneratedState.TryGetUserMethodForCompilerGeneratedMember(methodILDefinition.OwningMethod, out var userMethod))
+            {
+                Debug.Assert(userMethod != methodILDefinition.OwningMethod);
+
+                // It is possible that this will try to add the DatadlowAnalyzedMethod node multiple times for the same method
+                // but that's OK since the node factory will only add actually one node.
+                methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
+            }
+
+            dependencies = dependencies ?? new DependencyList();
+            dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
         }
 
         private struct ReflectableEntityBuilder<T>

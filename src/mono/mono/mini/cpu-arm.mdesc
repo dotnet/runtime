@@ -21,7 +21,7 @@
 #	f  floating point register
 #	g  floating point register returned in r0:r1 for soft-float mode
 #
-# len:number         describe the maximun length in bytes of the instruction
+# len:number         describe the maximum length in bytes of the instruction
 # number is a positive integer
 #
 # cost:number        describe how many cycles are needed to complete the instruction (unused)

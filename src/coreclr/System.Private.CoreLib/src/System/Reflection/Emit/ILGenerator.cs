@@ -1092,7 +1092,7 @@ namespace System.Reflection.Emit
             int catchEndAddr = 0;
             if (state != __ExceptionInfo.State_Try)
             {
-                // generate leave for any preceeding catch clause
+                // generate leave for any preceding catch clause
                 Emit(OpCodes.Leave, endLabel);
                 catchEndAddr = m_length;
             }

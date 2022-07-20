@@ -247,6 +247,7 @@
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         RuntimeComponents="$(RuntimeComponents)"
         DiagnosticPorts="$(DiagnosticPorts)"
         StripDebugSymbols="$(StripDebugSymbols)"

@@ -238,7 +238,7 @@ DataBuffer::TruncateBySize(UINT32 cbSize)
 //
 // Skips the buffer to size (cbSize).
 // Returns FALSE if there's less than cbSize data represented.
-// Returns TRUE otherwise and skips data at the beggining, so that the result has size cbSize.
+// Returns TRUE otherwise and skips data at the beginning, so that the result has size cbSize.
 //
 __checkReturn
 inline

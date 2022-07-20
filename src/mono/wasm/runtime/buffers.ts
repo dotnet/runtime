@@ -10,7 +10,7 @@ import { Int32Ptr, TypedArray, VoidPtr } from "./types/emscripten";
 import { mono_wasm_new_external_root } from "./roots";
 
 // Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
-// 	 adress of managed pinned array -> copy from heap -> typed array memory
+// 	 address of managed pinned array -> copy from heap -> typed array memory
 function typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number) {
 
     // typed array
@@ -96,7 +96,7 @@ function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, be
 }
 
 // Copy the pinned array address from pinned_array allocated on the heap to the typed array.
-// 	 adress of managed pinned array -> copy from heap -> typed array memory
+// 	 address of managed pinned array -> copy from heap -> typed array memory
 function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number) {
 
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing

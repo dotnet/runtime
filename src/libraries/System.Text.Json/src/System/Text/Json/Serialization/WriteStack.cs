@@ -127,7 +127,7 @@ namespace System.Text.Json
             {
                 _stack = new WriteStackFrame[4];
             }
-            else if (_count - 1 == _stack.Length)
+            else if (_count - _indexOffset == _stack.Length)
             {
                 Array.Resize(ref _stack, 2 * _stack.Length);
             }

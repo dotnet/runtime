@@ -650,6 +650,12 @@ namespace System.Runtime.CompilerServices
 
             return (MethodTable*)m_asTAddr;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TypeHandle TypeHandleOf<T>()
+        {
+            return new TypeHandle((void*)RuntimeTypeHandle.GetValueInternal(typeof(T).TypeHandle));
+        }
     }
 
     // Helper structs used for tail calls via helper.

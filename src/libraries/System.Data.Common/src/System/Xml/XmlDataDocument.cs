@@ -3098,7 +3098,7 @@ namespace System.Xml
 
         //  after adding Namespace support foir datatable, DataSet does not guarantee that infered tabels would be in the same sequence as they rae in XML, because
         //  of Namespace. if a table is in different namespace than its children and DataSet, that table would efinetely be added to DataSet after its children. Its By Design
-        // so in order to maintain backward compatability, we reorder the copy of the datatable collection and use it
+        // so in order to maintain backward compatibility, we reorder the copy of the datatable collection and use it
         private DataTable[] OrderTables(DataSet? ds)
         {
             DataTable[]? retValue = null;

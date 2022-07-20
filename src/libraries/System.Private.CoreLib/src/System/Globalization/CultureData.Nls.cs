@@ -420,7 +420,7 @@ namespace System.Globalization
                 if (!useUserOverride && data.strings.Count > 1)
                 {
                     // Since there is no "NoUserOverride" aware EnumTimeFormatsEx, we always get an override
-                    // The override is the first entry if it is overriden.
+                    // The override is the first entry if it is overridden.
                     // We can check if we have overrides by checking the GetLocaleInfo with no override
                     // If we do have an override, we don't know if it is a user defined override or if the
                     // user has just selected one of the predefined formats so we can't just remove it

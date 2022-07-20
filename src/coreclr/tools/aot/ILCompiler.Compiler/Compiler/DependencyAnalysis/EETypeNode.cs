@@ -882,7 +882,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly && !declVTable.HasFixedSlots)
                 return;
 
-            // Inteface types don't place anything else in their physical vtable.
+            // Interface types don't place anything else in their physical vtable.
             // Interfaces have logical slots for their methods but since they're all abstract, they would be zero.
             // We place default implementations of interface methods into the vtable of the interface-implementing
             // type, pretending there was an extra virtual slot.

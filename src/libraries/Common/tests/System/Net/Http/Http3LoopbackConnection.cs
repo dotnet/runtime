@@ -84,10 +84,7 @@ namespace System.Net.Test.Common
 #endif
         }
 
-        public async Task CloseAsync(long errorCode)
-        {
-            await _connection.CloseAsync(errorCode).ConfigureAwait(false);
-        }
+        public Task CloseAsync(long errorCode) => _connection.CloseAsync(errorCode).AsTask();
 
         public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync()
         {

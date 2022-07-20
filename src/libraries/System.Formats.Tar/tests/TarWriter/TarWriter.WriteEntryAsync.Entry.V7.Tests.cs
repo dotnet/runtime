@@ -18,8 +18,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry oldRegularFile = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 SetRegularFile(oldRegularFile);
@@ -28,8 +27,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 V7TarEntry oldRegularFile = await reader.GetNextEntryAsync() as V7TarEntry;
                 VerifyRegularFile(oldRegularFile, isWritable: false);
@@ -40,8 +38,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry hardLink = new V7TarEntry(TarEntryType.HardLink, InitialEntryName);
                 SetHardLink(hardLink);
@@ -50,8 +47,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 V7TarEntry hardLink = await reader.GetNextEntryAsync() as V7TarEntry;
                 VerifyHardLink(hardLink);
@@ -62,8 +58,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry symbolicLink = new V7TarEntry(TarEntryType.SymbolicLink, InitialEntryName);
                 SetSymbolicLink(symbolicLink);
@@ -72,8 +67,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 V7TarEntry symbolicLink = await reader.GetNextEntryAsync() as V7TarEntry;
                 VerifySymbolicLink(symbolicLink);
@@ -84,8 +78,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry directory = new V7TarEntry(TarEntryType.Directory, InitialEntryName);
                 SetDirectory(directory);
@@ -94,8 +87,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 V7TarEntry directory = await reader.GetNextEntryAsync() as V7TarEntry;
                 VerifyDirectory(directory);

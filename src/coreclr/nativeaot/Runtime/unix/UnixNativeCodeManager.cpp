@@ -63,10 +63,10 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     }
 
     UnixNativeMethodInfo * pMethodInfo = (UnixNativeMethodInfo *)pMethodInfoOut;
-    uintptr_t startAddress;
+    uintptr_t startAddress, endAddress;
     uintptr_t lsda;
 
-    if (!FindProcInfo((uintptr_t)ControlPC, &startAddress, &lsda))
+    if (!FindProcInfo((uintptr_t)ControlPC, &startAddress, &endAddress, &lsda))
     {
         return false;
     }
@@ -127,19 +127,9 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     return NULL;
 }
 
-bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+uint32_t UnixNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_UInt8* gcInfo)
 {
-    // @TODO: IsSafePoint
-    return false;
-}
-
-void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
-                                       PTR_VOID        safePointAddress,
-                                       REGDISPLAY *    pRegisterSet,
-                                       GCEnumContext * hCallback,
-                                       bool            isActiveStackFrame)
-{
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
     PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
 
@@ -151,23 +141,71 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
-    uint32_t codeOffset = (uint32_t)(PINSTRToPCODE(dac_cast<TADDR>(safePointAddress)) - PINSTRToPCODE(dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress)));
+    *gcInfo = p;
+
+    uint32_t codeOffset = (uint32_t)(PINSTRToPCODE(dac_cast<TADDR>(address)) - PINSTRToPCODE(dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress)));
+    return codeOffset;
+}
+
+bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+{
+    MethodInfo pMethodInfo;
+    if (!FindMethodInfo(pvAddress, &pMethodInfo))
+    {
+        return false;
+    }
+
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
     GcInfoDecoder decoder(
-        GCInfoToken(p),
+        GCInfoToken(gcInfo),
+        GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
+        codeOffset
+    );
+
+    return decoder.IsInterruptible();
+}
+
+void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
+                                       PTR_VOID        safePointAddress,
+                                       REGDISPLAY *    pRegisterSet,
+                                       GCEnumContext * hCallback,
+                                       bool            isActiveStackFrame)
+{
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
+
+    if (!isActiveStackFrame)
+    {
+        // If we are not in the active method, we are currently pointing
+        // to the return address. That may not be reachable after a call (if call does not return)
+        // or reachable via a jump and thus have a different live set.
+        // Therefore we simply adjust the offset to inside of call instruction.
+        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
+        // revisit the GcInfoEncoder/Decoder
+        codeOffset--;
+    }
+
+    GcInfoDecoder decoder(
+        GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-        codeOffset - 1 // TODO: isActiveStackFrame
+        codeOffset
     );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (pNativeMethodInfo->executionAborted)
+    if (((UnixNativeMethodInfo*)pMethodInfo)->executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
+
     if (IsFilter(pMethodInfo))
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
 
+    if (isActiveStackFrame)
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
+
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
-        false /* reportScratchSlots */,
+        isActiveStackFrame /* reportScratchSlots */,
         flags,
         hCallback->pCallback,
         hCallback
@@ -281,7 +319,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     *ppPreviousTransitionFrame = NULL;
 
-    if (!VirtualUnwind(pRegisterSet))
+    if (!VirtualUnwind(pRegisterSet)) 
     {
         return false;
     }
@@ -289,13 +327,316 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
+{
+    // VirtualUnwind can't unwind epilogues.
+    return TrailingEpilogueInstructionsCount(pvAddress) == 0;
+}
+
+#define SIZE64_PREFIX 0x48
+#define ADD_IMM8_OP 0x83
+#define ADD_IMM32_OP 0x81
+#define JMP_IMM8_OP 0xeb
+#define JMP_IMM32_OP 0xe9
+#define JMP_IND_OP 0xff
+#define LEA_OP 0x8d
+#define REPNE_PREFIX 0xf2
+#define REP_PREFIX 0xf3
+#define POP_OP 0x58
+#define RET_OP 0xc3
+#define RET_OP_2 0xc2
+#define INT3_OP 0xcc
+
+#define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
+
+// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
+// otherwise returns
+//  0 - not in epilogue,
+// -1 - unknown.
+int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
+{
+#ifdef TARGET_AMD64
+
+    //
+    // Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
+    // For details see similar code in OOPStackUnwinderAMD64::UnwindEpilogue
+    //
+    //
+    //    
+    // A canonical epilogue sequence consists of the following operations:
+    //
+    // 1. Optional cleanup of fixed and dynamic stack allocations, which is
+    //    considered to be outside of the epilogue region.
+    //
+    //    add rsp, imm
+    //        or
+    //    lea rsp, disp[fp]
+    //
+    // 2. Zero or more pop nonvolatile-integer-register[0..15] instructions.
+    //
+    //    pop r64
+    //        or
+    //    REX.R pop r64
+    //
+    // 3. An optional one-byte pop r64 to a volatile register to clean up an
+    //    RFLAGS register pushed with pushfq.
+    //
+    //    pop rcx
+    //
+    // 4. A control transfer instruction (ret or jump, in a case of a tailcall)
+    //    For the purpose of inferring the state of the stack, ret and jump can be
+    //    considered the same.
+    //
+    //    ret 0
+    //        or
+    //    jmp imm
+    //        or
+    //    jmp [target]
+    //
+    // 5. Occasionally we may see a breakpoint, possibly placed by the debugger.
+    //    In such case we do not know what instruction it was and return -1 (unknown)
+    //
+    //    int 3
+    //
+
+    // if we are in an epilogue, there will be at least one instruction left.
+    int trailingEpilogueInstructions = 1;
+    uint8_t* pNextByte = (uint8_t*)pvAddress;
+
+    //
+    // Check for any number of:
+    //
+    //   pop nonvolatile-integer-register[0..15].
+    //
+
+    while (true)
+    {
+        if ((pNextByte[0] & 0xf8) == POP_OP)
+        {
+            pNextByte += 1;
+            trailingEpilogueInstructions++;
+        }
+        else if (IS_REX_PREFIX(pNextByte[0]) && ((pNextByte[1] & 0xf8) == POP_OP))
+        {
+            pNextByte += 2;
+            trailingEpilogueInstructions++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    //
+    // A REPNE prefix may optionally precede a control transfer
+    // instruction with no effect on unwinding.
+    //
+
+    if (pNextByte[0] == REPNE_PREFIX)
+    {
+        pNextByte += 1;
+    }
+
+    if (((pNextByte[0] == RET_OP) ||
+        (pNextByte[0] == RET_OP_2)) ||
+        (((pNextByte[0] == REP_PREFIX) && (pNextByte[1] == RET_OP))))
+    {
+        //
+        // A return is an unambiguous indication of an epilogue.
+        //
+        return trailingEpilogueInstructions;
+    }
+
+    if ((pNextByte[0] == JMP_IMM8_OP) ||
+        (pNextByte[0] == JMP_IMM32_OP))
+    {
+        //
+        // An unconditional branch to a target that is equal to the start of
+        // or outside of this routine is logically a call to another function.
+        //
+
+        size_t branchTarget = (size_t)pNextByte;
+        if (pNextByte[0] == JMP_IMM8_OP)
+        {
+            branchTarget += 2 + (int8_t)pNextByte[1];
+        }
+        else
+        {
+            uint32_t delta =
+                (uint32_t)pNextByte[1] |
+                ((uint32_t)pNextByte[2] << 8) |
+                ((uint32_t)pNextByte[3] << 16) |
+                ((uint32_t)pNextByte[4] << 24);
+
+            branchTarget += 5 + (int32_t)delta;
+        }
+
+        //
+        // Determine whether the branch target refers to code within this
+        // function. If not, then it is an epilogue indicator.
+        //
+        // A branch to the start of self implies a recursive call, so
+        // is treated as an epilogue.
+        //
+
+        size_t startAddress;
+        size_t endAddress;
+        uintptr_t lsda;
+
+        bool result = FindProcInfo((uintptr_t)pvAddress, &startAddress, &endAddress, &lsda);
+        ASSERT(result);
+
+        if (branchTarget < startAddress || branchTarget >= endAddress)
+        {
+            return trailingEpilogueInstructions;
+        }
+    }
+    else if ((pNextByte[0] == JMP_IND_OP) && (pNextByte[1] == 0x25))
+    {
+        //
+        // An unconditional jump indirect.
+        //
+        // This is a jmp outside of the function, probably a tail call
+        // to an import function.
+        //
+
+        return trailingEpilogueInstructions;
+    }
+    else if (((pNextByte[0] & 0xf8) == SIZE64_PREFIX) &&
+        (pNextByte[1] == 0xff) &&
+        (pNextByte[2] & 0x38) == 0x20)
+    {
+        //
+        // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
+        // flag (REX.W) is always redundant here, so its presence is
+        // overloaded to indicate a branch out of the function - a tail
+        // call.
+        //
+        // Such an opcode is an unambiguous epilogue indication.
+        //
+
+        return trailingEpilogueInstructions;
+    }
+    else if (pNextByte[0] == INT3_OP)
+    {
+        //
+        // A breakpoint, possibly placed by the debugger - we do not know what was here.
+        //
+        return -1;
+    }
+
+#endif
+
+    return 0;
+}
+
+// Convert the return kind that was encoded by RyuJIT to the
+// enum used by the runtime.
+GCRefKind GetGcRefKind(ReturnKind returnKind)
+{
+    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef_ByRef));
+
+    return (GCRefKind)returnKind;
+}
+
 bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                        REGDISPLAY *    pRegisterSet,       // in
                                                        PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                        GCRefKind *     pRetValueKind)      // out
 {
-    // @TODO: GetReturnAddressHijackInfo
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    // Check whether this is a funclet
+    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
+        return false;
+
+    // Skip hijacking a reverse-pinvoke method - it doesn't get us much because we already synchronize
+    // with the GC on the way back to native code.
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+        return false;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    // Decode the GC info for the current method to determine its return type
+    GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
+#endif // TARGET_ARM || TARGET_ARM64
+
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
+    *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
+
+    int epilogueInstructions = TrailingEpilogueInstructionsCount((PTR_VOID)pRegisterSet->IP);
+    if (epilogueInstructions < 0)
+    {
+        // can't figure, possibly a breakpoint instruction
+        return false;
+    }
+    else if (epilogueInstructions > 0)
+    {
+        *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
+        return true;
+    }
+
+    ASSERT(IsUnwindable((PTR_VOID)pRegisterSet->IP));
+
+    // Unwind the current method context to the caller's context to get its stack pointer
+    // and obtain the location of the return address on the stack
+#if defined(TARGET_AMD64)
+
+    if (!VirtualUnwind(pRegisterSet))
+    {
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() - sizeof(TADDR));
+    return true;
+
+#elif defined(TARGET_ARM64)
+
+    if (decoder.HasTailCalls())
+    {
+        // Do not hijack functions that have tail calls, since there are two problems:
+        // 1. When a function that tail calls another one is hijacked, the LR may be
+        //    stored at a different location in the stack frame of the tail call target.
+        //    So just by performing tail call, the hijacked location becomes invalid and
+        //    unhijacking would corrupt stack by writing to that location.
+        // 2. There is a small window after the caller pops LR from the stack in its
+        //    epilog and before the tail called function pushes LR in its prolog when
+        //    the hijacked return address would not be not on the stack and so we would
+        //    not be able to unhijack.
+        return false;
+    }
+
+    PTR_UIntNative pLR = pRegisterSet->pLR;
+    if (!VirtualUnwind(pRegisterSet))
+    {
+        return false;
+    }
+
+    if (pRegisterSet->pLR == pLR)
+    {
+        // This is the case when we are either:
+        //
+        // 1) In a leaf method that does not push LR on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
+        //    or has LR already popped off.
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
+    return true;
+#else
     return false;
+#endif // defined(TARGET_AMD64)
 }
 
 PTR_VOID UnixNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)

@@ -56,6 +56,8 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
+            socket = new SafeSocketHandle();
+
             IntPtr fd;
             SocketError errorCode;
             Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
@@ -86,7 +88,8 @@ namespace System.Net.Sockets
                 errorCode = GetSocketErrorForErrorCode(error);
             }
 
-            socket = new SafeSocketHandle(fd, ownsHandle: true);
+            Marshal.InitHandle(socket, fd);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
             if (socket.IsInvalid)
             {
@@ -1093,6 +1096,8 @@ namespace System.Net.Sockets
 
         public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressLen, out SafeSocketHandle socket)
         {
+            socket = new SafeSocketHandle();
+
             IntPtr acceptedFd;
             SocketError errorCode;
             if (!listenSocket.IsNonBlocking)
@@ -1101,14 +1106,14 @@ namespace System.Net.Sockets
             }
             else
             {
-                bool completed = TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
-                if (!completed)
+                if (!TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
             }
 
-            socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
+            Marshal.InitHandle(socket, acceptedFd);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;

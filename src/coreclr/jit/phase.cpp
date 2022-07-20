@@ -80,7 +80,7 @@ void Phase::PrePhase()
     //
     // In the long run the aim is to get rid of all pre-phase checks
     // and dumps, relying instead on post-phase checks and dumps from
-    // the preceeding phase.
+    // the preceding phase.
     //
     // Currently the list is just the set of phases that have custom
     // derivations from the Phase class.

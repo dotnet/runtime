@@ -150,7 +150,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo12
+class ProfToEEInterfaceImpl : public ICorProfilerInfo13
 {
 private:
     ProfilerInfo *m_pProfilerInfo;
@@ -706,6 +706,21 @@ public:
         LPCGUID pRelatedActivityId);
 
     // end ICorProfilerInfo12
+
+    // begin ICorProfilerInfo13
+    COM_METHOD CreateHandle(
+        ObjectID object,
+        COR_PRF_HANDLE_TYPE type,
+        ObjectHandleID* pHandle);
+
+    COM_METHOD DestroyHandle(
+        ObjectHandleID handle);
+
+    COM_METHOD GetObjectIDFromHandle(
+        ObjectHandleID handle,
+        ObjectID* pObject);
+
+    // end ICorProfilerInfo13
 
 protected:
 
