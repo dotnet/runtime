@@ -1129,7 +1129,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         // If prevTree has side effects, bail,
-        // unless it is in the immediately preceeding statement.
+        // unless it is in the immediately preceding statement.
         //
         // (we'll later show that any exception must come from the RHS as the LHS
         // will be a simple local).

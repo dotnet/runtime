@@ -107,11 +107,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.ManagedToNativeOnlyReturnValue, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyInParameter, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.StackallocOnlyRefParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling_V1.TwoStageRefReturn, 3, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling_V1.NativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling_V1.StackallocOnlyRefParameter, 1, 0 };
 
             // Abstract SafeHandle type by reference
             yield return new object[] { ID(), CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
@@ -124,13 +119,10 @@ namespace LibraryImportGenerator.UnitTests
 
             // Generic collection marshaller has different arity than collection.
             yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
             yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };

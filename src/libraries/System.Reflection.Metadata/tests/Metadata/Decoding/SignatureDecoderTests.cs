@@ -80,7 +80,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void DecodeVarArgsDefAndRef()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(VarArgsToDecode).GetTypeInfo().Assembly)))
@@ -132,7 +132,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         }
 
         // Test as much as we can with simple C# examples inline below.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void SimpleSignatureProviderCoverage()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
@@ -243,7 +243,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public event EventHandler<EventArgs> Event { add { } remove { } }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void PinnedAndUnpinnedLocals()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(PinnedAndUnpinnedLocalsToDecode).GetTypeInfo().Assembly)))
@@ -282,7 +282,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void WrongSignatureType()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(VarArgsToDecode).GetTypeInfo().Assembly)))

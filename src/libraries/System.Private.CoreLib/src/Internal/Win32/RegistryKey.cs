@@ -95,6 +95,8 @@ namespace Internal.Win32
                 return new RegistryKey(result);
             }
 
+            result.Dispose();
+
             // Return null if we didn't find the key.
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
             {

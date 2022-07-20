@@ -3899,16 +3899,12 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	int ngc_vars = 0;
 	for (guint32 i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
-			ctx->gc_var_indexes [i] = ngc_vars + 1;
-			ngc_vars ++;
-			ctx->gc_var_indexes_len = i + 1;
-			/*
 			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
 			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
 				ctx->gc_var_indexes [i] = ngc_vars + 1;
 				ngc_vars ++;
+				ctx->gc_var_indexes_len = i + 1;
 			}
-			*/
 		}
 	}
 

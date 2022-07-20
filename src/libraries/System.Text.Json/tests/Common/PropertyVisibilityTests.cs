@@ -1191,7 +1191,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var dictionary = new Dictionary<object, object>();
             // Uri is an unsupported dictionary key.
-            dictionary.Add(new Uri("http://typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]"), "bar");
+            dictionary.Add(new Uri("http://foo"), "bar");
 
             var concurrentDictionary = new ConcurrentDictionary<object, object>(dictionary);
 

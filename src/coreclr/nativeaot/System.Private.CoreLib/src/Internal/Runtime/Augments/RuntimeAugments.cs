@@ -86,6 +86,8 @@ namespace Internal.Runtime.Augments
                 || eeType == EETypePtr.EETypePtrOf<string>()
                )
                 return null;
+            if (eeType.IsByRefLike)
+                throw new System.Reflection.TargetException();
             return RuntimeImports.RhNewObject(eeType);
         }
 

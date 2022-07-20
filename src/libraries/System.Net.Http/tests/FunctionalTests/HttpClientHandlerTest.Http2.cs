@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
-        private async Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertHttpProtocolException(Task task, ProtocolErrors errorCode)
         {
             HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
@@ -291,7 +291,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
-                connection.Dispose();
+                await connection.DisposeAsync();
             }
         }
 
@@ -2549,6 +2549,70 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ConnectAsync_ReadWriteWebSocketStream()
+        {
+            var clientMessage = new byte[] { 1, 2, 3 };
+            var serverMessage = new byte[] { 4, 5, 6, 7 };
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            Http2LoopbackConnection connection = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+
+                // read request headers
+                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                // send response headers
+                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
+
+                // send reply
+                await connection.SendResponseDataAsync(streamId, serverMessage, endStream: false);
+
+                // send server EOS
+                await connection.SendResponseDataAsync(streamId, Array.Empty<byte>(), endStream: true);
+            });
+
+            StreamingHttpContent requestContent = new StreamingHttpContent();
+
+            using var handler = new SocketsHttpHandler();
+            handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+            using HttpClient client = new HttpClient(handler);
+
+            HttpRequestMessage request = new(HttpMethod.Connect, server.Address);
+            request.Version = HttpVersion.Version20;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            request.Headers.Protocol = "websocket";
+
+            // initiate request
+            var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            using HttpResponseMessage response = await responseTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+            // receive data
+            var readBuffer = new byte[10];
+            int bytesRead = await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(bytesRead, serverMessage.Length);
+            Assert.Equal(serverMessage, readBuffer[..bytesRead]);
+
+            await responseStream.WriteAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+            // Send client's EOS
+            requestContent.CompleteStream();
+            // Receive server's EOS
+            Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
+
+            Assert.NotNull(connection);
+            await connection.DisposeAsync();
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_RequestContentException_ResetsStream()
         {
@@ -2774,7 +2838,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.ENHANCE_YOUR_CALM, streamId));
 
                     // Trying to read on the response stream should fail now, and client should ignore any data received
-                    await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
+                    await AssertHttpProtocolException(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
                     // Attempting to write on the request body should now fail with IOException.
                     Exception e = await Assert.ThrowsAnyAsync<IOException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });

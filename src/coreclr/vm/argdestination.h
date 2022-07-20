@@ -278,8 +278,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
-
        _ASSERTE(IsStructPassedInRegs());
 
         TADDR genRegDest = dac_cast<TADDR>(GetStructGenRegDestinationAddress());

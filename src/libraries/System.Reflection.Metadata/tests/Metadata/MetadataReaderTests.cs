@@ -3088,8 +3088,11 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyName(tempFile.Path));
             }
 
-            Assembly a = typeof(MetadataReaderTests).Assembly;
-            Assert.Equal(new AssemblyName(a.FullName).ToString(), MetadataReader.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+            if (PlatformDetection.HasAssemblyFiles)
+            {
+                Assembly a = typeof(MetadataReaderTests).Assembly;
+                Assert.Equal(new AssemblyName(a.FullName).ToString(), MetadataReader.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+            }
         }
     }
 }

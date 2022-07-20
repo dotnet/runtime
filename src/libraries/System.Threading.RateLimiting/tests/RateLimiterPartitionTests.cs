@@ -12,7 +12,7 @@ namespace System.Threading.RateLimiting.Tests
         public void Create_Concurrency()
         {
             var options = new ConcurrencyLimiterOptions(10, QueueProcessingOrder.OldestFirst, 10);
-            var partition = RateLimitPartition.CreateConcurrencyLimiter(1, key => options);
+            var partition = RateLimitPartition.GetConcurrencyLimiter(1, key => options);
 
             var limiter = partition.Factory(1);
             var concurrencyLimiter = Assert.IsType<ConcurrencyLimiter>(limiter);
@@ -23,7 +23,7 @@ namespace System.Threading.RateLimiting.Tests
         public void Create_TokenBucket()
         {
             var options = new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 10, TimeSpan.FromMinutes(1), 1, true);
-            var partition = RateLimitPartition.CreateTokenBucketLimiter(1, key => options);
+            var partition = RateLimitPartition.GetTokenBucketLimiter(1, key => options);
 
             var limiter = partition.Factory(1);
             var tokenBucketLimiter = Assert.IsType<TokenBucketRateLimiter>(limiter);
@@ -35,7 +35,7 @@ namespace System.Threading.RateLimiting.Tests
         [Fact]
         public async Task Create_NoLimiter()
         {
-            var partition = RateLimitPartition.CreateNoLimiter(1);
+            var partition = RateLimitPartition.GetNoLimiter(1);
 
             var limiter = partition.Factory(1);
 
@@ -48,7 +48,7 @@ namespace System.Threading.RateLimiting.Tests
             lease = limiter.Acquire(int.MaxValue);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(int.MaxValue);
+            var wait = limiter.WaitAndAcquireAsync(int.MaxValue);
             Assert.True(wait.IsCompletedSuccessfully);
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -59,13 +59,13 @@ namespace System.Threading.RateLimiting.Tests
         [Fact]
         public void Create_AnyLimiter()
         {
-            var partition = RateLimitPartition.Create(1, key => new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 10)));
+            var partition = RateLimitPartition.Get(1, key => new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 10)));
 
             var limiter = partition.Factory(1);
             var concurrencyLimiter = Assert.IsType<ConcurrencyLimiter>(limiter);
             Assert.Equal(1, concurrencyLimiter.GetAvailablePermits());
 
-            var partition2 = RateLimitPartition.Create(1, key => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 10, TimeSpan.FromMilliseconds(100), 1, autoReplenishment: false)));
+            var partition2 = RateLimitPartition.Get(1, key => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 10, TimeSpan.FromMilliseconds(100), 1, autoReplenishment: false)));
             limiter = partition2.Factory(1);
             var tokenBucketLimiter = Assert.IsType<TokenBucketRateLimiter>(limiter);
             Assert.Equal(1, tokenBucketLimiter.GetAvailablePermits());
@@ -75,7 +75,7 @@ namespace System.Threading.RateLimiting.Tests
         public void Create_FixedWindow()
         {
             var options = new FixedWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 10, TimeSpan.FromMinutes(1), true);
-            var partition = RateLimitPartition.CreateFixedWindowLimiter(1, key => options);
+            var partition = RateLimitPartition.GetFixedWindowLimiter(1, key => options);
 
             var limiter = partition.Factory(1);
             var fixedWindowLimiter = Assert.IsType<FixedWindowRateLimiter>(limiter);
@@ -88,7 +88,7 @@ namespace System.Threading.RateLimiting.Tests
         public void Create_SlidingWindow()
         {
             var options = new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 10, TimeSpan.FromSeconds(33), 3, true);
-            var partition = RateLimitPartition.CreateSlidingWindowLimiter(1, key => options);
+            var partition = RateLimitPartition.GetSlidingWindowLimiter(1, key => options);
 
             var limiter = partition.Factory(1);
             var slidingWindowLimiter = Assert.IsType<SlidingWindowRateLimiter>(limiter);

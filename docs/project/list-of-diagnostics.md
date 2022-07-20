@@ -173,3 +173,9 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1062`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
 |  __`SYSLIB1063`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
 |  __`SYSLIB1064`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+
+### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
+
+| Suppression ID     | Suppressed Diagnostic ID | Description |
+| :----------------- | :----------------------- | :---------- |
+| __`SYSLIBSUPPRESS0001`__ | CA1822 | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |

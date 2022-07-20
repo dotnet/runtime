@@ -349,6 +349,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool HasSequencePoints { get => hasDebugInformation && !DebugInformation.SequencePointsBlob.IsNil; }
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
+        internal bool IsCompilerGenerated { get; }
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -435,6 +436,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 break;
                             case "DebuggerStepperBoundaryAttribute":
                                 DebuggerAttrInfo.HasStepperBoundary = true;
+                                break;
+                            case nameof(CompilerGeneratedAttribute):
+                                IsCompilerGenerated = true;
                                 break;
                         }
 
@@ -696,6 +700,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal AssemblyInfo assembly;
         internal int Token { get; }
         internal string Namespace { get; }
+        internal bool IsCompilerGenerated { get; }
         public string FullName { get; }
         public List<MethodInfo> Methods { get; } = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
@@ -755,6 +760,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug($"Failed to read browsable attributes of a property. ({ex.Message})");
                     continue;
                 }
+            }
+
+            foreach (var cattr in type.GetCustomAttributes())
+            {
+                var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
+                if (ctorHandle.Kind != HandleKind.MemberReference)
+                    continue;
+                var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                var attributeName = assembly.EnCGetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                if (attributeName == nameof(CompilerGeneratedAttribute))
+                    IsCompilerGenerated = true;
             }
 
             void AppendToBrowsable(Dictionary<string, DebuggerBrowsableState?> dict, CustomAttributeHandleCollection customAttrs, string fieldName)

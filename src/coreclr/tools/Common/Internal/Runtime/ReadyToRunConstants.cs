@@ -76,7 +76,7 @@ namespace Internal.ReadyToRunConstants
     public enum ReadyToRunVirtualFunctionOverrideFlags : uint
     {
         None = 0x00,
-        VirtualFunctionOverriden = 0x01,
+        VirtualFunctionOverridden = 0x01,
     }
 
     [Flags]

@@ -3474,7 +3474,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_CONST_PTR, true);
 
 #ifdef DEBUG
-    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_IntializeArrayIntrinsics;
+    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
     return gtNewBlkOpNode(dst,   // dst
@@ -3631,7 +3631,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 //    Intrinsics are generally not recognized in minopts and debug codegen.
 //
 //    However, certain traditional intrinsics are identifed as "must expand"
-//    if there is no fallback implmentation to invoke; these must be handled
+//    if there is no fallback implementation to invoke; these must be handled
 //    in all codegen modes.
 //
 //    New style intrinsics (where the fallback implementation is in IL) are
@@ -8501,6 +8501,11 @@ void Compiler::impCheckForPInvokeCall(
         call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
     }
 
+    if ((unmanagedCallConv == CorInfoCallConvExtension::Thiscall) && (sig->numArgs == 0))
+    {
+        BADCODE("thiscall with 0 arguments");
+    }
+
     // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
@@ -8574,11 +8579,6 @@ void Compiler::impCheckForPInvokeCall(
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }
-
-    if (unmanagedCallConv == CorInfoCallConvExtension::Thiscall)
-    {
-        call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
-    }
 }
 
 GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di)
@@ -8649,7 +8649,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     // For "thiscall", the first argument goes in a register. Since its
     // order does not need to be changed, we do not need to spill it
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         assert(argsToReverse);
         argsToReverse--;
@@ -8694,7 +8694,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
@@ -11445,7 +11445,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nBefore import CEE_LEAVE in " FMT_BB " (targetting " FMT_BB "):\n", block->bbNum,
+        printf("\nBefore import CEE_LEAVE in " FMT_BB " (targeting " FMT_BB "):\n", block->bbNum,
                block->bbJumpDest->bbNum);
         fgDispBasicBlocks();
         fgDispHandlerTab();
@@ -11912,7 +11912,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // In the above nested try-finally example, we create a step block (call it Bstep) which in branches to a block
     // where a finally would branch to (and such block is marked as finally target).  Block B1 branches to step block.
     // Because of re-import of B0, Bstep is also orphaned. Since Bstep is a finally target it cannot be removed.  To
-    // work around this we will duplicate B0 (call it B0Dup) before reseting. B0Dup is marked as BBJ_CALLFINALLY and
+    // work around this we will duplicate B0 (call it B0Dup) before resetting. B0Dup is marked as BBJ_CALLFINALLY and
     // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
     // will be treated as pair and handled correctly.
     if (block->bbJumpKind == BBJ_CALLFINALLY)
@@ -15469,7 +15469,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 //      3) Class Size can be determined beforehand (normal case)
                 // In the first case, we need to call a NEWOBJ helper (multinewarray).
                 // In the second case we call the constructor with a '0' this pointer.
-                // In the third case we alloc the memory, then call the constuctor.
+                // In the third case we alloc the memory, then call the constructor.
 
                 clsFlags = callInfo.classFlags;
                 if (clsFlags & CORINFO_FLG_ARRAY)
@@ -18354,7 +18354,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                 if (HBtab->HasCatchHandler() || HBtab->HasFinallyHandler() || HBtab->HasFilter())
                 {
                     BADCODE(
-                        "The 'this' pointer of an instance constructor is not intialized upon entry to a try region");
+                        "The 'this' pointer of an instance constructor is not initialized upon entry to a try region");
                 }
                 else
                 {
@@ -22357,7 +22357,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
 
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    // See what intrinisc we have...
+    // See what intrinsic we have...
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
     switch (ni)
     {
@@ -22854,6 +22854,22 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         {
             assert(call->IsDelegateInvoke());
             JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
+            return;
+        }
+
+        CORINFO_CLASS_HANDLE definingClass = info.compCompHnd->getMethodClass(likelyMethod);
+        likelyClassAttribs                 = info.compCompHnd->getClassAttribs(definingClass);
+
+        // For instance methods on value classes we need an extended check to
+        // check for the unboxing stub. This is NYI.
+        // Note: For dynamic PGO likelyMethod above will be the unboxing stub
+        // which would fail GDV for other reasons.
+        // However, with static profiles or textual PGO input it is still
+        // possible that likelyMethod is not the unboxing stub. So we do need
+        // this explicit check.
+        if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) != 0)
+        {
+            JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
             return;
         }
 

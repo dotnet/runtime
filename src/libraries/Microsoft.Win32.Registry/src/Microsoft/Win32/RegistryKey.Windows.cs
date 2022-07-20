@@ -220,8 +220,7 @@ namespace Microsoft.Win32
             }
 
             // connect to the specified remote registry
-            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out SafeRegistryHandle foreignHKey);
-
+            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new IntPtr((int)hKey), out SafeRegistryHandle foreignHKey);
             if (ret == 0 && !foreignHKey.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
@@ -350,15 +349,13 @@ namespace Microsoft.Win32
                     GetRegistryKeyAccess(IsWritable()) | (int)_regView,
                     out SafeRegistryHandle result);
 
-                if (ret == 0 && !result.IsInvalid)
+                if (ret != 0 || result.IsInvalid)
                 {
-                    return result;
-                }
-                else
-                {
+                    result.Dispose();
                     Win32Error(ret, null);
-                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
                 }
+
+                return result;
             }
         }
 

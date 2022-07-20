@@ -91,7 +91,7 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int tokenCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int tokenCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (tokenCount > _options.TokenLimit)

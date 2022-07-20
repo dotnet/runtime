@@ -449,9 +449,9 @@ namespace Internal.Runtime.TypeLoader
 
                         // The TestGCDescsForEquality helper will compare 2 GCDescs for equality, 4 bytes at a time (GCDesc contents treated as integers), and will read the
                         // GCDesc data in *reverse* order for instance GCDescs (subtracts 4 from the pointer values at each iteration).
-                        //    - For the first GCDesc, we use (pEEType - 4) to point to the first 4-byte integer directly preceeding the MethodTable
-                        //    - For the second GCDesc, given that the state.NonUniversalInstanceGCDesc already points to the first byte preceeding the template MethodTable, we
-                        //      subtract 3 to point to the first 4-byte integer directly preceeding the template MethodTable
+                        //    - For the first GCDesc, we use (pEEType - 4) to point to the first 4-byte integer directly preceding the MethodTable
+                        //    - For the second GCDesc, given that the state.NonUniversalInstanceGCDesc already points to the first byte preceding the template MethodTable, we
+                        //      subtract 3 to point to the first 4-byte integer directly preceding the template MethodTable
                         TestGCDescsForEquality(new IntPtr((byte*)pEEType - 4), state.NonUniversalInstanceGCDesc - 3, cbGCDesc, true);
                     }
 #endif

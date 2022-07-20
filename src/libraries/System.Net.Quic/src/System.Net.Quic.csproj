@@ -27,6 +27,8 @@
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs" Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs" Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
+             Link="Common\System\Net\Security\TlsAlertMessage.cs" />
   </ItemGroup>
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
@@ -34,6 +36,7 @@
     <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/71559")]: PNSE generator cannot handle required keyword, so excluding affected classes in ExcludeApiList.PNSE.txt and including real code for now. -->
     <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
     <Compile Include="System\Net\Quic\QuicConnectionOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicDefaults.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

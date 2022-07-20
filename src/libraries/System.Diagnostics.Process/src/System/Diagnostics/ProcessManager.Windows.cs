@@ -244,6 +244,8 @@ namespace System.Diagnostics
                 return processHandle;
             }
 
+            processHandle.Dispose();
+
             if (processId == 0)
             {
                 throw new Win32Exception(Interop.Errors.ERROR_ACCESS_DENIED);
@@ -271,6 +273,7 @@ namespace System.Diagnostics
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
+                threadHandle.Dispose();
                 if (result == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString()));
                 throw new Win32Exception(result);

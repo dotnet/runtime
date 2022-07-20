@@ -20,7 +20,11 @@ namespace System.Text.Json
             Debug.Assert(runtimeType != null);
 
             options ??= JsonSerializerOptions.Default;
-            options.InitializeForReflectionSerializer();
+
+            if (!options.IsLockedInstance || !DefaultJsonTypeInfoResolver.IsDefaultInstanceRooted)
+            {
+                options.InitializeForReflectionSerializer();
+            }
 
             return options.GetTypeInfoForRootType(runtimeType);
         }
@@ -33,7 +37,7 @@ namespace System.Text.Json
             JsonTypeInfo? info = context.GetTypeInfo(type);
             if (info is null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type, context);
             }
 
             return info;

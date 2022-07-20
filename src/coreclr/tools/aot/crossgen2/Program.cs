@@ -20,6 +20,7 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.IBC;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -79,6 +80,9 @@ namespace ILCompiler
                     break;
                 case Architecture.Arm64:
                     arch = TargetArchitecture.ARM64;
+                    break;
+                case Architecture.LoongArch64:
+                    arch = TargetArchitecture.LoongArch64;
                     break;
                 default:
                     throw new NotImplementedException();
@@ -206,6 +210,8 @@ namespace ILCompiler
             }
             else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                 return TargetArchitecture.ARM64;
+            else if (archArg.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.LoongArch64;
             else
                 throw new CommandLineException(SR.TargetArchitectureUnsupported);
         }
@@ -245,9 +251,16 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
-
 
             if (_commandLineOptions.InstructionSet != null)
             {

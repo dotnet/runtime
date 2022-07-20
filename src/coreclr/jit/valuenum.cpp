@@ -1295,7 +1295,7 @@ bool ValueNumStore::VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCand
 // Return Values: - This method signature is void but returns two values using
 //                  the write back parameters.
 //
-// Note: When 'vnWx' does not have an exception set, the orginal value is the
+// Note: When 'vnWx' does not have an exception set, the original value is the
 //       normal value and is written to 'pvn' and VNForEmptyExcSet() is
 //       written to 'pvnx'.
 //       When we have an exception set 'vnWx' will be a VN func with m_func
@@ -1380,7 +1380,7 @@ ValueNumPair ValueNumStore::VNPUnionExcSet(ValueNumPair vnpWx, ValueNumPair vnpE
 //
 // Return Value:
 //               - The Value Number for the expression without the exception set.
-//                 This can be the orginal 'vn', when there are no exceptions.
+//                 This can be the original 'vn', when there are no exceptions.
 //
 // Notes:        - Whenever we have an exception set the Value Number will be
 //                 a VN func with VNF_ValWithExc.
@@ -1510,7 +1510,7 @@ ValueNumPair ValueNumStore::VNPUniqueWithExc(var_types type, ValueNumPair vnpExc
 //
 // Return Value:
 //               - The Value Number for the expression without the exception set.
-//                 This can be the orginal 'vn', when there are no exceptions.
+//                 This can be the original 'vn', when there are no exceptions.
 //
 // Notes:        - Whenever we have an exception set the Value Number will be
 //                 a VN func with VNF_ValWithExc.
@@ -7921,76 +7921,20 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
-        {
-            simd8_t simd8Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd8Val = {};
-            }
-            else
-            {
-                simd8Val = tree->AsVecCon()->gtSimd8Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(tree->AsVecCon()->gtSimd8Val));
             break;
-        }
 
         case TYP_SIMD12:
-        {
-            simd12_t simd12Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd12Val = {};
-            }
-            else
-            {
-                simd12Val = tree->AsVecCon()->gtSimd12Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(simd12Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(tree->AsVecCon()->gtSimd12Val));
             break;
-        }
 
         case TYP_SIMD16:
-        {
-            simd16_t simd16Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd16Val = {};
-            }
-            else
-            {
-                simd16Val = tree->AsVecCon()->gtSimd16Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(simd16Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(tree->AsVecCon()->gtSimd16Val));
             break;
-        }
 
         case TYP_SIMD32:
-        {
-            simd32_t simd32Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd32Val = {};
-            }
-            else
-            {
-                simd32Val = tree->AsVecCon()->gtSimd32Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(simd32Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
             break;
-        }
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:

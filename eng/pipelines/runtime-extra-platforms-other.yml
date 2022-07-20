@@ -85,11 +85,12 @@ jobs:
     - windows_x64
     - windows_arm64
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
       nameSuffix: NativeAOT_Libs_Passing
-      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
+      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

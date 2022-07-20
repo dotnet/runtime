@@ -53,11 +53,17 @@ namespace Internal.Cryptography.Pal.Windows
         {
             int cbData = 0;
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, IntPtr.Zero, ref cbData))
+            {
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
 
             SafeHandle pvData = SafeHeapAllocHandle.Alloc(cbData);
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, pvData.DangerousGetHandle(), ref cbData))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            {
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                pvData.Dispose();
+                throw e;
+            }
 
             return pvData;
         }

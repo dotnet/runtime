@@ -317,12 +317,13 @@ namespace System.Security.Cryptography.Tests
             VerifyStaticCreateResult(SHA384.Create(typeof(SHA384Managed).FullName), typeof(SHA384Managed));
             VerifyStaticCreateResult(SHA512.Create(typeof(SHA512Managed).FullName), typeof(SHA512Managed));
 #pragma warning restore SYSLIB0022 // Rijndael types are obsolete
-        }
 
-        private static void VerifyStaticCreateResult(object obj, Type expectedType)
-        {
-           Assert.NotNull(obj);
-           Assert.IsType(expectedType, obj);
+            static void VerifyStaticCreateResult(object obj, Type expectedType)
+            {
+                Assert.NotNull(obj);
+                Assert.IsType(expectedType, obj);
+                (obj as IDisposable)?.Dispose();
+            }
         }
 
         [Fact]

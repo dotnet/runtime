@@ -274,6 +274,7 @@ namespace System.Security.Cryptography
             if (hr != S_OK)
             {
                 safeProvHandle.Dispose();
+
                 // If UseExistingKey flag is used and the key container does not exist
                 // throw an exception without attempting to create the container.
                 if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
@@ -294,6 +295,7 @@ namespace System.Security.Cryptography
 
                 if (!Interop.Advapi32.CryptSetProvParam(safeProvHandle, CryptProvParam.PP_CLIENT_HWND, ref parentWindowHandle, 0))
                 {
+                    safeProvHandle.Dispose();
                     throw GetErrorCode().ToCryptographicException();
                 }
             }
@@ -309,6 +311,7 @@ namespace System.Security.Cryptography
                             CryptProvParam.PP_KEYEXCHANGE_PIN;
                     if (!Interop.Advapi32.CryptSetProvParam(safeProvHandle, param, password, 0))
                     {
+                        safeProvHandle.Dispose();
                         throw GetErrorCode().ToCryptographicException();
                     }
                 }
