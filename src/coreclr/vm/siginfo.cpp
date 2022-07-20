@@ -4770,7 +4770,7 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // NB: we do not attempt to match constraints equivalent to object (and ValueType when tok1 is notNullable)
         // because they
         // a) are vacuous, and
-        // b) may be implicit (ie. absent) in the overriden variable's declaration
+        // b) may be implicit (ie. absent) in the overridden variable's declaration
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
                                        CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
           (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) &&

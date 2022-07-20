@@ -366,7 +366,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    public static void Xml_SerializeClassThatImplementsInteface()
+    public static void Xml_SerializeClassThatImplementsInterface()
     {
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
         ClassImplementsInterface actual = SerializeAndDeserialize<ClassImplementsInterface>(value,

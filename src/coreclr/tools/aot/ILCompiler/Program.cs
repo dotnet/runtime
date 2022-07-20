@@ -8,6 +8,7 @@ using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -17,6 +18,7 @@ using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -389,8 +391,9 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var logger = new Logger(Console.Out, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
+            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
                 Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies));
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -423,7 +426,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider);
+            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
@@ -463,10 +466,19 @@ namespace ILCompiler
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
 
-            ILScanResults scanResults = null;
-            string scanDgmlLogFileName = Get(_command.ScanDgmlLogFileName);
+            List<TypeDesc> scannerConstructedTypes = null;
+            List<MethodDesc> scannerCompiledMethods = null;
             int parallelism = Get(_command.Parallelism);
+
             if (useScanner)
+            {
+                // Run the scanner in a separate stack frame so that there's no dangling references to
+                // it once we're done with it and it can be garbage collected.
+                RunScanner();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void RunScanner()
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
@@ -475,17 +487,50 @@ namespace ILCompiler
                     .UseInteropStubManager(interopStubManager)
                     .UseLogger(logger);
 
+                string scanDgmlLogFileName = Get(_command.ScanDgmlLogFileName);
                 if (scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(Get(_command.GenerateFullScanDgmlLog) ?
                             DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
                 IILScanner scanner = scannerBuilder.ToILScanner();
 
-                scanResults = scanner.Scan();
+                ILScanResults scanResults = scanner.Scan();
+
+#if DEBUG
+                scannerCompiledMethods = new List<MethodDesc>(scanResults.CompiledMethodBodies);
+                scannerConstructedTypes = new List<TypeDesc>(scanResults.ConstructedEETypes);
+#endif
+
+                if (scanDgmlLogFileName != null)
+                    scanResults.WriteDependencyLog(scanDgmlLogFileName);
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
+
+                // If we have a scanner, feed the vtable analysis results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
+
+                // If we have a scanner, feed the generic dictionary results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
+
+                // If we have a scanner, we can drive devirtualization using the information
+                // we collected at scanning time (effectively sealing unsealed types if possible).
+                // This could be a command line switch if we really wanted to.
+                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
+
+                // If we use the scanner's result, we need to consult it to drive inlining.
+                // This prevents e.g. devirtualizing and inlining methods on types that were
+                // never actually allocated.
+                builder.UseInliningPolicy(scanResults.GetInliningPolicy());
+
+                // Use an error provider that prevents us from re-importing methods that failed
+                // to import with an exception during scanning phase. We would see the same failure during
+                // compilation, but before RyuJIT gets there, it might ask questions that we don't
+                // have answers for because we didn't scan the entire method.
+                builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
             }
 
             string ilDump = Get(_command.IlDump);
@@ -516,33 +561,6 @@ namespace ILCompiler
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(Get(_command.UseDwarf5));
 
-            if (scanResults != null)
-            {
-                // If we have a scanner, feed the vtable analysis results to the compilation.
-                // This could be a command line switch if we really wanted to.
-                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
-
-                // If we have a scanner, feed the generic dictionary results to the compilation.
-                // This could be a command line switch if we really wanted to.
-                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
-
-                // If we have a scanner, we can drive devirtualization using the information
-                // we collected at scanning time (effectively sealing unsealed types if possible).
-                // This could be a command line switch if we really wanted to.
-                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
-
-                // If we use the scanner's result, we need to consult it to drive inlining.
-                // This prevents e.g. devirtualizing and inlining methods on types that were
-                // never actually allocated.
-                builder.UseInliningPolicy(scanResults.GetInliningPolicy());
-
-                // Use an error provider that prevents us from re-importing methods that failed
-                // to import with an exception during scanning phase. We would see the same failure during
-                // compilation, but before RyuJIT gets there, it might ask questions that we don't
-                // have answers for because we didn't scan the entire method.
-                builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
-            }
-
             builder.UseResilience(Get(_command.Resilient));
 
             ICompilation compilation = builder.ToCompilation();
@@ -569,11 +587,9 @@ namespace ILCompiler
             if (dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(dgmlLogFileName);
 
-            if (scanResults != null)
+#if DEBUG
+            if (scannerConstructedTypes != null)
             {
-                if (scanDgmlLogFileName != null)
-                    scanResults.WriteDependencyLog(scanDgmlLogFileName);
-
                 // If the scanner and compiler don't agree on what to compile, the outputs of the scanner might not actually be usable.
                 // We are going to check this two ways:
                 // 1. The methods and types generated during compilation are a subset of method and types scanned
@@ -581,9 +597,9 @@ namespace ILCompiler
 
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
-                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
+                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scannerCompiledMethods,
                     "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method));
-                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
+                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scannerConstructedTypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 
                 static bool IsRelatedToInvalidInput(MethodDesc method)
@@ -607,15 +623,16 @@ namespace ILCompiler
 
                     // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
                     // doesn't expand them. They would show up as noisy diffs.
-                    DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
+                    DiffCompilationResults(ref dummy, scannerCompiledMethods, compilationResults.CompiledMethodBodies,
                     "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.OwningType.IsIntrinsic);
-                    DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
+                    DiffCompilationResults(ref dummy, scannerConstructedTypes, compilationResults.ConstructedEETypes,
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }
 
                 if (scanningFail)
                     throw new Exception("Scanning failure");
             }
+#endif
 
             if (debugInfoProvider is IDisposable)
                 ((IDisposable)debugInfoProvider).Dispose();
@@ -625,7 +642,6 @@ namespace ILCompiler
             return 0;
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
         private void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
             string set1name, string set2name, Predicate<T> filter)
         {

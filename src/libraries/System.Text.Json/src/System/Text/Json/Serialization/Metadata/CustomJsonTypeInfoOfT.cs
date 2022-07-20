@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            // Parametrized constructors not supported yet for custom types
+            // Parameterized constructors not supported yet for custom types
             return Array.Empty<JsonParameterInfoValues>();
         }
     }

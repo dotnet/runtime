@@ -67,7 +67,7 @@ namespace System.Threading.RateLimiting.Test
         {
             // This test verifies the following behavior
             // 1. when we have available permits after replenish to serve the queued requests
-            // 2. when the oldest item from queue is remove to accomodate new requests (QueueProcessingOrder: NewestFirst)
+            // 2. when the oldest item from queue is remove to accommodate new requests (QueueProcessingOrder: NewestFirst)
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(4, QueueProcessingOrder.NewestFirst, 4,
                 TimeSpan.Zero, 3, autoReplenishment: false));
 

@@ -51,7 +51,7 @@
 #define GET_ENUMERATOR_METHOD_NAME          W("GetEnumerator")
 
 #ifdef _DEBUG
-    VOID IntializeInteropLogging();
+    VOID InitializeInteropLogging();
 #endif
 
 struct ByrefArgumentInfo
@@ -3753,7 +3753,7 @@ void InitializeComInterop()
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
-    IntializeInteropLogging();
+    InitializeInteropLogging();
 #endif //_DEBUG
 }
 
@@ -3766,7 +3766,7 @@ void InitializeComInterop()
 static int g_TraceCount = 0;
 static IUnknown* g_pTraceIUnknown = NULL;
 
-VOID IntializeInteropLogging()
+VOID InitializeInteropLogging()
 {
     WRAPPER_NO_CONTRACT;
 

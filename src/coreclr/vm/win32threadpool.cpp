@@ -137,7 +137,7 @@ CLRLifoSemaphore* ThreadpoolMgr::RetiredWorkerSemaphore;
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) LONG  ThreadpoolMgr::GateThreadStatus=GATE_THREAD_STATUS_NOT_RUNNING;
 
-// Move out of from preceeding variables' cache line
+// Move out of from preceding variables' cache line
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) ThreadpoolMgr::RecycledListsWrapper ThreadpoolMgr::RecycledLists;
 
 BOOL ThreadpoolMgr::IsApcPendingOnWaitThread = FALSE;
@@ -2151,7 +2151,7 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
 }
 
 
-// Returns a wait thread that can accomodate another wait request. The
+// Returns a wait thread that can accommodate another wait request. The
 // caller is responsible for synchronizing access to the WaitThreadsHead
 ThreadpoolMgr::ThreadCB* ThreadpoolMgr::FindWaitThread()
 {

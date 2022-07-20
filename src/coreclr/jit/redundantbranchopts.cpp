@@ -553,6 +553,12 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     assert(block->bbJumpKind == BBJ_COND);
     assert(domBlock->bbJumpKind == BBJ_COND);
 
+    if (fgCurBBEpochSize != (fgBBNumMax + 1))
+    {
+        JITDUMP("Looks like we've added a new block (e.g. during optLoopHoist) since last renumber, so no threading\n");
+        return false;
+    }
+
     // If the dominating block is not the immediate dominator
     // we might need to duplicate a lot of code to thread
     // the jumps. See if that's the case.
@@ -1129,7 +1135,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         // If prevTree has side effects, bail,
-        // unless it is in the immediately preceeding statement.
+        // unless it is in the immediately preceding statement.
         //
         // (we'll later show that any exception must come from the RHS as the LHS
         // will be a simple local).

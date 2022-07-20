@@ -17,8 +17,22 @@ namespace System.Text.Json.Serialization.Metadata
         private Func<T>? _typedCreateObject;
 
         /// <summary>
-        /// Function for creating object before properties are set. If set to null type is not deserializable.
+        /// Gets or sets a parameterless factory to be used on deserialization.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// A parameterless factory is not supported for the current metadata <see cref="JsonTypeInfo.Kind"/>.
+        /// </exception>
+        /// <remarks>
+        /// If set to <see langword="null" />, any attempt to deserialize instances of the given type will fail at runtime.
+        ///
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// types with a single default constructor or default constructors annotated with <see cref="JsonConstructorAttribute"/>
+        /// will be mapped to this delegate.
+        /// </remarks>
         public new Func<T>? CreateObject
         {
             get => _typedCreateObject;
@@ -107,6 +121,16 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 JsonTypeInfo = this
             };
+        }
+
+        private protected void PopulatePolymorphismMetadata()
+        {
+            JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            if (options != null)
+            {
+                options.DeclaringTypeInfo = this;
+                _polymorphismOptions = options;
+            }
         }
 
         private protected void MapInterfaceTypesToCallbacks()
