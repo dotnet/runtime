@@ -29,12 +29,7 @@ namespace System.Formats.Tar
         // Writes the current header as a V7 entry into the archive stream.
         internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
         {
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
-
-            int checksum = WriteName(buffer, out _);
-            checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
-            _checksum = WriteChecksum(checksum, buffer);
+            long actualLength = WriteV7FieldsToBuffer(buffer);
 
             archiveStream.Write(buffer);
 
@@ -45,16 +40,11 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously writes the current header as a V7 entry into the archive stream and returns the value of the final checksum.
-        internal async Task<int> WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
-
-            int tmpChecksum = WriteName(buffer.Span, out _);
-            tmpChecksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            int checksum = WriteChecksum(tmpChecksum, buffer.Span);
+            long actualLength = WriteV7FieldsToBuffer(buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -62,8 +52,19 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+        }
 
-            return checksum;
+        // Writes the V7 header fields to the specified buffer, calculates and writes the checksum, then returns the final data length;
+        private long WriteV7FieldsToBuffer(Span<byte> buffer)
+        {
+            long actualLength = GetTotalDataBytesToWrite();
+            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
+
+            int tmpChecksum = WriteName(buffer, out _);
+            tmpChecksum += WriteCommonFields(buffer, actualLength, actualEntryType);
+            _checksum = WriteChecksum(tmpChecksum, buffer);
+
+            return actualLength;
         }
 
         // Writes the current header as a Ustar entry into the archive stream.

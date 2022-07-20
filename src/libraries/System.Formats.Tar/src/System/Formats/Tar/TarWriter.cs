@@ -343,7 +343,7 @@ namespace System.Formats.Tar
             switch (entry.Format)
             {
                 case TarEntryFormat.V7:
-                    entry._header._checksum = await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryFormat.Ustar:
