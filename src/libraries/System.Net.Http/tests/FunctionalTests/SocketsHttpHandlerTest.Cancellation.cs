@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -326,27 +327,32 @@ namespace System.Net.Http.Functional.Tests
 
         // [OuterLoop("Incurs significant delay.")] // TODO: Uncomment when ready
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("1.1")]
-        [InlineData("2.0")]
-        public static void CancelPendingRequest_DropsStalledConnectionAttempt(string versionString)
+        [InlineData("1.1", 10_000, 1_000, 100)]
+        [InlineData("2.0", 10_000, 1_000, 100)]
+        [InlineData("1.1", 20_000, 10_000, null)]
+        [InlineData("2.0", 20_000, 10_000, null)]
+        public static void CancelPendingRequest_DropsStalledConnectionAttempt(string versionString, int firstConnectionDelayMs, int requestTimeoutMs, int? pendingConnectionTimeoutOnRequestCompletion)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = "100";
+            if (pendingConnectionTimeoutOnRequestCompletion is not null)
+            {
+                options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = pendingConnectionTimeoutOnRequestCompletion.ToString();
+            }
 
-            RemoteExecutor.Invoke(static v => CancelPendingRequest_DropsStalledConnectionAttempt_Impl(v), versionString, options).Dispose();
+            RemoteExecutor.Invoke(CancelPendingRequest_DropsStalledConnectionAttempt_Impl, versionString, firstConnectionDelayMs.ToString(), requestTimeoutMs.ToString(), options).Dispose();
         }
 
-        private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString)
+        private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString, string firstConnectionDelayMsString, string requestTimeoutMsString)
         {
             var version = Version.Parse(versionString);
             LoopbackServerFactory factory = GetFactoryForVersion(version);
 
             const int AttemptCount = 3;
-            const int FirstConnectionDelayMs = 10_000;
-            const int RequestTimeoutMs = 1000;
+            int firstConnectionDelayMs = int.Parse(firstConnectionDelayMsString);
+            int requestTimeoutMs = int.Parse(requestTimeoutMsString);
             bool firstConnection = true;
 
-            using CancellationTokenSource cts0 = new CancellationTokenSource(RequestTimeoutMs);
+            using CancellationTokenSource cts0 = new CancellationTokenSource(requestTimeoutMs);
 
             await factory.CreateClientAndServerAsync(async uri =>
             {
@@ -361,7 +367,7 @@ namespace System.Net.Http.Functional.Tests
 
                 for (int i = 0; i < AttemptCount; i++)
                 {
-                    using var cts1 = new CancellationTokenSource(RequestTimeoutMs);
+                    using var cts1 = new CancellationTokenSource(requestTimeoutMs);
                     using var response = await client.GetAsync(uri, cts1.Token);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -385,13 +391,58 @@ namespace System.Net.Http.Functional.Tests
                     firstConnection = false;
                     await Task.Delay(100, cancellationToken); // Wait for the request to be pushed to the queue
                     cts0.Cancel(); // cancel the first request faster than RequestTimeoutMs
-                    await Task.Delay(FirstConnectionDelayMs, cancellationToken); // Simulate stalled connection
+                    await Task.Delay(firstConnectionDelayMs, cancellationToken); // Simulate stalled connection
                 }
                 var s = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
                 await s.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
 
                 return new NetworkStream(s, ownsSocket: true);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PendingConnectionTimeout_Infinite_DoesNotCancelConections()
+        {
+            //RemoteInvokeOptions options = new RemoteInvokeOptions();
+            ////options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = int.MaxValue.ToString();
+            //RemoteExecutor.Invoke(PendingConnectionTimeout_Infinite_DoesNotCancelConections_Impl, options).Dispose();
+            PendingConnectionTimeout_Infinite_DoesNotCancelConections_Impl().GetAwaiter().GetResult();
+        }
+
+        private async Task PendingConnectionTimeout_Infinite_DoesNotCancelConections_Impl()
+        {
+            bool connected = false;
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            await new Http11LoopbackServerFactory().CreateClientAndServerAsync(async uri =>
+            {
+                using var handler = CreateHttpClientHandler(HttpVersion.Version11);
+                GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = DoConnect;
+                using var client = new HttpClient(handler) { DefaultRequestVersion = HttpVersion.Version11 };
+
+                await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync(uri, cts.Token));
+            },
+            server => server.AcceptConnectionAsync(_ => Task.CompletedTask));
+
+            async ValueTask<Stream> DoConnect(SocketsHttpConnectionContext ctx, CancellationToken cancellationToken)
+            {
+                var s = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                cancellationToken.Register(() => _output.WriteLine("yo cancelled"));
+                await Task.Delay(500, cancellationToken);
+                cts.Cancel();
+
+                _output.WriteLine("0");
+                // Ideally we should wait here for infinite amount of time, this is obviously impossible. 
+                // This test is mostly here to cover the int.MaxValue == infinite special case.
+                await Task.Delay(16_000, cancellationToken);
+                _output.WriteLine("1");
+                await s.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
+                _output.WriteLine("2");
+                connected = true;
+                return new NetworkStream(s, ownsSocket: true);
+            }
+
+            Assert.True(connected);
         }
     }
 }
