@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO.Tests;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -20,7 +21,6 @@ namespace System.IO.Pipes.Tests
         protected override Type UnsupportedConcurrentExceptionType => null;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool CansReturnFalseAfterDispose => false;
-        protected override bool FullyCancelableOperations => !OperatingSystem.IsWindows();
 
         [PlatformSpecific(TestPlatforms.Windows)] // WaitForPipeDrain isn't supported on Unix
         [Fact]
@@ -65,6 +65,7 @@ namespace System.IO.Pipes.Tests
 
         protected abstract NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1);
         protected abstract NamedPipeClientStream CreateClientStream(string pipeName);
+        protected abstract PipeOptions Options { get; }
 
         protected (NamedPipeServerStream Server, NamedPipeClientStream Client) CreateServerAndClientStreams()
         {
@@ -215,9 +216,11 @@ namespace System.IO.Pipes.Tests
             Assert.Throws<InvalidOperationException>(() => server.WaitForConnection());
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        public async Task CancelTokenOn_ServerWaitForConnectionAsync_Throws_OperationCanceledException()
+        public async Task CancelTokenOn_ServerWaitForConnectionAsync_Throws_OperationCanceledException(int cancellationDelay)
         {
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
             using StreamPair streams = (server, client);
@@ -225,7 +228,8 @@ namespace System.IO.Pipes.Tests
             var ctx = new CancellationTokenSource();
 
             Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
-            ctx.Cancel();
+
+            ctx.CancelAfter(cancellationDelay);
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWaitTimeout);
 
             Assert.True(server.WaitForConnectionAsync(ctx.Token).IsCanceled);
@@ -235,6 +239,12 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_OperationCanceledException()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Test depends on PipeOptions.Asynchronous, as CancelIoEx is for overlapped I/O
+                return;
+            }
+
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
             using StreamPair streams = (server, client);
 
@@ -249,6 +259,12 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_IOException()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Test depends on PipeOptions.Asynchronous, as CancelIoEx is for overlapped I/O
+                return;
+            }
+
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
             using StreamPair streams = (server, client);
 
@@ -523,6 +539,12 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Test depends on PipeOptions.Asynchronous, as CancelIoEx is for overlapped I/O
+                return;
+            }
+
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (NamedPipeServerStream server, NamedPipeClientStream client) = GetClientAndServer(streams);
 
@@ -551,6 +573,12 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Test depends on PipeOptions.Asynchronous, as CancelIoEx is for overlapped I/O
+                return;
+            }
+
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (NamedPipeServerStream server, NamedPipeClientStream client) = GetClientAndServer(streams);
 
@@ -612,6 +640,12 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Test depends on PipeOptions.Asynchronous, as CancelIoEx is for overlapped I/O
+                return;
+            }
+
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (NamedPipeServerStream server, NamedPipeClientStream client) = GetClientAndServer(streams);
 
@@ -640,6 +674,12 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Test depends on PipeOptions.Asynchronous, as CancelIoEx is for overlapped I/O
+                return;
+            }
+
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (NamedPipeServerStream server, NamedPipeClientStream client) = GetClientAndServer(streams);
 
@@ -680,7 +720,7 @@ namespace System.IO.Pipes.Tests
             using NamedPipeClientStream client = CreateClientStream(pipeName);
             await client.ConnectAsync();
 
-            await Assert.ThrowsAsync<IOException>(() => wait1);
+            await Assert.ThrowsAnyAsync<Exception>(() => wait1);
 
             await wait2;
 
@@ -717,30 +757,65 @@ namespace System.IO.Pipes.Tests
         }
     }
 
-    public sealed class NamedPipeTest_ServerOut_ClientIn : NamedPipeStreamConformanceTests
+    public abstract class NamedPipeTest_ServerOut_ClientIn : NamedPipeStreamConformanceTests
     {
         protected override NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1) =>
-            new NamedPipeServerStream(pipeName, PipeDirection.Out, maxInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            new NamedPipeServerStream(pipeName, PipeDirection.Out, maxInstances, PipeTransmissionMode.Byte, Options);
 
         protected override NamedPipeClientStream CreateClientStream(string pipeName) =>
-            new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous);
+            new NamedPipeClientStream(".", pipeName, PipeDirection.In, Options);
     }
 
-    public sealed class NamedPipeTest_ServerIn_ClientOut : NamedPipeStreamConformanceTests
+    public abstract class NamedPipeTest_ServerIn_ClientOut : NamedPipeStreamConformanceTests
     {
         protected override NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1) =>
-            new NamedPipeServerStream(pipeName, PipeDirection.In, maxInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            new NamedPipeServerStream(pipeName, PipeDirection.In, maxInstances, PipeTransmissionMode.Byte, Options);
 
         protected override NamedPipeClientStream CreateClientStream(string pipeName) =>
-            new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+            new NamedPipeClientStream(".", pipeName, PipeDirection.Out, Options);
     }
 
-    public sealed class NamedPipeTest_ServerInOut_ClientInOut : NamedPipeStreamConformanceTests
+    public abstract class NamedPipeTest_ServerInOut_ClientInOut : NamedPipeStreamConformanceTests
     {
         protected override NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1) =>
-            new NamedPipeServerStream(pipeName, PipeDirection.InOut, maxInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            new NamedPipeServerStream(pipeName, PipeDirection.InOut, maxInstances, PipeTransmissionMode.Byte, Options);
 
         protected override NamedPipeClientStream CreateClientStream(string pipeName) =>
-            new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, Options);
+    }
+
+    public sealed class NamedPipeTest_ServerOut_ClientIn_Synchronous : NamedPipeTest_ServerOut_ClientIn
+    {
+        protected override PipeOptions Options => PipeOptions.None;
+    }
+
+    public sealed class NamedPipeTest_ServerOut_ClientIn_Asynchronous : NamedPipeTest_ServerOut_ClientIn
+    {
+        protected override PipeOptions Options => PipeOptions.Asynchronous;
+    }
+
+    public sealed class NamedPipeTest_ServerIn_ClientOut_Synchronous : NamedPipeTest_ServerIn_ClientOut
+    {
+        protected override PipeOptions Options => PipeOptions.None;
+    }
+
+    public sealed class NamedPipeTest_ServerIn_ClientOut_Asynchronous : NamedPipeTest_ServerIn_ClientOut
+    {
+        protected override PipeOptions Options => PipeOptions.Asynchronous;
+    }
+
+    public sealed class NamedPipeTest_ServerInOut_ClientInOut_Synchronous : NamedPipeTest_ServerInOut_ClientInOut
+    {
+        protected override PipeOptions Options => PipeOptions.None;
+
+        // TODO https://github.com/dotnet/runtime/issues/72526:
+        // The ConcurrentBidirectionalReadsWrites_Success test hangs on Windows with PipeOptions.None and InOut named pipes.
+        // Disabling for now.
+        protected override bool SupportsConcurrentBidirectionalUse => !OperatingSystem.IsWindows();
+    }
+
+    public sealed class NamedPipeTest_ServerInOut_ClientInOut_Asynchronous : NamedPipeTest_ServerInOut_ClientInOut
+    {
+        protected override PipeOptions Options => PipeOptions.Asynchronous;
     }
 }

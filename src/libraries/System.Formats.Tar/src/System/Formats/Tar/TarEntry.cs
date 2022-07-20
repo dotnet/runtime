@@ -41,15 +41,8 @@ namespace System.Formats.Tar
                 TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
             }
 
-            _header = default;
-            _header._format = format;
-
             // Default values for fields shared by all supported formats
-            _header._name = entryName;
-            _header._mode = TarHelpers.GetDefaultMode(entryType);
-            _header._mTime = DateTimeOffset.UtcNow;
-            _header._typeFlag = entryType;
-            _header._linkName = string.Empty;
+            _header = new TarHeader(format, entryName, TarHelpers.GetDefaultMode(entryType), DateTimeOffset.UtcNow, entryType);
         }
 
         // Constructor called when converting an entry to the selected format.
@@ -60,38 +53,13 @@ namespace System.Formats.Tar
                 throw new InvalidOperationException(SR.TarCannotConvertPaxGlobalExtendedAttributesEntry);
             }
 
-            TarEntryType compatibleEntryType;
-            if (other.Format is TarEntryFormat.V7 && other.EntryType is TarEntryType.V7RegularFile && format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu)
-            {
-                compatibleEntryType = TarEntryType.RegularFile;
-            }
-            else if (other.Format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu && other.EntryType is TarEntryType.RegularFile && format is TarEntryFormat.V7)
-            {
-                compatibleEntryType = TarEntryType.V7RegularFile;
-            }
-            else
-            {
-                compatibleEntryType = other.EntryType;
-            }
+            TarEntryType compatibleEntryType = TarHelpers.GetCorrectTypeFlagForFormat(format, other.EntryType);
 
             TarHelpers.ThrowIfEntryTypeNotSupported(compatibleEntryType, format);
 
             _readerOfOrigin = other._readerOfOrigin;
 
-            _header = default;
-            _header._format = format;
-
-            _header._name = other._header._name;
-            _header._mode = other._header._mode;
-            _header._uid = other._header._uid;
-            _header._gid = other._header._gid;
-            _header._size = other._header._size;
-            _header._mTime = other._header._mTime;
-            _header._checksum = 0;
-            _header._typeFlag = compatibleEntryType;
-            _header._linkName = other._header._linkName;
-
-            _header._dataStream = other._header._dataStream;
+            _header = new TarHeader(format, compatibleEntryType, other._header);
         }
 
         /// <summary>
@@ -148,7 +116,7 @@ namespace System.Formats.Tar
         /// <exception cref="InvalidOperationException">Cannot set the link name if the entry type is not <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/>.</exception>
         public string LinkName
         {
-            get => _header._linkName;
+            get => _header._linkName ?? string.Empty;
             set
             {
                 if (_header._typeFlag is not TarEntryType.HardLink and not TarEntryType.SymbolicLink)

@@ -2127,6 +2127,34 @@ partial class Test
 }}
 ";
 
+        public static string GenericsStress => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{DisableRuntimeMarshalling}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void Method(S<int>.N<bool> v);
+}}
+
+class S<T>
+{{
+    [NativeMarshalling(typeof(Container<,>.NestedMarshallerType))]
+    public struct N<U>
+    {{
+    }}
+}}
+
+class Container<T, U>
+{{
+    [CustomMarshaller(typeof(S<>.N<>), MarshalMode.ManagedToUnmanagedIn, typeof(Container<,>.NestedMarshallerType))]
+    public static class NestedMarshallerType
+    {{
+        public static int ConvertToUnmanaged(S<T>.N<U> managed) => 0;
+    }}
+}}
+";
+
         public static string RefReturn(string typeName) => $@"
 using System.Runtime.InteropServices;
 partial struct Basic

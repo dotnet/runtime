@@ -3401,7 +3401,7 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 					encode_klass_ref (acfg, container->owner.klass, p, &p);
 			}
 		}
-	} else if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) {
+	} else if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR || m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR) {
 		encode_value (MONO_AOT_TYPEREF_PTR, p, &p);
 		encode_type (acfg, m_class_get_byval_arg (klass), p, &p);
 	} else {
