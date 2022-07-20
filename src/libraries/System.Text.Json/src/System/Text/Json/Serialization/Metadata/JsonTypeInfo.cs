@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract void SetCreateObject(Delegate? createObject);
         private protected Func<object>? _createObject;
 
-        internal Func<object>? CreateObjectForExtensionDataProperty { get; private protected set; }
+        internal Func<object>? CreateObjectForExtensionDataProperty { get; set; }
 
         /// <summary>
         /// Gets or sets a callback to be invoked before serialization occurs.
@@ -523,7 +523,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal virtual void Configure()
+        internal void Configure()
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
@@ -538,8 +538,6 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == Converter.ConverterStrategy,
                 $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({Converter.ConverterStrategy})");
-
-            converter.ConfigureJsonTypeInfo(this, Options);
 
             if (Kind == JsonTypeInfoKind.Object)
             {
