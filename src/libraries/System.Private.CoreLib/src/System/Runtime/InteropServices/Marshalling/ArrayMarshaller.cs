@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.Marshalling
             => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
 
         /// <summary>
-        /// Frees memory for the unmanaged array
+        /// Frees memory for the unmanaged array.
         /// </summary>
         /// <param name="unmanaged">Unmanaged array</param>
         public static void Free(TUnmanagedElement* unmanaged)
@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             /// <summary>
-            /// Gets a pinnable reference to the managed span to a pointer to pass directly to unmanaged code.
+            /// Gets a pinnable reference to the managed array.
             /// </summary>
             /// <param name="array">The managed array.</param>
             /// <returns>The reference that can be pinned and directly passed to unmanaged code.</returns>

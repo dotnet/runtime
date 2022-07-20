@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             /// <summary>
-            /// Pin the managed span to a pointer to pass directly to unmanaged code.
+            /// Gets a pinnable reference to the managed span.
             /// </summary>
             /// <param name="managed">The managed span.</param>
             /// <returns>A reference that can be pinned and directly passed to unmanaged code.</returns>
