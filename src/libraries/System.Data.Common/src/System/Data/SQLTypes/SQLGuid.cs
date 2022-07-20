@@ -323,6 +323,6 @@ namespace System.Data.SqlTypes
             si.AddValue("m_value", ToByteArray());
         }
 
-        public static readonly SqlGuid Null = default;
+        public static readonly SqlGuid Null;
     } // SqlGuid
 } // namespace System.Data.SqlTypes
