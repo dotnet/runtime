@@ -14,16 +14,15 @@ PROBE_SAVE_FLAGS_RAX_IS_GCREF   equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + P
 ;;  - BITMASK: bitmask describing pushes, may be volatile register or constant value
 ;;  - RAX: managed function return value, may be an object or byref
 ;;  - preserved regs: need to stay preserved, may contain objects or byrefs
-;;  - extraStack bytes of stack have already been allocated
 ;;
 ;; INVARIANTS
 ;; - The macro assumes it is called from a prolog, prior to a frame pointer being setup.
 ;; - All preserved registers remain unchanged from their values in managed code.
 ;;
-PUSH_PROBE_FRAME macro threadReg, trashReg, extraStack, BITMASK
+PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
 
     push_vol_reg    rax                         ; save RAX, it might contain an objectref
-    lea             trashReg, [rsp + 10h + extraStack]
+    lea             trashReg, [rsp + 10h]
     push_vol_reg    trashReg                    ; save caller's RSP
     push_nonvol_reg r15                         ; save preserved registers
     push_nonvol_reg r14                         ;   ..
@@ -35,12 +34,12 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, extraStack, BITMASK
     push_vol_reg    BITMASK                     ; save the register bitmask passed in by caller
     push_vol_reg    threadReg                   ; Thread * (unused by stackwalker)
     push_nonvol_reg rbp                         ; save caller's RBP
-    mov             trashReg, [rsp + 12*8 + extraStack]  ; Find the return address
+    mov             trashReg, [rsp + 12*8]  ; Find the return address
     push_vol_reg    trashReg                    ; save m_RIP
     lea             trashReg, [rsp + 0]         ; trashReg == address of frame
 
     ;; allocate scratch space and any required alignment
-    alloc_stack     20h + 10h + (extraStack AND (10h-1))
+    alloc_stack     20h + 10h
 
     ;; save xmm0 in case it's being used as a return value
     movdqa          [rsp + 20h], xmm0
@@ -54,11 +53,9 @@ endm
 ;; registers and return value to their values from before the probe was called (while also updating any
 ;; object refs or byrefs).
 ;;
-;; NOTE: does NOT deallocate the 'extraStack' portion of the stack, the user of this macro must do that.
-;;
-POP_PROBE_FRAME macro extraStack
+POP_PROBE_FRAME macro 
     movdqa      xmm0, [rsp + 20h]
-    add         rsp, 20h + 10h + (extraStack AND (10h-1)) + 8
+    add         rsp, 20h + 10h + 8  ; deallocate stack and discard saved m_RIP
     pop         rbp
     pop         rax     ; discard Thread*
     pop         rax     ; discard BITMASK
@@ -171,12 +168,12 @@ LEAF_END RhpGcStressHijackByref, _TEXT
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
 NESTED_ENTRY RhpGcStressProbe, _TEXT
-        PUSH_PROBE_FRAME rdx, rax, 0, rcx
+        PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
         call        REDHAWKGCINTERFACE__STRESSGC
 
-        POP_PROBE_FRAME 0
+        POP_PROBE_FRAME
         ret
 NESTED_END RhpGcStressProbe, _TEXT
 
@@ -189,7 +186,7 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         jnz         @f
         ret
 @@:
-        PUSH_PROBE_FRAME rdx, rax, 0, rcx
+        PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
         mov         rbx, rdx
@@ -199,10 +196,10 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jnz         Abort
-        POP_PROBE_FRAME 0
+        POP_PROBE_FRAME
         ret
 Abort:
-        POP_PROBE_FRAME 0
+        POP_PROBE_FRAME
         mov         rcx, STATUS_REDHAWK_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
