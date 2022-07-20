@@ -118,7 +118,7 @@ PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PT
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -344,8 +344,10 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
         // debugger suspend points. Changes in that area have proven to be error-prone in the past and we
         // don't yet have the appropriate testing to validate that a future attempt gets it correct.
         lockHolder.Release();
-        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-        pinnedHandleArrayObj = (PTRARRAYREF)AllocateObjectArray(newBucketSize, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
+        {
+            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+            pinnedHandleArrayObj = (PTRARRAYREF)AllocateObjectArray(newBucketSize, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
+        }
         lockHolder.Acquire();
 
         // after leaving and re-entering the lock anything we verified or computed above using internal state could
@@ -814,7 +816,7 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
     if (ppLazyAllocate)
     {
         // race with other threads that might be doing the same concurrent allocation
-        if (!InterlockedCompareExchangeT<OBJECTREF*>(ppLazyAllocate, result, NULL))
+        if (InterlockedCompareExchangeT<OBJECTREF*>(ppLazyAllocate, result, NULL) != NULL)
         {
             // we lost the race, release our handles and use the handles from the
             // winning thread
