@@ -446,7 +446,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
                            static_cast<uint64_t>(instructionsEnd));
 
     // see DWARF Spec, section 6.4.2 for details on unwind opcodes
-    while ((p < instructionsEnd) && (codeOffset < pcoffset)) {
+    while ((p < instructionsEnd) && (codeOffset <= pcoffset)) {
       uint64_t reg;
       uint64_t reg2;
       int64_t offset;
