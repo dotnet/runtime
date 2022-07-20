@@ -2,14 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices;
 
 static class Program
 {
+    [DllImport("cet_check.dll")]
+    private static extern long ReadShadowStackPointer();
+    
     public static int Main()
     {
         Console.WriteLine("Checking whether codeflow enforcement technology (CET) is active");
-        // TODO: perform the actual CET check
-        // For now return failure to let us see that the test has actually run.
-        return 101;
+        long ssp = ReadShadowStackPointer();
+        Console.WriteLine("Shadow stack pointer: 0x{0:x16}", ssp);
+        // Non-zero shadow stack pointer value confirms that CET is active on the runtime processor.
+        return ssp != 0 ? 100 : 101;
     }
 }
