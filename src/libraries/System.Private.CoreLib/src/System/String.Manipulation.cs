@@ -986,11 +986,13 @@ namespace System
         //
         public string Replace(char oldChar, char newChar)
         {
-            int firstIndex;
-            if (oldChar == newChar || (firstIndex = IndexOf(oldChar)) < 0)
-            {
+            if (oldChar == newChar)
                 return this;
-            }
+
+            int firstIndex = IndexOf(oldChar);
+
+            if (firstIndex < 0)
+                return this;
 
             int remainingLength = Length - firstIndex;
             string result = FastAllocateString(Length);
