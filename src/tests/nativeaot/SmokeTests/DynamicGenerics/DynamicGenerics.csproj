@@ -11,6 +11,9 @@
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+
+    <!-- Disabling with llvm-libunwind v14 upgrade -->
+    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>
