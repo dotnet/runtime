@@ -526,7 +526,7 @@ namespace System.Formats.Tar
             if (buffer != null)
             {
                 archiveStream.ReadExactly(buffer);
-                _extendedAttributes = ReadExtendedAttributesFromBuffer(buffer, _name);
+                ReadExtendedAttributesFromBuffer(buffer, _name);
             }
         }
 
@@ -539,7 +539,7 @@ namespace System.Formats.Tar
             if (buffer != null)
             {
                 await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-                _extendedAttributes = ReadExtendedAttributesFromBuffer(buffer, _name);
+                ReadExtendedAttributesFromBuffer(buffer, _name);
             }
         }
 
@@ -567,9 +567,9 @@ namespace System.Formats.Tar
         }
 
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
-        private static Dictionary<string, string> ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
+        private void ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
         {
-            Dictionary<string, string> extendedAttributes = new();
+            _extendedAttributes = new Dictionary<string, string>();
 
             string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
 
@@ -577,14 +577,12 @@ namespace System.Formats.Tar
 
             while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
             {
-                if (extendedAttributes.ContainsKey(key))
+                if (_extendedAttributes.ContainsKey(key))
                 {
                     throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
-                extendedAttributes.Add(key, value);
+                _extendedAttributes.Add(key, value);
             }
-
-            return extendedAttributes;
         }
 
         // Reads the long path found in the data section of a GNU entry of type 'K' or 'L'
