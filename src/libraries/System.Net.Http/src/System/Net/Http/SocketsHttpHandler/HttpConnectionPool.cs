@@ -1267,7 +1267,7 @@ namespace System.Net.Http
         /// For now, the spec states alternate authorities should be able to handle ALL requests, so this
         /// is treated as an exceptional error by immediately blocklisting the authority.
         /// </remarks>
-        internal void BlocklistAuthority(HttpAuthority badAuthority, Exception? exception=null)
+        internal void BlocklistAuthority(HttpAuthority badAuthority, Exception? exception = null)
         {
             Debug.Assert(badAuthority != null);
 

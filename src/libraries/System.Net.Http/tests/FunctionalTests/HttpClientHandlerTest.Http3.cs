@@ -1043,7 +1043,7 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
 
-                // second request should throw the same message as inner as the first one
+                // second request should throw the same exception as inner as the first one
                 HttpRequestException ex2 = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request2).WaitAsync(TimeSpan.FromSeconds(10)));
 
                 clientDone.Release();
