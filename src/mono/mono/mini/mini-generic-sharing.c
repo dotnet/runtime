@@ -1590,7 +1590,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	WrapperInfo *info;
 	MonoMethodSignature *normal_sig, *csig;
 	gint16 pindex;
+#ifndef DISABLE_JIT
 	int args_start;
+#endif
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1620,9 +1622,11 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 		param_names [pindex] = g_strdup ("vret");
 		pindex ++;
 	}
+#ifndef DISABLE_JIT
 	args_start = pindex;
 	if (sig->hasthis)
 		args_start ++;
+#endif
 	for (int i = 0; i < sig->param_count; i++) {
 		csig->params [pindex] = sig->params [i];
 		param_names [pindex] = g_strdup_printf ("%d", i);

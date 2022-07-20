@@ -2107,7 +2107,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	gboolean stack_overflow = FALSE;
 	MonoContext initial_ctx;
 	MonoMethod *method;
-	int frame_count = 0;
+	//int frame_count = 0;
 	gint32 filter_idx, first_filter_idx = 0;
 	MonoObject *ex_obj = NULL;
 	MonoObject *non_exception = NULL;
@@ -2350,7 +2350,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			ip = MONO_CONTEXT_GET_IP (ctx);
 
 		method = jinfo_get_method (ji);
-		frame_count ++;
+		//frame_count ++;
 		//printf ("[%d] %s.\n", frame_count, mono_method_full_name (method, TRUE));
 
 		if (stack_overflow) {
