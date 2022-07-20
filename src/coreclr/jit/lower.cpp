@@ -7021,20 +7021,20 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
 // Arguments:
 //    tree - the node. Either a compare or a tree of compares connected by ANDs.
 //    parent - the parent of the tree.
-//    earliest_valid - Returns the earliest valid compare node in the chain (if any).
+//    earliestValid - Returns the earliest valid compare node in the chain (if any).
 //
 // Return Value:
 //    True if the chain is valid
 //
-bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree** earliest_valid)
+bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree** earliestValid)
 {
     if (tree->OperIs(GT_AND))
     {
         // To ensure ordering at code generation, Op1 and the parent can
         // only be contained if Op2 is contained.
-        if (ContainCheckCompareChain(tree->AsOp()->gtGetOp2(), tree, earliest_valid))
+        if (ContainCheckCompareChain(tree->AsOp()->gtGetOp2(), tree, earliestValid))
         {
-            ContainCheckCompareChain(tree->AsOp()->gtGetOp1(), tree, earliest_valid);
+            ContainCheckCompareChain(tree->AsOp()->gtGetOp1(), tree, earliestValid);
             tree->SetContained();
             return true;
         }
@@ -7052,7 +7052,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree*
             tree->AsOp()->gtGetOp2()->ClearContained();
             ContainCheckConditionalCompare(tree->AsOp());
 #endif
-            *earliest_valid = tree;
+            *earliestValid = tree;
             return true;
         }
     }
@@ -7070,15 +7070,15 @@ bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree*
 void Lowering::ContainCheckSelect(GenTreeConditional* node)
 {
     // Check if the compare does not need to be generated into a register.
-    GenTree* earliest_valid = nullptr;
-    ContainCheckCompareChain(node->gtCond, node, &earliest_valid);
+    GenTree* earliestValid = nullptr;
+    ContainCheckCompareChain(node->gtCond, node, &earliestValid);
 
-    if (earliest_valid != nullptr)
+    if (earliestValid != nullptr)
     {
         // The earliest node in the chain will be generated as a standard compare.
-        earliest_valid->AsOp()->gtGetOp1()->ClearContained();
-        earliest_valid->AsOp()->gtGetOp2()->ClearContained();
-        ContainCheckCompare(earliest_valid->AsOp());
+        earliestValid->AsOp()->gtGetOp1()->ClearContained();
+        earliestValid->AsOp()->gtGetOp2()->ClearContained();
+        ContainCheckCompare(earliestValid->AsOp());
     }
 }
 

@@ -112,11 +112,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
             case GT_TEST_EQ:
             case GT_TEST_NE:
-                if (parentNode->isContained())
-                {
-                    // Contained node will be generated as a ccmp.
-                    return emitter::emitIns_valid_imm_for_ccmp(immVal);
-                }
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
             case GT_JCMP:
                 assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
@@ -2056,9 +2051,10 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 #ifdef TARGET_ARM64
 void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
 {
+    assert(cmp->OperIsCompare());
     GenTree* op2 = cmp->gtOp2;
 
-    if (!varTypeIsFloating(cmp->TypeGet()) && op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+    if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
     {
         target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
 
