@@ -260,8 +260,6 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
         private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
             if (!Marshal.IsBuiltInComSupported)
@@ -292,7 +290,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
-                ClassRegistrationScenarioForType(cxt, register: true);
+                ClassRegistrationScenarioForTypeLocal(cxt, register: true);
             }
             catch (Exception e)
             {
@@ -300,14 +298,17 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
             }
 
             return 0;
+
+            // Use a local function for a targeted suppression of the requires unreferenced code warning
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
+            static void ClassRegistrationScenarioForTypeLocal(ComActivationContext cxt, bool register) => ClassRegistrationScenarioForType(cxt, register);
         }
 
         /// <summary>
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
         [UnmanagedCallersOnly]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
         private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
             if (!Marshal.IsBuiltInComSupported)
@@ -338,7 +339,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
-                ClassRegistrationScenarioForType(cxt, register: false);
+                ClassRegistrationScenarioForTypeLocal(cxt, register: false);
             }
             catch (Exception e)
             {
@@ -346,6 +347,11 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             }
 
             return 0;
+
+            // Use a local function for a targeted suppression of the requires unreferenced code warning
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
+            static void ClassRegistrationScenarioForTypeLocal(ComActivationContext cxt, bool register) => ClassRegistrationScenarioForType(cxt, register);
         }
 
         private static bool IsLoggingEnabled()
