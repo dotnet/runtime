@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -113,26 +114,29 @@ namespace System.Formats.Tar
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
         internal void WriteAsPaxGlobalExtendedAttributes(Stream archiveStream, Span<byte> buffer, int globalExtendedAttributesEntryNumber)
         {
-            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
-
-            _name = GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber);
-            _extendedAttributes ??= new Dictionary<string, string>();
-            WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true);
+            WriteAsPaxGlobalExtendedAttributesShared(globalExtendedAttributesEntryNumber);
+            WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true, globalExtendedAttributesEntryNumber);
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        internal Task<int> WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        internal Task WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
-            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            _name = GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber);
+            WriteAsPaxGlobalExtendedAttributesShared(globalExtendedAttributesEntryNumber);
+            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
+        }
+
+        // Verifies the data is valid for writing a Global Extended Attributes entry.
+        [MemberNotNull(nameof(_extendedAttributes))]
+        private void WriteAsPaxGlobalExtendedAttributesShared(int globalExtendedAttributesEntryNumber)
+        {
+            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
+            Debug.Assert(globalExtendedAttributesEntryNumber >= 0);
             _extendedAttributes ??= new Dictionary<string, string>();
-            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: true, cancellationToken);
         }
 
         // Writes the current header as a PAX entry into the archive stream.
@@ -147,8 +151,7 @@ namespace System.Formats.Tar
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
             Debug.Assert(_extendedAttributes != null);
-            extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false);
-
+            extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
             buffer.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
             WriteAsPaxInternal(archiveStream, buffer);
@@ -156,23 +159,23 @@ namespace System.Formats.Tar
 
         // Asynchronously writes the current header as a PAX entry into the archive stream.
         // Makes sure to add the preceding exteded attributes entry before the actual entry.
-        internal async Task<int> WriteAsPaxAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsPaxAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
+            Debug.Assert(_typeFlag is not TarEntryType.GlobalExtendedAttributes);
+
             cancellationToken.ThrowIfCancellationRequested();
 
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
-            // And pass them to the extended attributes header for writing
-            _extendedAttributes ??= new Dictionary<string, string>();
-
-            // Don't need to store the returned checksum, we only need it written to the archive in the extended attributes entry header
-            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: false, cancellationToken).ConfigureAwait(false);
+            // And pass the attributes to the preceding extended attributes header for writing
+            Debug.Assert(_extendedAttributes != null);
+            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
 
             buffer.Span.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
-            return await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Writes the current header as a Gnu entry into the archive stream.
@@ -314,50 +317,41 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
-        private void WriteAsPaxExtendedAttributes(Stream archiveStream, Span<byte> buffer, IEnumerable<KeyValuePair<string, string>> extendedAttributes, bool isGea)
+        private void WriteAsPaxExtendedAttributes(Stream archiveStream, Span<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber)
         {
-            // The ustar fields (uid, gid, linkName, uname, gname, devmajor, devminor) do not get written.
-            // The mode gets the default value.
-            _name = GenerateExtendedAttributeName();
-            _mode = TarHelpers.GetDefaultMode(_typeFlag);
-            _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
-            _linkName = string.Empty;
-            _magic = string.Empty;
-            _version = string.Empty;
-            _gName = string.Empty;
-            _uName = string.Empty;
-
+            WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber);
             _dataStream = GenerateExtendedAttributesDataStream(extendedAttributes);
-
             WriteAsPaxInternal(archiveStream, buffer);
         }
 
         // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        private async Task<int> WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, IEnumerable<KeyValuePair<string, string>> extendedAttributes, bool isGea, CancellationToken cancellationToken)
+        private async Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // The ustar fields (uid, gid, linkName, uname, gname, devmajor, devminor) do not get written.
-            // The mode gets the default value.
-            _name = GenerateExtendedAttributeName();
+            WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber);
+            _dataStream = await GenerateExtendedAttributesDataStreamAsync(extendedAttributes, cancellationToken).ConfigureAwait(false);
+            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Initializes the name, mode and type flag of a PAX extended attributes entry.
+        private void WriteAsPaxExtendedAttributesShared(bool isGea, int globalExtendedAttributesEntryNumber)
+        {
+            Debug.Assert(isGea && globalExtendedAttributesEntryNumber >= 0 || !isGea && globalExtendedAttributesEntryNumber < 0);
+
+            _name = isGea ?
+                GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber) :
+                GenerateExtendedAttributeName();
+
             _mode = TarHelpers.GetDefaultMode(_typeFlag);
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
-            _linkName = string.Empty;
-            _magic = string.Empty;
-            _version = string.Empty;
-            _gName = string.Empty;
-            _uName = string.Empty;
-
-            _dataStream = await GenerateExtendedAttributesDataStreamAsync(extendedAttributes, cancellationToken).ConfigureAwait(false);
-
-            return await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
         // This method writes an entry as both entries require, using the data from the current header instance.
         private void WriteAsPaxInternal(Stream archiveStream, Span<byte> buffer)
         {
-            WriteAsPaxSharedInternal(buffer, out long actualLength, out _checksum);
+            WriteAsPaxSharedInternal(buffer, out long actualLength);
 
             archiveStream.Write(buffer);
 
@@ -369,11 +363,11 @@ namespace System.Formats.Tar
 
         // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
         // This method asynchronously writes an entry as both entries require, using the data from the current header instance.
-        private async Task<int> WriteAsPaxInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        private async Task WriteAsPaxInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            WriteAsPaxSharedInternal(buffer.Span, out long actualLength, out int checksum);
+            WriteAsPaxSharedInternal(buffer.Span, out long actualLength);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -381,12 +375,10 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
-
-            return checksum;
         }
 
         // Shared checksum and data length calculations for PAX entry writing.
-        private void WriteAsPaxSharedInternal(Span<byte> buffer, out long actualLength, out int checksum)
+        private void WriteAsPaxSharedInternal(Span<byte> buffer, out long actualLength)
         {
             actualLength = GetTotalDataBytesToWrite();
 
@@ -394,7 +386,8 @@ namespace System.Formats.Tar
             tmpChecksum += WriteCommonFields(buffer, actualLength, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Pax, _typeFlag));
             tmpChecksum += WritePosixMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
-            checksum = WriteChecksum(tmpChecksum, buffer);
+
+            _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
         // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
@@ -551,36 +544,38 @@ namespace System.Formats.Tar
         }
 
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
-        private static Stream? GenerateExtendedAttributesDataStream(IEnumerable<KeyValuePair<string, string>> extendedAttributes)
+        private static Stream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
             MemoryStream? dataStream = null;
-            foreach ((string attribute, string value) in extendedAttributes)
+            if (extendedAttributes.Count > 0)
             {
-                // Need to do this because IEnumerable has no Count property
-                dataStream ??= new MemoryStream();
-
-                byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
-                dataStream.Write(entryBytes);
+                dataStream = new MemoryStream();
+                foreach ((string attribute, string value) in extendedAttributes)
+                {
+                    byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
+                    dataStream.Write(entryBytes);
+                }
+                dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
             }
-            dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
             return dataStream;
         }
 
         // Asynchronously dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
-        private static async Task<Stream?> GenerateExtendedAttributesDataStreamAsync(IEnumerable<KeyValuePair<string, string>> extendedAttributes, CancellationToken cancellationToken)
+        private static async Task<Stream?> GenerateExtendedAttributesDataStreamAsync(Dictionary<string, string> extendedAttributes, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             MemoryStream? dataStream = null;
-            foreach ((string attribute, string value) in extendedAttributes)
+            if (extendedAttributes.Count > 0)
             {
-                // Need to do this because IEnumerable has no Count property
-                dataStream ??= new MemoryStream();
-
-                byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
-                await dataStream.WriteAsync(entryBytes, cancellationToken).ConfigureAwait(false);
+                dataStream = new MemoryStream();
+                foreach ((string attribute, string value) in extendedAttributes)
+                {
+                    byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
+                    await dataStream.WriteAsync(entryBytes, cancellationToken).ConfigureAwait(false);
+                }
+                dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
             }
-            dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
             return dataStream;
         }
 

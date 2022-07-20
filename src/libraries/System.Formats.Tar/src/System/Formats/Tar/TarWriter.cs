@@ -353,12 +353,12 @@ namespace System.Formats.Tar
                 case TarEntryFormat.Pax:
                     if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
                     {
-                        entry._header._checksum = await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
+                        await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
                         _nextGlobalExtendedAttributesEntryNumber++;
                     }
                     else
                     {
-                        entry._header._checksum = await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     }
                     break;
 
