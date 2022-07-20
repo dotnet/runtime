@@ -4434,6 +4434,9 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
     assert(!varTypeIsFloating(op2Type));
     assert(!op1->isContainedIntOrIImmed());
 
+    // Should only be called on contained nodes.
+    assert(targetReg == REG_NA);
+
     // For the ccmp flags, invert the condition of the compare.
     insCflags cflags = InsCflagsForCcmp(InsCondForCompareOp(tree));
 
@@ -4446,13 +4449,6 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
     {
         regNumber srcReg2 = genConsumeReg(op2);
         emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, cond);
-    }
-
-    // Are we evaluating this into a register?
-    if (targetReg != REG_NA)
-    {
-        inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
-        genProduceReg(tree);
     }
 }
 
@@ -4471,66 +4467,53 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
 //
 void CodeGen::genCodeForContainedCompareChain(GenTreeOp* tree, bool* inChain, insCond* prevcond)
 {
+    assert(tree->isContained());
+
     if (tree->OperIs(GT_AND))
     {
         GenTreeOp* op1 = tree->gtGetOp1()->AsOp();
         GenTreeOp* op2 = tree->gtGetOp2()->AsOp();
 
-        if (!tree->isContained())
+        assert(op2->isContained());
+
+        // If Op1 is contained, generate into flags. Otherwise, move the result into flags.
+        if (op1->isContained())
         {
-            // An And that is not contained should not have any contained children.
-            assert(!op1->isContained() && !op2->isContained());
-            *inChain = false;
+            genCodeForContainedCompareChain(op1, inChain, prevcond);
+            assert(*inChain);
         }
         else
         {
-            // An And can only be contained if Op2 is contained.
-            assert(op2->isContained());
-
-            // If Op1 is contained, generate into flags. Otherwise, move the result into flags.
-            if (op1->isContained())
-            {
-                genCodeForContainedCompareChain(op1, inChain, prevcond);
-                assert(*inChain);
-            }
-            else
-            {
-                emitter* emit = GetEmitter();
-                emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 0);
-                *prevcond = INS_COND_NE;
-                *inChain  = true;
-            }
-
-            // Generate Op2 based on Op1.
-            genCodeForContainedCompareChain(op2, inChain, prevcond);
-            assert(*inChain);
+            emitter* emit = GetEmitter();
+            genConsumeReg(op1);
+            emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 0);
+            *prevcond = INS_COND_NE;
+            *inChain  = true;
         }
+
+        // Generate Op2 based on Op1.
+        genCodeForContainedCompareChain(op2, inChain, prevcond);
+        assert(*inChain);
     }
     else
     {
         assert(tree->OperIsCompare());
-        if (tree->isContained())
-        {
-            // Generate the compare, putting the result in the flags register.
-            if (!*inChain)
-            {
-                // First item in a chain. Use a standard compare.
-                genCodeForCompare(tree);
-            }
-            else
-            {
-                // Within the chain. Use a conditional compare (which is
-                // dependent on the previous emitted compare).
-                genCodeForConditionalCompare(tree, *prevcond);
-            }
 
-            *inChain  = true;
-            *prevcond = InsCondForCompareOp(tree);
+        // Generate the compare, putting the result in the flags register.
+        if (!*inChain)
+        {
+            // First item in a chain. Use a standard compare.
+            genCodeForCompare(tree);
         }
         else
         {
-            *inChain = false;
+            // Within the chain. Use a conditional compare (which is
+            // dependent on the previous emitted compare).
+            genCodeForConditionalCompare(tree, *prevcond);
         }
+
+        *inChain  = true;
+        *prevcond = InsCondForCompareOp(tree);
     }
 }
 
@@ -4554,14 +4537,18 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
-    // Generate the condition.
-    bool    chain = false;
     insCond cond  = INS_COND_EQ; // Dummy value.
-    genCodeForContainedCompareChain(opcond->AsOp(), &chain, &cond);
-    assert(chain == opcond->isContained());
-    if (!opcond->isContained())
+    if (opcond->isContained())
     {
-        // Node has been generated into a register - move into flags.
+        // Generate the contained condition.
+        bool chain = false;
+        genCodeForContainedCompareChain(opcond->AsOp(), &chain, &cond);
+        assert(chain);
+    }
+    else
+    {
+        // Condition has been generated into a register - move it into flags.
+        genConsumeReg(opcond);
         emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(opcond)), opcond->GetRegNum(), 0);
         cond = INS_COND_NE;
     }

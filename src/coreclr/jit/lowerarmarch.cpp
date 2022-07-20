@@ -2066,8 +2066,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
 {
     GenTree* op2 = cmp->gtOp2;
 
-    if (!varTypeIsFloating(cmp->TypeGet()) && op2->IsCnsIntOrI() &&
-        !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+    if (!varTypeIsFloating(cmp->TypeGet()) && op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
     {
         target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
 
