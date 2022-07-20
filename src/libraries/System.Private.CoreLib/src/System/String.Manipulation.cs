@@ -1006,8 +1006,8 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), (nint)(uint)copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), (nint)(uint)copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUshort(), (nint)(uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUshort(), (nint)(uint)copyLength);
             nint i = 0;
 
             if (Vector.IsHardwareAccelerated && Length >= Vector<ushort>.Count)
@@ -1044,10 +1044,10 @@ namespace System
                 // additional check which would introduce a branch here.
 
                 i = (nint)(uint)Length - Vector<ushort>.Count;
-                original = Vector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref _firstChar), i);
+                original = Vector.LoadUnsafe(ref GetRawStringDataAsUshort(), i);
                 equals = Vector.Equals(original, oldChars);
                 results = Vector.ConditionalSelect(equals, newChars, original);
-                results.StoreUnsafe(ref Unsafe.As<char, ushort>(ref result._firstChar), i);
+                results.StoreUnsafe(ref result.GetRawStringDataAsUshort(), i);
             }
             else
             {
