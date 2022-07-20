@@ -365,7 +365,7 @@
 
   <Target Name="SetMonoRollupEnvironment">
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoWasmDiagnosticsMock:$(MonoWasmDiagnosticsMock)</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>
