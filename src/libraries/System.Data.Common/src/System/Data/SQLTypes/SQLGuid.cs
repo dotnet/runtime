@@ -52,7 +52,7 @@ namespace System.Data.SqlTypes
         {
         }
 
-        private SqlGuid(SerializationInfo si, StreamingContext sc)
+        public SqlGuid(SerializationInfo si, StreamingContext sc)
         {
             byte[]? value = (byte[]?)si.GetValue("m_value", typeof(byte[]));
             if (value is null)
@@ -103,20 +103,20 @@ namespace System.Data.SqlTypes
         }
 
         // Comparison operators
-        private static unsafe EComparison Compare(SqlGuid x, SqlGuid y)
+        private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
             // Comparison orders.
-            ReadOnlySpan<byte> rgiGuidOrder = new byte[16] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
+            ReadOnlySpan<byte> rgiGuidOrder = new byte[SizeOfGuid] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
 
             Debug.Assert(!x.IsNull);
             Debug.Assert(!y.IsNull);
 
             // Swap to the correct order to be compared
-            Span<byte> xBytes = stackalloc byte[sizeof(Guid)];
+            Span<byte> xBytes = stackalloc byte[SizeOfGuid];
             bool xWrote = x._value.GetValueOrDefault().TryWriteBytes(xBytes);
             Debug.Assert(xWrote);
 
-            Span<byte> yBytes = stackalloc byte[sizeof(Guid)];
+            Span<byte> yBytes = stackalloc byte[SizeOfGuid];
             bool yWrote = y._value.GetValueOrDefault().TryWriteBytes(yBytes);
             Debug.Assert(yWrote);
 

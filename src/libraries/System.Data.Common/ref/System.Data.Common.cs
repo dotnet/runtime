@@ -3213,15 +3213,15 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlGuid>
+    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlGuid>
     {
-        private object _dummy;
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlGuid Null;
         public SqlGuid(byte[] value) { throw null; }
         public SqlGuid(System.Guid g) { throw null; }
         public SqlGuid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
         public SqlGuid(string s) { throw null; }
+        public SqlGuid(SerializationInfo si, StreamingContext sc) { throw null; }
         public bool IsNull { get { throw null; } }
         public System.Guid Value { get { throw null; } }
         public int CompareTo(System.Data.SqlTypes.SqlGuid value) { throw null; }
@@ -3250,6 +3250,7 @@ namespace System.Data.SqlTypes
         System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext sc) { }
         public byte[]? ToByteArray() { throw null; }
         public System.Data.SqlTypes.SqlBinary ToSqlBinary() { throw null; }
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
