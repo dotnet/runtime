@@ -229,7 +229,7 @@ queue_push_sync (WasmIpcStreamQueue *q, const uint8_t *buf, uint32_t buf_size, u
 		gboolean is_browser_thread_inited = FALSE;
 		gboolean is_browser_thread = FALSE;
 		while (mono_atomic_load_i32 (&q->buf_full) != 0) {
-			if (G_UNLIKELY (is_browser_thread_inited)) {
+			if (G_UNLIKELY (!is_browser_thread_inited)) {
 					is_browser_thread = mono_threads_wasm_is_browser_thread ();
 					is_browser_thread_inited = TRUE;
 			}
