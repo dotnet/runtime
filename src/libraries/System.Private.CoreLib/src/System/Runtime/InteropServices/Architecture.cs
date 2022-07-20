@@ -19,6 +19,9 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// A 32-bit ARM processor architecture.
         /// </summary>
+        /// <remarks>
+        /// This value indicates ARMv7 base instructions, VFPv3 floating point support and registers, and Thumb2 compact instruction set.
+        /// </remarks>
         Arm,
         /// <summary>
         /// A 64-bit ARM processor architecture.
