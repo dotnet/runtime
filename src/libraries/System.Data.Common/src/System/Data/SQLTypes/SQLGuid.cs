@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -16,18 +19,18 @@ namespace System.Data.SqlTypes
     [Serializable]
     [XmlSchemaProvider("GetXsdType")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SqlGuid : INullable, IComparable, IXmlSerializable, IEquatable<SqlGuid>
+    public struct SqlGuid : INullable, IComparable, ISerializable, IXmlSerializable, IEquatable<SqlGuid>
     {
-        private const int SizeOfGuid = 16;
+        private const int SizeOfGuid = 16; // sizeof(Guid)
 
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
-        private byte[]? m_value; // the SqlGuid is null if m_value is null
+        private Guid? _value; // the SqlGuid is null if _value is null
 
         // constructor
         // construct a SqlGuid.Null
         private SqlGuid(bool fNull)
         {
-            m_value = null;
+            _value = null;
         }
 
         public SqlGuid(byte[] value)
@@ -35,26 +38,17 @@ namespace System.Data.SqlTypes
             if (value == null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
 
-            m_value = new byte[SizeOfGuid];
-            value.CopyTo(m_value, 0);
-        }
-
-        internal SqlGuid(byte[] value, bool ignored)
-        {
-            if (value == null || value.Length != SizeOfGuid)
-                throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
-
-            m_value = value;
+            _value = new Guid(value);
         }
 
         public SqlGuid(string s)
         {
-            m_value = (new Guid(s)).ToByteArray();
+            _value = new Guid(s);
         }
 
         public SqlGuid(Guid g)
         {
-            m_value = g.ToByteArray();
+            _value = g;
         }
 
         public SqlGuid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k)
@@ -62,22 +56,28 @@ namespace System.Data.SqlTypes
         {
         }
 
+        private SqlGuid(SerializationInfo si, StreamingContext sc)
+        {
+            ArgumentNullException.ThrowIfNull(si);
+            byte[]? value = (byte[]?)si.GetValue("m_value", typeof(byte[]));
+            if (value is null)
+                _value = null;
+            else
+                _value = new Guid(value);
+        }
 
         // INullable
-        public bool IsNull
-        {
-            get { return (m_value is null); }
-        }
+        public bool IsNull => _value is null;
 
         // property: Value
         public Guid Value
         {
             get
             {
-                if (m_value is null)
+                if (_value is null)
                     throw new SqlNullValueException();
                 else
-                    return new Guid(m_value);
+                    return _value.GetValueOrDefault();
             }
         }
 
@@ -95,18 +95,17 @@ namespace System.Data.SqlTypes
 
         public byte[]? ToByteArray()
         {
-            byte[] ret = new byte[SizeOfGuid];
-            m_value!.CopyTo(ret, 0); // TODO: NRE
-            return ret;
+            if (_value is null)
+                return null;
+            return _value.GetValueOrDefault().ToByteArray();
         }
 
         public override string ToString()
         {
-            if (m_value is null)
+            if (_value is null)
                 return SQLResource.NullString;
 
-            Guid g = new Guid(m_value);
-            return g.ToString();
+            return _value.GetValueOrDefault().ToString();
         }
 
         public static SqlGuid Parse(string s)
@@ -117,30 +116,36 @@ namespace System.Data.SqlTypes
                 return new SqlGuid(s);
         }
 
-
         // Comparison operators
         private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
             // Comparison orders.
             ReadOnlySpan<byte> rgiGuidOrder = new byte[16] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
 
+            Debug.Assert(!x.IsNull);
+            Debug.Assert(!y.IsNull);
+
             // Swap to the correct order to be compared
-            ReadOnlySpan<byte> xBytes = x.m_value;
-            ReadOnlySpan<byte> yBytes = y.m_value;
+            Span<byte> xBytes = stackalloc byte[sizeof(Guid)];
+            bool xWrote = x._value.GetValueOrDefault().TryWriteSpan(xBytes);
+            Debug.Assert(xWrote);
+
+            Span<byte> yBytes = stackalloc byte[sizeof(Guid)];
+            bool yWrote = y._value.GetValueOrDefault().TryWriteSpan(yBytes);
+            Debug.Assert(yWrote);
+
             for (int i = 0; i < SizeOfGuid; i++)
             {
                 byte b1 = xBytes[rgiGuidOrder[i]];
                 byte b2 = yBytes[rgiGuidOrder[i]];
                 if (b1 != b2)
                 {
-                    return (b1 < b2) ? EComparison.LT : EComparison.GT;
+                    return b1 < b2 ? EComparison.LT : EComparison.GT;
                 }
             }
 
             return EComparison.EQ;
         }
-
-
 
         // Implicit conversions
 
@@ -161,7 +166,7 @@ namespace System.Data.SqlTypes
         // Overloading comparison operators
         public static SqlBoolean operator ==(SqlGuid x, SqlGuid y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.EQ);
+            return x.IsNull || y.IsNull ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.EQ);
         }
 
         public static SqlBoolean operator !=(SqlGuid x, SqlGuid y)
@@ -171,12 +176,12 @@ namespace System.Data.SqlTypes
 
         public static SqlBoolean operator <(SqlGuid x, SqlGuid y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.LT);
+            return x.IsNull || y.IsNull ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.LT);
         }
 
         public static SqlBoolean operator >(SqlGuid x, SqlGuid y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.GT);
+            return x.IsNull || y.IsNull ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.GT);
         }
 
         public static SqlBoolean operator <=(SqlGuid x, SqlGuid y)
@@ -204,37 +209,37 @@ namespace System.Data.SqlTypes
         // Alternative method for operator ==
         public static SqlBoolean Equals(SqlGuid x, SqlGuid y)
         {
-            return (x == y);
+            return x == y;
         }
 
         // Alternative method for operator !=
         public static SqlBoolean NotEquals(SqlGuid x, SqlGuid y)
         {
-            return (x != y);
+            return x != y;
         }
 
         // Alternative method for operator <
         public static SqlBoolean LessThan(SqlGuid x, SqlGuid y)
         {
-            return (x < y);
+            return x < y;
         }
 
         // Alternative method for operator >
         public static SqlBoolean GreaterThan(SqlGuid x, SqlGuid y)
         {
-            return (x > y);
+            return x > y;
         }
 
         // Alternative method for operator <=
         public static SqlBoolean LessThanOrEqual(SqlGuid x, SqlGuid y)
         {
-            return (x <= y);
+            return x <= y;
         }
 
         // Alternative method for operator >=
         public static SqlBoolean GreaterThanOrEqual(SqlGuid x, SqlGuid y)
         {
-            return (x >= y);
+            return x >= y;
         }
 
         // Alternative method for conversions.
@@ -248,7 +253,6 @@ namespace System.Data.SqlTypes
         {
             return (SqlBinary)this;
         }
-
 
         // IComparable
         // Compares this object to another object, returning an integer that
@@ -292,7 +296,7 @@ namespace System.Data.SqlTypes
             (this == other).Value;
 
         // For hashing purpose
-        public override int GetHashCode() => IsNull ? 0 : Value.GetHashCode();
+        public override int GetHashCode() => IsNull ? 0 : _value.GetValueOrDefault().GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
@@ -303,29 +307,35 @@ namespace System.Data.SqlTypes
             {
                 // Read the next value.
                 reader.ReadElementString();
-                m_value = null;
+                _value = null;
             }
             else
             {
-                m_value = new Guid(reader.ReadElementString()).ToByteArray();
+                _value = new Guid(reader.ReadElementString());
             }
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (m_value is null)
+            if (_value is null)
             {
                 writer.WriteAttributeString("xsi", "nil", XmlSchema.InstanceNamespace, "true");
             }
             else
             {
-                writer.WriteString(XmlConvert.ToString(new Guid(m_value)));
+                writer.WriteString(XmlConvert.ToString(_value.GetValueOrDefault()));
             }
         }
 
         public static XmlQualifiedName GetXsdType(XmlSchemaSet schemaSet)
         {
             return new XmlQualifiedName("string", XmlSchema.Namespace);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext sc)
+        {
+            ArgumentNullException.ThrowIfNull(si);
+            si.AddValue("m_value", ToByteArray());
         }
 
         public static readonly SqlGuid Null = new SqlGuid(true);
