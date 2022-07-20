@@ -24,27 +24,31 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void VariousGenericsAreSupported()
         {
-            Assert.NotNull(GenericContext<int>.Default);
-            AssertSerialization(GenericContext<int>.Default.JsonMessage);
-
-            Assert.NotNull(ContextGenericContainer<int>.NestedInGenericContainerContext.Default);
-            AssertSerialization(ContextGenericContainer<int>.NestedInGenericContainerContext.Default.JsonMessage);
-
-            Assert.NotNull(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default);
-            AssertSerialization(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default.JsonMessage);
-
-            Assert.NotNull(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default);
-            AssertSerialization(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default.JsonMessage);
-
-            Assert.NotNull(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default);
-            AssertSerialization(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default.JsonMessage);
+            AssertGenericContext(GenericContext<int>.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedInGenericContainerContext.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default);
 
             Assert.NotNull(NestedGenericTypesContext.Default);
-
-            static void AssertSerialization(JsonTypeInfo<JsonMessage> jsonTypeInfo)
+            var original = new MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>()
             {
-                string json = JsonSerializer.Serialize(new JsonMessage { Message = "Hi" }, jsonTypeInfo);
-                JsonMessage deserialized = JsonSerializer.Deserialize<JsonMessage>(json, jsonTypeInfo);
+                DataT = 1,
+                DataT1 = 10,
+                DataT2 = 100
+            };
+            Type type = typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>);
+            string json = JsonSerializer.Serialize(original, type, NestedGenericTypesContext.Default);
+            var deserialized = (MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>)JsonSerializer.Deserialize(json, type, NestedGenericTypesContext.Default);
+            Assert.Equal(1, deserialized.DataT);
+            Assert.Equal(10, deserialized.DataT1);
+            Assert.Equal(100, deserialized.DataT2);
+
+            static void AssertGenericContext(JsonSerializerContext context)
+            {
+                Assert.NotNull(context);
+                string json = JsonSerializer.Serialize(new JsonMessage { Message = "Hi" }, typeof(JsonMessage), context);
+                JsonMessage deserialized = (JsonMessage)JsonSerializer.Deserialize(json, typeof(JsonMessage), context);
                 Assert.Equal("Hi", deserialized.Message);
             }
         }
