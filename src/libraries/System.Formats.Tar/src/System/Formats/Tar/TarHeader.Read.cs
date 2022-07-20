@@ -27,38 +27,11 @@ namespace System.Formats.Tar
 
             archiveStream.ReadExactly(buffer);
 
-            TarHeader header = new(initialFormat);
-
-            // Confirms if v7 or pax, or tentatively selects ustar
-            if (!header.TryReadCommonAttributes(buffer))
+            TarHeader? header = TryReadAttributes(initialFormat, buffer);
+            if (header != null)
             {
-                return null;
+                header.ProcessDataBlock(archiveStream, copyData);
             }
-
-            // Confirms if gnu, or tentatively selects ustar
-            header.ReadMagicAttribute(buffer);
-
-            if (header._format != TarEntryFormat.V7)
-            {
-                // Confirms if gnu
-                header.ReadVersionAttribute(buffer);
-
-                // Fields that ustar, pax and gnu share identically
-                header.ReadPosixAndGnuSharedAttributes(buffer);
-
-                Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                if (header._format == TarEntryFormat.Ustar)
-                {
-                    header.ReadUstarAttributes(buffer);
-                }
-                else if (header._format == TarEntryFormat.Gnu)
-                {
-                    header.ReadGnuAttributes(buffer);
-                }
-                // In PAX, there is nothing to read in this section (empty space)
-            }
-
-            header.ProcessDataBlock(archiveStream, copyData);
 
             return header;
         }
@@ -70,8 +43,6 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TarHeader header = new(initialFormat);
-
             // The four supported formats have a header that fits in the default record size
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
@@ -79,109 +50,46 @@ namespace System.Formats.Tar
 
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-            // Confirms if v7 or pax, or tentatively selects ustar
-            if (!header.TryReadCommonAttributes(buffer.Span))
+            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span);
+            if (header != null)
             {
-                return null;
-            }
-
-            // Confirms if gnu, or tentatively selects ustar
-            header.ReadMagicAttribute(buffer.Span);
-
-            if (header._format != TarEntryFormat.V7)
-            {
-                // Confirms if gnu
-                header.ReadVersionAttribute(buffer.Span);
-
-                // Fields that ustar, pax and gnu share identically
-                header.ReadPosixAndGnuSharedAttributes(buffer.Span);
-
-                Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                if (header._format == TarEntryFormat.Ustar)
-                {
-                    header.ReadUstarAttributes(buffer.Span);
-                }
-                else if (header._format == TarEntryFormat.Gnu)
-                {
-                    header.ReadGnuAttributes(buffer.Span);
-                }
-                // In PAX, there is nothing to read in this section (empty space)
-            }
-
-            bool skipBlockAlignmentPadding = true;
-
-            string? longPath;
-            switch (header._typeFlag)
-            {
-                case TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes:
-                    Debug.Assert(header._name != null);
-                    header._extendedAttributes = await ReadExtendedAttributesBlockAsync(archiveStream, header._typeFlag, header._size, header._name, cancellationToken).ConfigureAwait(false);
-                    break;
-
-                case TarEntryType.LongLink:
-                    longPath = await ReadGnuLongPathDataBlockAsync(archiveStream, header._typeFlag, header._size, cancellationToken).ConfigureAwait(false);
-                    if (longPath != null)
-                    {
-                        header._linkName = longPath;
-                    }
-                    break;
-
-                case TarEntryType.LongPath:
-                    longPath = await ReadGnuLongPathDataBlockAsync(archiveStream, header._typeFlag, header._size, cancellationToken).ConfigureAwait(false);
-                    if (longPath != null)
-                    {
-                        header._name = longPath;
-                    }
-                    break;
-
-                case TarEntryType.BlockDevice:
-                case TarEntryType.CharacterDevice:
-                case TarEntryType.Directory:
-                case TarEntryType.Fifo:
-                case TarEntryType.HardLink:
-                case TarEntryType.SymbolicLink:
-                    // No data section
-                    break;
-
-                case TarEntryType.RegularFile:
-                case TarEntryType.V7RegularFile: // Treated as regular file
-                case TarEntryType.ContiguousFile: // Treated as regular file
-                case TarEntryType.DirectoryList: // Contains the list of filesystem entries in the data section
-                case TarEntryType.MultiVolume: // Contains portion of a file
-                case TarEntryType.RenamedOrSymlinked: // Might contain data
-                case TarEntryType.SparseFile: // Contains portion of a file
-                case TarEntryType.TapeVolume: // Might contain data
-                default: // Unrecognized entry types could potentially have a data section
-                    header._dataStream = await GetDataStreamAsync(archiveStream, copyData, header._size, cancellationToken).ConfigureAwait(false);
-                    if (header._dataStream is SeekableSubReadStream)
-                    {
-                        await TarHelpers.AdvanceStreamAsync(archiveStream, header._size, cancellationToken).ConfigureAwait(false);
-                    }
-                    else if (header._dataStream is SubReadStream)
-                    {
-                        // This stream gives the user the chance to optionally read the data section
-                        // when the underlying archive stream is unseekable
-                        skipBlockAlignmentPadding = false;
-                    }
-
-                    break;
-            }
-
-            if (skipBlockAlignmentPadding)
-            {
-                if (header._size > 0)
-                {
-                    await TarHelpers.SkipBlockAlignmentPaddingAsync(archiveStream, header._size, cancellationToken).ConfigureAwait(false);
-                }
-
-                if (archiveStream.CanSeek)
-                {
-                    header._endOfHeaderAndDataAndBlockAlignment = archiveStream.Position;
-                }
+                await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
             }
 
             ArrayPool<byte>.Shared.Return(rented);
 
+            return header;
+        }
+
+        private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, Span<byte> buffer)
+        {
+            // Confirms if v7 or pax, or tentatively selects ustar
+            TarHeader? header = TryReadCommonAttributes(buffer, initialFormat);
+            if (header != null)
+            {
+                // Confirms if gnu, or tentatively selects ustar
+                header.ReadMagicAttribute(buffer);
+
+                if (header._format != TarEntryFormat.V7)
+                {
+                    // Confirms if gnu
+                    header.ReadVersionAttribute(buffer);
+
+                    // Fields that ustar, pax and gnu share identically
+                    header.ReadPosixAndGnuSharedAttributes(buffer);
+
+                    Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
+                    if (header._format == TarEntryFormat.Ustar)
+                    {
+                        header.ReadUstarAttributes(buffer);
+                    }
+                    else if (header._format == TarEntryFormat.Gnu)
+                    {
+                        header.ReadGnuAttributes(buffer);
+                    }
+                    // In PAX, there is nothing to read in this section (empty space)
+                }
+            }
             return header;
         }
 
@@ -334,6 +242,81 @@ namespace System.Formats.Tar
             }
         }
 
+        private async Task ProcessDataBlockAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
+        {
+            bool skipBlockAlignmentPadding = true;
+
+            string? longPath;
+            switch (_typeFlag)
+            {
+                case TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes:
+                    Debug.Assert(_name != null);
+                    _extendedAttributes = await ReadExtendedAttributesBlockAsync(archiveStream, _typeFlag, _size, _name, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case TarEntryType.LongLink:
+                    longPath = await ReadGnuLongPathDataBlockAsync(archiveStream, _typeFlag, _size, cancellationToken).ConfigureAwait(false);
+                    if (longPath != null)
+                    {
+                        _linkName = longPath;
+                    }
+                    break;
+
+                case TarEntryType.LongPath:
+                    longPath = await ReadGnuLongPathDataBlockAsync(archiveStream, _typeFlag, _size, cancellationToken).ConfigureAwait(false);
+                    if (longPath != null)
+                    {
+                        _name = longPath;
+                    }
+                    break;
+
+                case TarEntryType.BlockDevice:
+                case TarEntryType.CharacterDevice:
+                case TarEntryType.Directory:
+                case TarEntryType.Fifo:
+                case TarEntryType.HardLink:
+                case TarEntryType.SymbolicLink:
+                    // No data section
+                    break;
+
+                case TarEntryType.RegularFile:
+                case TarEntryType.V7RegularFile: // Treated as regular file
+                case TarEntryType.ContiguousFile: // Treated as regular file
+                case TarEntryType.DirectoryList: // Contains the list of filesystem entries in the data section
+                case TarEntryType.MultiVolume: // Contains portion of a file
+                case TarEntryType.RenamedOrSymlinked: // Might contain data
+                case TarEntryType.SparseFile: // Contains portion of a file
+                case TarEntryType.TapeVolume: // Might contain data
+                default: // Unrecognized entry types could potentially have a data section
+                    _dataStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
+                    if (_dataStream is SeekableSubReadStream)
+                    {
+                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                    }
+                    else if (_dataStream is SubReadStream)
+                    {
+                        // This stream gives the user the chance to optionally read the data section
+                        // when the underlying archive stream is unseekable
+                        skipBlockAlignmentPadding = false;
+                    }
+
+                    break;
+            }
+
+            if (skipBlockAlignmentPadding)
+            {
+                if (_size > 0)
+                {
+                    await TarHelpers.SkipBlockAlignmentPaddingAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (archiveStream.CanSeek)
+                {
+                    _endOfHeaderAndDataAndBlockAlignment = archiveStream.Position;
+                }
+            }
+        }
+
         // Returns a stream that represents the data section of the current header.
         // If copyData is true, then a total number of _size bytes will be copied to a new MemoryStream, which is then returned.
         // Otherwise, if the archive stream is seekable, returns a seekable wrapper stream.
@@ -385,7 +368,7 @@ namespace System.Formats.Tar
         // Attempts to read the fields shared by all formats and stores them in their expected data type.
         // Throws if any data type conversion fails.
         // Returns true on success, false if checksum is zero.
-        private bool TryReadCommonAttributes(Span<byte> buffer)
+        private static TarHeader? TryReadCommonAttributes(Span<byte> buffer, TarEntryFormat initialFormat)
         {
             // Start by collecting fields that need special checks that return early when data is wrong
 
@@ -393,35 +376,38 @@ namespace System.Formats.Tar
             Span<byte> spanChecksum = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
             if (TarHelpers.IsAllNullBytes(spanChecksum))
             {
-                return false;
+                return null;
             }
-            _checksum = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(spanChecksum);
+            int checksum = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(spanChecksum);
             // Zero checksum means the whole header is empty
-            if (_checksum == 0)
+            if (checksum == 0)
             {
-                return false;
+                return null;
             }
 
-            _size = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
-            if (_size < 0)
+            long size = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            if (size < 0)
             {
                 throw new FormatException(string.Format(SR.TarSizeFieldNegative));
             }
 
             // Continue with the rest of the fields that require no special checks
-
-            _name = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name));
-            _mode = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
-            _uid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
-            _gid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
-            long mTime = TarHelpers.GetTenBaseLongFromOctalAsciiChars(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
-            _mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(mTime);
-            _typeFlag = (TarEntryType)buffer[FieldLocations.TypeFlag];
-            _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
-
-            if (_format == TarEntryFormat.Unknown)
+            TarHeader header = new(initialFormat,
+                name: TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
+                mode: TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
+                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(TarHelpers.GetTenBaseLongFromOctalAsciiChars(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
+                typeFlag: (TarEntryType)buffer[FieldLocations.TypeFlag])
             {
-                _format = _typeFlag switch
+                _checksum = checksum,
+                _size = size,
+                _uid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
+                _gid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
+                _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
+            };
+
+            if (header._format == TarEntryFormat.Unknown)
+            {
+                header._format = header._typeFlag switch
                 {
                     TarEntryType.ExtendedAttributes or
                     TarEntryType.GlobalExtendedAttributes => TarEntryFormat.Pax,
@@ -439,11 +425,11 @@ namespace System.Formats.Tar
 
                     // We can quickly determine the *minimum* possible format if the entry type
                     // is the POSIX 'RegularFile', although later we could upgrade it to PAX or GNU
-                    _ => (_typeFlag == TarEntryType.RegularFile) ? TarEntryFormat.Ustar : TarEntryFormat.V7
+                    _ => (header._typeFlag == TarEntryType.RegularFile) ? TarEntryFormat.Ustar : TarEntryFormat.V7
                 };
             }
 
-            return true;
+            return header;
         }
 
         // Reads fields only found in ustar format or above and converts them to their expected data type.
