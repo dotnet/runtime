@@ -824,6 +824,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DefaultValue { get; }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"MemberInfo={AttributeProvider as MemberInfo}";
+        private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";
     }
 }

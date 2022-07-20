@@ -21,7 +21,7 @@ namespace System.Text.Json
 
             options ??= JsonSerializerOptions.Default;
 
-            if (!options.IsLockedInstance || !DefaultJsonTypeInfoResolver.IsDefaultInstanceRooted)
+            if (!options.IsImmutable || !DefaultJsonTypeInfoResolver.IsDefaultInstanceRooted)
             {
                 options.InitializeForReflectionSerializer();
             }
