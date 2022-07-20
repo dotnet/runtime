@@ -162,7 +162,7 @@ namespace System.Data.SqlTypes
 
         public static SqlBoolean operator <(SqlGuid x, SqlGuid y)
         {
-            return (x.IsNull || y.) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.LT);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.LT);
         }
 
         public static SqlBoolean operator >(SqlGuid x, SqlGuid y)
