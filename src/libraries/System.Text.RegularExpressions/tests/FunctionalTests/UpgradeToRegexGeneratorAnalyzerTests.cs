@@ -815,6 +815,106 @@ public partial class C
             await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
         }
 
+        [Fact]
+        public async Task InvalidRegexOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public partial class B
+    {
+        public class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = [|new Regex(""pattern"", (RegexOptions)0x0800)|];
+                }
+            }
+        }
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public partial class B
+    {
+        public partial class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = MyRegex();
+                }
+
+                [RegexGenerator(""pattern"", (RegexOptions)2048)]
+                private static partial Regex MyRegex();
+            }
+        }
+    }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task InvalidRegexOptions_Negative()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public partial class B
+    {
+        public class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = [|new Regex(""pattern"", (RegexOptions)(-10000))|];
+                }
+            }
+        }
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public partial class B
+    {
+        public partial class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = MyRegex();
+                }
+
+                [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
+                private static partial Regex MyRegex();
+            }
+        }
+    }
+}
+";
+            await new VerifyCS.Test(null, usePreviewLanguageVersion: true, 1)
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                CodeActionValidationMode = CodeActionValidationMode.None,
+            }.RunAsync();
+        }
+
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)
