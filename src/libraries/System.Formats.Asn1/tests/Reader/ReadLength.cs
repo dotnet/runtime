@@ -19,7 +19,7 @@ namespace System.Formats.Asn1.Tests.Reader
             typeof(AsnDecoder).GetMethod("ReadTagAndLength", BindingFlags.Static | BindingFlags.NonPublic)
                 .CreateDelegate(typeof(ReadTagAndLengthDelegate));
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
+        [Theory]
         [InlineData(4, 0, "0400")]
         [InlineData(1, 1, "0101")]
         [InlineData(4, 127, "047F")]
@@ -27,6 +27,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(4, 255, "0481FF")]
         [InlineData(2, 256, "02820100")]
         [InlineData(4, int.MaxValue, "04847FFFFFFF")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72547", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void MinimalPrimitiveLength(int tagValue, int length, string inputHex)
         {
             byte[] inputBytes = inputHex.HexToByteArray();
@@ -53,13 +54,14 @@ namespace System.Formats.Asn1.Tests.Reader
                 () => new AsnReader(data, (AsnEncodingRules)invalidRuleSetValue));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
+        [Theory]
         [InlineData("")]
         [InlineData("05")]
         [InlineData("0481")]
         [InlineData("048201")]
         [InlineData("04830102")]
         [InlineData("0484010203")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72547", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ReadWithInsufficientData(string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
@@ -68,7 +70,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 () => ReadTagAndLength(inputData, AsnEncodingRules.DER, out _, out _));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
+        [Theory]
         [InlineData("DER indefinite constructed", AsnEncodingRules.DER, "3080" + "0500" + "0000")]
         [InlineData("0xFF-BER", AsnEncodingRules.BER, "04FF")]
         [InlineData("0xFF-CER", AsnEncodingRules.CER, "04FF")]
@@ -95,6 +97,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("CER 5 byte spread", AsnEncodingRules.CER, "04850100000000")]
         [InlineData("DER 5 byte spread", AsnEncodingRules.DER, "04850100000000")]
         [InlineData("BER padded 5 byte spread", AsnEncodingRules.BER, "0486000100000000")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72547", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void InvalidLengths(
             string description,
             AsnEncodingRules rules,
@@ -108,9 +111,10 @@ namespace System.Formats.Asn1.Tests.Reader
                 () => ReadTagAndLength(inputData, rules, out _, out _));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
+        [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72547", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void IndefiniteLength(AsnEncodingRules ruleSet)
         {
             // SEQUENCE (indefinite)
@@ -131,10 +135,11 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.True(tag.IsConstructed, "tag.IsConstructed");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
+        [Theory]
         [InlineData(0, "0483000000")]
         [InlineData(1, "048A00000000000000000001")]
         [InlineData(128, "049000000000000000000000000000000080")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72547", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void BerNonMinimalLength(int expectedLength, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
@@ -152,10 +157,11 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.True(reader.HasData, "reader.HasData");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBoxedByRefLikeValuesSupported))]
+        [Theory]
         [InlineData(AsnEncodingRules.BER, 4, 0, 5, "0483000000" + "0500")]
         [InlineData(AsnEncodingRules.DER, 1, 1, 2, "0101" + "FF")]
         [InlineData(AsnEncodingRules.CER, 0x10, null, 2, "3080" + "0500" + "0000")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72547", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ReadWithDataRemaining(
             AsnEncodingRules ruleSet,
             int tagValue,
