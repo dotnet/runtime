@@ -48,9 +48,13 @@ namespace System.Threading.RateLimiting
         public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            if (options.PermitLimit <= 0 || options.QueueLimit <= 0 || options.SegmentsPerWindow <= 0 || options.Window.Equals(TimeSpan.Zero))
+            if (options.PermitLimit <= 0 || options.SegmentsPerWindow <= 0 || options.Window.Equals(TimeSpan.Zero))
             {
-                throw new ArgumentException($"{nameof(options.PermitLimit)}, {nameof(options.QueueLimit)}, {nameof(options.SegmentsPerWindow)}, and {nameof(options.Window)} must all be set to values greater than 0.");
+                throw new ArgumentException($"{nameof(options.PermitLimit)}, {nameof(options.SegmentsPerWindow)}, and {nameof(options.Window)} must all be set to values greater than 0.");
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to values greater than or equal to 0.");
             }
             _requestCount = options.PermitLimit;
 
