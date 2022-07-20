@@ -1025,10 +1025,10 @@ namespace System
                 {
                     do
                     {
-                        original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pSrc, i)));
+                        original = Vector.LoadUnsafe(ref pSrc, i);
                         equals = Vector.Equals(original, oldChars);
                         results = Vector.ConditionalSelect(equals, newChars, original);
-                        Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pDst, i)), results);
+                        results.StoreUnsafe(ref pDst, i);
 
                         i += Vector<ushort>.Count;
                     }
@@ -1044,10 +1044,10 @@ namespace System
                 // additional check which would introduce a branch here.
 
                 i = (nint)(uint)Length - Vector<ushort>.Count;
-                original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref _firstChar, i)));
+                original = Vector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref _firstChar), i);
                 equals = Vector.Equals(original, oldChars);
                 results = Vector.ConditionalSelect(equals, newChars, original);
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref result._firstChar, i)), results);
+                results.StoreUnsafe(ref Unsafe.As<char, ushort>(ref result._firstChar), i);
             }
             else
             {
