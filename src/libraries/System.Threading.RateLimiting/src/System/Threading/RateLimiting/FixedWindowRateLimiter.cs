@@ -45,6 +45,10 @@ namespace System.Threading.RateLimiting
         public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            if (options.PermitLimit <= 0 || options.QueueLimit <= 0 || options.Window.Equals(TimeSpan.Zero))
+            {
+                throw new ArgumentException($"{nameof(options.PermitLimit)}, {nameof(options.QueueLimit)}, and {nameof(options.Window)} must all be set to values >= 0.");
+            }
             _requestCount = options.PermitLimit;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
