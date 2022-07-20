@@ -27,7 +27,7 @@ namespace System.Threading.RateLimiting
         /// Maximum number of permit counters that can be allowed in a window.
         /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
-        public int PermitLimit { get; set; } = 0;
+        public int PermitLimit { get; set; }
 
         /// <summary>
         /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
@@ -41,6 +41,6 @@ namespace System.Threading.RateLimiting
         /// Maximum cumulative permit count of queued acquisition requests.
         /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
-        public int QueueLimit { get; set; } = 0;
+        public int QueueLimit { get; set; }
     }
 }
