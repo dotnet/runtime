@@ -815,6 +815,97 @@ public partial class C
             await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
         }
 
+        [Fact]
+        public async Task InvalidRegexOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public void Foo()
+    {
+        Regex regex = [|new Regex(""pattern"", (RegexOptions)0x0800)|];
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public void Foo()
+    {
+        Regex regex = MyRegex();
+    }
+
+    [RegexGenerator(""pattern"", (RegexOptions)2048)]
+    private static partial Regex MyRegex();
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task InvalidRegexOptions_LocalConstant()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public void Foo()
+    {
+        const RegexOptions MyOptions = (RegexOptions)0x0800;
+        Regex regex = [|new Regex(""pattern"", MyOptions)|];
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public void Foo()
+    {
+        const RegexOptions MyOptions = (RegexOptions)0x0800;
+        Regex regex = MyRegex();
+    }
+
+    [RegexGenerator(""pattern"", (RegexOptions)2048)]
+    private static partial Regex MyRegex();
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task InvalidRegexOptions_Negative()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public void Foo()
+    {
+        Regex regex = [|new Regex(""pattern"", (RegexOptions)(-10000))|];
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public void Foo()
+    {
+        Regex regex = MyRegex();
+    }
+
+    [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
+    private static partial Regex MyRegex();
+}
+";
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)
