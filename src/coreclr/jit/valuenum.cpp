@@ -2136,11 +2136,14 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 
     ValueNum resultVN = NoVN;
 
-    // When both operands are runtime types we can sometimes also fold.
-    // This is the VN analog of gtFoldTypeCompare
+    // Even if the argVNs differ, if both operands runtime types constructed from handles,
+    // we can sometimes also fold.
+    //
+    // The case where the arg VNs are equal is handled by EvalUsingMathIdentity below.
+    // This is the VN analog of gtFoldTypeCompare.
     //
     const genTreeOps oper = genTreeOps(func);
-    if (GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
+    if ((arg0VN != arg1VN) && GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
     {
         resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
         if (resultVN != NoVN)
