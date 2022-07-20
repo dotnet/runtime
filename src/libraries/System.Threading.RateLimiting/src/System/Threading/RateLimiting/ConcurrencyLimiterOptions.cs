@@ -12,7 +12,7 @@ namespace System.Threading.RateLimiting
         /// Maximum number of permits that can be leased concurrently.
         /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
         /// </summary>
-        public int PermitLimit { get; set; } = 0;
+        public int PermitLimit { get; set; }
 
         /// <summary>
         /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
@@ -26,6 +26,6 @@ namespace System.Threading.RateLimiting
         /// Maximum number of permits that can be queued concurrently.
         /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
         /// </summary>
-        public int QueueLimit { get; set; } = 0;
+        public int QueueLimit { get; set; }
     }
 }
