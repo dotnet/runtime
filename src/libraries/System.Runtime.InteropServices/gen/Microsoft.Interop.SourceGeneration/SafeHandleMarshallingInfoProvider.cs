@@ -8,6 +8,14 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
+    /// </summary>
+    public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
+
+    /// <summary>
+    /// This class supports generating marshalling info for SafeHandle-derived types.
+    /// </summary>
     public sealed class SafeHandleMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;

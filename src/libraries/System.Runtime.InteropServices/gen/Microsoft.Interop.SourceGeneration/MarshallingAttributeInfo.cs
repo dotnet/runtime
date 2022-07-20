@@ -80,18 +80,6 @@ namespace Microsoft.Interop
     ) : MarshallingInfo;
 
     /// <summary>
-    /// Simple User-application of System.Runtime.InteropServices.MarshalAsAttribute
-    /// </summary>
-    public sealed record MarshalAsInfo(
-        UnmanagedType UnmanagedType,
-        CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
-    {
-        // UnmanagedType.LPUTF8Str is not in netstandard2.0, so we define a constant for the value here.
-        // See https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype
-        internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
-    }
-
-    /// <summary>
     /// The provided type was determined to be an "unmanaged" type that can be passed as-is to native code.
     /// </summary>
     /// <param name="IsStrictlyBlittable">Indicates if the type is blittable as defined by the built-in .NET marshallers.</param>
@@ -144,11 +132,6 @@ namespace Microsoft.Interop
         ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
             EntryPointType,
             Marshallers);
-
-    /// <summary>
-    /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
-    /// </summary>
-    public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
 
     /// <summary>
     /// Marshalling information is lacking because of support not because it is
