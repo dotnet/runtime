@@ -32,6 +32,8 @@ const WRITE_DONE_OFFSET = 8;
 type SyncSendBuffer = (buf: VoidPtr, len: number) => void;
 type SyncSendClose = () => void;
 
+const STREAM_CLOSE_SENTINEL = -1;
+
 export class StreamQueue {
     readonly workAvailable: EventTarget = new EventTarget();
     readonly signalWorkAvailable = this.signalWorkAvailableImpl.bind(this);
@@ -66,12 +68,12 @@ export class StreamQueue {
     }
 
     private onWorkAvailable(this: StreamQueue /*,event: Event */): void {
-        const intptr_buf = this.buf_addr as unknown as number;
-        if (intptr_buf === -1) {
+        const buf = Memory.getI32(this.buf_addr) as unknown as VoidPtr;
+        const intptr_buf = buf as unknown as number;
+        if (intptr_buf === STREAM_CLOSE_SENTINEL) {
             // special value signaling that the streaming thread closed the queue.
             this.syncSendClose();
         } else {
-            const buf = Memory.getI32(this.buf_addr) as unknown as VoidPtr;
             const count = Memory.getI32(this.count_addr);
             Memory.setI32(this.buf_addr, 0);
             if (count > 0) {
