@@ -62,17 +62,17 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        ///   Gets the serial number of the certificate, in big-endian byte order.
+        ///   Gets a value whose contents represent the subject key identifier (SKI) for a certificate.
         /// </summary>
         /// <value>
-        ///   The serial number of the certificate, in big-endian byte order.
+        ///   The subject key identifier (SKI) for a certificate.
         /// </value>
         public ReadOnlyMemory<byte> SubjectKeyIdentifierBytes
         {
             get
             {
                 // Rather than check _decoded, this property checks for a null _subjectKeyIdentifierBytes so that
-                // usingthe default constructor, not calling CopyFrom, and then calling this property will throw
+                // using the default constructor, not calling CopyFrom, and then calling this property will throw
                 // instead of using Nullable to talk about that degenerate state.
                 if (_subjectKeyIdentifierBytes is null)
                 {
