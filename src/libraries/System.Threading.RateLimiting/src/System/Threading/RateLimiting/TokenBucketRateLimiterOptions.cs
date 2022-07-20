@@ -18,7 +18,7 @@ namespace System.Threading.RateLimiting
         /// Specifies the maximum number of tokens to restore each replenishment.
         /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
-        public int TokensPerPeriod { get; set; } = 0;
+        public int TokensPerPeriod { get; set; }
 
         /// <summary>
         /// Specified whether the <see cref="TokenBucketRateLimiter"/> is automatically replenishing tokens or if someone else
@@ -33,7 +33,7 @@ namespace System.Threading.RateLimiting
         /// Maximum number of tokens that can be in the bucket at any time.
         /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
-        public int TokenLimit { get; set; } = 0;
+        public int TokenLimit { get; set; }
 
         /// <summary>
         /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
@@ -47,6 +47,6 @@ namespace System.Threading.RateLimiting
         /// Maximum cumulative token count of queued acquisition requests.
         /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
-        public int QueueLimit { get; set; } = 0;
+        public int QueueLimit { get; set; }
     }
 }
