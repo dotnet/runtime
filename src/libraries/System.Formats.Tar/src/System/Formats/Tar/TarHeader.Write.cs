@@ -54,7 +54,7 @@ namespace System.Formats.Tar
             }
         }
 
-        // Writes the V7 header fields to the specified buffer, calculates and writes the checksum, then returns the final data length;
+        // Writes the V7 header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
         private long WriteV7FieldsToBuffer(Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
@@ -70,14 +70,7 @@ namespace System.Formats.Tar
         // Writes the current header as a Ustar entry into the archive stream.
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
         {
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
-
-            int checksum = WritePosixName(buffer);
-            checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
-            checksum += WritePosixMagicAndVersion(buffer);
-            checksum += WritePosixAndGnuSharedFields(buffer);
-            _checksum = WriteChecksum(checksum, buffer);
+            long actualLength = WriteUstarFieldsToBuffer(buffer);
 
             archiveStream.Write(buffer);
 
@@ -88,18 +81,11 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously rites the current header as a Ustar entry into the archive stream and returns the value of the final checksum.
-        internal async Task<int> WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
-
-            int tmpChecksum = WritePosixName(buffer.Span);
-            tmpChecksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            tmpChecksum += WritePosixMagicAndVersion(buffer.Span);
-            tmpChecksum += WritePosixAndGnuSharedFields(buffer.Span);
-            int checksum = WriteChecksum(tmpChecksum, buffer.Span);
+            long actualLength = WriteUstarFieldsToBuffer(buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -107,8 +93,21 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+        }
 
-            return checksum;
+        // Writes the Ustar header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
+        private long WriteUstarFieldsToBuffer(Span<byte> buffer)
+        {
+            long actualLength = GetTotalDataBytesToWrite();
+            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
+
+            int checksum = WritePosixName(buffer);
+            checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
+            checksum += WritePosixMagicAndVersion(buffer);
+            checksum += WritePosixAndGnuSharedFields(buffer);
+            _checksum = WriteChecksum(checksum, buffer);
+
+            return actualLength;
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.

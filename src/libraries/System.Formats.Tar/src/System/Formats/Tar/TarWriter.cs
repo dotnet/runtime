@@ -347,7 +347,7 @@ namespace System.Formats.Tar
                     break;
 
                 case TarEntryFormat.Ustar:
-                    entry._header._checksum = await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryFormat.Pax:
