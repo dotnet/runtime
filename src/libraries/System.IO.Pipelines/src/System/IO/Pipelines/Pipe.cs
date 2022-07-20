@@ -202,8 +202,8 @@ namespace System.IO.Pipelines
                             // If we got here that means Advance was called with 0 bytes or GetMemory was called again without any writes occurring
                             // And, the newly requested memory size is greater than our unused segments internal memory buffer
                             // So we should reuse the BufferSegment and replace the memory it's holding, this way ReadAsync will not receive a buffer with one segment being empty
-                            _writingHead.ResetMemory(preserveIndex: true);
-                            SetupSegment(_writingHead, sizeHint);
+                            _writingHead.ResetMemory();
+                            RentMemory(_writingHead, sizeHint);
                         }
                         else
                         {
@@ -221,12 +221,12 @@ namespace System.IO.Pipelines
         {
             BufferSegment newSegment = CreateSegmentUnsynchronized();
 
-            SetupSegment(newSegment, sizeHint);
+            RentMemory(newSegment, sizeHint);
 
             return newSegment;
         }
 
-        private void SetupSegment(BufferSegment segment, int sizeHint)
+        private void RentMemory(BufferSegment segment, int sizeHint)
         {
             // Segment should be new or reset, otherwise a memory leak could occur
             Debug.Assert(segment.MemoryOwner is null);
@@ -572,7 +572,7 @@ namespace System.IO.Pipelines
                 while (returnStart != null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
-                    returnStart.ResetMemory();
+                    returnStart.Reset();
                     ReturnSegmentUnsynchronized(returnStart);
                     returnStart = next;
                 }
@@ -885,7 +885,7 @@ namespace System.IO.Pipelines
                     BufferSegment returnSegment = segment;
                     segment = segment.NextSegment;
 
-                    returnSegment.ResetMemory();
+                    returnSegment.Reset();
                 }
 
                 _writingHead = null;

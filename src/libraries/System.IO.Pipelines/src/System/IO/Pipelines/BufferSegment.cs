@@ -59,7 +59,18 @@ namespace System.IO.Pipelines
             AvailableMemory = arrayPoolBuffer;
         }
 
-        public void ResetMemory(bool preserveIndex = false)
+        // Resets memory and internal state, should be called when removing the segment from the linked list
+        public void Reset()
+        {
+            ResetMemory();
+
+            Next = null;
+            RunningIndex = 0;
+            _next = null;
+        }
+
+        // Resets memory only, should be called when keeping the BufferSegment in the linked list and only swapping out the memory
+        public void ResetMemory()
         {
             IMemoryOwner<byte>? memoryOwner = _memoryOwner;
             if (memoryOwner != null)
@@ -74,11 +85,8 @@ namespace System.IO.Pipelines
                 _array = null;
             }
 
-            Next = null;
-            // RunningIndex is used to determine the total length of the linked segments and contains the length of all the previous segments (not including this one)
-            RunningIndex = preserveIndex ? RunningIndex : 0;
+
             Memory = default;
-            _next = null;
             _end = 0;
             AvailableMemory = default;
         }
