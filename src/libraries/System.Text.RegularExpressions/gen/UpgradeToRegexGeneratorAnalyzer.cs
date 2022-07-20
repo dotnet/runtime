@@ -27,8 +27,11 @@ namespace System.Text.RegularExpressions.Generator
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
 
-        internal const string PatternIndexName = "PatternIndex";
-        internal const string RegexOptionsIndexName = "RegexOptionsIndex";
+        internal const string PatternArgumentName = "pattern";
+        internal const string OptionsArgumentName = "options";
+
+        internal const string PatternKeyName = "Pattern";
+        internal const string RegexOptionsKeyName = "RegexOption";
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration);
@@ -107,11 +110,8 @@ namespace System.Text.RegularExpressions.Generator
             // code fixer can later use that property bag to generate the code fix and emit the RegexGenerator attribute.
             if (staticMethodsToDetect.Contains(method))
             {
-                string? patternArgumentIndex = null;
-                string? optionsArgumentIndex = null;
-
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!TryValidateParametersAndExtractArgumentIndices(invocationOperation.Arguments, ref patternArgumentIndex, ref optionsArgumentIndex))
+                if (!TryValidateParametersAndExtractArgumentIndices(invocationOperation.Arguments, out string? patternArgument, out string? optionsArgument))
                 {
                     return;
                 }
@@ -119,8 +119,8 @@ namespace System.Text.RegularExpressions.Generator
                 // Create the property bag.
                 ImmutableDictionary<string, string?> properties = ImmutableDictionary.CreateRange(new[]
                 {
-                    new KeyValuePair<string, string?>(PatternIndexName, patternArgumentIndex),
-                    new KeyValuePair<string, string?>(RegexOptionsIndexName, optionsArgumentIndex)
+                    new KeyValuePair<string, string?>(PatternKeyName, patternArgument),
+                    new KeyValuePair<string, string?>(RegexOptionsKeyName, optionsArgument)
                 });
 
                 // Report the diagnostic.
@@ -150,10 +150,7 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            string? patternArgumentIndex = null;
-            string? optionsArgumentIndex = null;
-
-            if (!TryValidateParametersAndExtractArgumentIndices(operation.Arguments, ref patternArgumentIndex, ref optionsArgumentIndex))
+            if (!TryValidateParametersAndExtractArgumentIndices(operation.Arguments, out string? patternArgument, out string? optionsArgument))
             {
                 return;
             }
@@ -161,8 +158,8 @@ namespace System.Text.RegularExpressions.Generator
             // Create the property bag.
             ImmutableDictionary<string, string?> properties = ImmutableDictionary.CreateRange(new[]
             {
-                new KeyValuePair<string, string?>(PatternIndexName, patternArgumentIndex),
-                new KeyValuePair<string, string?>(RegexOptionsIndexName, optionsArgumentIndex)
+                new KeyValuePair<string, string?>(PatternKeyName, patternArgument),
+                new KeyValuePair<string, string?>(RegexOptionsKeyName, optionsArgument)
             });
 
             // Report the diagnostic.
@@ -175,12 +172,13 @@ namespace System.Text.RegularExpressions.Generator
         /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
         /// indices for the pattern and options. If timeout argument was used, then this returns false.
         /// </summary>
-        private static bool TryValidateParametersAndExtractArgumentIndices(ImmutableArray<IArgumentOperation> arguments, ref string? patternArgumentIndex, ref string? optionsArgumentIndex)
+        private static bool TryValidateParametersAndExtractArgumentIndices(ImmutableArray<IArgumentOperation> arguments, out string? patternArgument, out string? optionsArgument)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";
-            const string patternArgumentName = "pattern";
-            const string optionsArgumentName = "options";
+
+            patternArgument = null;
+            optionsArgument = null;
 
             if (arguments == null)
             {
@@ -200,19 +198,19 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // If the argument is the pattern, then we validate that it is constant and we store the index.
-                if (argumentName.Equals(patternArgumentName, StringComparison.OrdinalIgnoreCase))
+                if (argumentName.Equals(PatternArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!IsConstant(argument))
                     {
                         return false;
                     }
 
-                    patternArgumentIndex = i.ToString();
+                    patternArgument = (string)argument.Value.ConstantValue.Value;
                     continue;
                 }
 
                 // If the argument is the options, then we validate that it is constant, that it doesn't have RegexOptions.NonBacktracking, and we store the index.
-                if (argumentName.Equals(optionsArgumentName, StringComparison.OrdinalIgnoreCase))
+                if (argumentName.Equals(OptionsArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!IsConstant(argument))
                     {
@@ -225,7 +223,7 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
-                    optionsArgumentIndex = i.ToString();
+                    optionsArgument = value.ToString();
                     continue;
                 }
             }
