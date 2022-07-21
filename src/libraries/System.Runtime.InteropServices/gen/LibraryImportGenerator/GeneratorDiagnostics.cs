@@ -23,6 +23,8 @@ namespace Microsoft.Interop
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
             public const string CannotForwardToDllImport = Prefix + "1053";
+
+            public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
         }
 
         private const string Category = "LibraryImportGenerator";
@@ -156,6 +158,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.CannotForwardToDllImportDescription)));
+
+        public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
+            new DiagnosticDescriptor(
+                Ids.RequiresAllowUnsafeBlocks,
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitle)),
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
 
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 

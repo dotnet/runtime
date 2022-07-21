@@ -61,6 +61,8 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            context.CheckForAllowUnsafeBlocks(static () => Diagnostic.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
+
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     context,

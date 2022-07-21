@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Interop
 {
@@ -45,6 +48,21 @@ namespace Microsoft.Interop
                     _ => TargetFramework.Unknown,
                 };
             }
+        }
+
+        public static void CheckForAllowUnsafeBlocks(this IncrementalGeneratorInitializationContext context, Func<Diagnostic> diagnosticFunc)
+        {
+            var diagnostics = context.CompilationProvider.SelectMany((compilation, ct) =>
+            {
+                if (compilation.Options is CSharpCompilationOptions { AllowUnsafe: true })
+                {
+                    return ImmutableArray<Diagnostic>.Empty;
+                }
+
+                return ImmutableArray.Create(diagnosticFunc());
+            });
+
+            context.RegisterDiagnostics(diagnostics);
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
