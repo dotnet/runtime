@@ -8299,10 +8299,10 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    public sealed class RefEscapesAttribute : Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class UnscopedRefAttribute : Attribute
     {
-        public RefEscapesAttribute() { }
+        public UnscopedRefAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute

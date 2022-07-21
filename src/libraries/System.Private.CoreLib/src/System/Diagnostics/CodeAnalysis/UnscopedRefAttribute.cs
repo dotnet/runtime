@@ -20,14 +20,14 @@ namespace System.Diagnostics.CodeAnalysis
     /// This attribute is used in those instances where the <c>ref</c> should be allowed to escape.
     /// </remarks>
     [AttributeUsageAttribute(
-        AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Parameter,
+        AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Parameter,
         AllowMultiple = false,
         Inherited = false)]
-    public sealed class RefEscapesAttribute : Attribute
+    public sealed class UnscopedRefAttribute : Attribute
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="RefEscapesAttribute"/> class.
+        /// Initializes a new instance of the <see cref="UnscopedRefAttribute"/> class.
         /// </summary>
-        public RefEscapesAttribute() { }
+        public UnscopedRefAttribute() { }
     }
 }
