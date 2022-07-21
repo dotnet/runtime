@@ -45,9 +45,9 @@ namespace System.Threading.RateLimiting
         public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            if (options.PermitLimit <= 0 || options.Window.Equals(TimeSpan.Zero))
+            if (options.PermitLimit <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.Window)} must be set to values greater than 0.");
+                throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.");
             }
             if (options.QueueLimit < 0)
             {
