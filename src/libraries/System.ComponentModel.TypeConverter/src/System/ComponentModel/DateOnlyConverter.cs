@@ -71,10 +71,10 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <inheritdoc />
         /// <summary>
         /// Converts the given value object from a <see cref='System.DateOnly'/> object using the arguments.
         /// </summary>
+        /// <inheritdoc />
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is DateOnly dateOnly)
