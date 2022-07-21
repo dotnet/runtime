@@ -1050,7 +1050,7 @@ namespace System.Text.RegularExpressions
             // and the analysis can be performed on the overestimate of the set prior to subtraction.
             // However, negation is performed before subtraction, which means we can't trust
             // the ranges to inform AllNonAsciiContained and AllAsciiContained, as the subtraction
-            // could create holes in those.  As such, while we can permit subtraciton for non-negated
+            // could create holes in those.  As such, while we can permit subtraction for non-negated
             // sets, for negated sets, we need to bail.
             if (!CanEasilyEnumerateSetContents(set, out bool hasSubtraction) ||
                 (isNegated && hasSubtraction))
@@ -1068,12 +1068,13 @@ namespace System.Text.RegularExpressions
                 // above it is actually included, meaning all non-ASCII are in the class.
                 // Similarly if the lower bound is non-ASCII, that means in a negated world
                 // everything ASCII is included.
+                Debug.Assert(!hasSubtraction);
                 return new CharClassAnalysisResults
                 {
                     OnlyRanges = true,
                     AllNonAsciiContained = lastValueExclusive <= 128,
                     AllAsciiContained = firstValueInclusive >= 128,
-                    ContainsNoAscii = false,
+                    ContainsNoAscii = firstValueInclusive == 0 && set[SetStartIndex + 1] >= 128,
                     ContainsOnlyAscii = false,
                     LowerBoundInclusiveIfOnlyRanges = firstValueInclusive,
                     UpperBoundExclusiveIfOnlyRanges = lastValueExclusive,
@@ -1086,7 +1087,7 @@ namespace System.Text.RegularExpressions
             {
                 OnlyRanges = true,
                 AllNonAsciiContained = false,
-                AllAsciiContained = false,
+                AllAsciiContained = firstValueInclusive == 0 && set[SetStartIndex + 1] >= 128 && !hasSubtraction,
                 ContainsOnlyAscii = lastValueExclusive <= 128,
                 ContainsNoAscii = firstValueInclusive >= 128,
                 LowerBoundInclusiveIfOnlyRanges = firstValueInclusive,
