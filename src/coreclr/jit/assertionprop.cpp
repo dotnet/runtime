@@ -958,13 +958,15 @@ void Compiler::optAssertionInit(bool isLocalProp)
     static const unsigned       upperBound  = ArrLen(countFunc) - 1;
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
-    AssertionDscKeyFuncs::isLocalProp = isLocalProp;
+    AssertionDscKeyFuncs::isLocalProp       = isLocalProp;
 
-    optLocalAssertionProp  = isLocalProp;
+    optLocalAssertionProp = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
     optComplementaryAssertionMap =
         new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
+#ifdef DEBUG
     optAssertionDscMap = AssertionDscMap(getAllocator());
+#endif
 
     assert(NO_ASSERTION_INDEX == 0);
 
@@ -1978,8 +1980,11 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 
     bool found = false;
+
+#ifdef DEBUG
     AssertionIndex slowAnswer = NO_ASSERTION_INDEX;
     AssertionIndex fastAnswer = NO_ASSERTION_INDEX;
+#endif
 
     // Check if exists already, so we can skip adding new one. Search backwards.
     for (AssertionIndex index = optAssertionCount; index >= 1; index--)
@@ -1987,25 +1992,27 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         AssertionDsc* curAssertion = optGetAssertion(index);
         if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
         {
+#ifdef DEBUG
             found      = true;
             slowAnswer = index;
             break;
+#else
+            return index;
+#endif
         }
     }
 
+#ifdef DEBUG
     if (optAssertionDscMap.Lookup(*newAssertion, &fastAnswer))
     {
         assert(slowAnswer == fastAnswer);
+        return slowAnswer;
     }
     else
     {
         assert(!found);
     }
-
-    if (found)
-    {
-        return slowAnswer;
-    }
+#endif // DEBUG
 
     // Check if we are within max count.
     if (optAssertionCount >= optMaxAssertionCount)
@@ -2013,7 +2020,9 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
+#ifdef DEBUG
     optAssertionDscMap.Set(*newAssertion, optAssertionCount + 1);
+#endif
 
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
     optAssertionCount++;

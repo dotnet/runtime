@@ -7185,8 +7185,7 @@ public:
             }
             else
             {
-                return ((vnBased && (op1.vn == that.op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
+                return ((vnBased && (op1.vn == that.op1.vn)) || (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
             }
         }
 
@@ -7310,11 +7309,6 @@ public:
                 return dsc1.HasSameOp1(dsc2, vnBased) && dsc1.HasSameOp2(dsc2, vnBased);
             }
         }
-
-        /*static bool Equals(AssertionDsc* dsc1, AssertionDsc* dsc2, bool vnBased)
-        {
-            return dsc1->Equals(dsc2, vnBased);
-        }*/
     };
 
 protected:
@@ -7344,10 +7338,9 @@ protected:
     struct AssertionDscKeyFuncs
     {
     public:
-
         static bool isLocalProp;
 
-        static bool Equals(/*const */AssertionDsc x, /*const */AssertionDsc y)
+        static bool Equals(const AssertionDsc x, const AssertionDsc y)
         {
             return AssertionDsc::Equals(x, y, !isLocalProp);
         }
@@ -7359,11 +7352,7 @@ protected:
             *  3 ~ 6 : op1Kind
             *  7 ~ 11: op2Kind
             */
-            //byte assertionKind = dsc->assertionKind;
-            //byte op1Kind = dsc->op1.kind;
-            //byte op2Kind = dsc->op2.kind;
             unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-            //printf("hash= %u", result);
             return result;
         }
     };
