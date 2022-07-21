@@ -30,6 +30,7 @@ namespace Wasm.Build.Tests
                 i++;
             }
 
+            stringBuilder.Append(lines[i++]);
             stringBuilder.Append(programText);
             while (i < lines.Length) {
                 stringBuilder.Append(lines[i]);
@@ -148,10 +149,10 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             string programText = """
-            using System;
 
             for (int i = 0; i < args.Length; i ++)
                 Console.WriteLine ($"args[{i}] = {args[i]}");
+
             """;
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), getProgramText(Path.Combine(_projectDir!, "Program.cs"), programText));
 
@@ -191,10 +192,10 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             string programText = """
-            using System;
 
             for (int i = 0; i < args.Length; i ++)
                 Console.WriteLine ($"args[{i}] = {args[i]}");
+
             """;
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), getProgramText(Path.Combine(_projectDir!, "Program.cs"), programText));
 
