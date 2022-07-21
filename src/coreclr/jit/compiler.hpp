@@ -3261,11 +3261,11 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         optAssertionCount--;
         if (optLocalAssertionProp)
         {
-            printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<true>::GetHashCode(*curAssertion));
+            printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs::GetHashCode(*curAssertion));
         }
         else
         {
-            printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<false>::GetHashCode(*curAssertion));
+            printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs::GetHashCode(*curAssertion));
         }
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaCount);
@@ -3295,12 +3295,12 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         if (optLocalAssertionProp)
         {
             printf("++ Added map[%d] = %u\n", optAssertionCount - 1,
-                   AssertionDscKeyFuncs<true>::GetHashCode(*curAssertion));
+                   AssertionDscKeyFuncs/*<true>*/::GetHashCode(*curAssertion));
         }
         else
         {
             printf("++ Added map[%d] = %u\n", optAssertionCount - 1,
-                   AssertionDscKeyFuncs<false>::GetHashCode(*curAssertion));
+                   AssertionDscKeyFuncs/*<false>*/::GetHashCode(*curAssertion));
         }
 
         unsigned       lclNum       = curAssertion->op1.lcl.lclNum;
@@ -3369,12 +3369,12 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         if (optLocalAssertionProp)
         {
             printf("-- Removed map[%d] = %u\n", optAssertionCount,
-                   AssertionDscKeyFuncs<true>::GetHashCode(*curAssertion));
+                   AssertionDscKeyFuncs/*<true>*/::GetHashCode(*curAssertion));
         }
         else
         {
             printf("-- Removed map[%d] = %u\n", optAssertionCount,
-                   AssertionDscKeyFuncs<false>::GetHashCode(*curAssertion));
+                   AssertionDscKeyFuncs/*<false>*/::GetHashCode(*curAssertion));
         }
     }
     else
