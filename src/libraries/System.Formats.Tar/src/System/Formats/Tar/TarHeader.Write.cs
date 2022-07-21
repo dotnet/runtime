@@ -102,11 +102,11 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
 
-            int checksum = WritePosixName(buffer);
-            checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
-            checksum += WritePosixMagicAndVersion(buffer);
-            checksum += WritePosixAndGnuSharedFields(buffer);
-            _checksum = WriteChecksum(checksum, buffer);
+            int tmpChecksum = WritePosixName(buffer);
+            tmpChecksum += WriteCommonFields(buffer, actualLength, actualEntryType);
+            tmpChecksum += WritePosixMagicAndVersion(buffer);
+            tmpChecksum += WritePosixAndGnuSharedFields(buffer);
+            _checksum = WriteChecksum(tmpChecksum, buffer);
 
             return actualLength;
         }
