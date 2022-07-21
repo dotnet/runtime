@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Lambdas.Test ();
 			LocalFunctions.Test ();
 
-			LambdaWhichMarksItself.Test ();
+			SelfMarkingMethods.Test ();
 		}
 
 		class BaseTypeWithIteratorStateMachines
@@ -398,21 +398,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class LambdaWhichMarksItself
-		{
-			static void RequiresAllOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> () { }
-
-			public static void Test ()
-			{
-				var a = () => {
-					// https://github.com/dotnet/linker/issues/2903
-					//RequiresAllOnT<LambdaWhichMarksItself> ();
-				};
-
-				a ();
-			}
-		}
-
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 		class LocalFunctions
 		{
@@ -535,6 +520,116 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (LocalFunctions).RequiresAll ();
 
 				test.GetType ().RequiresAll ();
+			}
+		}
+
+		class SelfMarkingMethods
+		{
+			static void RequiresAllOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> () { }
+
+			static void RequiresNonPublicMethodsOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)] T> () { }
+
+			class LambdaWhichMarksItself
+			{
+				public static void Test ()
+				{
+					var a =
+					[ExpectedWarning ("IL2118", nameof (LambdaWhichMarksItself), "<Test>",
+						ProducedBy = ProducedBy.Trimmer)]
+					() => {
+						RequiresAllOnT<LambdaWhichMarksItself> ();
+					};
+
+					a ();
+				}
+			}
+
+			class LocalFunctionWhichMarksItself
+			{
+				public static void Test ()
+				{
+					[ExpectedWarning ("IL2118", nameof (LocalFunctionWhichMarksItself), "<Test>",
+						ProducedBy = ProducedBy.Trimmer)]
+					void LocalFunction ()
+					{
+						RequiresAllOnT<LocalFunctionWhichMarksItself> ();
+					};
+
+					LocalFunction ();
+				}
+			}
+
+			class IteratorWhichMarksItself
+			{
+				[ExpectedWarning ("IL2118", ProducedBy = ProducedBy.Trimmer, CompilerGeneratedCode = true)]
+				public static IEnumerable<int> Test ()
+				{
+					yield return 0;
+
+					RequiresAllOnT<IteratorWhichMarksItself> ();
+
+					yield return 1;
+				}
+			}
+
+			class AsyncWhichMarksItself
+			{
+				[ExpectedWarning ("IL2118", ProducedBy = ProducedBy.Trimmer, CompilerGeneratedCode = true)]
+				public static async void Test ()
+				{
+					await MethodAsync ();
+
+					RequiresAllOnT<AsyncWhichMarksItself> ();
+
+					await MethodAsync ();
+				}
+			}
+
+
+			class MethodWhichMarksItself
+			{
+				static void RequiresAllOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> () { }
+
+				public static void Test ()
+				{
+					RequiresAllOnT<MethodWhichMarksItself> ();
+				}
+			}
+
+
+			class LocalFunctionWhichMarksItselfOnlyAccessedViaReflection
+			{
+				[ExpectedWarning ("IL2118", nameof (LocalFunctionWhichMarksItselfOnlyAccessedViaReflection), "<" + nameof (ClassWithLocalFunction.MethodWithLocalFunction) + ">", "LocalFunction",
+					ProducedBy = ProducedBy.Trimmer)]
+				public static void Test ()
+				{
+					RequiresNonPublicMethodsOnT<ClassWithLocalFunction> ();
+				}
+
+				public class ClassWithLocalFunction
+				{
+					public static void MethodWithLocalFunction ()
+					{
+						[ExpectedWarning ("IL2118", nameof (LocalFunctionWhichMarksItselfOnlyAccessedViaReflection), "<" + nameof (MethodWithLocalFunction) + ">", nameof (LocalFunction),
+							ProducedBy = ProducedBy.Trimmer)]
+						static void LocalFunction ()
+						{
+							RequiresNonPublicMethodsOnT<ClassWithLocalFunction> ();
+						};
+
+						LocalFunction ();
+					}
+				}
+			}
+
+			public static void Test ()
+			{
+				LambdaWhichMarksItself.Test ();
+				LocalFunctionWhichMarksItself.Test ();
+				IteratorWhichMarksItself.Test ();
+				AsyncWhichMarksItself.Test ();
+				MethodWhichMarksItself.Test ();
+				LocalFunctionWhichMarksItselfOnlyAccessedViaReflection.Test ();
 			}
 		}
 
