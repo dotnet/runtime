@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -82,12 +83,16 @@ namespace System.Threading
                 {
                     action(state);
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested && oce.CancellationToken != cancellationToken)
                 {
-                    // If the read fails because of cancellation, it will have been a Win32 error code
-                    // that ReadCore translated into an OperationCanceledException without a stored
-                    // CancellationToken.  We want to ensure the token is stored.
-                    throw new OperationCanceledException(cancellationToken);
+                    // If the operation fails because of cancellation, make sure it contains this cancellation token
+                    // if this cancellation token could have been the cause.
+                    var newOce = new OperationCanceledException(cancellationToken);
+                    if (oce.StackTrace is string stackTrace)
+                    {
+                        ExceptionDispatchInfo.SetRemoteStackTrace(newOce, stackTrace);
+                    }
+                    throw newOce;
                 }
             }
         }
@@ -127,12 +132,16 @@ namespace System.Threading
                 {
                     return func(state);
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested && oce.CancellationToken != cancellationToken)
                 {
-                    // If the read fails because of cancellation, it will have been a Win32 error code
-                    // that ReadCore translated into an OperationCanceledException without a stored
-                    // CancellationToken.  We want to ensure the token is stored.
-                    throw new OperationCanceledException(cancellationToken);
+                    // If the operation fails because of cancellation, make sure it contains this cancellation token
+                    // if this cancellation token could have been the cause.
+                    var newOce = new OperationCanceledException(cancellationToken);
+                    if (oce.StackTrace is string stackTrace)
+                    {
+                        ExceptionDispatchInfo.SetRemoteStackTrace(newOce, stackTrace);
+                    }
+                    throw newOce;
                 }
             }
         }
