@@ -75,12 +75,24 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
+
+    <!-- Host files. Mobile uses a different hosting model, so we don't include the .NET host components there. -->
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true' and Exists('$(DotNetHostBinDir)')">
+      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)">
+        <IsNative>true</IsNative>
+      </RuntimeFiles>
+      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)">
+        <IsNative>true</IsNative>
+      </RuntimeFiles>
+    </ItemGroup>
+
     <ItemGroup>
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
+
     <ItemGroup Condition="'$(SwapNativeForIL)' == 'true'">
       <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)\IL\*.*" />
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
