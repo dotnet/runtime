@@ -41,6 +41,13 @@ namespace ILCompiler
 
         private readonly FeatureSwitchHashtable _featureSwitchHashtable;
 
+        private static (string AttributeName, DiagnosticId Id)[] _requiresAttributeMismatchNameAndId = new[]
+            {
+                (DiagnosticUtilities.RequiresUnreferencedCodeAttribute, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch),
+                (DiagnosticUtilities.RequiresDynamicCodeAttribute, DiagnosticId.RequiresDynamicCodeAttributeMismatch),
+                (DiagnosticUtilities.RequiresAssemblyFilesAttribute, DiagnosticId.RequiresAssemblyFilesAttributeMismatch)
+            };
+
         private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
@@ -784,26 +791,17 @@ namespace ILCompiler
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
-            string overridingMethodName = overridingMethod.GetDisplayName();
-            string baseMethodName = baseMethod.GetDisplayName();
-            string[] requiresCheck = new[] { DiagnosticUtilities.RequiresUnreferencedCodeAttribute, DiagnosticUtilities.RequiresDynamicCodeAttribute, DiagnosticUtilities.RequiresAssemblyFilesAttribute };
-            foreach (var requiresAttribute in requiresCheck)
+            foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
             {
                 // We validate that the various dataflow/Requires* annotations are consistent across virtual method overrides
-                if (HasMismatchingAttributes(baseMethod, overridingMethod, requiresAttribute))
+                if (HasMismatchingAttributes(baseMethod, overridingMethod, requiresAttribute.AttributeName))
                 {
-                    string message = MessageFormat.FormatRequiresAttributeMismatch(overridingMethod.DoesMethodRequire(requiresAttribute, out _),
-                        baseMethodTypeIsInterface, requiresAttribute, overridingMethodName, baseMethodName);
+                    string overridingMethodName = overridingMethod.GetDisplayName();
+                    string baseMethodName = baseMethod.GetDisplayName();
+                    string message = MessageFormat.FormatRequiresAttributeMismatch(overridingMethod.DoesMethodRequire(requiresAttribute.AttributeName, out _),
+                        baseMethodTypeIsInterface, requiresAttribute.AttributeName, overridingMethodName, baseMethodName);
 
-                    DiagnosticId diagnosticId = requiresAttribute switch
-                    {
-                        DiagnosticUtilities.RequiresUnreferencedCodeAttribute => DiagnosticId.RequiresUnreferencedCodeAttributeMismatch,
-                        DiagnosticUtilities.RequiresDynamicCodeAttribute => DiagnosticId.RequiresDynamicCodeAttributeMismatch,
-                        DiagnosticUtilities.RequiresAssemblyFilesAttribute => DiagnosticId.RequiresAssemblyFilesAttributeMismatch,
-                        _ => throw new NotImplementedException($"{requiresAttribute} is not a valid supported Requires attribute"),
-                    };
-
-                    Logger.LogWarning(overridingMethod, diagnosticId, message);
+                    Logger.LogWarning(overridingMethod, requiresAttribute.Id, message);
                 }
             }
 

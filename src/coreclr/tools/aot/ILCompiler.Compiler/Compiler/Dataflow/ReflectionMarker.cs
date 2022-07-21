@@ -206,13 +206,21 @@ namespace ILCompiler.Dataflow
                 }
             }
 
-            var diagnosticContext = new DiagnosticContext(
+            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out requiresAttribute) &&
+                !_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
+            {
+                var diagnosticContext = new DiagnosticContext(
                 origin,
                 _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
                 _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
                 _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 _logger);
-            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
+
+                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
+                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+
+                diagnosticContext.AddDiagnostic(DiagnosticId.RequiresUnreferencedCode, entity.GetDisplayName(), arg1, arg2);
+            }
 
             if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
                 return;

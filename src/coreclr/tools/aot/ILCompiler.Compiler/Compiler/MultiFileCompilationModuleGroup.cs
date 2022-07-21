@@ -101,7 +101,7 @@ namespace ILCompiler
 
         public override bool ShouldProduceFullVTable(TypeDesc type)
         {
-            return false;
+            return ConstructedEETypeNode.CreationAllowed(type);
         }
 
         public override bool ShouldPromoteToFullType(TypeDesc type)
