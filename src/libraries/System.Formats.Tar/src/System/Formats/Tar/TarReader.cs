@@ -430,10 +430,8 @@ namespace System.Formats.Tar
                 throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
-            Debug.Assert(extendedAttributesHeader._extendedAttributes != null);
-
             // Replace all the attributes representing standard fields with the extended ones, if any
-            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader._extendedAttributes);
+            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader.ExtendedAttributes);
 
             return true;
         }
@@ -466,10 +464,8 @@ namespace System.Formats.Tar
                 throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
             }
 
-            Debug.Assert(extendedAttributesHeader._extendedAttributes != null);
-
             // Replace all the attributes representing standard fields with the extended ones, if any
-            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader._extendedAttributes);
+            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader.ExtendedAttributes);
 
             return actualHeader;
         }
