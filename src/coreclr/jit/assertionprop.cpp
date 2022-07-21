@@ -944,7 +944,8 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
  *  Initialize the assertion prop tracking logic.
  */
 
-bool Compiler::AssertionDscKeyFuncs::isLocalProp = false;
+bool Compiler::AssertionDscKeyFuncs::vnBased = false;
+Compiler::AssertionDscKeyFuncs::HashCodeFn Compiler::AssertionDscKeyFuncs::assertionHashCodeFn = &Compiler::AssertionDscKeyFuncs::GetHashCodeLocal;
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
@@ -959,9 +960,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
     static const unsigned       upperBound  = ArrLen(countFunc) - 1;
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
-    AssertionDscKeyFuncs::isLocalProp       = isLocalProp;
-    AssertionDscKeyFuncs::hashCodeFn       = &AssertionDscKeyFuncs::GetHashCodeGlobal;
 
+    AssertionDscKeyFuncs::InitAssertionDscKey(isLocalProp);
 
     optLocalAssertionProp = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
