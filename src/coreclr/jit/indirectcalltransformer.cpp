@@ -539,14 +539,6 @@ private:
             //
             checkBlock = currBlock;
 
-            // Create empty check for "Exact Classes" case. In future, it's going to support
-            // multiple exact classes with help of https://github.com/dotnet/runtime/pull/59604
-            if (origCall->IsGuardedDevirtualizationCandidateForExactClasses())
-            {
-                checkBlock->bbJumpKind = BBJ_NONE;
-                return;
-            }
-
             checkBlock->bbJumpKind = BBJ_COND;
 
             CallArg* thisArg  = origCall->gtArgs.GetThisArg();
@@ -1147,7 +1139,6 @@ private:
                     GenTreeCall* const call = root->AsCall();
 
                     if (call->IsGuardedDevirtualizationCandidate() &&
-                        !call->IsGuardedDevirtualizationCandidateForExactClasses() && // no need for chaining for now
                         (call->gtGuardedDevirtualizationCandidateInfo->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
