@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WasmMainJSPath>main.mjs</WasmMainJSPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
