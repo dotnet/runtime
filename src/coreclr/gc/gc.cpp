@@ -44531,8 +44531,6 @@ Object * GCHeap::NextObj (Object * object)
 #else
     unsigned int g = hp->object_gennum ((uint8_t*)object);
 #endif
-    if ((g == 0) && hp->settings.demotion)
-        return NULL;//could be racing with another core allocating.
     int align_const = get_alignment_constant (!large_object_p);
     uint8_t* nextobj = o + Align (size (o), align_const);
     if (nextobj <= o) // either overflow or 0 sized object.

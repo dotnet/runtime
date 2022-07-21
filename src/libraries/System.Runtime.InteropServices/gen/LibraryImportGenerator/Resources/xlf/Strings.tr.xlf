@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="needs-review-translation">Yerel tür için 'Span&lt;byte&gt;' parametresini alan bir oluşturucunun belirtildiği durumlarda, çağıran tarafından ayrılan arabelleğin boyutunu sağlamak için, türün 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' üzerinde BufferSize alanını ayarlaması gerekir.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
         <source>Invalid `CustomMarshallerAttribute` usage</source>
-        <target state="needs-review-translation">Geçersiz `CustomTypeMarshallerAttribute` kullanımı</target>
+        <target state="new">Invalid `CustomMarshallerAttribute` usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
-        <target state="needs-review-translation">Belirtilen yerel tür geçersiz</target>
+        <target state="new">Specified marshaller type is invalid</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -294,12 +294,12 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
-        <target state="needs-review-translation">'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' değerine sahip bir türün, yönetilen tür belirtmesi gerekir</target>
+        <target state="new">A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
-        <target state="needs-review-translation">'{0}' türünde, bu türe uygulanan 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' değerinde herhangi bir yönetilen tür belirtilmiyor</target>
+        <target state="new">The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -309,7 +309,7 @@
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
-        <target state="needs-review-translation">'{1}' yönetilen türü için '{0}' yerel türü kapalı bir genel tür olmalıdır veya yönetilen tür ile aynı parametre sayısı değerine sahip olmalıdır.</target>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
@@ -324,7 +324,7 @@
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
         <source>A native type must be blittable.</source>
-        <target state="translated">Bir yerel türün blok halinde kopyalanabilir olması gerekir.</target>
+        <target state="new">A native type must be blittable.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableMessage">
@@ -334,17 +334,17 @@
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
         <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
-        <target state="needs-review-translation">'GetPinnableReference' sabitlenmiş sonucunun yerel türe dönüştürülebilmesi için yerel tür işaretçi boyutunda olmalıdır.</target>
+        <target state="new">'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
         <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
-        <target state="needs-review-translation">'{1}' yönetilen türü bir 'GetPinnableReference' metoduna sahip olduğu için '{0}' yerel türü işaretçi boyutunda olmalıdır</target>
+        <target state="new">'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
         <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="needs-review-translation">Belirli bir tür için bir yerel türün, bu türü yönetilen tür olarak belirten 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' değerini taşıması gerekir.</target>
+        <target state="new">An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
@@ -364,12 +364,12 @@
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
-        <target state="needs-review-translation">'ToNativeValue' dönüş türü ve 'FromNativeValue' parametre türü aynı olmalıdır.</target>
+        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
-        <target state="needs-review-translation">'ToNativeValue' dönüş türü ve 'FromNativeValue' parametre türü aynı olmalıdır</target>
+        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

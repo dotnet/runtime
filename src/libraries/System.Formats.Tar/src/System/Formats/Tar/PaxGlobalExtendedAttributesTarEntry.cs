@@ -29,20 +29,13 @@ namespace System.Formats.Tar
             : base(TarEntryType.GlobalExtendedAttributes, TarHeader.GlobalHeadFormatPrefix, TarEntryFormat.Pax, isGea: true)
         {
             ArgumentNullException.ThrowIfNull(globalExtendedAttributes);
-            _header._extendedAttributes = new Dictionary<string, string>(globalExtendedAttributes);
+            _header.InitializeExtendedAttributesWithExisting(globalExtendedAttributes);
         }
 
         /// <summary>
         /// Returns the global extended attributes stored in this entry.
         /// </summary>
-        public IReadOnlyDictionary<string, string> GlobalExtendedAttributes
-        {
-            get
-            {
-                _header._extendedAttributes ??= new Dictionary<string, string>();
-                return _readOnlyGlobalExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
-            }
-        }
+        public IReadOnlyDictionary<string, string> GlobalExtendedAttributes => _readOnlyGlobalExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => false;

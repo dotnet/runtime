@@ -25,6 +25,31 @@ namespace Microsoft.Interop.Analyzers
             return walker.TypeExpressionLocation;
         }
 
+        public static AttributeData? FindAttributeData(this AttributeSyntax syntax, ISymbol targetSymbol)
+        {
+            AttributeTargetSpecifierSyntax attributeTarget = syntax.FirstAncestorOrSelf<AttributeListSyntax>().Target;
+            if (attributeTarget is not null)
+            {
+                switch (attributeTarget.Identifier.Kind())
+                {
+                    case SyntaxKind.ReturnKeyword:
+                        return ((IMethodSymbol)targetSymbol).GetReturnTypeAttributes().First(attributeSyntaxLocationMatches);
+                    case SyntaxKind.AssemblyKeyword:
+                        return targetSymbol.ContainingAssembly.GetAttributes().First(attributeSyntaxLocationMatches);
+                    case SyntaxKind.ModuleKeyword:
+                        return targetSymbol.ContainingModule.GetAttributes().First(attributeSyntaxLocationMatches);
+                    default:
+                        return null;
+                }
+            }
+            return targetSymbol.GetAttributes().First(attributeSyntaxLocationMatches);
+
+            bool attributeSyntaxLocationMatches(AttributeData attrData)
+            {
+                return attrData.ApplicationSyntaxReference!.SyntaxTree == syntax.SyntaxTree && attrData.ApplicationSyntaxReference.Span == syntax.Span;
+            }
+        }
+
         private sealed class FindTypeLocationWalker : CSharpSyntaxWalker
         {
             public Location? TypeExpressionLocation { get; private set; }
