@@ -330,10 +330,6 @@ namespace System.IO
             Interop.Sys.InitializeConsoleBeforeRead();
             try
             {
-                ConsoleKey key;
-                char ch;
-                bool isAlt, isCtrl, isShift;
-
                 if (IsUnprocessedBufferEmpty())
                 {
                     // Read in bytes
@@ -357,10 +353,7 @@ namespace System.IO
                     }
                 }
 
-                KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter,
-                    out key, out ch, out isShift, out isAlt, out isCtrl, ref _startIndex, _endIndex);
-
-                return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
+                return KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex);
             }
             finally
             {

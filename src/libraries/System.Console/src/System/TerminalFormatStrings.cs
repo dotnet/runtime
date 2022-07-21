@@ -226,7 +226,7 @@ internal sealed class TerminalFormatStrings
     {
         ReadOnlyMemory<char> keyFormat = db.GetString(keyId).AsMemory();
         if (!keyFormat.IsEmpty)
-            KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
+            KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo(key == ConsoleKey.Enter ? '\r' : '\0', key, shift, alt, control);
     }
 
     private void AddPrefixKey(TermInfo.Database db, string extendedNamePrefix, ConsoleKey key)

@@ -356,10 +356,7 @@ public class KeyParserTests
 
         foreach (ConsoleKeyInfo expectedKey in expectedKeys)
         {
-            KeyParser.Parse(chars, terminalData.TerminalDb, 0, terminalData.Verase,
-                out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
-
-            ConsoleKeyInfo parsed = new(ch, consoleKey, isShift, isAlt, isCtrl);
+            ConsoleKeyInfo parsed = KeyParser.Parse(chars, terminalData.TerminalDb, 0, terminalData.Verase, ref startIndex, chars.Length);
 
             Assert.Equal(expectedKey.Key, parsed.Key);
             Assert.Equal(expectedKey.KeyChar, parsed.KeyChar);
@@ -409,14 +406,14 @@ public class KeyParserTests
     {
         int startIndex = 0;
 
-        KeyParser.Parse(chars, terminalFormatStrings, 0, verase,
-            out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
+        ConsoleKeyInfo parsed = KeyParser.Parse(chars, terminalFormatStrings, 0, verase, ref startIndex, chars.Length);
+
         //Assert.True(Net6KeyParser.Parse(chars, terminalFormatStrings, 0, verase,
         //    out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length));
 
         Assert.Equal(expectedStartIndex, startIndex);
 
-        return new ConsoleKeyInfo(ch, consoleKey, isShift, isAlt, isCtrl);
+        return parsed;
     }
 }
 
