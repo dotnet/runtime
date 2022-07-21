@@ -53,7 +53,7 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.");
             }
-            
+
             _options = new FixedWindowRateLimiterOptions
             {
                 PermitLimit = options.PermitLimit,

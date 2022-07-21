@@ -54,7 +54,7 @@ namespace System.Threading.RateLimiting
                 QueueProcessingOrder = options.QueueProcessingOrder,
                 QueueLimit = options.QueueLimit
             };
-            
+
             _permitCount = _options.PermitLimit;
         }
 
