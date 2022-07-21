@@ -14,7 +14,7 @@ internal static class KeyParser
     private const int MinimalSequenceLength = 3;
     private const int SequencePrefixLength = 2; // ^[[ ("^[" stands for Escape)
 
-    internal static void Parse(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
+    internal static void Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char character, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         int length = endIndex - startIndex;
@@ -59,7 +59,7 @@ internal static class KeyParser
         }
     }
 
-    private static bool TryParseTerminalInputSequence(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings,
+    private static bool TryParseTerminalInputSequence(char[] buffer, TerminalFormatStrings terminalFormatStrings,
         out ConsoleKey key, out char character, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         ReadOnlySpan<char> input = buffer.AsSpan(startIndex, endIndex - startIndex);
@@ -189,7 +189,7 @@ internal static class KeyParser
 
         return false;
 
-        static bool TryMapUsingTerminfoDb(ReadOnlyMemory<char> inputSequence, ConsolePal.TerminalFormatStrings terminalFormatStrings,
+        static bool TryMapUsingTerminfoDb(ReadOnlyMemory<char> inputSequence, TerminalFormatStrings terminalFormatStrings,
             ref ConsoleKey key, ref bool isShift, ref bool isAlt, ref bool isCtrl)
         {
             // Check if the string prefix matches.

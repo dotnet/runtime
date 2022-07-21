@@ -405,7 +405,7 @@ public class KeyParserTests
         Assert.Equal(ConsoleModifiers.Shift, consoleKeyInfo.Modifiers);
     }
 
-    private static ConsoleKeyInfo Map(char[] chars, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
+    private static ConsoleKeyInfo Map(char[] chars, TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
     {
         int startIndex = 0;
 
@@ -422,7 +422,7 @@ public class KeyParserTests
 
 public abstract class TerminalData
 {
-    private ConsolePal.TerminalFormatStrings? _terminalDb;
+    private TerminalFormatStrings? _terminalDb;
     private Encoding? _consoleEncoding;
 
     protected abstract string EncodingCharset { get; }
@@ -431,8 +431,8 @@ public abstract class TerminalData
     internal abstract byte Verase { get; }
     internal abstract IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios { get; }
 
-    internal ConsolePal.TerminalFormatStrings TerminalDb => _terminalDb ??=
-        new ConsolePal.TerminalFormatStrings(new TermInfo.Database(Term, Convert.FromBase64String(EncodedTerminalDb)));
+    internal TerminalFormatStrings TerminalDb => _terminalDb ??=
+        new TerminalFormatStrings(new TermInfo.Database(Term, Convert.FromBase64String(EncodedTerminalDb)));
 
     internal Encoding ConsoleEncoding => _consoleEncoding ??= (string.IsNullOrEmpty(EncodingCharset) ? Encoding.Default : Encoding.GetEncoding(EncodingCharset)).RemovePreamble();
 }

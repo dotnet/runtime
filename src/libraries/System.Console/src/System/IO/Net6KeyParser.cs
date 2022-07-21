@@ -5,7 +5,7 @@ namespace System.IO;
 
 internal static class Net6KeyParser
 {
-    internal static bool Parse(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
+    internal static bool Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         // Try to get the special key match from the TermInfo static information.
@@ -51,7 +51,7 @@ internal static class Net6KeyParser
     }
 
     private static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex,
-        ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter, out ConsoleKeyInfo key, out int keyLength)
+        TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter, out ConsoleKeyInfo key, out int keyLength)
     {
         int unprocessedCharCount = endIndex - startIndex;
 
