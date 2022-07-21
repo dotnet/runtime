@@ -69,5 +69,5 @@ int
 mono_de_frame_async_id (DbgEngineStackFrame *frame);
 
 bool
-mono_debugger_agent_receive_and_process_command (bool attach_failed);
+mono_debugger_agent_receive_and_process_command (void);
 #endif

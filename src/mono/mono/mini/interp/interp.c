@@ -243,6 +243,10 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
+#ifdef HOST_WASI
+static gboolean debugger_enabled = FALSE;
+#endif
+
 static void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
 
@@ -3542,9 +3546,6 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
-#ifdef HOST_WASI
-	gboolean debugger_enabled = mono_component_debugger()->debugger_enabled();
-#endif
 	gboolean gc_transitions = FALSE;
 
 #if DEBUG_INTERP
@@ -8135,4 +8136,8 @@ mono_ee_interp_init (const char *opts)
 	mini_install_interp_callbacks (&mono_interp_callbacks);
 
 	register_interp_stats ();
+
+#ifdef HOST_WASI
+	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;
+#endif
 }

@@ -14,7 +14,7 @@ __attribute__((import_name("sock_accept")))
 int sock_accept(int fd, int fdflags, int* result_ptr);
 
 static long long
-timeInMilliseconds()
+timeInMilliseconds ()
 {
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
@@ -34,11 +34,10 @@ wasi_transport_recv (void *buf, int len)
 		if (res > 0)
 			total += res;
 		again++;
-		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message))
-		{
+		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message)) {
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
-			long long start = timeInMilliseconds();
-			while (timeInMilliseconds() < start + (connection_wait/1000));
+			long long start = timeInMilliseconds ();
+			while (timeInMilliseconds () < start + (connection_wait/1000));
 		} else {
 			break;
 		}
@@ -68,17 +67,20 @@ wasi_transport_connect (const char *socket_fd)
 	PRINT_DEBUG_MSG (1, "wasi_transport_connect.\n", conn_fd);
 	bool handshake_ok = FALSE;
 	
-	while (!handshake_ok)
-	{
+	while (!handshake_ok) {
 		PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
 		sock_accept (atoi(socket_fd), 4, &conn_fd);
-		int res = write (conn_fd, (const char*)"", 0);
-		if (conn_fd == -1 || res == -1)
-		{
+		int res = -1;
+		if (conn_fd != -1) {
+			res = write (conn_fd, (const char*)"", 0);
+			if (res != -1) {
+				handshake_ok = mono_component_debugger ()->transport_handshake ();
+			}
+		}
+		if (conn_fd == -1 || res == -1) {
 			sleep(1);
 			continue;
 		}
-		handshake_ok = mono_component_debugger ()->transport_handshake ();
 	}
 	PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", conn_fd);
 }
@@ -101,7 +103,7 @@ wasi_transport_close2 (void)
 static void 
 mono_wasi_start_debugger_thread (MonoError *error)
 {
-		mono_debugger_agent_receive_and_process_command (FALSE);
+	mono_debugger_agent_receive_and_process_command ();
 	connection_wait = 250;
 }
 
@@ -133,7 +135,7 @@ static void
 mono_wasi_receive_and_process_command_from_debugger_agent (void)
 {
 	retry_receive_message = 2;
-	mono_debugger_agent_receive_and_process_command (FALSE);
+	mono_debugger_agent_receive_and_process_command ();
 	retry_receive_message = 50;
 }
 

@@ -3794,7 +3794,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	{
 		GET_DEBUGGER_TLS();
 		tls->really_suspended = TRUE;
-		mono_debugger_agent_receive_and_process_command (FALSE);
+		mono_debugger_agent_receive_and_process_command ();
 	}
 #endif	
 }
@@ -10319,7 +10319,12 @@ debugger_thread (void *arg)
                 }
         }
 #endif
-	gboolean is_vm_dispose_command = mono_debugger_agent_receive_and_process_command (attach_failed);
+	gboolean is_vm_dispose_command = FALSE;
+	if (!attach_failed)
+	{
+		is_vm_dispose_command =  mono_debugger_agent_receive_and_process_command ();
+	}
+
 
 	mono_set_is_debugger_attached (FALSE);
 
@@ -10339,7 +10344,7 @@ debugger_thread (void *arg)
 	return 0;
 }
 
-bool mono_debugger_agent_receive_and_process_command (bool attach_failed)
+bool mono_debugger_agent_receive_and_process_command (void)
 {
 	int res, len, id, flags, command = 0;
 	CommandSet command_set = (CommandSet)0;
@@ -10351,7 +10356,7 @@ bool mono_debugger_agent_receive_and_process_command (bool attach_failed)
 	
 	gboolean log_each_step = g_hasenv ("MONO_DEBUGGER_LOG_AFTER_COMMAND");
 
-	while (!attach_failed) {
+	while (TRUE) {
 		res = transport_recv (header, HEADER_LENGTH);
 
 		/* This will break if the socket is closed during shutdown too */
@@ -10441,9 +10446,7 @@ bool mono_debugger_agent_receive_and_process_command (bool attach_failed)
 		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;
 	}
-	if (command_set == CMD_SET_VM && command == CMD_VM_DISPOSE)
-		return FALSE;
-	return TRUE;
+	return !(command_set == CMD_SET_VM && command == CMD_VM_DISPOSE);
 }
 
 static gboolean
