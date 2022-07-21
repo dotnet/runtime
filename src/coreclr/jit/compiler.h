@@ -7126,17 +7126,6 @@ public:
         }
 
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
-
-        unsigned GetHashCode()
-        {
-            /*
-             *  0 ~ 2 : assertionKind
-             *  3 ~ 6 : op1Kind
-             *  7 ~ 11: op2Kind
-             */
-            unsigned result = ((op2.kind << 7) | (op1.kind << 3) | (assertionKind));
-            return result;
-        }
         {
             if (op1.kind != that->op1.kind)
             {
@@ -7254,34 +7243,56 @@ protected:
      //template <bool isLocal>
     struct AssertionDscKeyFuncs
     {
-    public:
-        static bool isLocalProp;
-        static unsigned (*hashCodeFn)(AssertionDsc);
+        typedef unsigned (*HashCodeFn)(AssertionDsc);
+
+        static bool vnBased;
+        static HashCodeFn assertionHashCodeFn;
+
+        static void InitAssertionDscKey(bool isLocalProp)
+        {
+            vnBased = !isLocalProp;
+            if (isLocalProp)
+            {
+                assertionHashCodeFn = &GetHashCodeLocal;
+            }
+            else
+            {
+                assertionHashCodeFn = &GetHashCodeGlobal;
+            }
+        }
 
         static bool Equals(AssertionDsc x, AssertionDsc y)
         {
             AssertionDsc* _x = &x;
-            return _x->Equals(&y);
+            AssertionDsc* _y = &y;
+            return _x->Equals(_y, vnBased);
         }
 
         static unsigned GetHashCode(AssertionDsc dsc)
         {
-            AssertionDsc* _dsc = &dsc;
-            return _dsc->GetHashCode();
+            return assertionHashCodeFn(dsc);
         }
-
 
         static unsigned GetHashCodeGlobal(AssertionDsc dsc)
         {
-            AssertionDsc* _dsc = &dsc;
-            return _dsc->GetHashCode();
+            /*
+             *  0 ~ 2 : assertionKind
+             *  3 ~ 6 : op1Kind
+             *  7 ~ 11: op2Kind
+             */
+            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
+            return result;
         }
 
         static unsigned GetHashCodeLocal(AssertionDsc dsc)
         {
-            return hashCodeFn(dsc);
-            /*AssertionDsc* _dsc = &dsc;
-            return _dsc->GetHashCode();*/
+            /*
+             *  0 ~ 2 : assertionKind
+             *  3 ~ 6 : op1Kind
+             *  7 ~ 11: op2Kind
+             */
+            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
+            return result;
         }
     };
 
