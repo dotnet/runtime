@@ -160,7 +160,7 @@ PROBE_FRAME_SIZE    field 0
         ret
 
 DoRhpGcProbe
-        orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
+        orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
         b           RhpGcProbe
     NESTED_END RhpGcProbeHijackWrapper
 
@@ -207,7 +207,7 @@ DoRhpGcProbe
 ;;
     LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        orr         x12, x12, #DEFAULT_FRAME_SAVE_FLAGS
+        orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
         b           RhpGcStressProbe
     LEAF_END RhpGcStressHijack
 ;;
