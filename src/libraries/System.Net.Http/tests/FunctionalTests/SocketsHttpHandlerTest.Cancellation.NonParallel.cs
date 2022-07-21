@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -20,7 +24,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        // [OuterLoop("Incurs significant delay.")] // TODO: Uncomment when ready
+        [OuterLoop("Incurs significant delay.")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("1.1", 10_000, 1_000, 100)]
         [InlineData("2.0", 10_000, 1_000, 100)]
@@ -39,6 +43,7 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString, string firstConnectionDelayMsString, string requestTimeoutMsString)
         {
+            using var log = new LogHttpEventListener();
             var version = Version.Parse(versionString);
             LoopbackServerFactory factory = GetFactoryForVersion(version);
 
@@ -60,10 +65,14 @@ namespace System.Net.Http.Functional.Tests
                     await client.GetAsync(uri, cts0.Token);
                 });
 
+                await log.WriteLineAsync("!Initial done");
+
                 for (int i = 0; i < AttemptCount; i++)
                 {
                     using var cts1 = new CancellationTokenSource(requestTimeoutMs);
+                    await log.WriteLineAsync($"!Sending R{i}");
                     using var response = await client.GetAsync(uri, cts1.Token);
+                    await log.WriteLineAsync($"!R{i} done");
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
             }, async server =>
@@ -95,13 +104,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void PendingConnectionTimeout_Infinite_DoesNotCancelConections()
+        [OuterLoop("Incurs significant delay.")]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(20_000)]
+        [InlineData(Timeout.Infinite)]
+        public void PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled(int timeout)
         {
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(async timoutStr =>
             {
                 // Setup "infinite" timeout of int.MaxValue milliseconds
-                AppContext.SetData("System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion", int.MaxValue);
+                AppContext.SetData("System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion", int.Parse(timoutStr));
 
                 bool connected = false;
                 CancellationTokenSource cts = new CancellationTokenSource();
@@ -124,8 +136,6 @@ namespace System.Net.Http.Functional.Tests
                     await Task.Delay(100, cancellationToken); // Wait for the request to be pushed to the queue
                     cts.Cancel();
 
-                    // Ideally we should wait for a very long time here, but that would affect the outerloop test execution times in an unaccaptable manner.
-                    // Instead, this is a best effort test to cover the int.MaxValue == infinite special timeout case.
                     await Task.Delay(10_000, cancellationToken);
                     await s.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
                     connected = true;
@@ -133,7 +143,120 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 Assert.True(connected);
-            }).Dispose();
+            }, timeout.ToString()).Dispose();
+        }
+    }
+
+    public sealed class LogHttpEventListener : EventListener
+    {
+        public const string LogDirectory = @"c:\_dev\r7d\src\libraries\System.Net.Http\tests\_logs";
+
+        private int _lastLogNumber = 0;
+        private FileStream _log;
+        private Channel<string> _messagesChannel = Channel.CreateUnbounded<string>();
+        private Task _processMessages;
+        private StringBuilder? _cachedBuilder = null;
+
+        private FileStream CreateNextLogFileStream()
+        {
+            string fn = Path.Combine(LogDirectory, $"client_{++_lastLogNumber:000}.log");
+            if (File.Exists(fn))
+            {
+                File.Delete(fn);
+            }
+            return new FileStream(fn, FileMode.CreateNew, FileAccess.Write);
+        }
+
+        public LogHttpEventListener()
+        {
+            if (!Directory.Exists(LogDirectory))
+            {
+                Directory.CreateDirectory(LogDirectory);
+            }
+
+            foreach (string filename in Directory.GetFiles(LogDirectory, "client*.log"))
+            {
+                try
+                {
+                    File.Delete(filename);
+                }
+                catch { }
+            }
+            _log = CreateNextLogFileStream();
+            _messagesChannel = Channel.CreateUnbounded<string>();
+            _processMessages = ProcessMessagesAsync();
+        }
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http" ||
+                eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
+            {
+                EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+        }
+
+        private async Task ProcessMessagesAsync()
+        {
+            byte[] buffer = new byte[8192];
+            var encoding = Encoding.ASCII;
+
+            int i = 0;
+            await foreach (string message in _messagesChannel.Reader.ReadAllAsync())
+            {
+                if ((++i % 10_000) == 0)
+                {
+                    await RotateFiles();
+                }
+                int maxLen = encoding.GetMaxByteCount(message.Length);
+                if (maxLen > buffer.Length)
+                {
+                    buffer = new byte[maxLen];
+                }
+                int byteCount = encoding.GetBytes(message, buffer);
+
+                await _log.WriteAsync(buffer.AsMemory(0, byteCount));
+            }
+
+            async ValueTask RotateFiles()
+            {
+                await _log.FlushAsync();
+                // Rotate the log if it reaches 50 MB size.
+                if (_log.Length > (100 << 20))
+                {
+                    await _log.DisposeAsync();
+                    _log = CreateNextLogFileStream();
+                }
+            }
+        }
+
+        protected override async void OnEventWritten(EventWrittenEventArgs
+            eventData)
+        {
+            StringBuilder sb = Interlocked.Exchange(ref _cachedBuilder, null) ?? new StringBuilder();
+            sb.Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+            for (int i = 0; i < eventData.Payload?.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+                sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+            }
+            sb.Append(Environment.NewLine);
+            await _messagesChannel.Writer.WriteAsync(sb.ToString());
+            Interlocked.Exchange(ref _cachedBuilder, sb);
+        }
+
+        public ValueTask WriteLineAsync(string str) => _messagesChannel.Writer.WriteAsync(str);
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            _log.Flush();
+            _messagesChannel.Writer.Complete();
+            _processMessages.Wait();
+            _log.Dispose();
         }
     }
 }

@@ -437,11 +437,17 @@ namespace System.Net.Http
             return false;
         }
 
-        private static Exception CreateConnectTimeoutException(OperationCanceledException oce)
+        private static Exception CreateConnectionTimeoutException(OperationCanceledException oce, bool timeoutByOriginatingRequestCompletion)
         {
+            // The timeoutByOriginatingRequestCompletion == true case should never surface an exception to the user.
+            // These exceptions will be logged if tracing is enabled, therefore it's worth to distinguish the exception message.
+            string message = timeoutByOriginatingRequestCompletion ?
+                "A pending connection has been cancelled because of the completion of the originating request." :
+                SR.net_http_connect_timedout;
+
             // The pattern for request timeouts (on HttpClient) is to throw an OCE with an inner exception of TimeoutException.
             // Do the same for ConnectTimeout-based timeouts.
-            TimeoutException te = new TimeoutException(SR.net_http_connect_timedout, oce.InnerException);
+            TimeoutException te = new TimeoutException(message, oce.InnerException);
             Exception newException = CancellationHelper.CreateOperationCanceledException(te, oce.CancellationToken);
             ExceptionDispatchInfo.SetCurrentStackTrace(newException);
             return newException;
@@ -464,7 +470,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token ?
-                    CreateConnectTimeoutException(oce) :
+                    CreateConnectionTimeoutException(oce, waiter.CancelledByOriginatingRequestCompletion) :
                     e;
             }
             finally
@@ -632,7 +638,7 @@ namespace System.Net.Http
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
             {
-                HandleHttp11ConnectionFailure(requestWaiter: null, CreateConnectTimeoutException(oce));
+                HandleHttp11ConnectionFailure(requestWaiter: null, CreateConnectionTimeoutException(oce, false));
                 return;
             }
             catch (Exception e)
@@ -691,7 +697,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token ?
-                    CreateConnectTimeoutException(oce) :
+                    CreateConnectionTimeoutException(oce, waiter.CancelledByOriginatingRequestCompletion) :
                     e;
             }
             finally
@@ -1154,7 +1160,12 @@ namespace System.Net.Http
         private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter, bool requestCancelled)
         {
             int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
-            if (waiter?.ConnectionCancellationTokenSource is null || timeout == int.MaxValue) return;
+            if (waiter?.ConnectionCancellationTokenSource is null ||
+                timeout == Timeout.Infinite ||
+                Settings._connectTimeout != Timeout.InfiniteTimeSpan && timeout > (int)Settings._connectTimeout.TotalMilliseconds) // Do not override shorter ConnectTimeout
+            {
+                return;
+            }
 
             lock (waiter)
             {
@@ -1165,7 +1176,7 @@ namespace System.Net.Http
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    Trace($"Cancelling a pending connection attempt with timeout of {timeout} ms, " +
+                    Trace($"Initiating cancellation of a pending connection attempt with delay of {timeout} ms, " +
                         $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
                 }
 
@@ -2515,7 +2526,10 @@ namespace System.Net.Http
         {
             // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
             // or completes on a different connection.
-            public CancellationTokenSource? ConnectionCancellationTokenSource;
+            public CancellationTokenSource? ConnectionCancellationTokenSource { get; set; }
+
+            // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
+            public bool CancelledByOriginatingRequestCompletion { get; set; }
 
             public async ValueTask<T> WaitForConnectionAsync(bool async, CancellationToken requestCancellationToken)
             {
