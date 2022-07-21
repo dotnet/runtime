@@ -21691,7 +21691,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
 
-    // If the objClass is sealed (final), then we may be able to devirtualize.
     DWORD objClassAttribs = 0;
     bool  objClassIsFinal = false;
     if (objClass != NO_CLASS_HANDLE)
