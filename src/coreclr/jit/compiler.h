@@ -7174,6 +7174,23 @@ public:
 
         bool HasSameOp2(AssertionDsc* that, bool vnBased)
         {
+            if (op1.kind != that.op1.kind)
+            {
+                return false;
+            }
+            else if (op1.kind == O1K_ARR_BND)
+            {
+                assert(vnBased);
+                return (op1.bnd.vnIdx == that.op1.bnd.vnIdx) && (op1.bnd.vnLen == that.op1.bnd.vnLen);
+            }
+            else
+            {
+                return ((vnBased && (op1.vn == that.op1.vn)) ||
+                        (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
+            }
+        }
+
+        {
             if (op2.kind != that->op2.kind)
             {
                 return false;
@@ -7218,6 +7235,44 @@ public:
         {
             return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that, vnBased) &&
                    HasSameOp2(that, vnBased);
+            }
+
+            switch (op2.kind)
+            {
+                case O2K_IND_CNS_INT:
+                case O2K_CONST_INT:
+                    return ((op2.u1.iconVal == that.op2.u1.iconVal) && (op2.u1.iconFlags == that.op2.u1.iconFlags));
+
+                case O2K_CONST_LONG:
+                    return (op2.lconVal == that.op2.lconVal);
+
+                case O2K_CONST_DOUBLE:
+                    // exact match because of positive and negative zero.
+                    return (memcmp(&op2.dconVal, &that.op2.dconVal, sizeof(double)) == 0);
+
+                case O2K_ZEROOBJ:
+                    return true;
+
+                case O2K_LCLVAR_COPY:
+                    return (op2.lcl.lclNum == that.op2.lcl.lclNum) &&
+                           (!vnBased || (op2.lcl.ssaNum == that.op2.lcl.ssaNum));
+
+                case O2K_SUBRANGE:
+                    return op2.u2.Equals(that.op2.u2);
+
+                case O2K_INVALID:
+                    // we will return false
+                    break;
+
+                default:
+                    assert(!"Unexpected value for op2.kind in AssertionDsc.");
+                    break;
+            }
+
+            return false;
+        }
+
+        {
         }
 
         bool Equals(AssertionDsc* that, bool vnBased)
@@ -7236,6 +7291,30 @@ public:
                 return HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
             }
         }
+
+        static bool isLocalProp;
+
+        static bool Equals(AssertionDsc dsc1, AssertionDsc dsc2, bool vnBased)
+        {
+            if (dsc1.assertionKind != dsc2.assertionKind)
+            {
+                return false;
+            }
+            else if (dsc1.assertionKind == OAK_NO_THROW)
+            {
+                assert(dsc1.op2.kind == O2K_INVALID);
+                return dsc1.HasSameOp1(dsc2, vnBased);
+            }
+            else
+            {
+                return dsc1.HasSameOp1(dsc2, vnBased) && dsc1.HasSameOp2(dsc2, vnBased);
+            }
+        }
+
+        /*static bool Equals(AssertionDsc* dsc1, AssertionDsc* dsc2, bool vnBased)
+        {
+            return dsc1->Equals(dsc2, vnBased);
+        }*/
     };
 
 protected:
@@ -7261,6 +7340,37 @@ protected:
     bool           optCanPropNonNull;
     bool           optCanPropBndsChk;
     bool           optCanPropSubRange;
+
+    struct AssertionDscKeyFuncs
+    {
+    public:
+
+        static bool isLocalProp;
+
+        static bool Equals(/*const */AssertionDsc x, /*const */AssertionDsc y)
+        {
+            return AssertionDsc::Equals(x, y, !isLocalProp);
+        }
+
+        static unsigned GetHashCode(const AssertionDsc dsc)
+        {
+            /*
+            *  0 ~ 2 : assertionKind
+            *  3 ~ 6 : op1Kind
+            *  7 ~ 11: op2Kind
+            */
+            //byte assertionKind = dsc->assertionKind;
+            //byte op1Kind = dsc->op1.kind;
+            //byte op2Kind = dsc->op2.kind;
+            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
+            //printf("hash= %u", result);
+            return result;
+        }
+    };
+
+    // Map from Block to Block.  Used for a variety of purposes.
+    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
+    AssertionDscMap optAssertionDscMap;
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
