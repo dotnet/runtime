@@ -204,8 +204,8 @@ function initializeImportsAndExports(
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
-    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     init_polyfills();
+    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     setImportsAndExports(imports, exports, replacements);
 
     // here we merge methods from the local objects into exported objects

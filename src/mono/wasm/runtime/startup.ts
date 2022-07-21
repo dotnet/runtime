@@ -137,11 +137,8 @@ function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
     // It will block emscripten `userOnRuntimeInitialized` by pending addRunDependency("mono_pre_init")
     (async () => {
         try {
-            if (isCustomStartup) {
-                await mono_wasm_pre_init_essential_async();
-            }
-            else {
-                await mono_wasm_pre_init_essential_async();
+            await mono_wasm_pre_init_essential_async();
+            if (!isCustomStartup) {
                 // - download Module.config from configSrc
                 // - start download assets like DLLs
                 await mono_wasm_pre_init_full();
@@ -186,6 +183,7 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
             // wait for all assets in memory
             await all_assets_loaded_in_memory;
             const expected_asset_count = config.assets ? config.assets.length : 0;
+            mono_assert(downloded_assets_count == expected_asset_count, "Expected assets to be downloaded");
             mono_assert(instantiated_assets_count == expected_asset_count, "Expected assets to be in memory");
             if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
 
@@ -288,8 +286,6 @@ function mono_wasm_before_user_runtime_initialized(): void {
     }
 
     try {
-        const expected_asset_count = config.assets ? config.assets.length : 0;
-        mono_assert(downloded_assets_count == expected_asset_count, "Expected assets to be downloaded");
         setTimeout(() => {
             // when there are free CPU cycles
             string_decoder.init_fields();
@@ -302,7 +298,7 @@ function mono_wasm_before_user_runtime_initialized(): void {
         _apply_configuration_from_args();
         mono_wasm_globalization_init();
 
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", runtimeHelpers.enable_debugging);
+        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
         if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
     } catch (err: any) {
@@ -336,7 +332,7 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
         if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: Initializing mono runtime");
 
         // these are second calls in case of non-blazor. 
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", runtimeHelpers.enable_debugging);
+        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
         if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
@@ -390,7 +386,6 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
 async function _instantiate_wasm_module(): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
-        await runtimeHelpers.scriptDirectoryPromise; // make sure we know where we are
         if (!config.assets && Module.configSrc) {
             // when we are starting with mono-config,json, it could have dotnet.wasm location in it, we have to wait for it
             await mono_wasm_load_config(Module.configSrc);
@@ -655,7 +650,7 @@ function downloadResource(request: ResourceRequest): LoadingResource {
     if (request.hash) {
         options.integrity = request.hash;
     }
-    const response = runtimeHelpers.fetch(request.resolvedUrl!, options);
+    const response = runtimeHelpers.fetch_like(request.resolvedUrl!, options);
     return {
         name: request.name, url: request.resolvedUrl!, response
     };
@@ -882,7 +877,7 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_load_config");
     try {
         const resolveSrc = runtimeHelpers.locateFile(configFilePath);
-        const configResponse = await runtimeHelpers.fetch(resolveSrc);
+        const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
         const configData: MonoConfig = (await configResponse.json()) || {};
         // merge
         configData.assets = [...(config.assets || []), ...(configData.assets || [])];

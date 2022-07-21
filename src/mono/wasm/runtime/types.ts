@@ -66,10 +66,17 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 
 export type MonoConfig = {
     isError?: false,
-    assembly_root?: string, // the subfolder containing managed assemblies and pdbs
+    assembly_root?: string, // the subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
     assets?: AssetEntry[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
-    debug_level?: number, // Either this or the next one needs to be set
-    enable_debugging?: number, // Either this or the previous one needs to be set
+
+    /**
+     * Either this or enable_debugging needs to be set
+     * debug_level > 0 enables debugging and sets the debug log level to debug_level
+     * debug_level == 0 disables debugging and enables interpreter optimizations
+     * debug_level < 0 enabled debugging and disables debug logging.
+     */
+    debug_level?: number,
+    enable_debugging?: number, // Either this or debug_level needs to be set
     globalization_mode?: GlobalizationMode, // configures the runtime's globalization mode
     diagnostic_tracing?: boolean // enables diagnostic log messages during startup
     remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
@@ -147,8 +154,7 @@ export type RuntimeHelpers = {
     diagnostic_tracing: boolean;
     enable_debugging: number;
     wait_for_debugger?: number;
-    fetch: (url: string, init?: RequestInit) => Promise<Response>;
-    scriptDirectoryPromise: Promise<string>
+    fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     scriptDirectory?: string
     requirePromise: Promise<Function>
     ExitStatus: ExitStatusError;
@@ -316,7 +322,6 @@ export type EarlyReplacements = {
     noExitRuntime: boolean,
     updateGlobalBufferAndViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
-    scriptDirectoryPromise: Promise<string>
     scriptDirectory: string;
     scriptUrl: string
 }

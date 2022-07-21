@@ -31,9 +31,6 @@ let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
 }
-if (ENVIRONMENT_IS_SHELL) {
-    _scriptDir = __dirname = scriptDirectory = import.meta.url.slice(0, import.meta.url.lastIndexOf('/')) + '/';
-}
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_exports: EXPORTS, marshaled_imports: IMPORTS },
@@ -41,9 +38,6 @@ let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 var fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
-__dotnet_replacements.scriptDirectoryPromise.then(dir => {
-    _scriptDir = __dirname = scriptDirectory = dir;
-});
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise.then(someRequire => {
         require = someRequire;

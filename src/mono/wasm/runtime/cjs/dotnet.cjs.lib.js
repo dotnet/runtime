@@ -34,9 +34,6 @@ let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 var fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
-__dotnet_replacements.scriptDirectoryPromise.then(dir => {
-    _scriptDir = __dirname = scriptDirectory = dir;
-});
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise.then(someRequire => {
         require = someRequire;

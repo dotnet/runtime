@@ -68,7 +68,7 @@ export function setImportsAndExports(
     else if (replacements.require) {
         runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(replacements.require));
     } else if (replacements.requirePromise) {
-        runtimeHelpers.requirePromise = replacements.requirePromise;
+        runtimeHelpers.requirePromise = replacements.requirePromise.then(require => requireWrapper(require));
     } else {
         runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper((name: string) => {
             throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
@@ -76,8 +76,10 @@ export function setImportsAndExports(
     }
 
     // script location
-    replacements.scriptDirectory = detectScriptDirectory(replacements);
-    runtimeHelpers.scriptDirectoryPromise = replacements.scriptDirectoryPromise = detectScriptDirectoryAsync(replacements);
+    runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
+    anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
+    console.trace(`MONO_WASM: starting script ${replacements.scriptUrl}`);
+    console.trace(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     if (anyModule.__locateFile === anyModule.locateFile) {
         // it's our early version from dotnet.es6.pre.js, we could replace it
         anyModule.locateFile = runtimeHelpers.locateFile = (path) => runtimeHelpers.scriptDirectory + path;
@@ -88,10 +90,10 @@ export function setImportsAndExports(
 
     // fetch poly
     if (Module.imports.fetch) {
-        replacements.fetch = runtimeHelpers.fetch = Module.imports.fetch;
+        replacements.fetch = runtimeHelpers.fetch_like = Module.imports.fetch;
     }
     else {
-        replacements.fetch = runtimeHelpers.fetch = fetch_like;
+        replacements.fetch = runtimeHelpers.fetch_like = fetch_like;
     }
 
     // misc
@@ -136,26 +138,29 @@ export function detectScriptDirectory(replacements: EarlyReplacements): string {
         // Check worker, not web, since window could be polyfilled
         replacements.scriptUrl = self.location.href;
     }
-    if (ENVIRONMENT_IS_WEB) {
-        if (
-            (typeof (globalThis.document) === "object") &&
-            (typeof (globalThis.document.createElement) === "function")
-        ) {
-            // blazor injects a module preload link element for dotnet.[version].[sha].js
-            const blazorDotNetJS = Array.from(document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf(".js") != -1);
-            if (blazorDotNetJS.length == 1) {
-                replacements.scriptUrl = blazorDotNetJS[0].href;
-            } else {
-                const temp = globalThis.document.createElement("a");
-                temp.href = "dotnet.js";
-                replacements.scriptUrl = temp.href;
+    // when ENVIRONMENT_IS_ESM we have scriptUrl from import.meta.url from dotnet.es6.lib.js
+    if (!ENVIRONMENT_IS_ESM) {
+        if (ENVIRONMENT_IS_WEB) {
+            if (
+                (typeof (globalThis.document) === "object") &&
+                (typeof (globalThis.document.createElement) === "function")
+            ) {
+                // blazor injects a module preload link element for dotnet.[version].[sha].js
+                const blazorDotNetJS = Array.from(document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf(".js") != -1);
+                if (blazorDotNetJS.length == 1) {
+                    replacements.scriptUrl = blazorDotNetJS[0].href;
+                } else {
+                    const temp = globalThis.document.createElement("a");
+                    temp.href = "dotnet.js";
+                    replacements.scriptUrl = temp.href;
+                }
             }
         }
-    }
-    if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_ESM) {
-        if (typeof __filename !== "undefined") {
-            // unix vs windows
-            replacements.scriptUrl = __filename;
+        if (ENVIRONMENT_IS_NODE) {
+            if (typeof __filename !== "undefined") {
+                // unix vs windows
+                replacements.scriptUrl = __filename;
+            }
         }
     }
     if (!replacements.scriptUrl) {
@@ -164,25 +169,6 @@ export function detectScriptDirectory(replacements: EarlyReplacements): string {
     }
     replacements.scriptUrl = normalizeFileUrl(replacements.scriptUrl);
     return normalizeDirectoryUrl(replacements.scriptUrl);
-}
-
-export async function detectScriptDirectoryAsync(replacements: EarlyReplacements): Promise<string> {
-    let scriptDirectory = detectScriptDirectory(replacements);
-    if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
-        console.log("ENVIRONMENT_IS_ESM" + ENVIRONMENT_IS_ESM);
-        const someRequire = await runtimeHelpers.requirePromise;
-        const process = someRequire("process");
-
-        replacements.scriptUrl = normalizeFileUrl(process.argv[1]);
-        scriptDirectory = normalizeDirectoryUrl(replacements.scriptUrl);
-    }
-
-    (<any>Module)["mainScriptUrlOrBlob"] = replacements.scriptUrl;// this is needed by worker threads
-    runtimeHelpers.scriptDirectory = scriptDirectory;
-
-    console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
-    console.debug(`MONO_WASM: starting in ${scriptDirectory}`);
-    return scriptDirectory;
 }
 
 let monoConfig: MonoConfig = {} as any;

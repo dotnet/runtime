@@ -144,6 +144,12 @@ declare type MonoConfig = {
     isError?: false;
     assembly_root?: string;
     assets?: AssetEntry[];
+    /**
+     * Either this or enable_debugging needs to be set
+     * debug_level > 0 enables debugging and sets the debug log level to debug_level
+     * debug_level == 0 disables debugging and enables interpreter optimizations
+     * debug_level < 0 enabled debugging and disables debug logging.
+     */
     debug_level?: number;
     enable_debugging?: number;
     globalization_mode?: GlobalizationMode;
