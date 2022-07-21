@@ -51,7 +51,7 @@ namespace System.Threading.RateLimiting
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to values greater than or equal to 0.");
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.");
             }
             _requestCount = options.PermitLimit;
 
