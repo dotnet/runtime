@@ -25,7 +25,7 @@ namespace System.Threading.RateLimiting
         /// will be calling <see cref="SlidingWindowRateLimiter.TryReplenish"/> to replenish tokens.
         /// </summary>
         /// <value>
-        /// 'true' by default.
+        /// <see langword="true" /> by default.
         /// </value>
         public bool AutoReplenishment { get; set; } = true;
 

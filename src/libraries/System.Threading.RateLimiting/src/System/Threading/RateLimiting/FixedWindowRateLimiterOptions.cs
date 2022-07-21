@@ -19,7 +19,7 @@ namespace System.Threading.RateLimiting
         /// will be calling <see cref="FixedWindowRateLimiter.TryReplenish"/> to refresh counters.
         /// </summary>
         /// <value>
-        /// 'true' by default.
+        /// <see langword="true" /> by default.
         /// </value>
         public bool AutoReplenishment { get; set; } = true;
 

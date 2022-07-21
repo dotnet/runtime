@@ -38,7 +38,7 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="ConcurrencyLimiter"/>.</param>
         public ConcurrencyLimiter(ConcurrencyLimiterOptions options)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            ArgumentNullException.ThrowIfNull(options);
             if (options.PermitLimit <= 0)
             {
                 throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.");
@@ -47,6 +47,14 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.");
             }
+
+            _options = new ConcurrencyLimiterOptions
+            {
+                PermitLimit = options.PermitLimit,
+                QueueProcessingOrder = options.QueueProcessingOrder,
+                QueueLimit = options.QueueLimit
+            };
+            
             _permitCount = _options.PermitLimit;
         }
 
