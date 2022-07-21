@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,6 +18,25 @@ namespace Wasm.Build.Tests
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
+        }
+
+        public string getProgramText(string path, string programText) {
+            string text = File.ReadAllText(path);
+            var lines = text.Split('\n');
+            int i = 0;
+            StringBuilder stringBuilder = new();
+            while (!lines[i].Contains("Console.WriteLine(\"Hello, Console!\");")) {
+                stringBuilder.Append(lines[i]);
+                i++;
+            }
+
+            stringBuilder.Append(programText);
+            while (i < lines.Length) {
+                stringBuilder.Append(lines[i]);
+                i++;
+            }
+
+            return stringBuilder.ToString();
         }
 
         [Theory]
@@ -133,7 +153,8 @@ namespace Wasm.Build.Tests
             for (int i = 0; i < args.Length; i ++)
                 Console.WriteLine ($"args[{i}] = {args[i]}");
             """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), getProgramText(Path.Combine(_projectDir!, "Program.cs"), programText));
+
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -175,7 +196,8 @@ namespace Wasm.Build.Tests
             for (int i = 0; i < args.Length; i ++)
                 Console.WriteLine ($"args[{i}] = {args[i]}");
             """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), getProgramText(Path.Combine(_projectDir!, "Program.cs"), programText));
+
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
