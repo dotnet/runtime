@@ -36,8 +36,8 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TokenBucketRateLimiterOptions
+            Assert.Throws<ArgumentException>(
+                () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {
                 TokenLimit = -1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -45,9 +45,9 @@ namespace System.Threading.RateLimiting.Test
                 ReplenishmentPeriod = TimeSpan.FromMinutes(2),
                 TokensPerPeriod = 1,
                 AutoReplenishment = false
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TokenBucketRateLimiterOptions
+            }));
+            Assert.Throws<ArgumentException>(
+                () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {
                 TokenLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -55,9 +55,9 @@ namespace System.Threading.RateLimiting.Test
                 ReplenishmentPeriod = TimeSpan.FromMinutes(2),
                 TokensPerPeriod = 1,
                 AutoReplenishment = false
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TokenBucketRateLimiterOptions
+            }));
+            Assert.Throws<ArgumentException>(
+                () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {
                 TokenLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -65,7 +65,7 @@ namespace System.Threading.RateLimiting.Test
                 ReplenishmentPeriod = TimeSpan.FromMinutes(2),
                 TokensPerPeriod = -1,
                 AutoReplenishment = false
-            });
+            }));
         }
 
         [Fact]
