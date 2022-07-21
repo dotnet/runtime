@@ -50,6 +50,7 @@
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
     -->
     <MicrosoftNetCompilersToolsetVersion>4.4.0-1.22358.14</MicrosoftNetCompilersToolsetVersion>
+    <StaticCsVersion>0.1.0</StaticCsVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-preview.4.22252.4</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
@@ -143,8 +144,8 @@
     <DNNEVersion>1.0.27</DNNEVersion>
     <MicrosoftBuildVersion>16.10.0</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
-    <NugetProjectModelVersion>5.8.0</NugetProjectModelVersion>
-    <NugetPackagingVersion>5.8.0</NugetPackagingVersion>
+    <NugetProjectModelVersion>6.2.1</NugetProjectModelVersion>
+    <NugetPackagingVersion>6.2.1</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
@@ -167,7 +168,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220707.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22362.3</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22369.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22362.2</MicrosoftNETCoreRuntimeICUTransportVersion>

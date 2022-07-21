@@ -37,6 +37,7 @@
     <Compile Include="RegexCultureTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
+    <Compile Include="RegexRustTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
@@ -48,7 +49,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="CustomDerivedRegexScenarioTest.cs" />
-    <Compile Include="CSharpCodeFixVerifier`2.cs"/>
+    <Compile Include="CSharpCodeFixVerifier`2.cs" />
     <Compile Include="UpgradeToRegexGeneratorAnalyzerTests.cs" />
     <Compile Include="RegexRunnerTests.cs" />
     <Compile Include="Regex.Count.Tests.cs" />

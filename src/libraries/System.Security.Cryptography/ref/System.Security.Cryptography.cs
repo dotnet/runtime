@@ -1331,28 +1331,39 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACMD5 : System.Security.Cryptography.HMAC
     {
         public const int HashSizeInBits = 128;
         public const int HashSizeInBytes = 16;
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public HMACMD5() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public HMACMD5(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -1522,23 +1533,31 @@ namespace System.Security.Cryptography
         protected MaskGenerationMethod() { }
         public abstract byte[] GenerateMask(byte[] rgbSeed, int cbReturn);
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class MD5 : System.Security.Cryptography.HashAlgorithm
     {
         public const int HashSizeInBits = 128;
         public const int HashSizeInBytes = 16;
         protected MD5() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         [System.ObsoleteAttribute("Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.", DiagnosticId="SYSLIB0045", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static new System.Security.Cryptography.MD5? Create(string algName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(byte[] source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(System.IO.Stream source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -2780,6 +2799,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override void Import(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true) { throw null; }
         public override void Reset() { }
         public override string ToString() { throw null; }
         public override string ToString(bool verbose) { throw null; }
@@ -3138,6 +3158,15 @@ namespace System.Security.Cryptography.X509Certificates
         public void Open(System.Security.Cryptography.X509Certificates.OpenFlags flags) { }
         public void Remove(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
+    }
+    public sealed partial class X509SubjectAlternativeNameExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509SubjectAlternativeNameExtension() { }
+        public X509SubjectAlternativeNameExtension(byte[] rawData, bool critical = false) { }
+        public X509SubjectAlternativeNameExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public System.Collections.Generic.IEnumerable<string> EnumerateDnsNames() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Net.IPAddress> EnumerateIPAddresses() { throw null; }
     }
     public sealed partial class X509SubjectKeyIdentifierExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {

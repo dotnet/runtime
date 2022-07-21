@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -168,8 +169,7 @@ namespace System.IO.Pipes
 
             if (IsAsync)
             {
-                ValueTask vt = WaitForConnectionCoreAsync(CancellationToken.None);
-                vt.AsTask().GetAwaiter().GetResult();
+                WaitForConnectionCoreAsync(CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
             else
             {
@@ -183,33 +183,58 @@ namespace System.IO.Pipes
                     }
 
                     // pipe already connected
-                    if (errorCode == Interop.Errors.ERROR_PIPE_CONNECTED && State == PipeState.Connected)
+                    if (State == PipeState.Connected)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
                     }
+
                     // If we reach here then a connection has been established.  This can happen if a client
                     // connects in the interval between the call to CreateNamedPipe and the call to ConnectNamedPipe.
                     // In this situation, there is still a good connection between client and server, even though
                     // ConnectNamedPipe returns zero.
                 }
+
                 State = PipeState.Connected;
             }
         }
 
-        public Task WaitForConnectionAsync(CancellationToken cancellationToken)
+        public Task WaitForConnectionAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            IsAsync ? WaitForConnectionCoreAsync(cancellationToken).AsTask() :
+            AsyncOverSyncWaitForConnection(cancellationToken);
+
+        private async Task AsyncOverSyncWaitForConnection(CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
+            // Create the work item state object.  This is used to pass around state through various APIs,
+            // while also serving double duty as the work item used to queue the operation to the thread pool.
+            var workItem = new SyncAsyncWorkItem();
 
-            if (!IsAsync)
-            {
-                return Task.Factory.StartNew(s => ((NamedPipeServerStream)s!).WaitForConnection(),
-                    this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-            }
+            // Queue the work to the thread pool.  This is implemented as a custom awaiter that queues the
+            // awaiter itself to the thread pool.
+            await workItem;
 
-            return WaitForConnectionCoreAsync(cancellationToken).AsTask();
+            // Register for cancellation.
+            using (workItem.RegisterCancellation(cancellationToken))
+            {
+                try
+                {
+                    // Perform the wait.
+                    WaitForConnection();
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // If the write fails because of cancellation, it will have been a Win32 error code
+                    // that WriteCore translated into an OperationCanceledException without a stored
+                    // CancellationToken.  We want to ensure the token is stored.
+                    throw new OperationCanceledException(cancellationToken);
+                }
+                finally
+                {
+                    // Prior to calling Dispose on the CancellationTokenRegistration, we need to tell
+                    // the registration callback to exit if it's currently running; otherwise, we could deadlock.
+                    workItem.ContinueTryingToCancel = false;
+                }
+            }
         }
 
         public void Disconnect()

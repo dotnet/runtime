@@ -291,7 +291,8 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(setType == 0 ? 0 : 2, setApartmentState(t, ApartmentState.MTA)); // cannot be changed more than once
             Assert.Equal(ApartmentState.STA, getApartmentState(t));
 
-            Assert.Throws<ThreadStartException>(() => t.Start()); // Windows Nano Server does not support starting threads in the STA.
+            Exception ex = Assert.Throws<ThreadStartException>(() => t.Start()); // Windows Nano Server does not support starting threads in the STA.
+            Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
         }
 
 

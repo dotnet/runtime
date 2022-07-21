@@ -69,7 +69,7 @@ public partial class QuicConnection
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
                     chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
 
-                    if (MsQuicApi.UsesSChannelBackend)
+                    if (OperatingSystem.IsWindows())
                     {
                         result = new X509Certificate2((IntPtr)certificatePtr);
                     }

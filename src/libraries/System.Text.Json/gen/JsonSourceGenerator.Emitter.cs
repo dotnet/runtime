@@ -1001,7 +1001,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                 return $@"
 
-private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
+private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
 {{
     {GetEarlyNullCheckSource(emitNullCheck)}
     {serializeMethodBody}
@@ -1076,7 +1076,9 @@ public {typeInfoPropertyTypeRef} {typeFriendlyName}
     get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName});
 }}
 
-private static {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
+// Intentionally not a static method because we create a delegate to it. Invoking delegates to instance
+// methods is almost as fast as virtual calls. Static methods need to go through a shuffle thunk.
+private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}

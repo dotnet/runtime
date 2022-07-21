@@ -77,7 +77,6 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         // set preemptive mode
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
-        Unhijack();
         RedhawkGCInterface::WaitForGCCompletion();
 
         // must be in cooperative mode when checking the trap flag
@@ -139,8 +138,6 @@ void Thread::EnablePreemptiveMode()
 #if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
 #endif
-
-    Unhijack();
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -288,8 +285,8 @@ void Thread::Construct()
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     m_redirectionContextBuffer = NULL;
-    m_redirectionContext = NULL;
 #endif //FEATURE_SUSPEND_REDIRECTION
+    m_interruptedContext = NULL;
 }
 
 bool Thread::IsInitialized()
@@ -388,10 +385,12 @@ void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
 
 void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
 {
+    this->CrossThreadUnhijack();
+
 #ifdef HOST_WASM
     GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
 #else
-    StackFrameIterator  frameIterator(this, GetTransitionFrame());
+    StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
 #endif
 }
@@ -440,22 +439,21 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
-#ifdef TARGET_ARM64
         GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
-        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
-
-        // X0 and X1 are saved next to each other in this order
         if (reg0Kind != GCRK_Scalar)
         {
             RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
         }
+
+#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
+        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
         if (reg1Kind != GCRK_Scalar)
         {
+            // X0/X1 or RAX/RDX are saved in hijack frame next to each other in this order
             RedhawkGCInterface::EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
         }
-#else
-        RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, returnValueKind, pfnEnumCallback, pvCallbackData);
-#endif
+#endif  // TARGET_ARM64 || TARGET_UNIX
+
     }
 
 #ifndef DACCESS_COMPILE
@@ -547,7 +545,14 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
 EXTERN_C void FASTCALL RhpSuspendRedirected();
 
-#ifndef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
+EXTERN_C void FASTCALL RhpGcProbeHijack();
+
+static void* NormalHijackTargets[1] =
+{
+    reinterpret_cast<void*>(RhpGcProbeHijack)
+};
+#else // TARGET_ARM64 || TARGET_UNIX
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
 EXTERN_C void FASTCALL RhpGcProbeHijackObject();
 EXTERN_C void FASTCALL RhpGcProbeHijackByref();
@@ -558,14 +563,7 @@ static void* NormalHijackTargets[3] =
     reinterpret_cast<void*>(RhpGcProbeHijackObject), // GCRK_Object = 1,
     reinterpret_cast<void*>(RhpGcProbeHijackByref)   // GCRK_Byref  = 2,
 };
-#else // TARGET_ARM64
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-
-static void* NormalHijackTargets[1] =
-{
-    reinterpret_cast<void*>(RhpGcProbeHijack)
-};
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_UNIX
 
 #ifdef FEATURE_GC_STRESS
 #ifndef TARGET_ARM64
@@ -607,60 +605,95 @@ bool Thread::IsHijackTarget(void * address)
     return false;
 }
 
-bool Thread::Hijack()
+void Thread::Hijack()
 {
     ASSERT(ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread());
-
     ASSERT_MSG(ThreadStore::GetSuspendingThread() != this, "You may not hijack a thread from itself.");
 
     if (m_hPalThread == INVALID_HANDLE_VALUE)
     {
         // cannot proceed
-        return false;
+        return;
     }
 
-    // requires THREAD_SUSPEND_RESUME / THREAD_GET_CONTEXT / THREAD_SET_CONTEXT permissions
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+    // TODO: RhpGcProbe and related asm helpers NYI for ARM64/UNIX.
+    //       disabling hijacking for now.
+    return;
+#endif
 
-    Thread* pCurrentThread = ThreadStore::GetCurrentThread();
-    uint32_t result = PalHijack(m_hPalThread, HijackCallback, this);
-    return result == 0;
+    // PalHijack will call HijackCallback or make the target thread call it.
+    // It may also do nothing if the target thread is in inconvenient state.
+    PalHijack(m_hPalThread, this);
 }
 
-UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack)
 {
-    Thread* pThread = (Thread*) pCallbackContext;
+    // If we are no longer trying to suspend, no need to do anything.
+    // This is just an optimization. It is ok to race with the setting the trap flag here.
+    // If we need to suspend, we will be called again.
+    if (!ThreadStore::IsTrapThreadsRequested())
+        return;
+
+    Thread* pThread = (Thread*) pThreadToHijack;
+    if (pThread == NULL)
+    {
+        pThread = ThreadStore::GetCurrentThread();
+
+        ASSERT(pThread != NULL);
+        ASSERT(pThread != ThreadStore::GetSuspendingThread());
+    }
 
     // we have a thread stopped, and we do not know where exactly.
     // it could be in a system call or in our own runtime holding locks
     // current thread should not block or allocate while we determine whether the location is in managed code.
-    if (pThread->CacheTransitionFrameForSuspend())
+
+    if (pThread->m_pTransitionFrame != NULL)
     {
         // This thread has already made it to preemptive (posted a transition frame)
         // we do not need to hijack it
-        return true;
+        return;
     }
 
-    void* pvAddress = (void*)pThreadContext->IP;
+    void* pvAddress = (void*)pThreadContext->GetIp();
     RuntimeInstance* runtime = GetRuntimeInstance();
     if (!runtime->IsManaged(pvAddress))
     {
         // Running in cooperative mode, but not managed.
         // We cannot continue.
-        return false;
+        return;
+    }
+
+    if (pThread->IsDoNotTriggerGcSet())
+    {
+        return;
     }
 
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
-    if (codeManager->IsSafePoint(pvAddress))
+
+    // we may be able to do GC stack walk right where the threads is now,
+    // as long as it is on a GC safe point and if we can unwind the stack at that location.
+    if (codeManager->IsSafePoint(pvAddress) &&
+        codeManager->IsUnwindable(pvAddress))
     {
+        // if we are not given a thread to hijack
+        // perform in-line wait on the current thread
+        if (pThreadToHijack == NULL)
+        {
+            ASSERT(pThread->m_interruptedContext == NULL);
+            pThread->InlineSuspend(pThreadContext);
+            return;
+        }
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
         if (pThread->Redirect())
         {
-            return true;
+            return;
         }
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
+    pThread->HijackReturnAddress(pThreadContext, NormalHijackTargets);
 }
 
 #ifdef FEATURE_GC_STRESS
@@ -701,87 +734,109 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
     }
     if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
     {
-        pCurrentThread->InternalHijack(pSuspendCtx, GcStressHijackTargets);
+        pCurrentThread->HijackReturnAddress(pSuspendCtx, GcStressHijackTargets);
     }
 }
 #endif // FEATURE_GC_STRESS
 
-// This function is called in one of two scenarios:
-// 1) from a thread to place a return hijack onto its own stack. This is only done for GC stress cases
-//    via Thread::HijackForGcStress above.
-// 2) from another thread to place a return hijack onto this thread's stack. In this case the target
-//    thread is OS suspended someplace in managed code. The only constraint on the suspension is that the
-//    stack be crawlable enough to yield the location of the return address.
-bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[])
+// This function is called from a thread to place a return hijack onto its own stack for GC stress cases
+// via Thread::HijackForGcStress above. The only constraint on the suspension is that the
+// stack be crawlable enough to yield the location of the return address.
+void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijackTargets[])
 {
-    bool fSuccess = false;
-
     if (IsDoNotTriggerGcSet())
-        return false;
+        return;
 
     StackFrameIterator frameIterator(this, pSuspendCtx);
-
-    if (frameIterator.IsValid())
+    if (!frameIterator.IsValid())
     {
-        frameIterator.CalculateCurrentMethodState();
-
-        PTR_PTR_VOID ppvRetAddrLocation;
-        GCRefKind retValueKind;
-
-        if (frameIterator.GetCodeManager()->GetReturnAddressHijackInfo(frameIterator.GetMethodInfo(),
-            frameIterator.GetRegisterSet(),
-            &ppvRetAddrLocation,
-            &retValueKind))
-        {
-            // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
-            // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
-            // via LR register modification. Therefore it is important to check our ability to hijack the thread before
-            // unhijacking it.
-            CrossThreadUnhijack();
-
-            void* pvRetAddr = *ppvRetAddrLocation;
-            ASSERT(ppvRetAddrLocation != NULL);
-            ASSERT(pvRetAddr != NULL);
-
-            ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
-
-            m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
-            m_pvHijackedReturnAddress = pvRetAddr;
-#ifdef TARGET_ARM64
-            m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
-            *ppvRetAddrLocation = pvHijackTargets[0];
-#else
-            void* pvHijackTarget = pvHijackTargets[retValueKind];
-            ASSERT_MSG(IsHijackTarget(pvHijackTarget), "unexpected method used as hijack target");
-            *ppvRetAddrLocation = pvHijackTarget;
-#endif
-            fSuccess = true;
-        }
+        return;
     }
 
-    STRESS_LOG3(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p, result = %d\n",
-        GetPalThreadIdForLogging(), pSuspendCtx->GetIp(), fSuccess);
+    HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
+}
 
-    return fSuccess;
+// This function is called in one of two scenarios:
+// 1) from another thread to place a return hijack onto this thread's stack. In this case the target
+//    thread is OS suspended at pSuspendCtx in managed code.
+// 2) from a thread to place a return hijack onto its own stack for GC suspension. In this case the target
+//    thread is interrupted at pSuspendCtx in managed code via a signal or similar.
+void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void * pvHijackTargets[])
+{
+    ASSERT(!IsDoNotTriggerGcSet());
+
+    StackFrameIterator frameIterator(this, pSuspendCtx);
+    ASSERT(frameIterator.IsValid());
+
+    HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
+}
+
+void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[])
+{
+    PTR_PTR_VOID ppvRetAddrLocation;
+    GCRefKind retValueKind;
+
+    frameIterator->CalculateCurrentMethodState();
+    if (frameIterator->GetCodeManager()->GetReturnAddressHijackInfo(frameIterator->GetMethodInfo(),
+        frameIterator->GetRegisterSet(),
+        &ppvRetAddrLocation,
+        &retValueKind))
+    {
+        ASSERT(ppvRetAddrLocation != NULL);
+
+        // check if hijack location is the same
+        if (m_ppvHijackedReturnAddressLocation == ppvRetAddrLocation)
+            return;
+
+        // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
+        // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
+        // via LR register modification. Therefore it is important to check our ability to hijack the thread before
+        // unhijacking it.
+        CrossThreadUnhijack();
+
+        void* pvRetAddr = *ppvRetAddrLocation;
+        ASSERT(pvRetAddr != NULL);
+        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
+
+        m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
+        m_pvHijackedReturnAddress = pvRetAddr;
+#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
+        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
+        *ppvRetAddrLocation = pvHijackTargets[0];
+#else
+        void* pvHijackTarget = pvHijackTargets[retValueKind];
+        ASSERT_MSG(IsHijackTarget(pvHijackTarget), "unexpected method used as hijack target");
+        *ppvRetAddrLocation = pvHijackTarget;
+#endif
+
+        STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
+            GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
+    }
+}
+
+NATIVE_CONTEXT* Thread::GetInterruptedContext()
+{
+    ASSERT(m_interruptedContext != NULL);
+    return m_interruptedContext;
 }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
-CONTEXT* Thread::GetRedirectionContext()
+
+NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
 {
-    if (m_redirectionContext == NULL)
+    if (m_redirectionContextBuffer == NULL)
     {
-        m_redirectionContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
+        m_interruptedContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
     }
 
-    return m_redirectionContext;
+    return m_interruptedContext;
 }
 
 bool Thread::Redirect()
 {
-    if (IsDoNotTriggerGcSet())
-        return false;
+    ASSERT(!IsDoNotTriggerGcSet());
 
-    CONTEXT* redirectionContext = GetRedirectionContext();
+    NATIVE_CONTEXT* redirectionContext = EnsureRedirectionContext();
     if (redirectionContext == NULL)
         return false;
 
@@ -802,24 +857,55 @@ bool Thread::Redirect()
 }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+bool Thread::InlineSuspend(NATIVE_CONTEXT* interruptedContext)
+{
+    ASSERT(!IsDoNotTriggerGcSet());
+
+    Unhijack();
+
+    m_interruptedContext = interruptedContext;
+    WaitForGC(INTERRUPTED_THREAD_MARKER);
+    m_interruptedContext = NULL;
+
+    return true;
+}
+
 // This is the standard Unhijack, which is only allowed to be called on your own thread.
 // Note that all the asm-implemented Unhijacks should also only be operating on their
 // own thread.
 void Thread::Unhijack()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(IsCurrentThreadInCooperativeMode());
+
     UnhijackWorker();
 }
 
-// This unhijack routine is only called from Thread::InternalHijack() to undo a possibly existing
-// hijack before placing a new one. Although there are many code sequences (here and in asm) to
-// perform an unhijack operation, they will never execute concurrently. A thread may unhijack itself
-// at any time so long as it does so from unmanaged code. This ensures that another thread will not
-// suspend it and attempt to unhijack it, since we only suspend threads that are executing managed
-// code.
+// This unhijack routine is called to undo a hijack, that is potentially on a different thread.
+// 
+// Although there are many code sequences (here and in asm) to
+// perform an unhijack operation, they will never execute concurrently:
+// 
+// - A thread may unhijack itself at any time so long as it does that from unmanaged code while in coop mode.
+//   This ensures that coop thread can access its stack synchronously.
+//   Unhijacking from unmanaged code ensures that another thread will not attempt to hijack it,
+//   since we only hijack threads that are executing managed code.
+// 
+// - A GC thread may access a thread asynchronously, including unhijacking it.
+//   Asynchronously accessed thread must be in preemptive mode and should not
+//   access the managed portion of its stack.
+// 
+// - A thread that owns the suspension can access another thread as long as the other thread is
+//   in preemptive mode or suspended in managed code.
+//   Either way the other thread cannot be accessing its hijack.
+//
 void Thread::CrossThreadUnhijack()
 {
-    ASSERT((ThreadStore::GetCurrentThread() == this) || DebugIsSuspended());
+    ASSERT(((ThreadStore::GetCurrentThread() == this) && IsCurrentThreadInCooperativeMode()) ||
+        ThreadStore::GetCurrentThread()->IsGCSpecial() ||
+        ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread()
+    );
+
     UnhijackWorker();
 }
 
@@ -840,26 +926,8 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
-#ifdef TARGET_ARM64
     m_uHijackedReturnValueFlags         = 0;
-#endif
 }
-
-#if _DEBUG
-bool Thread::DebugIsSuspended()
-{
-    ASSERT(ThreadStore::GetCurrentThread() != this);
-#if 0
-    PalSuspendThread(m_hPalThread);
-    uint32_t suspendCount = PalResumeThread(m_hPalThread);
-    return (suspendCount > 0);
-#else
-    // @TODO: I don't trust the above implementation, so I want to implement this myself
-    // by marking the thread state as "yes, we suspended it" and checking that state here.
-    return true;
-#endif
-}
-#endif
 
 // @TODO: it would be very, very nice if we did not have to bleed knowledge of hijacking
 // and hijack state to other components in the runtime. For now, these are only used
@@ -990,10 +1058,10 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
-    pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
+    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
 
     // restore execution at interrupted location
-    PalRestoreContext(pThread->GetRedirectionContext());
+    PalRestoreContext(pThread->GetInterruptedContext());
     UNREACHABLE();
 }
 

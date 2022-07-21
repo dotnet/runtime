@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Reflection;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -21,7 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
             : base(converter, options)
         {
             NumberHandling = GetNumberHandlingForType(Type);
-            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
             if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
@@ -36,16 +35,10 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             CreateObjectForExtensionDataProperty = createObject;
-        }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked as RequiresUnreferencedCode")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
-        internal override void Configure()
-        {
-            base.Configure();
-            Converter.ConfigureJsonTypeInfoUsingReflection(this, Options);
+            // Plug in any converter configuration -- should be run last.
+            converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfoUsingReflection(this, options);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

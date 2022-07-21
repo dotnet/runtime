@@ -377,6 +377,7 @@ namespace Microsoft.Extensions.FileProviders
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnCoreClr("JitStress slows this down too much", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task TokenCallbackInvokedOnFileChange()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -402,7 +403,7 @@ namespace Microsoft.Extensions.FileProviders
                             }, state: null);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(WaitTimeForTokenCallback);
 
                             Assert.True(callbackInvoked, "Callback should have been invoked");
                         }
@@ -803,7 +804,7 @@ namespace Microsoft.Extensions.FileProviders
 
                             // Callback expected.
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(WaitTimeForTokenCallback);
 
                             // Callback not expected.
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
@@ -886,7 +887,7 @@ namespace Microsoft.Extensions.FileProviders
                             }, null);
 
                             fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                            await Task.Delay(WaitTimeForTokenCallback);
 
                             Assert.True(token.HasChanged);
                         }
