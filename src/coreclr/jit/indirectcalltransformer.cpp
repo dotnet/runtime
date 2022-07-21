@@ -537,8 +537,7 @@ private:
         {
             // There's no need for a new block here. We can just append to currBlock.
             //
-            checkBlock = currBlock;
-
+            checkBlock             = currBlock;
             checkBlock->bbJumpKind = BBJ_COND;
 
             CallArg* thisArg  = origCall->gtArgs.GetThisArg();
