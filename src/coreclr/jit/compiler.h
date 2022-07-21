@@ -7155,6 +7155,17 @@ public:
         }
 
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
+
+        unsigned GetHashCode()
+        {
+            /*
+             *  0 ~ 2 : assertionKind
+             *  3 ~ 6 : op1Kind
+             *  7 ~ 11: op2Kind
+             */
+            unsigned result = ((op2.kind << 7) | (op1.kind << 3) | (assertionKind));
+            return result;
+        }
         {
             if (op1.kind != that->op1.kind)
             {
@@ -7173,22 +7184,6 @@ public:
         }
 
         bool HasSameOp2(AssertionDsc* that, bool vnBased)
-        {
-            if (op1.kind != that.op1.kind)
-            {
-                return false;
-            }
-            else if (op1.kind == O1K_ARR_BND)
-            {
-                assert(vnBased);
-                return (op1.bnd.vnIdx == that.op1.bnd.vnIdx) && (op1.bnd.vnLen == that.op1.bnd.vnLen);
-            }
-            else
-            {
-                return ((vnBased && (op1.vn == that.op1.vn)) || (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
-            }
-        }
-
         {
             if (op2.kind != that->op2.kind)
             {
@@ -7234,44 +7229,6 @@ public:
         {
             return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that, vnBased) &&
                    HasSameOp2(that, vnBased);
-            }
-
-            switch (op2.kind)
-            {
-                case O2K_IND_CNS_INT:
-                case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that.op2.u1.iconVal) && (op2.u1.iconFlags == that.op2.u1.iconFlags));
-
-                case O2K_CONST_LONG:
-                    return (op2.lconVal == that.op2.lconVal);
-
-                case O2K_CONST_DOUBLE:
-                    // exact match because of positive and negative zero.
-                    return (memcmp(&op2.dconVal, &that.op2.dconVal, sizeof(double)) == 0);
-
-                case O2K_ZEROOBJ:
-                    return true;
-
-                case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that.op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that.op2.lcl.ssaNum));
-
-                case O2K_SUBRANGE:
-                    return op2.u2.Equals(that.op2.u2);
-
-                case O2K_INVALID:
-                    // we will return false
-                    break;
-
-                default:
-                    assert(!"Unexpected value for op2.kind in AssertionDsc.");
-                    break;
-            }
-
-            return false;
-        }
-
-        {
         }
 
         bool Equals(AssertionDsc* that, bool vnBased)
@@ -7291,23 +7248,16 @@ public:
             }
         }
 
-        static bool isLocalProp;
-
-        static bool Equals(AssertionDsc dsc1, AssertionDsc dsc2, bool vnBased)
+    public:
+        unsigned GetHashCode()
         {
-            if (dsc1.assertionKind != dsc2.assertionKind)
-            {
-                return false;
-            }
-            else if (dsc1.assertionKind == OAK_NO_THROW)
-            {
-                assert(dsc1.op2.kind == O2K_INVALID);
-                return dsc1.HasSameOp1(dsc2, vnBased);
-            }
-            else
-            {
-                return dsc1.HasSameOp1(dsc2, vnBased) && dsc1.HasSameOp2(dsc2, vnBased);
-            }
+            /*
+             *  0 ~ 2 : assertionKind
+             *  3 ~ 6 : op1Kind
+             *  7 ~ 11: op2Kind
+             */
+            unsigned result = ((op2.kind << 7) | (op1.kind << 3) | (assertionKind));
+            return result;
         }
     };
 
@@ -7340,82 +7290,85 @@ protected:
     {
     public:
         static bool isLocalProp;
+        static unsigned (*hashCodeFn)(AssertionDsc);
 
-        static bool Equals(const AssertionDsc x, const AssertionDsc y)
+        static bool Equals(AssertionDsc x, AssertionDsc y)
         {
-            return AssertionDsc::Equals(x, y, !isLocalProp);
+            AssertionDsc* _x = &x;
+            return _x->Equals(&y);
         }
 
-        static unsigned GetHashCode(const AssertionDsc dsc)
+        static unsigned GetHashCode(AssertionDsc dsc)
         {
-            /*
-            *  0 ~ 2 : assertionKind
-            *  3 ~ 6 : op1Kind
-            *  7 ~ 11: op2Kind
-            */
-            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-            return result;
-        }
-    };
-
-    struct AssertionDscKeyFuncs_Local : AssertionDscKeyFuncs
-    {
-    public:
-        static bool Equals(const AssertionDsc x, const AssertionDsc y)
-        {
-            return AssertionDsc::Equals(x, y, false);
+            AssertionDsc* _dsc = &dsc;
+            return _dsc->GetHashCode();
         }
 
-        static unsigned GetHashCode(const AssertionDsc dsc)
+
+        static unsigned GetHashCodeGlobal(AssertionDsc dsc)
         {
-            /*
-             *  0 ~ 2 : assertionKind
-             *  3 ~ 6 : op1Kind
-             *  7 ~ 11: op2Kind
-             */
-            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-            return result;
+            AssertionDsc* _dsc = &dsc;
+            return _dsc->GetHashCode();
+        }
+
+        static unsigned GetHashCodeLocal(AssertionDsc dsc)
+        {
+            return hashCodeFn(dsc);
+            /*AssertionDsc* _dsc = &dsc;
+            return _dsc->GetHashCode();*/
         }
     };
 
-    struct AssertionDscKeyFuncs_Global: AssertionDscKeyFuncs
-    {
-    public:
-        static bool Equals(const AssertionDsc x, const AssertionDsc y)
-        {
-            return AssertionDsc::Equals(x, y, true);
-        }
+    //struct AssertionDscKeyFuncs_Local : AssertionDscKeyFuncs
+    //{
+    //public:
+    //    static bool Equals(const AssertionDsc x, const AssertionDsc y)
+    //    {
+    //        return AssertionDsc::Equals(x, y, false);
+    //    }
 
-        static unsigned GetHashCode(const AssertionDsc dsc)
-        {
-            /*
-             *  0 ~ 2 : assertionKind
-             *  3 ~ 6 : op1Kind
-             *  7 ~ 11: op2Kind
-             */
-            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-            return result;
-        }
-    };
+    //    static unsigned GetHashCode(const AssertionDsc dsc)
+    //    {
+    //        /*
+    //         *  0 ~ 2 : assertionKind
+    //         *  3 ~ 6 : op1Kind
+    //         *  7 ~ 11: op2Kind
+    //         */
+    //        unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
+    //        return result;
+    //    }
+    //};
 
-    template <typename KeyFuncs = AssertionDscKeyFuncs>
-    class AssertionDscHashTable : public JitHashTable<AssertionDsc, KeyFuncs, AssertionIndex>
-    {
-    public:
-        AssertionDscHashTable() : JitHashTable(getAllocator())
-        {
-        }
-    };
+    //struct AssertionDscKeyFuncs_Global: AssertionDscKeyFuncs
+    //{
+    //public:
+    //    static bool Equals(const AssertionDsc x, const AssertionDsc y)
+    //    {
+    //        return AssertionDsc::Equals(x, y, true);
+    //    }
 
-    class AssertionDscHashTable_Local : AssertionDscHashTable<AssertionDscKeyFuncs_Local>
-    {
-    };
+    //    static unsigned GetHashCode(const AssertionDsc dsc)
+    //    {
+    //        return dsc
+    //    }
+    //};
 
-    class AssertionDscHashTable_Global : AssertionDscHashTable<AssertionDscKeyFuncs_Global>
-    {
-    };
+    //template <typename KeyFuncs = AssertionDscKeyFuncs>
+    //class AssertionDscHashTable : public JitHashTable<AssertionDsc, KeyFuncs, AssertionIndex>
+    //{
+    //public:
+    //    AssertionDscHashTable() : JitHashTable(getAllocator())
+    //    {
+    //    }
+    //};
 
-   
+    //class AssertionDscHashTable_Local : AssertionDscHashTable<AssertionDscKeyFuncs_Local>
+    //{
+    //};
+
+    //class AssertionDscHashTable_Global : AssertionDscHashTable<AssertionDscKeyFuncs_Global>
+    //{
+    //};
 
     // Map from Block to Block.  Used for a variety of purposes.
     //typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex> AssertionDscMap;
@@ -7426,13 +7379,8 @@ protected:
     using AssertionDscMap_Global = JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex>;*/
 
     //typedef AssertionDscMap<false>
-    //typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
-
-
-    //TODO: Use pointer
-    //AssertionDscMap optAssertionDscMap;
-
-    AssertionDscHashTable<>* optAssertionDscMap;
+    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
+    AssertionDscMap* optAssertionDscMap;
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
