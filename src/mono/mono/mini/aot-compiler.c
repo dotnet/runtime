@@ -10189,6 +10189,16 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
+
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && LLVM_API_VERSION >= 1400
+	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
+		/*
+		 * LLVM 14 added a 'crc32' mattr which needs to be explicitly enabled to
+		 * add support for the crc32 sse instructions.
+		 */
+		acfg->aot_opts.llvm_cpu_attr = g_strdup_printf ("%s,crc32", acfg->aot_opts.llvm_cpu_attr);
+#endif
+
 	/*
 	 * FIXME: Experiment with adding optimizations, the -std-compile-opts set takes
 	 * a lot of time, and doesn't seem to save much space.
