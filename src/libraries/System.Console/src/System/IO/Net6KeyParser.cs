@@ -5,7 +5,21 @@ namespace System.IO;
 
 internal static class Net6KeyParser
 {
-    internal static bool Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
+    internal static ConsoleKeyInfo Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter, ref int startIndex, int endIndex)
+    {
+        MapBufferToConsoleKey(buffer, terminalFormatStrings, posixDisableValue, veraseCharacter, out ConsoleKey key,
+            out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, endIndex);
+
+        // Replace the '\n' char for Enter by '\r' to match Windows behavior.
+        if (key == ConsoleKey.Enter && ch == '\n')
+        {
+            ch = '\r';
+        }
+
+        return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
+    }
+
+    private static bool MapBufferToConsoleKey(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         // Try to get the special key match from the TermInfo static information.
@@ -26,7 +40,7 @@ internal static class Net6KeyParser
             endIndex - startIndex >= 2) // We have at least two characters to read
         {
             startIndex++;
-            if (Parse(buffer, terminalFormatStrings, posixDisableValue, veraseCharacter, out key, out ch, out isShift, out _, out isCtrl, ref startIndex, endIndex))
+            if (MapBufferToConsoleKey(buffer, terminalFormatStrings, posixDisableValue, veraseCharacter, out key, out ch, out isShift, out _, out isCtrl, ref startIndex, endIndex))
             {
                 isAlt = true;
                 return true;

@@ -151,7 +151,7 @@ namespace System.IO
            // Don't carry over chars from previous ReadLine call.
             _readLineSB.Clear();
 
-            Interop.Sys.InitializeConsoleBeforeRead();
+            Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser);
             try
             {
                 // Read key-by-key until we've read a line.
@@ -327,7 +327,8 @@ namespace System.IO
         {
             Debug.Assert(_availableKeys.Count == 0);
 
-            Interop.Sys.InitializeConsoleBeforeRead();
+            bool useNet6KeyParser = ConsoleUtils.UseNet6KeyParser;
+            Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !useNet6KeyParser);
             try
             {
                 if (IsUnprocessedBufferEmpty())
@@ -353,7 +354,9 @@ namespace System.IO
                     }
                 }
 
-                return KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex);
+                return useNet6KeyParser
+                    ? Net6KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex)
+                    : KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter, ref _startIndex, _endIndex);
             }
             finally
             {
@@ -362,6 +365,6 @@ namespace System.IO
         }
 
         /// <summary>Gets whether there's input waiting on stdin.</summary>
-        internal static bool StdinReady => Interop.Sys.StdinReady();
+        internal static bool StdinReady => Interop.Sys.StdinReady(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser);
     }
 }

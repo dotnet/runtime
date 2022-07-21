@@ -408,9 +408,6 @@ public class KeyParserTests
 
         ConsoleKeyInfo parsed = KeyParser.Parse(chars, terminalFormatStrings, 0, verase, ref startIndex, chars.Length);
 
-        //Assert.True(Net6KeyParser.Parse(chars, terminalFormatStrings, 0, verase,
-        //    out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length));
-
         Assert.Equal(expectedStartIndex, startIndex);
 
         return parsed;
