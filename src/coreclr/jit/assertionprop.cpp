@@ -966,14 +966,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optComplementaryAssertionMap =
         new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
 #ifdef DEBUG
-    //if (isLocalProp)
+    if (isLocalProp)
     {
-        optAssertionDscMap = AssertionDscMap(getAllocator());
+        optAssertionDscMap = new (getAllocator()) AssertionDscHashTable_Local();
     }
-    /*else
+    else
     {
-        optAssertionDscMap = AssertionDscMap<false>(getAllocator());
-    }*/
+        optAssertionDscMap = new (getAllocator()) AssertionDscHashTable_Global();
+    }
 #endif
 
     assert(NO_ASSERTION_INDEX == 0);
