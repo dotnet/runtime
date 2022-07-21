@@ -35,6 +35,7 @@
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests\AuthorityInformationAccessTests.cs" />
+    <Compile Include="ExtensionsTests\AuthorityKeyIdentifierTests.cs" />
     <Compile Include="ExtensionsTests\BasicConstraintsTests.cs" />
     <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
     <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />

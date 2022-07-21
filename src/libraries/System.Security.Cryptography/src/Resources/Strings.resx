@@ -609,6 +609,9 @@
   <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
     <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
   </data>
+  <data name="Cryptography_X509_AKID_NoSKID" xml:space="preserve">
+    <value>The provided certificate does not have a Subject Key Identifier extension.</value>
+  </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>
   </data>
