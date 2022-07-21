@@ -163,5 +163,23 @@ namespace System.Net.Http.Functional.Tests
                 return cert;
             }
         }
+
+#if NETCOREAPP
+        public static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
+        {
+            var handler = new SocketsHttpHandler();
+
+            // Browser doesn't support ServerCertificateCustomValidationCallback
+            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
+            {
+                // On Android, it is not enough to set the custom validation callback, the certificates also need to be trusted by the OS.
+                // See HttpClientHandlerTestBase.SocketsHttpHandler.cs:CreateHttpClientHandler for more details.
+
+                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+            }
+
+            return handler;
+        }
+#endif
     }
 }

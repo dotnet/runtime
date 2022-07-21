@@ -160,7 +160,7 @@ Implementation
 
 The implementation can be located in [codeversion.h](../../../src/coreclr/vm/codeversion.h) and [codeversion.cpp](../../../src/coreclr/vm/codeversion.cpp)
 
-Code versions are embodied by the configuration in NativeCodeVersion structure as well as the configuration in the transitively reachable ILCodeVersion. NativeCodeVersion::GetILCodeVersion() allows trivial access from one part of the configuration to the other. These structures have various accesors to retrieve all the code and configuration data such as:
+Code versions are embodied by the configuration in NativeCodeVersion structure as well as the configuration in the transitively reachable ILCodeVersion. NativeCodeVersion::GetILCodeVersion() allows trivial access from one part of the configuration to the other. These structures have various accessors to retrieve all the code and configuration data such as:
 
 ```
     NativeCodeVersion::GetVersionId()
@@ -363,7 +363,7 @@ The runtime's current classification is:
 Future roadmap possibilities
 ============================
 
-A few (completely uncommited) thoughts on how this area of the code might evolve in the future, in no particular order:
+A few (completely uncommitted) thoughts on how this area of the code might evolve in the future, in no particular order:
 
 - Make the debugger configuration for EnC another explicit build pipeline stage. This seems most interesting to allow diagnostic tools that use profiler instrumentation to coexist with a live debugging session that is rewriting code using EnC.
 - Add code version collection to save memory when certain code versions are no longer being used.

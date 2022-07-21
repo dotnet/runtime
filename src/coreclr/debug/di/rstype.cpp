@@ -2599,7 +2599,7 @@ void CordbType::CountTypeDataNodes(unsigned int *count)
 //    genericArgsCount - size of the genericArgs array in elements.
 //    genericArgs - array of type parameters.
 //    count - IN/OUT - will increment with total number of generic args.
-//        caller must intialize this (likely to 0).
+//        caller must initialize this (likely to 0).
 //-----------------------------------------------------------------------------
 void CordbType::CountTypeDataNodesForInstantiation(unsigned int genericArgsCount, ICorDebugType *genericArgs[], unsigned int *count)
 {

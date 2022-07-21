@@ -140,7 +140,7 @@
 // And similarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
 //
 // While the above example focuses on fields, the idea is universal to all supported location types. Statics are
-// modeled as straight indicies into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
+// modeled as straight indices into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
 // arrays - like fields, but with the primiary selector being not the first field, but the "equivalence class" of
 // an array, i. e. the type of its elements, taking into account things like "int[]" being legally aliasable as
 // "uint[]". Physical maps are used to number local fields.
@@ -513,7 +513,7 @@ public:
     bool VNCheckAscending(ValueNum item, ValueNum xs1);
 
     // Returns the VN representing the union of the two exception sets "xs0" and "xs1".
-    // These must be VNForEmtpyExcSet() or applications of VNF_ExcSetCons, obeying
+    // These must be VNForEmptyExcSet() or applications of VNF_ExcSetCons, obeying
     // the ascending order invariant. (which is preserved in the result)
     ValueNum VNExcSetUnion(ValueNum xs0, ValueNum xs1);
 
@@ -665,26 +665,70 @@ public:
     }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair opVN)
     {
-        return ValueNumPair(VNForFunc(typ, func, opVN.GetLiberal()), VNForFunc(typ, func, opVN.GetConservative()));
+        ValueNum liberalFuncVN = VNForFunc(typ, func, opVN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (opVN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFunc(typ, func, opVN.GetConservative());
+        }
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN)
     {
-        return ValueNumPair(VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal()),
-                            VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative()));
+        ValueNum liberalFuncVN = VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN, ValueNumPair op3VN)
     {
-        return ValueNumPair(VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal()),
-                            VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(),
-                                      op3VN.GetConservative()));
+        ValueNum liberalFuncVN = VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual() && op3VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN =
+                VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(), op3VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
     ValueNumPair VNPairForFunc(
         var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN, ValueNumPair op3VN, ValueNumPair op4VN)
     {
-        return ValueNumPair(VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal(),
-                                      op4VN.GetLiberal()),
-                            VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(),
-                                      op3VN.GetConservative(), op4VN.GetConservative()));
+        ValueNum liberalFuncVN =
+            VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal(), op4VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual() && op3VN.BothEqual() && op4VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(),
+                                           op3VN.GetConservative(), op4VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
 
     ValueNum VNForExpr(BasicBlock* block, var_types type = TYP_UNKNOWN);

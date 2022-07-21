@@ -136,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint isSigned = (data < 0 ? 1u : 0u);
             uint udata = unchecked((uint)data);
 
-            // Note that we cannot use CompressData to pack the data value, because of negative values 
+            // Note that we cannot use CompressData to pack the data value, because of negative values
             // like: 0xffffe000 (-8192) which has to be encoded as 1 in 2 bytes, i.e. 0x81 0x00
             // However CompressData would store value 1 as 1 byte: 0x01
             if ((udata & SignMask.ONEBYTE) == 0 || (udata & SignMask.ONEBYTE) == SignMask.ONEBYTE)
@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            // Out of compressable range
+            // Out of compressible range
             throw new NotImplementedException();
         }
 
@@ -393,7 +393,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public void EmitMethodSignature(
-            MethodWithToken method, 
+            MethodWithToken method,
             bool enforceDefEncoding,
             bool enforceOwningType,
             SignatureContext context,
@@ -437,7 +437,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodWithToken method, 
+        private void EmitMethodSpecificationSignature(MethodWithToken method,
             uint flags, bool enforceDefEncoding, bool enforceOwningType, SignatureContext context)
         {
             ModuleToken methodToken = method.Token;

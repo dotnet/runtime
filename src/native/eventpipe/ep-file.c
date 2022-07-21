@@ -340,7 +340,7 @@ ep_file_alloc (
 	ep_rt_metadata_labels_hash_alloc (&instance->metadata_ids, NULL, NULL, NULL, NULL);
 	ep_raise_error_if_nok (ep_rt_metadata_labels_hash_is_valid (&instance->metadata_ids));
 
-	ep_rt_stack_hash_alloc (&instance->stack_hash, ep_stack_hash_key_hash, ep_stack_hash_key_equal, NULL, stack_hash_value_free_func);
+	ep_rt_stack_hash_alloc (&instance->stack_hash, ep_rt_stack_hash_key_hash, ep_rt_stack_hash_key_equal, NULL, stack_hash_value_free_func);
 	ep_raise_error_if_nok (ep_rt_stack_hash_is_valid (&instance->stack_hash));
 
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.
@@ -457,7 +457,7 @@ ep_file_write_event (
 	file_write_event_to_block (file, event_instance, metadata_id, capture_thread_id, sequence_number, stack_id, is_sorted_event);
 
 ep_on_exit:
-	ep_event_metdata_event_free (metadata_instance);
+	ep_event_metadata_event_free (metadata_instance);
 	return;
 
 ep_on_error:

@@ -6570,7 +6570,7 @@ protected:
     struct CSEdsc
     {
         CSEdsc*  csdNextInBucket;  // used by the hash table
-        size_t   csdHashKey;       // the orginal hashkey
+        size_t   csdHashKey;       // the original hashkey
         ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
         ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
                                    // assignment
@@ -6673,7 +6673,7 @@ protected:
         return TARGET_SIGN_BIT | (key >> CSE_CONST_SHARED_LOW_BITS);
     }
 
-    // returns the orginal key
+    // returns the original key
     static size_t Decode_Shared_Const_CSE_Value(size_t enckey)
     {
         assert(Is_Shared_Const_CSE(enckey));
@@ -8993,7 +8993,7 @@ public:
 #define DEFAULT_MIN_OPTS_LV_NUM_COUNT 2000
 #define DEFAULT_MIN_OPTS_LV_REF_COUNT 8000
 
-// Maximun number of locals before turning off the inlining
+// Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
         bool compMinOpts;
@@ -9200,7 +9200,7 @@ public:
 
         bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
 
-// Default numbers used to perform loop alignment. All the numbers are choosen
+// Default numbers used to perform loop alignment. All the numbers are chosen
 // based on experimenting with various benchmarks.
 
 // Default minimum loop block weight required to enable loop alignment.
@@ -10173,7 +10173,7 @@ public:
 
 public:
     // Returns true if child is equal to or a subtype of parent for merge purposes
-    // This support is necessary to suport attributes that are not described in
+    // This support is necessary to support attributes that are not described in
     // for example, signatures. For example, the permanent home byref (byref that
     // points to the gc heap), isn't a property of method signatures, therefore,
     // it is safe to have mismatches here (that tiCompatibleWith will not flag),

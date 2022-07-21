@@ -562,7 +562,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 //          There's some work to be done in several places in the JIT to
 //          accurately track the registers that are getting killed by
 //          helper calls:
-//              a) LSRA needs several changes to accomodate more precise killsets
+//              a) LSRA needs several changes to accommodate more precise killsets
 //                 for every helper call it sees (both explicitly [easy] and
 //                 implicitly [hard])
 //              b) Currently for AMD64, when we generate code for a helper call
@@ -8945,7 +8945,7 @@ CodeGenInterface::VariableLiveKeeper* CodeGenInterface::getVariableLiveKeeper() 
 
 //------------------------------------------------------------------------
 // VariableLiveKeeper: Create an instance of the object in charge of managing
-//  VariableLiveRanges and intialize the array "m_vlrLiveDsc".
+//  VariableLiveRanges and initialize the array "m_vlrLiveDsc".
 //
 // Arguments:
 //    totalLocalCount   - the count of args, special args and IL Local
