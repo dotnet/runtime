@@ -99,7 +99,7 @@ internal sealed unsafe class MsQuicApi
                     return;
                 }
 
-                // Assume SChanel is being used on windows and query for the actual provider from the library
+                // Assume SChannel is being used on windows and query for the actual provider from the library
                 QUIC_TLS_PROVIDER provider = OperatingSystem.IsWindows() ? QUIC_TLS_PROVIDER.SCHANNEL : QUIC_TLS_PROVIDER.OPENSSL;
                 size = sizeof(QUIC_TLS_PROVIDER);
                 apiTable->GetParam(null, QUIC_PARAM_GLOBAL_TLS_PROVIDER, &size, &provider);
