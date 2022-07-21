@@ -21691,22 +21691,49 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
 
-    if (!isExact && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    // If the objClass is sealed (final), then we may be able to devirtualize.
+    DWORD objClassAttribs = 0;
+    bool  objClassIsFinal = false;
+    if (objClass != NO_CLASS_HANDLE)
+    {
+        objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
+        objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
+    }
+
+    if (!isExact && !objClassIsFinal && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         // Ask VM if it knows the exact type behind this class/interface (currently only works for NativeAOT)
-
-        const int            maxExactClasses = 1;
-        CORINFO_CLASS_HANDLE exactClasses[maxExactClasses];
-        int                  exactClassesCount = 0;
-
-        if ((baseClass != NO_CLASS_HANDLE))
-        {
-            exactClassesCount = info.compCompHnd->getExactClasses(baseClass, maxExactClasses, exactClasses);
-            if (exactClassesCount == 1)
+        auto getUniqueImpl = [](COMP_HANDLE comp, CORINFO_CLASS_HANDLE cls) -> CORINFO_CLASS_HANDLE {
+            if (cls == NO_CLASS_HANDLE)
             {
-                objClass = exactClasses[0];
-                isExact  = true;
+                return NO_CLASS_HANDLE;
             }
+
+            const int            maxExactClasses = 1;
+            CORINFO_CLASS_HANDLE exactClasses[maxExactClasses];
+            int                  exactClassesCount = 0;
+            exactClassesCount                      = comp->getExactClasses(cls, maxExactClasses, exactClasses);
+            if ((exactClassesCount == 1) && (comp->compareTypesForCast(exactClasses[0], cls) == TypeCompareState::Must))
+            {
+                return exactClasses[0];
+            }
+            return NO_CLASS_HANDLE;
+        };
+
+        CORINFO_CLASS_HANDLE baseForUnique = objClass;
+        CORINFO_CLASS_HANDLE uniqueImpl    = getUniqueImpl(info.compCompHnd, objClass);
+        if (uniqueImpl == NO_CLASS_HANDLE)
+        {
+            baseForUnique = baseClass;
+            uniqueImpl    = getUniqueImpl(info.compCompHnd, baseClass);
+        }
+
+        if (uniqueImpl != NO_CLASS_HANDLE)
+        {
+            objClass = uniqueImpl;
+            isExact  = true;
+            JITDUMP("Devirtualizeing '%s' as '%s' via getExactClasses\n", eeGetClassName(baseForUnique),
+                    eeGetClassName(uniqueImpl));
             // TODO: Enable GDV for exact classes without fallbacks, e.g. objClass is IDisposable
             // and vm returns just two exact clases: ClassA and ClassB and so we can devirtualize it as follows:
             //
@@ -21735,10 +21762,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         return;
     }
-
-    // If the objClass is sealed (final), then we may be able to devirtualize.
-    const DWORD objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
-    const bool  objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
 #if defined(DEBUG)
     const char* callKind       = isInterface ? "interface" : "virtual";
