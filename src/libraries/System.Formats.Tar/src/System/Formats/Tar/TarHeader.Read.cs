@@ -13,63 +13,64 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     // Reads the header attributes from a tar archive entry.
-    internal partial struct TarHeader
+    internal sealed partial class TarHeader
     {
         private const string UstarPrefixFormat = "{0}/{1}"; // "prefix/name"
 
-        // Attempts to read all the fields of the next header.
+        // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
-        // Returns true if all the attributes were read successfully, false otherwise.
-        internal bool TryGetNextHeader(Stream archiveStream, bool copyData)
+        // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
+        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat)
         {
             // The four supported formats have a header that fits in the default record size
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
 
             archiveStream.ReadExactly(buffer);
 
+            TarHeader header = new(initialFormat);
+
             // Confirms if v7 or pax, or tentatively selects ustar
-            if (!TryReadCommonAttributes(buffer))
+            if (!header.TryReadCommonAttributes(buffer))
             {
-                return false;
+                return null;
             }
 
             // Confirms if gnu, or tentatively selects ustar
-            ReadMagicAttribute(buffer);
+            header.ReadMagicAttribute(buffer);
 
-            if (_format != TarEntryFormat.V7)
+            if (header._format != TarEntryFormat.V7)
             {
                 // Confirms if gnu
-                ReadVersionAttribute(buffer);
+                header.ReadVersionAttribute(buffer);
 
                 // Fields that ustar, pax and gnu share identically
-                ReadPosixAndGnuSharedAttributes(buffer);
+                header.ReadPosixAndGnuSharedAttributes(buffer);
 
-                Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                if (_format == TarEntryFormat.Ustar)
+                Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
+                if (header._format == TarEntryFormat.Ustar)
                 {
-                    ReadUstarAttributes(buffer);
+                    header.ReadUstarAttributes(buffer);
                 }
-                else if (_format == TarEntryFormat.Gnu)
+                else if (header._format == TarEntryFormat.Gnu)
                 {
-                    ReadGnuAttributes(buffer);
+                    header.ReadGnuAttributes(buffer);
                 }
                 // In PAX, there is nothing to read in this section (empty space)
             }
 
-            ProcessDataBlock(archiveStream, copyData);
+            header.ProcessDataBlock(archiveStream, copyData);
 
-            return true;
+            return header;
         }
 
         // Asynchronously attempts read all the fields of the next header.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns true if all the attributes were read successfully, false otherwise.
-        internal static async ValueTask<(bool, TarHeader)> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, CancellationToken cancellationToken)
+        internal static async ValueTask<TarHeader?> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TarHeader header = default;
-            header._format = initialFormat;
+            TarHeader header = new(initialFormat);
 
             // The four supported formats have a header that fits in the default record size
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
@@ -81,7 +82,7 @@ namespace System.Formats.Tar
             // Confirms if v7 or pax, or tentatively selects ustar
             if (!header.TryReadCommonAttributes(buffer.Span))
             {
-                return (false, default);
+                return null;
             }
 
             // Confirms if gnu, or tentatively selects ustar
@@ -181,7 +182,7 @@ namespace System.Formats.Tar
 
             ArrayPool<byte>.Shared.Return(rented);
 
-            return (true, header);
+            return header;
         }
 
         // Reads the elements from the passed dictionary, which comes from the previous extended attributes entry,

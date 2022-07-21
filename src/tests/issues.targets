@@ -907,9 +907,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_60035/Runtime_60035/*">
-            <Issue>https://github.com/dotnet/runtime/issues/64419</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
@@ -2217,9 +2214,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_68568/Runtime_68568/*">
             <Issue>Tests coreclr's handling of switches on natively sized integers</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/EmptyThisCallTest/*">
-            <Issue>Tests that 'thiscall' with an empty signature results in InvalidProgramException, which is coreclr-only behavior</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
@@ -2876,6 +2870,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/HandleRef/HandleRefTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/EmptyThisCallTest/*">
+            <Issue>Tests that 'thiscall' with an empty signature results in InvalidProgramException</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**">
             <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>

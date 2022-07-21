@@ -95,14 +95,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }
 
         protected override HttpClient CreateHttpClient() =>
-            CreateHttpClient(
-                new SocketsHttpHandler()
-                {
-                    SslOptions = new SslClientAuthenticationOptions()
-                    {
-                        RemoteCertificateValidationCallback = delegate { return true; },
-                    }
-                });
+            CreateHttpClient(CreateSocketsHttpHandler(allowAllCertificates: true));
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [OuterLoop]
