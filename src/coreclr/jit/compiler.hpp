@@ -3255,7 +3255,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionIndex index        = optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
 #ifdef DEBUG
-        optAssertionDscMap.Remove(*curAssertion);
+        optAssertionDscMap->Remove(*curAssertion);
 #endif
         
         optAssertionCount--;
@@ -3290,7 +3290,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionDsc*  curAssertion = optGetAssertion(index);
 
 #ifdef DEBUG
-        optAssertionDscMap.Set(*curAssertion, optAssertionCount);
+        optAssertionDscMap->Set(*curAssertion, optAssertionCount);
 #endif
         if (optLocalAssertionProp)
         {
@@ -3363,7 +3363,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         }
 
 #ifdef DEBUG
-        optAssertionDscMap.Remove(*curAssertion);
+        optAssertionDscMap->Remove(*curAssertion);
 #endif
         optAssertionCount--;
         if (optLocalAssertionProp)
