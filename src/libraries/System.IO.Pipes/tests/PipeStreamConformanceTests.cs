@@ -804,12 +804,11 @@ namespace System.IO.Pipes.Tests
         protected override PipeOptions Options => PipeOptions.Asynchronous;
     }
 
-    // [ActiveIssue("https://github.com/dotnet/runtime/issues/72526")]
-    // Multiple tests hang in this configuration.
-    //public sealed class NamedPipeTest_ServerInOut_ClientInOut_Synchronous : NamedPipeTest_ServerInOut_ClientInOut
-    //{
-    //    protected override PipeOptions Options => PipeOptions.None;
-    //}
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/72526")]
+    public sealed class NamedPipeTest_ServerInOut_ClientInOut_Synchronous : NamedPipeTest_ServerInOut_ClientInOut
+    {
+        protected override PipeOptions Options => PipeOptions.None;
+    }
 
     public sealed class NamedPipeTest_ServerInOut_ClientInOut_Asynchronous : NamedPipeTest_ServerInOut_ClientInOut
     {
