@@ -22,13 +22,14 @@
     <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">--reset-simulator</_ResetSimulatorSwitch>
     <_SignalAppEndSwitch Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">--signal-app-end</_SignalAppEndSwitch>
 
-    <_AfterBuildCommands>
-      mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
-      sign &quot;$app&quot;
-      xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) -- </_AfterBuildCommands>
+    <RunScriptCommand>xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) --</RunScriptCommand>
+  </PropertyGroup>
 
-    <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
-  </PropertyGroup> 
+  <ItemGroup Condition="'$(BuildTestsOnHelix)' == 'true'">
+    <PreRunScriptCommands Include="$(_AOTBuildCommand)" />
+    <PreRunScriptCommands Include="mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;" />
+    <PreRunScriptCommands Include="sign &quot;$app&quot;" />
+  </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleApp.props"
           Condition="'$(BuildTestsOn)' == 'local'" />
