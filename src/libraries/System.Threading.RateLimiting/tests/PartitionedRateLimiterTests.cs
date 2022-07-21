@@ -452,7 +452,7 @@ namespace System.Threading.RateLimiting.Tests
         {
             CustomizableLimiter innerLimiter = null;
             var factoryCallCount = 0;
-            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
             {
                 return RateLimitPartition.Get(1, _ =>
                 {
@@ -461,8 +461,6 @@ namespace System.Threading.RateLimiting.Tests
                     return innerLimiter;
                 });
             });
-
-            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
 
             var lease = limiter.Acquire("");
             Assert.True(lease.IsAcquired);
@@ -477,7 +475,7 @@ namespace System.Threading.RateLimiting.Tests
             };
             innerLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
 
-            await timerLoopMethod();
+            await Utils.RunTimerFunc(limiter);
 
             // Limiter is disposed when timer runs and sees that IdleDuration is greater than idle limit
             await tcs.Task;
@@ -494,7 +492,7 @@ namespace System.Threading.RateLimiting.Tests
         {
             CustomizableLimiter innerLimiter1 = null;
             CustomizableLimiter innerLimiter2 = null;
-            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
             {
                 if (resource == "1")
                 {
@@ -513,8 +511,6 @@ namespace System.Threading.RateLimiting.Tests
                     });
                 }
             });
-
-            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
 
             var lease = limiter.Acquire("1");
             Assert.True(lease.IsAcquired);
@@ -538,7 +534,7 @@ namespace System.Threading.RateLimiting.Tests
             innerLimiter2.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
 
             // Run Timer
-            var ex = await Assert.ThrowsAsync<AggregateException>(() => timerLoopMethod());
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc(limiter));
 
             Assert.True(dispose1Called);
             Assert.True(dispose2Called);
@@ -552,7 +548,7 @@ namespace System.Threading.RateLimiting.Tests
             CustomizableReplenishingLimiter replenishLimiter = new CustomizableReplenishingLimiter();
             CustomizableLimiter idleLimiter = null;
             var factoryCallCount = 0;
-            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
             {
                 if (resource == "1")
                 {
@@ -568,8 +564,6 @@ namespace System.Threading.RateLimiting.Tests
                     return replenishLimiter;
                 });
             });
-
-            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
 
             // Add the replenishing limiter to the internal storage
             limiter.Acquire("2");
@@ -589,7 +583,7 @@ namespace System.Threading.RateLimiting.Tests
             };
             idleLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
 
-            var ex = await Assert.ThrowsAsync<AggregateException>(() => timerLoopMethod());
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc(limiter));
             Assert.Single(ex.InnerExceptions);
 
             // Wait for Timer to run again which will see the throwing TryReplenish and an idle limiter it needs to clean-up
