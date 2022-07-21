@@ -1181,6 +1181,7 @@ namespace System.Net.Http
                         $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
                 }
 
+                waiter.CancelledByOriginatingRequestCompletion = true;
                 if (timeout > 0)
                 {
                     // Cancel after the specified timeout. This cancellation will not fire if the connection
