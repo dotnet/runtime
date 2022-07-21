@@ -193,6 +193,10 @@ internal sealed class TerminalFormatStrings
         {
             term = "xterm";
         }
+        else if (term.StartsWith("screen", StringComparison.Ordinal)) // normalize all tmux configs
+        {
+            term = "screen";
+        }
 
         switch (term)
         {
