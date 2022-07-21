@@ -811,14 +811,10 @@ namespace System.IO.Pipes.Tests
         protected override PipeOptions Options => PipeOptions.Asynchronous;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/72526")]
     public sealed class NamedPipeTest_ServerInOut_ClientInOut_Synchronous : NamedPipeTest_ServerInOut_ClientInOut
     {
         protected override PipeOptions Options => PipeOptions.None;
-
-        // TODO https://github.com/dotnet/runtime/issues/72526:
-        // The ConcurrentBidirectionalReadsWrites_Success test hangs on Windows with PipeOptions.None and InOut named pipes.
-        // Disabling for now.
-        protected override bool SupportsConcurrentBidirectionalUse => !OperatingSystem.IsWindows();
     }
 
     public sealed class NamedPipeTest_ServerInOut_ClientInOut_Asynchronous : NamedPipeTest_ServerInOut_ClientInOut
