@@ -220,7 +220,7 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        -subset host+packs -ci
+        -subset host+libs.pretest+packs -ci
         $(BuildAction)
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
