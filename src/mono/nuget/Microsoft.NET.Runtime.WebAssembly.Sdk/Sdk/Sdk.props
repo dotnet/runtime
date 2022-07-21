@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>browser</TargetOS>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">main.js</WasmMainJSPath>
+    <OutputType>Exe</OutputType>
+    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+  </PropertyGroup>
+</Project>
