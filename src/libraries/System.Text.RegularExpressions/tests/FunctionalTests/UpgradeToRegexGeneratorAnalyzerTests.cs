@@ -10,6 +10,7 @@ using System.Text.RegularExpressions.Generator;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
@@ -96,7 +97,7 @@ partial class Program
     [RegexGenerator("""")]
     private static partial Regex MyRegex();
 }";
-            await new VerifyCS.Test(null, usePreviewLanguageVersion: true, numberOfIterations: 1)
+            await new VerifyCS.Test
             {
                 TestCode = test,
                 FixedCode = fixedCode,
@@ -154,7 +155,7 @@ public class Program
     }
 }";
 
-            await VerifyCS.VerifyAnalyzerAsync(test, ReferenceAssemblies.Net.Net60, usePreviewLanguageVersion: true);
+            await VerifyCS.VerifyAnalyzerAsync(test, ReferenceAssemblies.Net.Net60);
         }
 
         [Theory]
@@ -172,8 +173,12 @@ public class Program
         var isMatch = " + ConstructRegexInvocation(invocationType, "\"\"") + isMatchInvocation + @";
     }
 }";
-
-            await VerifyCS.VerifyAnalyzerAsync(test, null, usePreviewLanguageVersion: false);
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = test,
+                LanguageVersion = LanguageVersion.CSharp10,
+            }.RunAsync();
         }
 
         public static IEnumerable<object[]> ConstantPatternTestData()
@@ -189,7 +194,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = {|#0:" + ConstructRegexInvocation(invocationType, "\"\"") + @"|}" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
@@ -214,7 +219,7 @@ public class Program
     public static void Main(string[] args)
     {
         const string pattern = @"""";
-        var isMatch = {|#0:" + ConstructRegexInvocation(invocationType, "\"\"") + @"|}" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
@@ -241,7 +246,7 @@ public class Program
 
     public static void Main(string[] args)
     {
-        var isMatch = {|#0:" + ConstructRegexInvocation(invocationType, "\"\"") + @"|}" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
@@ -265,8 +270,7 @@ public partial class Program
         [MemberData(nameof(ConstantPatternTestData))]
         public async Task DiagnosticEmittedForConstantPattern(string test, string fixedSource)
         {
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
-            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         public static IEnumerable<object[]> VariablePatternTestData()
@@ -357,7 +361,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = {|#0:" + ConstructRegexInvocation(invocationType, "\"\"", "RegexOptions.None") + @"|}" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "RegexOptions.None") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -380,7 +384,7 @@ public class Program
     public static void Main(string[] args)
     {
         const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var isMatch = {|#0:" + ConstructRegexInvocation(invocationType, "\"\"", "options") + @"|}" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "options") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -405,7 +409,7 @@ public class Program
 
     public static void Main(string[] args)
     {
-        var isMatch = {|#0:" + ConstructRegexInvocation(invocationType, "\"\"", "Options") + @"|}" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "Options") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -428,8 +432,7 @@ public partial class Program
         [MemberData(nameof(ConstantOptionsTestData))]
         public async Task DiagnosticEmittedForConstantOptions(string test, string fixedSource)
         {
-            DiagnosticResult expected = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
-            await VerifyCS.VerifyCodeFixAsync(test, expected, fixedSource);
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         public static IEnumerable<object[]> VariableOptionsTestData()
@@ -516,7 +519,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        {|#0:Regex.@@Method@@(""input"", ""a|b"", RegexOptions.None)|};
+        [|Regex.@@Method@@(""input"", ""a|b"", RegexOptions.None)|];
     }
 }";
             const string fixedSourceWithOptions = @"using System.Text.RegularExpressions;
@@ -531,7 +534,6 @@ public partial class Program
     [RegexGenerator(""a|b"", RegexOptions.None)]
     private static partial Regex MyRegex();
 }";
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
 
             const string testTemplateWithoutOptions = @"using System.Text.RegularExpressions;
 
@@ -539,7 +541,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        {|#0:Regex.@@Method@@(""input"", ""a|b"")|};
+        [|Regex.@@Method@@(""input"", ""a|b"")|];
     }
 }";
             const string fixedSourceWithoutOptions = @"using System.Text.RegularExpressions;
@@ -561,11 +563,11 @@ public partial class Program
                 {
                     if (includeRegexOptions)
                     {
-                        yield return new object[] { testTemplateWithOptions.Replace("@@Method@@", methodName), expectedDiagnostic, fixedSourceWithOptions.Replace("@@Method@@", methodName) };
+                        yield return new object[] { testTemplateWithOptions.Replace("@@Method@@", methodName), fixedSourceWithOptions.Replace("@@Method@@", methodName) };
                     }
                     else
                     {
-                        yield return new object[] { testTemplateWithoutOptions.Replace("@@Method@@", methodName), expectedDiagnostic, fixedSourceWithoutOptions.Replace("@@Method@@", methodName) };
+                        yield return new object[] { testTemplateWithoutOptions.Replace("@@Method@@", methodName), fixedSourceWithoutOptions.Replace("@@Method@@", methodName) };
 
                     }
                 }
@@ -579,10 +581,10 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        {|#0:Regex.Replace(""input"", ""a[b|c]*"", ""replacement"", RegexOptions.CultureInvariant)|};
+        [|Regex.Replace(""input"", ""a[b|c]*"", ""replacement"", RegexOptions.CultureInvariant)|];
     }
 }
-", expectedDiagnostic, @"using System.Text.RegularExpressions;
+", @"using System.Text.RegularExpressions;
 
 public partial class Program
 {
@@ -602,10 +604,10 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        {|#0:Regex.Replace(""input"", ""a[b|c]*"", ""replacement"")|};
+        [|Regex.Replace(""input"", ""a[b|c]*"", ""replacement"")|];
     }
 }
-", expectedDiagnostic, @"using System.Text.RegularExpressions;
+", @"using System.Text.RegularExpressions;
 
 public partial class Program
 {
@@ -622,13 +624,12 @@ public partial class Program
 
         [Theory]
         [MemberData(nameof(StaticInvocationsAndFixedSourceTestData))]
-        public async Task DiagnosticAndCodeFixForAllStaticMethods(string test, DiagnosticResult expectedDiagnostic, string fixedSource)
-         => await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
+        public async Task DiagnosticAndCodeFixForAllStaticMethods(string test, string fixedSource)
+         => await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
 
         [Fact]
         public async Task CodeFixSupportsNesting()
         {
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
             string test = @"using System.Text.RegularExpressions;
 
 public class A
@@ -641,7 +642,7 @@ public class A
             {
                 public void Foo()
                 {
-                    Regex regex = {|#0:new Regex(""pattern"", RegexOptions.IgnorePatternWhitespace)|};
+                    Regex regex = [|new Regex(""pattern"", RegexOptions.IgnorePatternWhitespace)|];
                 }
             }
         }
@@ -671,7 +672,7 @@ public partial class A
 }
 ";
 
-            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         [Theory]
@@ -701,17 +702,11 @@ public class Program
 {
     public static void Main()
     {
-        Regex regex1 = {|#0:new Regex(""a|b"")|};
-        Regex regex2 = {|#1:new Regex(""c|d"", RegexOptions.CultureInvariant)|};
+        Regex regex1 = [|new Regex(""a|b"")|];
+        Regex regex2 = [|new Regex(""c|d"", RegexOptions.CultureInvariant)|];
     }
 }
 ";
-            DiagnosticResult[] expectedDiagnostics = new[]
-            {
-                VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0),
-                VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(1)
-            };
-
             string fixedSource = @"using System.Text.RegularExpressions;
 
 public partial class Program
@@ -728,8 +723,12 @@ public partial class Program
     private static partial Regex MyRegex1();
 }
 ";
-
-            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostics, fixedSource, 2);
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                NumberOfFixAllIterations = 2,
+            }.RunAsync();
         }
 
         [Fact]
@@ -741,10 +740,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        Regex r = {|#0:new Regex(options: RegexOptions.None, pattern: ""a|b"")|};
+        Regex r = [|new Regex(options: RegexOptions.None, pattern: ""a|b"")|];
     }
 }";
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
 
             string fixedSource = @"using System.Text.RegularExpressions;
 
@@ -759,13 +757,13 @@ partial class Program
     private static partial Regex MyRegex();
 }";
 
-            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         [Fact]
         public async Task TopLevelStatements_MultipleSourceFiles()
         {
-            await new VerifyCS.Test(references: null, usePreviewLanguageVersion: true, numberOfIterations: 1)
+            await new VerifyCS.Test
             {
                 TestState =
                 {
@@ -781,7 +779,7 @@ partial class Program
     [System.Text.RegularExpressions.RegexGenerator("""")]
     private static partial System.Text.RegularExpressions.Regex MyRegex();
 }" }
-                }
+                },
             }.RunAsync();
         }
 
@@ -793,10 +791,9 @@ partial class Program
 static class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        {|#0:Regex.Replace(text, @"" \s+"" , ""  "")|};
+        [|Regex.Replace(text, @"" \s+"" , ""  "")|];
 }";
 
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
             string expectedFixedCode = @"using System.Text.RegularExpressions;
 
 static partial class Class
@@ -807,7 +804,7 @@ static partial class Class
     private static partial Regex MyRegex();
 }";
 
-            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, expectedFixedCode);
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
         }
 
         [Fact]
