@@ -510,7 +510,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.DirectoryServices.Protocols\tests\System.DirectoryServices.Protocols.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Primitives\tests\System.Drawing.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Asn1\tests\System.Formats.Asn1.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\System.Globalization.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\NlsTests\System.Globalization.Nls.Tests.csproj" />
