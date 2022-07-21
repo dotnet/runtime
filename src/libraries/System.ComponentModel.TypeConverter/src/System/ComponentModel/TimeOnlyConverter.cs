@@ -13,38 +13,26 @@ namespace System.ComponentModel
     /// </summary>
     public class TimeOnlyConverter : TypeConverter
     {
+        /// <inheritdoc />
         /// <summary>
-        /// Gets a value indicating whether this converter can convert an
-        /// object in the given source type to a <see cref='System.TimeOnly'/>
+        /// Gets a value indicating whether this converter can convert an object in the given source type to a <see cref='System.TimeOnly'/>
         /// object using the specified context.
         /// </summary>
-        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
-        /// <param name="sourceType">The type to convert from.</param>
-        /// <returns><see langword="true" /> if this object can perform the conversion; otherwise, <see langword="false" />.</returns>
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        /// <summary>
-        /// Gets a value indicating whether this converter can convert an object
-        /// to the given destination type using the context.
-        /// </summary>
-        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
-        /// <param name="destinationType">The type to convert to.</param>
-        /// <returns><see langword="true" /> if this converter can perform the conversion; otherwise, <see langword="false" />.</returns>
+        /// <inheritdoc />
         public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
+        /// <inheritdoc />
         /// <summary>
         /// Converts the given value object to a <see cref='System.TimeOnly'/> object.
         /// </summary>
-        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
-        /// <param name="culture">An optional <see cref="T:System.Globalization.CultureInfo" />. If not supplied, the current culture is assumed.</param>
-        /// <param name="value">The <see cref="T:System.Object" /> to convert.</param>
-        /// <returns>An <see cref="T:System.Object" /> that represents the converted <paramref name="value" />.</returns>
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
@@ -83,14 +71,10 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
+        /// <inheritdoc />
         /// <summary>
         /// Converts the given value object from a <see cref='System.TimeOnly'/> object using the arguments.
         /// </summary>
-        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
-        /// <param name="culture">An optional <see cref="T:System.Globalization.CultureInfo" />. If not supplied, the current culture is assumed.</param>
-        /// <param name="value">The <see cref="T:System.Object" /> to convert.</param>
-        /// <param name="destinationType">The <see cref="T:System.Type" /> to convert the value to.</param>
-        /// <returns>An <see cref="T:System.Object" /> that represents the converted <paramref name="value" />.</returns>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is TimeOnly timeOnly)
