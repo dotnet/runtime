@@ -19,17 +19,18 @@ m_CallersSP field 8      ; SP at routine entry
             field 4 * 8  ; d0..d3
 PROBE_FRAME_SIZE    field 0
 
-    ;; Support for setting up a transition frame when performing a GC probe. In many respects this is very
-    ;; similar to the logic in PUSH_COOP_PINVOKE_FRAME in AsmMacros.h. In most cases setting up the
-    ;; transition frame comprises the entirety of the caller's prolog (and initial non-prolog code) and
-    ;; similarly for the epilog. Those cases can be dealt with using PROLOG_PROBE_FRAME and EPILOG_PROBE_FRAME
-    ;; defined below. For the special cases where additional work has to be done in the prolog we also provide
-    ;; the lower level macros ALLOC_PROBE_FRAME, FREE_PROBE_FRAME and INIT_PROBE_FRAME that allow more control
-    ;; to be asserted.
-    ;; Perform the parts of setting up a probe frame that can occur during the prolog (and indeed this macro
-    ;; can only be called from within the prolog).
+    ;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
+    ;; and accepts the register bitmask
+    ;; Call this macro first in the method (no further prolog instructions can be added after this).
+    ;;
+    ;;  $threadReg     : register containing the Thread* (this will be preserved).
+    ;;  $trashReg      : register that can be trashed by this macro
+    ;;  $BITMASK       : value to initialize m_dwFlags field with (register or #constant)
     MACRO
-        ALLOC_PROBE_FRAME
+        PUSH_PROBE_FRAME $threadReg, $trashReg, $BITMASK
+
+        ; Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
+        ; incoming register values into it.
 
         ;; First create PInvokeTransitionFrame
         PROLOG_SAVE_REG_PAIR   fp, lr, #-(PROBE_FRAME_SIZE)!      ;; Push down stack pointer and store FP and LR
@@ -56,12 +57,21 @@ PROBE_FRAME_SIZE    field 0
         PROLOG_NOP stp         d0, d1,   [sp, #0x90]
         PROLOG_NOP stp         d2, d3,   [sp, #0xA0]
 
+        ;; Perform the rest of the PInvokeTransitionFrame initialization.
+        str         $BITMASK,  [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]         ; save the register bitmask passed in by caller
+        str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
+        add         $trashReg, sp,  #PROBE_FRAME_SIZE                                   ; recover value of caller's SP
+        str         $trashReg, [sp, #m_CallersSP]                                       ; save caller's SP
+
+        ;; link the frame into the Thread
+        mov         $trashReg, sp
+        str         $trashReg, [$threadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
     ;; Undo the effects of an ALLOC_PROBE_FRAME. This may only be called within an epilog. Note that all
     ;; registers are restored (apart for sp and pc), even volatiles.
     MACRO
-        FREE_PROBE_FRAME
+        POP_PROBE_FRAME
 
         ;; Restore the integer return registers
         PROLOG_NOP ldr          x0,       [sp, #0x78]
@@ -79,42 +89,6 @@ PROBE_FRAME_SIZE    field 0
         EPILOG_RESTORE_REG_PAIR x27, x28, #0x60
 
         EPILOG_RESTORE_REG_PAIR fp, lr, #(PROBE_FRAME_SIZE)!
-    MEND
-
-    ;; Complete the setup of a probe frame allocated with ALLOC_PROBE_FRAME with the initialization that can
-    ;; occur only outside the prolog (includes linking the frame to the current Thread). This macro assumes SP
-    ;; is invariant outside of the prolog.
-    ;;
-    ;;  $threadReg     : register containing the Thread* (this will be preserved)
-    ;;  $trashReg      : register that can be trashed by this macro
-    ;;  $savedRegsMask : register containing flags
-    MACRO
-        INIT_PROBE_FRAME $threadReg, $trashReg, $savedRegsMask
-
-        str         $threadReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]            ; Thread *
-        str         $savedRegsMask, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
-        add         $trashReg, sp,  #PROBE_FRAME_SIZE
-        str         $trashReg, [sp, #m_CallersSP]
-    MEND
-
-    ;; Simple macro to use when setting up the probe frame can comprise the entire prolog. Call this macro
-    ;; first in the method (no further prolog instructions can be added after this).
-    ;;
-    ;;  $threadReg     : register containing the Thread* (this will be preserved).
-    ;;  $trashReg      : register that can be trashed by this macro
-    ;;  $savedRegsMask : value to initialize m_dwFlags field with (register or #constant)
-    MACRO
-        PROLOG_PROBE_FRAME $threadReg, $trashReg, $savedRegsMask
-
-        ; Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
-        ; incoming register values into it.
-        ALLOC_PROBE_FRAME
-
-
-        ; Perform the rest of the PInvokeTransitionFrame initialization.
-        INIT_PROBE_FRAME $threadReg, $trashReg, $savedRegsMask
-        mov         $trashReg, sp
-        str         $trashReg, [$threadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
 ;;
@@ -167,10 +141,7 @@ PROBE_FRAME_SIZE    field 0
     MEND
 
 ;;
-;;
-;;
 ;; GC Probe Hijack target
-;;
 ;;
     EXTERN RhpPInvokeExceptionGuard
 
@@ -193,7 +164,7 @@ DoRhpGcProbe
     EXTERN RhpThrowHwEx
 
     NESTED_ENTRY RhpGcProbe
-        PROLOG_PROBE_FRAME x2, x3, x12
+        PUSH_PROBE_FRAME x2, x3, x12
 
         ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGC2
@@ -201,10 +172,10 @@ DoRhpGcProbe
         ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tbnz        x2, #PTFF_THREAD_ABORT_BIT, %F1
 
-        FREE_PROBE_FRAME
+        POP_PROBE_FRAME
         EPILOG_RETURN
 1
-        FREE_PROBE_FRAME
+        POP_PROBE_FRAME
         EPILOG_NOP mov w0, #STATUS_REDHAWK_THREAD_ABORT
         EPILOG_NOP mov x1, lr ;; return address as exception PC
         EPILOG_NOP b RhpThrowHwEx
@@ -252,11 +223,11 @@ DoRhpGcProbe
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
     NESTED_ENTRY RhpGcStressProbe
-        PROLOG_PROBE_FRAME x2, x3, x12
+        PUSH_PROBE_FRAME x2, x3, x12
 
         bl          $REDHAWKGCINTERFACE__STRESSGC
 
-        FREE_PROBE_FRAME
+        POP_PROBE_FRAME
         EPILOG_RETURN
     NESTED_END RhpGcStressProbe
 

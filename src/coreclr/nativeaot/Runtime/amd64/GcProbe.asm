@@ -4,11 +4,11 @@
 include AsmMacros.inc
 
 ;;
-;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX and accepts the register
-;; bitmask in RCX
+;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX and accepts
+;; the register bitmask
 ;;
 ;; On entry:
-;;  - BITMASK: bitmask describing pushes, may be volatile register or constant value
+;;  - BITMASK: bitmask describing pushes, a volatile register
 ;;  - RAX: managed function return value, may be an object or byref
 ;;  - preserved regs: need to stay preserved, may contain objects or byrefs
 ;;
@@ -31,7 +31,7 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
     push_vol_reg    BITMASK                     ; save the register bitmask passed in by caller
     push_vol_reg    threadReg                   ; Thread * (unused by stackwalker)
     push_nonvol_reg rbp                         ; save caller's RBP
-    mov             trashReg, [rsp + 12*8]  ; Find the return address
+    mov             trashReg, [rsp + 12*8]      ; Find the return address
     push_vol_reg    trashReg                    ; save m_RIP
     lea             trashReg, [rsp + 0]         ; trashReg == address of frame
 
@@ -41,7 +41,7 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
     ;; save xmm0 in case it's being used as a return value
     movdqa          [rsp + 20h], xmm0
 
-    ; link the frame into the Thread
+    ;; link the frame into the Thread
     mov             [threadReg + OFFSETOF__Thread__m_pDeferredTransitionFrame], trashReg
 endm
 
