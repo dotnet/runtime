@@ -79,7 +79,11 @@ inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
     if (returnKind == GCRK_Scalar)
         return 0;
 
+#if defined(TARGET_UNIX)
     return PTFF_SAVE_RAX | PTFF_SAVE_RDX | ((uint64_t)returnKind << 16);
+#else
+    return PTFF_SAVE_RAX | ((uint64_t)returnKind << 16);
+#endif
 }
 
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
