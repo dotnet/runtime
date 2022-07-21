@@ -21719,20 +21719,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return NO_CLASS_HANDLE;
         };
 
-        CORINFO_CLASS_HANDLE baseForUnique = objClass;
-        CORINFO_CLASS_HANDLE uniqueImpl    = getUniqueImpl(info.compCompHnd, objClass);
-        if (uniqueImpl == NO_CLASS_HANDLE)
+        CORINFO_CLASS_HANDLE baseForUnique = baseClass;
+        CORINFO_CLASS_HANDLE uniqueImpl    = getUniqueImpl(info.compCompHnd, baseForUnique);
+        /*if (uniqueImpl == NO_CLASS_HANDLE)
         {
             baseForUnique = baseClass;
-            uniqueImpl    = getUniqueImpl(info.compCompHnd, baseClass);
-        }
+            uniqueImpl    = getUniqueImpl(info.compCompHnd, baseForUnique);
+        }*/
 
         if (uniqueImpl != NO_CLASS_HANDLE)
         {
             objClass = uniqueImpl;
             isExact  = true;
-            JITDUMP("Devirtualizeing '%s' as '%s' via getExactClasses\n", eeGetClassName(baseForUnique),
-                    eeGetClassName(uniqueImpl));
             // TODO: Enable GDV for exact classes without fallbacks, e.g. objClass is IDisposable
             // and vm returns just two exact clases: ClassA and ClassB and so we can devirtualize it as follows:
             //
