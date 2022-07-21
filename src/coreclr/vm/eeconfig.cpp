@@ -696,6 +696,14 @@ HRESULT EEConfig::sync()
 
     dwSleepOnExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SleepOnExit);
 
+#if defined(FEATURE_PGO)
+    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+#endif
+
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
     if (fTieredCompilation)
@@ -775,14 +783,6 @@ HRESULT EEConfig::sync()
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
-#endif
-
-#if defined(FEATURE_PGO)
-    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-#endif
-
-#if defined(FEATURE_READYTORUN)
-    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
