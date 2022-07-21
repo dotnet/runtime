@@ -134,5 +134,27 @@ namespace ILCompiler
 
             return null;
         }
+
+        public static EventPseudoDesc GetEventForAccessor(this MethodDesc accessor)
+        {
+            if (accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
+                return null;
+
+            var type = (EcmaType)ecmaAccessor.OwningType;
+            var reader = type.MetadataReader;
+            var module = type.EcmaModule;
+            foreach (var eventHandle in reader.GetTypeDefinition(type.Handle).GetEvents())
+            {
+                var accessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                if (ecmaAccessor.Handle == accessors.Adder
+                    || ecmaAccessor.Handle == accessors.Remover
+                    || ecmaAccessor.Handle == accessors.Raiser)
+                {
+                    return new EventPseudoDesc(type, eventHandle);
+                }
+            }
+
+            return null;
+        }
     }
 }
