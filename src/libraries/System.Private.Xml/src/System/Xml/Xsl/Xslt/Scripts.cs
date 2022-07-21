@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.Xslt
 
             public bool ContainsKey(string key) => _backingDictionary.ContainsKey(key);
 
-            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type? value) => _backingDictionary.TryGetValue(key, out value);
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value) => _backingDictionary.TryGetValue(key, out value);
         }
     }
 }
