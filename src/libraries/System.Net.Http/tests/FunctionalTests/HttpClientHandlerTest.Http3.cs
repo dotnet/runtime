@@ -1014,36 +1014,27 @@ namespace System.Net.Http.Functional.Tests
             var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
-            Task clientTask = Task.Run(async () =>
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
             {
-                using HttpClient client = CreateHttpClient();
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            using HttpRequestMessage request2 = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
 
-                using HttpRequestMessage request = new()
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = server.Address,
-                    Version = HttpVersion30,
-                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                };
+            // second request should throw the same exception as inner as the first one
+            HttpRequestException ex2 = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request2).WaitAsync(TimeSpan.FromSeconds(10)));
 
-                using HttpRequestMessage request2 = new()
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = server.Address,
-                    Version = HttpVersion30,
-                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                };
-
-                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
-
-                // second request should throw the same exception as inner as the first one
-                HttpRequestException ex2 = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request2).WaitAsync(TimeSpan.FromSeconds(10)));
-
-
-                Assert.Equal(ex, ex2.InnerException);
-            });
-
-            await clientTask;
+            Assert.Equal(ex, ex2.InnerException);
         }
 
 
