@@ -11,18 +11,18 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrencyLimiterOptions
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
             {
                 PermitLimit = -1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrencyLimiterOptions
+            }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
             {
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = -1
-            });
+            }));
         }
 
         [Fact]
@@ -393,7 +393,7 @@ namespace System.Threading.RateLimiting.Test
             {
                 PermitLimit = 2,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 1
+                QueueLimit = 2
             });
             using var lease = await limiter.WaitAndAcquireAsync(2);
             Assert.True(lease.IsAcquired);
