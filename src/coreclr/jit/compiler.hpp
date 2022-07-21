@@ -3257,8 +3257,16 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 #ifdef DEBUG
         optAssertionDscMap.Remove(*curAssertion);
 #endif
-
+        
         optAssertionCount--;
+        if (optLocalAssertionProp)
+        {
+            printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<true>::GetHashCode(*curAssertion));
+        }
+        else
+        {
+            printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<false>::GetHashCode(*curAssertion));
+        }
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
@@ -3284,6 +3292,17 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 #ifdef DEBUG
         optAssertionDscMap.Set(*curAssertion, optAssertionCount);
 #endif
+        if (optLocalAssertionProp)
+        {
+            printf("++ Added map[%d] = %u\n", optAssertionCount - 1,
+                   AssertionDscKeyFuncs<true>::GetHashCode(*curAssertion));
+        }
+        else
+        {
+            printf("++ Added map[%d] = %u\n", optAssertionCount - 1,
+                   AssertionDscKeyFuncs<false>::GetHashCode(*curAssertion));
+        }
+
         unsigned       lclNum       = curAssertion->op1.lcl.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
@@ -3347,6 +3366,16 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         optAssertionDscMap.Remove(*curAssertion);
 #endif
         optAssertionCount--;
+        if (optLocalAssertionProp)
+        {
+            printf("-- Removed map[%d] = %u\n", optAssertionCount,
+                   AssertionDscKeyFuncs<true>::GetHashCode(*curAssertion));
+        }
+        else
+        {
+            printf("-- Removed map[%d] = %u\n", optAssertionCount,
+                   AssertionDscKeyFuncs<false>::GetHashCode(*curAssertion));
+        }
     }
     else
     {

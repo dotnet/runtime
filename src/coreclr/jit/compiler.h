@@ -7301,6 +7301,68 @@ protected:
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
 
+
+    struct AssertionDscKeyFuncs_Local
+    {
+    public:
+        static bool Equals(const AssertionDsc x, const AssertionDsc y)
+        {
+            return AssertionDsc::Equals(x, y, false);
+        }
+
+        static unsigned GetHashCode(const AssertionDsc dsc)
+        {
+            /*
+             *  0 ~ 2 : assertionKind
+             *  3 ~ 6 : op1Kind
+             *  7 ~ 11: op2Kind
+             */
+            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
+            return result;
+        }
+    };
+
+    struct AssertionDscKeyFuncs_Global
+    {
+    public:
+        static bool Equals(const AssertionDsc x, const AssertionDsc y)
+        {
+            return AssertionDsc::Equals(x, y, true);
+        }
+
+        static unsigned GetHashCode(const AssertionDsc dsc)
+        {
+            /*
+             *  0 ~ 2 : assertionKind
+             *  3 ~ 6 : op1Kind
+             *  7 ~ 11: op2Kind
+             */
+            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
+            return result;
+        }
+    };
+
+    template <typename Key,
+              typename KeyFuncs,
+              typename Value>
+    class AssertionDscHashTable : JitHashTable<Key, false ? AssertionDscKeyFuncs_Local : AssertionDscKeyFuncs_Global, Value>
+    {
+
+    };
+
+    template <typename Key,
+              typename KeyFuncs,
+              typename Value>
+    class AssertionDscHashTable_Local : AssertionDscHashTable<Key, AssertionDscKeyFuncs_Local, Value>
+    {
+    };
+
+    template <typename Key, typename KeyFuncs, typename Value>
+    class AssertionDscHashTable_Global : AssertionDscHashTable<Key, AssertionDscKeyFuncs_Global, Value>
+    {
+    };
+
+    template <bool isLocal>
     struct AssertionDscKeyFuncs
     {
     public:
@@ -7308,7 +7370,7 @@ protected:
 
         static bool Equals(const AssertionDsc x, const AssertionDsc y)
         {
-            return AssertionDsc::Equals(x, y, !isLocalProp);
+            return AssertionDsc::Equals(x, y, !isLocal);
         }
 
         static unsigned GetHashCode(const AssertionDsc dsc)
@@ -7324,7 +7386,18 @@ protected:
     };
 
     // Map from Block to Block.  Used for a variety of purposes.
-    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
+    //typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex> AssertionDscMap;
+    //typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<true>, AssertionIndex> AssertionDscMap;
+
+    //template <bool isLocal>
+    /*using AssertionDscMap_Local = JitHashTable<AssertionDsc, AssertionDscKeyFuncs<true>, AssertionIndex>;
+    using AssertionDscMap_Global = JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex>;*/
+
+    //typedef AssertionDscMap<false>
+    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<true>, AssertionIndex> AssertionDscMap;
+
+
+    //TODO: Use pointer
     AssertionDscMap optAssertionDscMap;
 
 public:

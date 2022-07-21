@@ -944,10 +944,11 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
  *  Initialize the assertion prop tracking logic.
  */
 
-bool Compiler::AssertionDscKeyFuncs::isLocalProp = false;
+//bool Compiler::AssertionDscKeyFuncs::isLocalProp = false;
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
+    printf("optAssertionInit= %d\n", isLocalProp);
     // Use a function countFunc to determine a proper maximum assertion count for the
     // method being compiled. The function is linear to the IL size for small and
     // moderate methods. For large methods, considering throughput impact, we track no
@@ -958,14 +959,21 @@ void Compiler::optAssertionInit(bool isLocalProp)
     static const unsigned       upperBound  = ArrLen(countFunc) - 1;
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
-    AssertionDscKeyFuncs::isLocalProp       = isLocalProp;
+    //AssertionDscKeyFuncs::isLocalProp       = isLocalProp;
 
     optLocalAssertionProp = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
     optComplementaryAssertionMap =
         new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
 #ifdef DEBUG
-    optAssertionDscMap = AssertionDscMap(getAllocator());
+    if (isLocalProp)
+    {
+        optAssertionDscMap = AssertionDscMap<true>(getAllocator());
+    }
+    else
+    {
+        optAssertionDscMap = AssertionDscMap<false>(getAllocator());
+    }
 #endif
 
     assert(NO_ASSERTION_INDEX == 0);
@@ -2005,6 +2013,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
     else
     {
+        //printf("%u not found\n", AssertionDscKeyFuncs::GetHashCode(*newAssertion));
         assert(!found);
     }
 #endif // DEBUG
@@ -2018,7 +2027,14 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 #ifdef DEBUG
     optAssertionDscMap.Set(*newAssertion, optAssertionCount + 1);
 #endif
-
+    if (optLocalAssertionProp)
+    {
+        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<true>::GetHashCode(*newAssertion));
+    }
+    else
+    {
+        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<false>::GetHashCode(*newAssertion));
+    }
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
     optAssertionCount++;
 
