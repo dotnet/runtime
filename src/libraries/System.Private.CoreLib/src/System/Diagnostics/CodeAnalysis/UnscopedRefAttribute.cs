@@ -9,15 +9,21 @@ namespace System.Diagnostics.CodeAnalysis
     /// Used to indicate a byref escapes and is not scoped.
     /// </summary>
     /// <remarks>
-    /// There are several cases where the C# compiler treats a <c>ref</c> as implicitly
-    /// <c>scoped</c> - where the compiler does not allow the <c>ref</c> to escape the method.
-    ///
+    /// <para>
+    /// There are several cases where the C# compiler treats a <see langword="ref"/> as implicitly
+    /// <see langword="scoped"/> - where the compiler does not allow the <see langword="ref"/> to escape the method.
+    /// </para>
+    /// <para>
     /// For example:
-    /// 1. <c>this</c> for struct instance methods
-    /// 2. <c>ref</c> parameters that refer to <c>ref struct</c> types
-    /// 3. <c>out</c> parameters
-    ///
-    /// This attribute is used in those instances where the <c>ref</c> should be allowed to escape.
+    /// <list type="number">
+    ///     <item><see langword="this"/> for <see langword="struct"/> instance methods.</item>
+    ///     <item><see langword="ref"/>parameters that refer to <see langword="ref"/> <see langword="struct"/> types.</item>
+    ///     <item><see langword="out"/> parameters.</item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// This attribute is used in those instances where the <see langword="ref"/> should be allowed to escape.
+    /// </para>
     /// </remarks>
     [AttributeUsageAttribute(
         AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Parameter,
