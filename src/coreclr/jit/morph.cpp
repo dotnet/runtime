@@ -2787,14 +2787,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 {
                     if ((size > 1) && ((intArgRegNum + 1) == maxRegArgs) && (nextOtherRegNum == REG_STK))
                     {
-#if FEATURE_ARG_SPLIT
                         // This indicates a partial enregistration of a struct type
                         assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
                                (argx->gtOper == GT_COMMA && (argx->gtFlags & GTF_ASG)));
                         unsigned numRegsPartial = MAX_REG_ARG - intArgRegNum;
                         assert((unsigned char)numRegsPartial == numRegsPartial);
                         SplitArg(&arg, numRegsPartial, size - numRegsPartial);
-#endif // FEATURE_ARG_SPLIT
                         assert(!passUsingFloatRegs);
                         assert(size == 2);
                         intArgRegNum = maxRegArgs;
