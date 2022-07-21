@@ -1919,9 +1919,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
-            genPendingCallLabel->bbEmitCookie =
-                emit->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
-                                   false DEBUG_ARG(genPendingCallLabel));
             break;
 
         case GT_STORE_OBJ:
