@@ -13,11 +13,11 @@ namespace System.ComponentModel
     /// </summary>
     public class TimeOnlyConverter : TypeConverter
     {
-        /// <inheritdoc />
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object in the given source type to a <see cref='System.TimeOnly'/>
         /// object using the specified context.
         /// </summary>
+        /// <inheritdoc />
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
@@ -29,10 +29,10 @@ namespace System.ComponentModel
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        /// <inheritdoc />
         /// <summary>
         /// Converts the given value object to a <see cref='System.TimeOnly'/> object.
         /// </summary>
+        /// <inheritdoc />
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
@@ -71,10 +71,10 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <inheritdoc />
         /// <summary>
         /// Converts the given value object from a <see cref='System.TimeOnly'/> object using the arguments.
         /// </summary>
+        /// <inheritdoc />
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is TimeOnly timeOnly)

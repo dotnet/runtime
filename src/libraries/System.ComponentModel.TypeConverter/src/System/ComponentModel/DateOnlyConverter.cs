@@ -29,10 +29,10 @@ namespace System.ComponentModel
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        /// <inheritdoc />
         /// <summary>
         /// Converts the given value object to a <see cref='System.DateOnly'/> object.
         /// </summary>
+        /// <inheritdoc />
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
