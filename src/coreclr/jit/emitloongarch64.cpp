@@ -3750,8 +3750,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         default:
             *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
             dstRW += 4;
-            ins    = id->idIns();
-            sz     = emitSizeOfInsDsc(id);
+            ins = id->idIns();
+            sz  = emitSizeOfInsDsc(id);
             break;
     }
 

@@ -3800,7 +3800,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     {
         assert(loadExtent == structSize);
     }
-#endif //TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64
 #endif // DEBUG
 
     // We should still have a TYP_STRUCT

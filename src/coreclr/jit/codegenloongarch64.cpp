@@ -7088,7 +7088,7 @@ void CodeGen::genCall(GenTreeCall* call)
             {
                 regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
                 regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
-                var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
+                var_types dstType  = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
                 inst_Mov(dstType, argReg, allocReg, /* canSkip */ true);
             }
         }
