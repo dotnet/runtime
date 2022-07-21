@@ -2622,7 +2622,7 @@ namespace Mono.Linker.Steps
 
 				TypeDefinition? argumentTypeDef = MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance));
 
-				if (Annotations.FlowAnnotations.RequiresDataFlowAnalysis (parameter)) {
+				if (Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
