@@ -37,8 +37,8 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new SlidingWindowRateLimiterOptions
+            Assert.Throws<ArgumentException>(
+                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
             {
                 PermitLimit = -1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -46,9 +46,9 @@ namespace System.Threading.RateLimiting.Test
                 Window = TimeSpan.FromMinutes(2),
                 SegmentsPerWindow = 1,
                 AutoReplenishment = false
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new SlidingWindowRateLimiterOptions
+            }));
+            Assert.Throws<ArgumentException>(
+                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
             {
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -56,9 +56,9 @@ namespace System.Threading.RateLimiting.Test
                 Window = TimeSpan.FromMinutes(2),
                 SegmentsPerWindow = 1,
                 AutoReplenishment = false
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new SlidingWindowRateLimiterOptions
+            }));
+            Assert.Throws<ArgumentException>(
+                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
             {
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -66,7 +66,7 @@ namespace System.Threading.RateLimiting.Test
                 Window = TimeSpan.FromMinutes(2),
                 SegmentsPerWindow = -1,
                 AutoReplenishment = false
-            });
+            }));
         }
 
         [Fact]
