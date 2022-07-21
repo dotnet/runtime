@@ -1745,8 +1745,8 @@
                     <template tid="ContentionStart_V2">
                         <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
-                        <data name="LockObjectID" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="LockOwnerThreadID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="LockObjectID" inType="win:Pointer" />
+                        <data name="LockOwnerThreadID" inType="win:Pointer" />
                         <UserData>
                             <Contention xmlns="myNs">
                                 <ContentionFlags> %1 </ContentionFlags>

@@ -2554,7 +2554,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         QueryPerformanceCounter(&startTicks);
 
         // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V2(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), (ObjectID)OBJECTREFToObject(obj), (ThreadID)m_HoldingThread);
+        FireEtwContentionStart_V2(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), OBJECTREFToObject(obj), m_HoldingThread);
     }
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
