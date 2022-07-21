@@ -2541,6 +2541,11 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     // the object associated with this lock.
     _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
+    LogContention();
+    Thread::IncrementMonitorLockContentionCount(pCurThread);
+
+    OBJECTREF obj = GetOwningObject();
+
     BOOLEAN IsContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
     LARGE_INTEGER startTicks = { {0} };
 
@@ -2549,13 +2554,8 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         QueryPerformanceCounter(&startTicks);
 
         // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId());
+        FireEtwContentionStart_V2(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), (ObjectID)OBJECTREFToObject(obj), (ThreadID)m_HoldingThread);
     }
-
-    LogContention();
-    Thread::IncrementMonitorLockContentionCount(pCurThread);
-
-    OBJECTREF obj = GetOwningObject();
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
     IncrementTransientPrecious();

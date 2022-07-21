@@ -1742,6 +1742,21 @@
                         </UserData>
                     </template>
 
+                    <template tid="ContentionStart_V2">
+                        <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="LockObjectID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="LockOwnerThreadID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <Contention xmlns="myNs">
+                                <ContentionFlags> %1 </ContentionFlags>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <LockObjectID> %3 </LockObjectID>
+                                <LockOwnerThreadID> %4 </LockOwnerThreadID>
+                            </Contention>
+                        </UserData>
+                    </template>
+
                     <template tid="ContentionStop_V1">
                         <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -3641,6 +3656,11 @@
                            keywords ="ContentionKeyword"  opcode="win:Start"
                            task="Contention"
                            symbol="ContentionStart_V1" message="$(string.RuntimePublisher.ContentionStart_V1EventMessage)"/>
+
+                    <event value="81" version="2" level="win:Informational"  template="ContentionStart_V2"
+                           keywords ="ContentionKeyword"  opcode="win:Start"
+                           task="Contention"
+                           symbol="ContentionStart_V2" message="$(string.RuntimePublisher.ContentionStart_V2EventMessage)"/>
 
                     <event value="91" version="0" level="win:Informational"  template="Contention"
                            keywords ="ContentionKeyword"  opcode="win:Stop"
@@ -8432,6 +8452,7 @@
                 <string id="RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStartEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStart_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
+                <string id="RuntimePublisher.ContentionStart_V2EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;%LockObjectID=%3;%LockOwnerThreadID=%4"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;DurationNs=%3"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
