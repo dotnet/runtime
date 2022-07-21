@@ -47,7 +47,10 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="SlidingWindowRateLimiter"/>.</param>
         public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
             if (options.PermitLimit <= 0 || options.SegmentsPerWindow <= 0)
             {
                 throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.SegmentsPerWindow)} must be set to values greater than 0.");

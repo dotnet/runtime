@@ -45,7 +45,10 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="TokenBucketRateLimiter"/>.</param>
         public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
             if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0)
             {
                 throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.");

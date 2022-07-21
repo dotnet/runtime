@@ -44,7 +44,10 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="FixedWindowRateLimiter"/>.</param>
         public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
             if (options.PermitLimit <= 0)
             {
                 throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.");
