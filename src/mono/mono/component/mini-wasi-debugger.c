@@ -65,10 +65,12 @@ wasi_transport_send (void *data, int len)
 static void
 wasi_transport_connect (const char *socket_fd)
 {
+	PRINT_DEBUG_MSG (1, "wasi_transport_connect.\n", conn_fd);
 	bool handshake_ok = FALSE;
 	
 	while (!handshake_ok)
 	{
+		PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
 		sock_accept (atoi(socket_fd), 4, &conn_fd);
 		int res = write (conn_fd, (const char*)"", 0);
 		if (conn_fd == -1 || res == -1)

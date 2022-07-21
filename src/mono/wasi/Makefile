@@ -21,7 +21,7 @@ build-all: $(WASI_SDK_CLANG)
 	mkdir -p $(WASI_BIN_DIR)
 	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_OBJ_DIR)/libmono-wasi-driver.a $(WASI_BIN_DIR)
 	rm -rf $(WASI_BIN_DIR)/libmono-component-hot_reload-static.a
-	rm -rf $(WASI_BIN_DIR)/libmono-component-diagnostics_tracing-static.a 
+	rm -rf $(WASI_BIN_DIR)/libmono-component-diagnostics_tracing-static.a
 	mkdir -p $(WASI_BIN_DIR)/include/mono-wasi
 	cp mono-wasi-driver/*.h $(WASI_BIN_DIR)/include/mono-wasi
 

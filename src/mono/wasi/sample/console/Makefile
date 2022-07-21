@@ -1,7 +1,7 @@
 include ../../Makefile.variable
 include ../SampleMakefile.variable
 
-BIN_DIR=WasiConsoleApp/bin/$(CONFIG)/net7.0
+BIN_DIR=WasiConsoleApp/bin/Debug/net7.0
 
 all: console.wasm $(BIN_DIR)/WasiConsoleApp.dll
 
@@ -15,9 +15,9 @@ console.wasm: main.c
 	$(WASI_SDK_CLANG) main.c -o console.wasm $(COMPILE_FLAGS) $(LINK_FLAGS)
 
 $(BIN_DIR)/WasiConsoleApp.dll: WasiConsoleApp/*.csproj WasiConsoleApp/*.cs
-	cd WasiConsoleApp && $(DOTNET_ROOT)/dotnet build -c $(CONFIG)
+	cd WasiConsoleApp && $(DOTNET_ROOT)/dotnet build -c Debug
 	touch $(BIN_DIR)/*.dll
 	cp -R $(BROWSER_WASM_RUNTIME_PATH) $(BIN_DIR)/runtime
 
 debug: all
-	/home/thaysgrazia/wasmtime/target/release/wasmtime --tcplisten localhost:64000 --dir=. console.wasm "debug"
+	wasmtime --tcplisten localhost:64000 --dir=. console.wasm --env DEBUGGER_FD=4
