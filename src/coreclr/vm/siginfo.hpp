@@ -229,7 +229,7 @@ public:
         // pTypeContext indicates how to instantiate any generic type parameters we come
         // However, first we implicitly apply the substitution pSubst to the metadata if pSubst is supplied.
         // That is, if the metadata contains a type variable "!0" then we first look up
-        // !0 in pSubst to produce another item of metdata and continue processing.
+        // !0 in pSubst to produce another item of metadata and continue processing.
         // If pSubst is empty then we look up !0 in the pTypeContext to produce a final
         // type handle.  If any of these are out of range we throw an exception.
         //

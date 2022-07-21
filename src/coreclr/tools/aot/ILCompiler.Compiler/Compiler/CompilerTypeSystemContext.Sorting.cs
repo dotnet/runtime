@@ -5,7 +5,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    // Functionality related to determinstic ordering of types and members
+    // Functionality related to deterministic ordering of types and members
     partial class CompilerTypeSystemContext
     {
         partial class BoxedValueType

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     // Writes header attributes of a tar archive entry.
-    internal partial struct TarHeader
+    internal sealed partial class TarHeader
     {
         private static ReadOnlySpan<byte> PaxMagicBytes => "ustar\0"u8;
         private static ReadOnlySpan<byte> PaxVersionBytes => "00"u8;
@@ -30,7 +30,7 @@ namespace System.Formats.Tar
         internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
+            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
 
             int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -50,11 +50,11 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
+            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
 
-            int checksum = WriteName(buffer.Span, out _);
-            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            int finalChecksum = WriteChecksum(checksum, buffer.Span);
+            int tmpChecksum = WriteName(buffer.Span, out _);
+            tmpChecksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
+            int checksum = WriteChecksum(tmpChecksum, buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -63,14 +63,14 @@ namespace System.Formats.Tar
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
 
-            return finalChecksum;
+            return checksum;
         }
 
         // Writes the current header as a Ustar entry into the archive stream.
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
+            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
 
             int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -92,13 +92,13 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
+            TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
 
-            int checksum = WritePosixName(buffer.Span);
-            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            checksum += WritePosixMagicAndVersion(buffer.Span);
-            checksum += WritePosixAndGnuSharedFields(buffer.Span);
-            int finalChecksum = WriteChecksum(checksum, buffer.Span);
+            int tmpChecksum = WritePosixName(buffer.Span);
+            tmpChecksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
+            tmpChecksum += WritePosixMagicAndVersion(buffer.Span);
+            tmpChecksum += WritePosixAndGnuSharedFields(buffer.Span);
+            int checksum = WriteChecksum(tmpChecksum, buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -107,7 +107,7 @@ namespace System.Formats.Tar
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
 
-            return finalChecksum;
+            return checksum;
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
@@ -142,7 +142,7 @@ namespace System.Formats.Tar
             Debug.Assert(_typeFlag is not TarEntryType.GlobalExtendedAttributes);
 
             // First, we write the preceding extended attributes header
-            TarHeader extendedAttributesHeader = default;
+            TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
@@ -161,11 +161,13 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             // First, we write the preceding extended attributes header
-            TarHeader extendedAttributesHeader = default;
+            TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass them to the extended attributes header for writing
             _extendedAttributes ??= new Dictionary<string, string>();
+
+            // Don't need to store the returned checksum, we only need it written to the archive in the extended attributes entry header
             await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: false, cancellationToken).ConfigureAwait(false);
 
             buffer.Span.Clear(); // Reset it to reuse it
@@ -178,7 +180,7 @@ namespace System.Formats.Tar
         internal void WriteAsGnu(Stream archiveStream, Span<byte> buffer)
         {
             // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName.Length > FieldLengths.LinkName)
+            if (_linkName?.Length > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
                 longLinkHeader.WriteAsGnuInternal(archiveStream, buffer);
@@ -204,7 +206,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName.Length > FieldLengths.LinkName)
+            if (_linkName?.Length > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
                 await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
@@ -255,7 +257,7 @@ namespace System.Formats.Tar
             Debug.Assert((entryType is TarEntryType.LongPath && longTextLength > FieldLengths.Name) ||
                          (entryType is TarEntryType.LongLink && longTextLength > FieldLengths.LinkName));
 
-            TarHeader longMetadataHeader = default;
+            TarHeader longMetadataHeader = new(TarEntryFormat.Gnu);
 
             longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
             longMetadataHeader._mode = TarHelpers.GetDefaultMode(entryType);
@@ -303,12 +305,12 @@ namespace System.Formats.Tar
         {
             actualLength = GetTotalDataBytesToWrite();
 
-            checksum = WriteName(buffer, out _);
-            checksum += WriteCommonFields(buffer, actualLength, GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu));
-            checksum += WriteGnuMagicAndVersion(buffer);
-            checksum += WritePosixAndGnuSharedFields(buffer);
-            checksum += WriteGnuFields(buffer);
-            checksum += WriteChecksum(checksum, buffer);
+            int tmpChecksum = WriteName(buffer, out _);
+            tmpChecksum += WriteCommonFields(buffer, actualLength, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu, _typeFlag));
+            tmpChecksum += WriteGnuMagicAndVersion(buffer);
+            tmpChecksum += WritePosixAndGnuSharedFields(buffer);
+            tmpChecksum += WriteGnuFields(buffer);
+            checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
@@ -388,11 +390,11 @@ namespace System.Formats.Tar
         {
             actualLength = GetTotalDataBytesToWrite();
 
-            checksum = WritePosixName(buffer);
-            checksum += WriteCommonFields(buffer, actualLength, GetCorrectTypeFlagForFormat(TarEntryFormat.Pax));
-            checksum += WritePosixMagicAndVersion(buffer);
-            checksum += WritePosixAndGnuSharedFields(buffer);
-            checksum += WriteChecksum(checksum, buffer);
+            int tmpChecksum = WritePosixName(buffer);
+            tmpChecksum += WriteCommonFields(buffer, actualLength, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Pax, _typeFlag));
+            tmpChecksum += WritePosixMagicAndVersion(buffer);
+            tmpChecksum += WritePosixAndGnuSharedFields(buffer);
+            checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
         // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
@@ -455,26 +457,6 @@ namespace System.Formats.Tar
             }
 
             return checksum;
-        }
-
-        // When writing an entry that came from an archive of a different format, if its entry type happens to
-        // be an incompatible regular file entry type, convert it to the compatible one.
-        // No change for all other entry types.
-        private TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format)
-        {
-            if (format is TarEntryFormat.V7)
-            {
-                if (_typeFlag is TarEntryType.RegularFile)
-                {
-                    return TarEntryType.V7RegularFile;
-                }
-            }
-            else if (_typeFlag is TarEntryType.V7RegularFile)
-            {
-                return TarEntryType.RegularFile;
-            }
-
-            return _typeFlag;
         }
 
         // Calculates how many data bytes should be written, depending on the position pointer of the stream.
@@ -613,8 +595,14 @@ namespace System.Formats.Tar
             {
                 _extendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
-            TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
-            TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+            if (!string.IsNullOrEmpty(_gName))
+            {
+                TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
+            }
+            if (!string.IsNullOrEmpty(_uName))
+            {
+                TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+            }
 
             if (!string.IsNullOrEmpty(_linkName))
             {

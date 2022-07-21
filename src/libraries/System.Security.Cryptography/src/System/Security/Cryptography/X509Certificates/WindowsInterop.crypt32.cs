@@ -69,7 +69,7 @@ internal static partial class Interop
                 pPrevCertContext = pCertContext.Disconnect();
             }
 
-            pCertContext.SetHandle((IntPtr)Crypt32.CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
+            Marshal.InitHandle(pCertContext, (IntPtr)Crypt32.CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
 
             if (!pCertContext.IsInvalid)
             {
@@ -150,7 +150,13 @@ internal static partial class Interop
         /// </summary>
         public static unsafe bool CertFindCertificateInStore(SafeCertStoreHandle hCertStore, Interop.Crypt32.CertFindType dwFindType, void* pvFindPara, [NotNull] ref SafeCertContextHandle? pCertContext)
         {
-            Interop.Crypt32.CERT_CONTEXT* pPrevCertContext = pCertContext == null ? null : pCertContext.Disconnect();
+            Interop.Crypt32.CERT_CONTEXT* pPrevCertContext = null;
+            if (pCertContext != null)
+            {
+                pPrevCertContext = pCertContext.Disconnect();
+                pCertContext.Dispose();
+            }
+
             pCertContext = Interop.Crypt32.CertFindCertificateInStore(hCertStore, Interop.Crypt32.CertEncodingType.All, Interop.Crypt32.CertFindFlags.None, dwFindType, pvFindPara, pPrevCertContext);
             return !pCertContext.IsInvalid;
         }

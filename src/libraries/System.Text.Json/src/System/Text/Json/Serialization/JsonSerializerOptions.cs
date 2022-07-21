@@ -175,12 +175,14 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Gets or sets a <see cref="JsonTypeInfo"/> contract resolver.
+        /// Gets or sets the <see cref="JsonTypeInfo"/> contract resolver used by this instance.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
         /// <remarks>
-        /// When used with the reflection-based <see cref="JsonSerializer"/> APIs,
-        /// a <see langword="null"/> setting be equivalent to and replaced by the reflection-based
-        /// <see cref="DefaultJsonTypeInfoResolver"/>.
+        /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver" />.
+        /// The property will be populated automatically once used with one of the <see cref="JsonSerializer"/> methods.
         /// </remarks>
         public IJsonTypeInfoResolver? TypeInfoResolver
         {

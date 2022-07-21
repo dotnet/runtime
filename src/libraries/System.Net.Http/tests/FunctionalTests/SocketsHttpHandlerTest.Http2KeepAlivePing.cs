@@ -40,18 +40,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAlivePingDelay_Infinite_NoKeepAlivePingIsSent()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
-                    KeepAlivePingDelay = Timeout.InfiniteTimeSpan
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                handler.KeepAlivePingDelay = Timeout.InfiniteTimeSpan;
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -101,18 +97,14 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpKeepAlivePingPolicy.Always)]
         [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(10),
-                    KeepAlivePingPolicy = policy,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = policy;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -181,18 +173,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAliveConfigured_NoPingResponseDuringActiveStream_RequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -232,18 +220,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HttpKeepAlivePingPolicy_Always_NoPingResponseBetweenStreams_SecondRequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;

@@ -15,7 +15,10 @@ namespace System.Runtime.InteropServices
     public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
 #if DEBUG
+        /// <summary>Indicates whether debug tracking and logging of SafeHandle finalization is enabled</summary>
         private static readonly bool s_logFinalization = Environment.GetEnvironmentVariable("DEBUG_SAFEHANDLE_FINALIZATION") == "1";
+        /// <summary>Debug counter for the number of SafeHandles that have been finalized.</summary>
+        private static long s_safeHandlesFinalized;
 #endif
 
         // IMPORTANT:
@@ -113,7 +116,8 @@ namespace System.Runtime.InteropServices
 #if DEBUG
             if (!disposing && _ctorStackTrace is not null)
             {
-                Internal.Console.WriteLine($"{Environment.NewLine}*** {GetType()} (0x{handle.ToInt64():x}) finalized! Ctor stack:{Environment.NewLine}{_ctorStackTrace}{Environment.NewLine}");
+                long count = Interlocked.Increment(ref s_safeHandlesFinalized);
+                Internal.Console.WriteLine($"{Environment.NewLine}*** #{count} {GetType()} (0x{handle.ToInt64():x}) finalized! Ctor stack:{Environment.NewLine}{_ctorStackTrace}{Environment.NewLine}");
             }
 #endif
             Debug.Assert(_fullyInitialized);

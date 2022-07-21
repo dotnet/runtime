@@ -27,6 +27,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// unrecognized type discriminator id's and reverts to the contract of the base type.
         /// Otherwise, it will fail the deserialization.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The parent <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        /// </exception>
         public bool IgnoreUnrecognizedTypeDiscriminators
         {
             get => _ignoreUnrecognizedTypeDiscriminators;
@@ -40,6 +43,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets the behavior when serializing an undeclared derived runtime type.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The parent <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        /// </exception>
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling
         {
             get => _unknownDerivedTypeHandling;
@@ -54,6 +60,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// Gets or sets a custom type discriminator property name for the polymorhic type.
         /// Uses the default '$type' property name if left unset.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The parent <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        /// </exception>
         [AllowNull]
         public string TypeDiscriminatorPropertyName
         {

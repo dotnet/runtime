@@ -1424,8 +1424,8 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                         }
                         else
                         {
-                            // We will use the interface implemenation if we do not find one in the
-                            // parent. It will have to be overriden by the a method impl unless the
+                            // We will use the interface implementation if we do not find one in the
+                            // parent. It will have to be overridden by the a method impl unless the
                             // class is abstract or it is a special COM type class.
 
                             MethodDesc* pParentMD = NULL;
@@ -1716,7 +1716,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceInterfaceDeclaration(
 
     BOOL fInterfaceFound = FALSE;
     // Check our vtable for entries that we are suppose to override.
-    // Since this is an external method we must also check the inteface map.
+    // Since this is an external method we must also check the interface map.
     // We want to replace any interface methods even if they have been replaced
     // by a base class.
     for(USHORT i = 0; i < bmtInterface->wInterfaceMapSize; i++)

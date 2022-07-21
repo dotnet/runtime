@@ -4384,7 +4384,7 @@ namespace System.Data
                 if ((-1 == currentRecord) && (-1 != proposedRecord) && (-1 != row._oldRecord) && (proposedRecord != row._oldRecord))
                 {
                     // the transition from DataRowState.Deleted -> DataRowState.Modified
-                    // with same orginal record but new current record
+                    // with same original record but new current record
                     // needs to raise an ItemChanged or ItemMoved instead of ItemAdded in the ListChanged event.
                     // for indexes/views listening for both DataViewRowState.Deleted | DataViewRowState.ModifiedCurrent
                     currentRecord = row._oldRecord;

@@ -6,9 +6,10 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.Net.Security;
+using System.Net.Test.Common;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
-using System.Net.Test.Common;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -34,7 +35,7 @@ namespace System.Net.Security.Tests
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
             NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
-            Assert.Throws<InvalidOperationException>(() => { _ = negotiateAuthentication.RemoteIdentity; });
+            Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.RemoteIdentity);
         }
 
         [ConditionalFact(nameof(IsNtlmAvailable))]
@@ -54,10 +55,12 @@ namespace System.Net.Security.Tests
 
             Assert.True(fakeNtlmServer.IsAuthenticated);
             Assert.True(negotiateAuthentication.IsAuthenticated);
-            _ = negotiateAuthentication.RemoteIdentity;
-
-            negotiateAuthentication.Dispose();
-            Assert.Throws<InvalidOperationException>(() => { _ = negotiateAuthentication.RemoteIdentity; });
+            IIdentity remoteIdentity = negotiateAuthentication.RemoteIdentity;
+            using (remoteIdentity as IDisposable)
+            {
+                negotiateAuthentication.Dispose();
+                Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.RemoteIdentity);
+            }
         }
 
         [Fact]

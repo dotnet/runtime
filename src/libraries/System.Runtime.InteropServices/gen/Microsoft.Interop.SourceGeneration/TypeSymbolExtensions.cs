@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Dynamic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -184,6 +187,120 @@ namespace Microsoft.Interop
                 (INamedTypeSymbol namedType, INamedTypeSymbol namedOther) => SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, namedOther.ConstructedFrom),
                 _ => SymbolEqualityComparer.Default.Equals(type, other)
             };
+        }
+
+        /// <summary>
+        /// Reconstruct a possibly-nested type with the generic parameters of another type, accounting for type nesting and generic parameters split between different nesting levels.
+        /// </summary>
+        /// <param name="instantiatedTemplateType">The generic type from which to copy type arguments</param>
+        /// <param name="unboundConstructedType">The type to recursively instantiate</param>
+        /// <param name="numOriginalTypeArgumentsSubstituted">How many type parameters from <c><paramref name="unboundConstructedType"/>.ConstructedFrom</c> that needed to be substituted to fill the generic parameter list.</param>
+        /// <param name="extraTypeArgumentsInTemplate">How many type parameters from <paramref name="instantiatedTemplateType"/>were unused.</param>
+        /// <returns>A fully constructed type based on <c><paramref name="unboundConstructedType"/>.ConstructedFrom</c> with the generic arguments from <paramref name="instantiatedTemplateType"/>.</returns>
+        public static INamedTypeSymbol ResolveUnboundConstructedTypeToConstructedType(this INamedTypeSymbol unboundConstructedType, INamedTypeSymbol instantiatedTemplateType, out int numOriginalTypeArgumentsSubstituted, out int extraTypeArgumentsInTemplate)
+        {
+            var (typeArgumentsToSubstitute, nullableAnnotationsToSubstitute) = GetArgumentsToSubstitute(instantiatedTemplateType);
+
+            // Build us a list of the type nesting of unboundConstructedType, with the outermost containing type on the top
+            // Use OriginalDefinition to get the generic definition for all containing types instead of having to unconstruct the generic at each loop iteration.
+            Stack<INamedTypeSymbol> originalNestedTypes = new();
+            for (INamedTypeSymbol originalTypeDefinition = unboundConstructedType.OriginalDefinition; originalTypeDefinition is not null; originalTypeDefinition = originalTypeDefinition.ContainingType)
+            {
+                originalNestedTypes.Push(originalTypeDefinition);
+            }
+
+            numOriginalTypeArgumentsSubstituted = 0;
+            int currentArityOffset = 0;
+            INamedTypeSymbol currentType = null;
+            while (originalNestedTypes.Count > 0)
+            {
+                // Get the generic type definition to work with.
+                if (currentType is null)
+                {
+                    // If we're starting with the outermost type, we can just use that provided symbol.
+                    currentType = originalNestedTypes.Pop();
+                }
+                else
+                {
+                    // If the type was nested, we need to look it up again on the (possibly constructed generic) containing type.
+                    INamedTypeSymbol originalNestedType = originalNestedTypes.Pop();
+                    currentType = currentType.GetTypeMembers(originalNestedType.Name, originalNestedType.Arity).First();
+                }
+
+                if (currentType.TypeParameters.Length > 0)
+                {
+                    // We will try to substitute as many generic parameters as possible from typeArgumentsToSubstitute and nullableAnnotationsToSubstitute.
+                    // If we run out of generic arguments to substitute, we will fill the rest of the generic arguments by propogating the corresponding type parameters from the type's generic definition.
+                    // This will enable us to correctly construct a generic type from a generic type definition for all scenarios.
+                    //
+                    // Examples:
+                    //   type arguments: [A, B, C]
+                    //   target generic type: X<T, U, V>
+                    //   result: X<A, B, C>
+                    //   arguments remaining for any nested generic types: []
+                    //
+                    //   type arguments: [A, B, C]
+                    //   target generic type: X<T, U>
+                    //   result: X<A, B>
+                    //   arguments remaining for any nested generic types: [C]
+                    //
+                    //   type arguments: [A, B]
+                    //   target generic type: X<T, U, V>
+                    //   result: X<A, B, V>
+                    //   arguments remaining for any nested generic types: []
+                    int numArgumentsToInsert = currentType.TypeParameters.Length;
+                    var arguments = new ITypeSymbol[numArgumentsToInsert];
+                    var annotations = new NullableAnnotation[numArgumentsToInsert];
+
+                    int numArgumentsToCopy = Math.Min(numArgumentsToInsert, typeArgumentsToSubstitute.Length - currentArityOffset);
+
+                    typeArgumentsToSubstitute.CopyTo(currentArityOffset, arguments, 0, numArgumentsToCopy);
+                    nullableAnnotationsToSubstitute.CopyTo(currentArityOffset, annotations, 0, numArgumentsToCopy);
+                    currentArityOffset += numArgumentsToCopy;
+
+                    if (numArgumentsToCopy != numArgumentsToInsert)
+                    {
+                        int numArgumentsToPropogate = numArgumentsToInsert - numArgumentsToCopy;
+                        // Record how many of the original generic type parameters we needed to use as arguments.
+                        // This value represents how many generic arguments the instantiatedTemplateType type would need to have the same total number of generic parameters as unboundConstructedType,
+                        // including accounting for nesting.
+                        numOriginalTypeArgumentsSubstituted += numArgumentsToPropogate;
+                        currentType.TypeParameters.CastArray<ITypeSymbol>().CopyTo(currentType.TypeParameters.Length - numArgumentsToPropogate, arguments, numArgumentsToCopy, numArgumentsToPropogate);
+                    }
+
+                    currentType = currentType.Construct(
+                        ImmutableArray.CreateRange(arguments),
+                        ImmutableArray.CreateRange(annotations));
+                }
+            }
+            // Record how many type arguments we did not need to use from instantiatedTemplateType to instantiate unboundConstructedType.
+            extraTypeArgumentsInTemplate = typeArgumentsToSubstitute.Length - currentArityOffset;
+
+            return currentType;
+
+            // Get the type arguments and their nullable annotations from the instantiated generic type, including all levels of nesting.
+            // Examples:
+            // Foo<A> -> [A]
+            // Foo.Bar<A> -> [A]
+            // Foo<A?>.Bar<B> -> [A?, B]
+            // Foo<A, B, C?>.Bar<D?, E> -> [A, B, C?, D?, E]
+            static (ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>) GetArgumentsToSubstitute(INamedTypeSymbol instantiatedGeneric)
+            {
+                Stack<(ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>)> genericTypesToSubstitute = new();
+                for (INamedTypeSymbol instantiatedType = instantiatedGeneric; instantiatedType is not null; instantiatedType = instantiatedType.ContainingType)
+                {
+                    genericTypesToSubstitute.Push((instantiatedType.TypeArguments, instantiatedType.TypeArgumentNullableAnnotations));
+                }
+                ImmutableArray<ITypeSymbol>.Builder typeArguments = ImmutableArray.CreateBuilder<ITypeSymbol>();
+                ImmutableArray<NullableAnnotation>.Builder nullableAnnotations = ImmutableArray.CreateBuilder<NullableAnnotation>();
+                while (genericTypesToSubstitute.Count != 0)
+                {
+                    var (args, annotations) = genericTypesToSubstitute.Pop();
+                    typeArguments.AddRange(args);
+                    nullableAnnotations.AddRange(annotations);
+                }
+                return (typeArguments.ToImmutable(), nullableAnnotations.ToImmutable());
+            }
         }
     }
 }

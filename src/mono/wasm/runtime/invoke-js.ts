@@ -132,7 +132,9 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     const fn = scope[fname];
 
     mono_assert(typeof (fn) === "function", () => `${function_name} must be a Function but was ${typeof fn}`);
-    return fn;
+
+    // if the function was already bound to some object it would stay bound to original object. That's good.
+    return fn.bind(scope);
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

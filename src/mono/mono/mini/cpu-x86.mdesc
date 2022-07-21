@@ -23,7 +23,7 @@
 #	y  the reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
 #	x  XMM reg (XMM0 - X007)
 #
-# len:number         describe the maximun length in bytes of the instruction
+# len:number         describe the maximum length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
 #                    it defaults to zero.   But lengths are only checked if the given opcode
 #                    is encountered during compilation. Some opcodes, like CONV_U4 are

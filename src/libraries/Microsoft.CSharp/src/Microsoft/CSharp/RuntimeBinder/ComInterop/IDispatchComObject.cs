@@ -118,9 +118,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private static int GetIDsOfNames(IDispatch dispatch, string name, out int dispId)
         {
             int[] dispIds = new int[1];
-            Guid emtpyRiid = Guid.Empty;
+            Guid emptyRiid = Guid.Empty;
             int hresult = dispatch.TryGetIDsOfNames(
-                ref emtpyRiid,
+                ref emptyRiid,
                 new string[] { name },
                 1,
                 0,

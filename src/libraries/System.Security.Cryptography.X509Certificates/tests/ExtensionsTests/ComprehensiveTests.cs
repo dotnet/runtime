@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Net;
 using Test.Cryptography;
 using Xunit;
 
@@ -75,7 +76,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
                     Assert.Equal(expected, sans.RawData);
 
-                    Assert.IsType<X509Extension>(sans);
+                    // This SAN only contains an alternate DirectoryName entry, so both the DNSNames and
+                    // IPAddresses enumerations being empty is correct.
+                    X509SubjectAlternativeNameExtension rich = Assert.IsType<X509SubjectAlternativeNameExtension>(sans);
+                    Assert.Equal(Enumerable.Empty<string>(), rich.EnumerateDnsNames());
+                    Assert.Equal(Enumerable.Empty<IPAddress>(), rich.EnumerateIPAddresses());
                 }
 
                 {

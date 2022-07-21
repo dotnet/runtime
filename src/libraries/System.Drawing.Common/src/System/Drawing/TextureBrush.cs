@@ -208,7 +208,7 @@ namespace System.Drawing
             ArgumentNullException.ThrowIfNull(matrix);
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
-            // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
+            // with the libgdiplus backend. Simulate a nop for compatibility with GDI+.
             if (matrix.NativeMatrix == IntPtr.Zero)
             {
                 return;

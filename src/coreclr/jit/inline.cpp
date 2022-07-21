@@ -230,7 +230,7 @@ bool InlDecisionIsFailure(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// InlDecisionIsSuccess: check if this decision describes a sucessful inline
+// InlDecisionIsSuccess: check if this decision describes a successful inline
 //
 // Arguments:
 //    d - the decision in question
@@ -814,7 +814,7 @@ void InlineResult::Report()
 }
 
 //------------------------------------------------------------------------
-// InlineStrategy construtor
+// InlineStrategy constructor
 //
 // Arguments
 //    compiler - root compiler instance
