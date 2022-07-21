@@ -100,80 +100,77 @@ namespace System.Formats.Tar
         // Throws if any conversion from string to the expected data type fails.
         internal void ReplaceNormalAttributesWithExtended(Dictionary<string, string>? dictionaryFromExtendedAttributesHeader)
         {
-            // At this point, the header is being created, so this should be the first time we fill the extended attributes dictionary
-            Debug.Assert(_extendedAttributes == null);
-
             if (dictionaryFromExtendedAttributesHeader == null || dictionaryFromExtendedAttributesHeader.Count == 0)
             {
                 return;
             }
 
-            _extendedAttributes = dictionaryFromExtendedAttributesHeader;
+            InitializeExtendedAttributesWithExisting(dictionaryFromExtendedAttributesHeader);
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
             // The 'name' header field only fits 100 bytes, so we always store the full name text to the dictionary.
-            if (_extendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
+            if (ExtendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
             {
                 _name = paxEaName;
             }
 
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
-            if (_extendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
+            if (ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
                 _linkName = paxEaLinkName;
             }
 
             // The 'mtime' header field only fits 12 bytes, so a more precise timestamp goes in the extended attributes
-            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaMTime, out DateTimeOffset mTime))
+            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(ExtendedAttributes, PaxEaMTime, out DateTimeOffset mTime))
             {
                 _mTime = mTime;
             }
 
             // The user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaMode, out int mode))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaMode, out int mode))
             {
                 _mode = mode;
             }
 
             // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
-            if (TarHelpers.TryGetStringAsBaseTenLong(_extendedAttributes, PaxEaSize, out long size))
+            if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
                 _size = size;
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaUid, out int uid))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaUid, out int uid))
             {
                 _uid = uid;
             }
 
             // The 'gid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaGid, out int gid))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaGid, out int gid))
             {
                 _gid = gid;
             }
 
             // The 'uname' header field only fits 32 bytes
-            if (_extendedAttributes.TryGetValue(PaxEaUName, out string? paxEaUName))
+            if (ExtendedAttributes.TryGetValue(PaxEaUName, out string? paxEaUName))
             {
                 _uName = paxEaUName;
             }
 
             // The 'gname' header field only fits 32 bytes
-            if (_extendedAttributes.TryGetValue(PaxEaGName, out string? paxEaGName))
+            if (ExtendedAttributes.TryGetValue(PaxEaGName, out string? paxEaGName))
             {
                 _gName = paxEaGName;
             }
 
             // The 'devmajor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaDevMajor, out int devMajor))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaDevMajor, out int devMajor))
             {
                 _devMajor = devMajor;
             }
 
             // The 'devminor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
-            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaDevMinor, out int devMinor))
+            if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaDevMinor, out int devMinor))
             {
                 _devMinor = devMinor;
             }
@@ -548,9 +545,6 @@ namespace System.Formats.Tar
         {
             Debug.Assert(_typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
 
-            // This should be the first time we read the extended attributes directly from the stream block
-            Debug.Assert(_extendedAttributes == null);
-
             // It is not expected that the extended attributes data section will be longer than Array.MaxLength, considering
             // the size field is 12 bytes long, which fits a number with a value under int.MaxValue.
             if (_size > Array.MaxLength)
@@ -569,19 +563,17 @@ namespace System.Formats.Tar
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
         private void ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
         {
-            _extendedAttributes = new Dictionary<string, string>();
-
             string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
 
             using StringReader reader = new(dataAsString);
 
             while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
             {
-                if (_extendedAttributes.ContainsKey(key))
+                if (ExtendedAttributes.ContainsKey(key))
                 {
                     throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
-                _extendedAttributes.Add(key, value);
+                ExtendedAttributes.Add(key, value);
             }
         }
 

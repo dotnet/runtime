@@ -114,8 +114,8 @@ namespace System.Formats.Tar
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
         internal void WriteAsPaxGlobalExtendedAttributes(Stream archiveStream, Span<byte> buffer, int globalExtendedAttributesEntryNumber)
         {
-            WriteAsPaxGlobalExtendedAttributesShared(globalExtendedAttributesEntryNumber);
-            WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true, globalExtendedAttributesEntryNumber);
+            VerifyGlobalExtendedAttributesDataIsValid(globalExtendedAttributesEntryNumber);
+            WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber);
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream and returns the value of the final checksum.
@@ -126,17 +126,15 @@ namespace System.Formats.Tar
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            WriteAsPaxGlobalExtendedAttributesShared(globalExtendedAttributesEntryNumber);
-            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
+            VerifyGlobalExtendedAttributesDataIsValid(globalExtendedAttributesEntryNumber);
+            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
         }
 
         // Verifies the data is valid for writing a Global Extended Attributes entry.
-        [MemberNotNull(nameof(_extendedAttributes))]
-        private void WriteAsPaxGlobalExtendedAttributesShared(int globalExtendedAttributesEntryNumber)
+        private void VerifyGlobalExtendedAttributesDataIsValid(int globalExtendedAttributesEntryNumber)
         {
             Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
             Debug.Assert(globalExtendedAttributesEntryNumber >= 0);
-            _extendedAttributes ??= new Dictionary<string, string>();
         }
 
         // Writes the current header as a PAX entry into the archive stream.
@@ -150,8 +148,7 @@ namespace System.Formats.Tar
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
-            Debug.Assert(_extendedAttributes != null);
-            extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
+            extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
             buffer.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
             WriteAsPaxInternal(archiveStream, buffer);
@@ -170,8 +167,7 @@ namespace System.Formats.Tar
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
-            Debug.Assert(_extendedAttributes != null);
-            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
+            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
 
             buffer.Span.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
@@ -582,30 +578,29 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
-            _extendedAttributes ??= new Dictionary<string, string>();
-            _extendedAttributes.Add(PaxEaName, _name);
+            ExtendedAttributes.Add(PaxEaName, _name);
 
-            if (!_extendedAttributes.ContainsKey(PaxEaMTime))
+            if (!ExtendedAttributes.ContainsKey(PaxEaMTime))
             {
-                _extendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
+                ExtendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
             if (!string.IsNullOrEmpty(_gName))
             {
-                TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
+                TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             }
             if (!string.IsNullOrEmpty(_uName))
             {
-                TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+                TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
             }
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                _extendedAttributes.Add(PaxEaLinkName, _linkName);
+                ExtendedAttributes.Add(PaxEaLinkName, _linkName);
             }
 
             if (_size > 99_999_999)
             {
-                _extendedAttributes.Add(PaxEaSize, _size.ToString());
+                ExtendedAttributes.Add(PaxEaSize, _size.ToString());
             }
 
 
