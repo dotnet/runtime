@@ -3523,10 +3523,6 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 static long total_executed_opcodes;
 #endif
 
-#if HOST_WASI
-static long total_executed_opcodes_wasi;
-#endif
-
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
 
 /*
@@ -3615,17 +3611,6 @@ main_loop:
 #if PROFILE_INTERP
 		frame->imethod->opcounts++;
 		total_executed_opcodes++;
-#endif
-#if HOST_WASI
-		if (debugger_enabled)
-		{
-			total_executed_opcodes_wasi++;
-			if (total_executed_opcodes_wasi % 10000 == 0)
-			{
-				total_executed_opcodes_wasi = 0;
-				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
-			}
-		}
 #endif
 		MintOpcode opcode;
 		DUMP_INSTR();
@@ -6754,6 +6739,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_SEQ_POINT)
 			/* Just a placeholder for a breakpoint */
+#if HOST_WASI
+			if (debugger_enabled)
+				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
