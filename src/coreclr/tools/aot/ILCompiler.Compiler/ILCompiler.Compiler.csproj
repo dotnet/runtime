@@ -416,7 +416,6 @@
     <Compile Include="Compiler\IInliningPolicy.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
-    <Compile Include="Compiler\TestInfraMultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />

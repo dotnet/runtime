@@ -5,11 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace ILCompiler
+namespace Mono.Linker.Tests.TestCasesRunner
 {
 
     /// <summary>
