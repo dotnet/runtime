@@ -65,7 +65,7 @@ namespace System.Diagnostics
 
             EnsureState(State.HaveId);
 
-            // Check if we know the process has exited. This avoids us targetting another
+            // Check if we know the process has exited. This avoids us targeting another
             // process that has a recycled PID. This only checks our internal state, the Kill call below
             // activly checks if the process is still alive.
             if (GetHasExited(refresh: false))

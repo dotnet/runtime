@@ -2078,7 +2078,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         noway_assert(intArgRegNum == 0);
 
-        if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+        if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
             noway_assert((call->gtArgs.GetArgByIndex(0)->GetEarlyNode() == nullptr) ||
                          (call->gtArgs.GetArgByIndex(0)->GetEarlyNode()->TypeGet() == TYP_I_IMPL) ||
@@ -5248,7 +5248,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             //                                |
             //                               CNS(pIdAddr)
             //
-            // # Denotes the orginal node
+            // # Denotes the original node
             //
             void**   pIdAddr = nullptr;
             unsigned IdValue = info.compCompHnd->getFieldThreadLocalStoreID(symHnd, (void**)&pIdAddr);
@@ -8869,7 +8869,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             {
                 if (clsHnd == NO_CLASS_HANDLE)
                 {
-                    // A register-sized cpblk can be treated as an integer asignment.
+                    // A register-sized cpblk can be treated as an integer assignment.
                     asgType = TYP_I_IMPL;
                 }
                 else
@@ -11293,7 +11293,7 @@ DONE_MORPHING_CHILDREN:
 
                 if ((typ != TYP_STRUCT) && ((lclOffs + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
                 {
-                    // We will change the type of the node to match the orginal GT_IND type.
+                    // We will change the type of the node to match the original GT_IND type.
                     //
                     temp->gtType = typ;
 

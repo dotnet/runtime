@@ -23,7 +23,7 @@
 // reason about VARSET_TP as immutable values, and just copying the contents would
 // introduce sharing in the indirect case, which is usually not what's desired.  On
 // the other hand, there are many cases in which the RHS value has just been
-// created functionally, and the intialization/assignment is obviously its last
+// created functionally, and the initialization/assignment is obviously its last
 // use.  In these cases, allocating a new indirect representation for the lhs (if
 // it does not already have one) would be unnecessary and wasteful.  Thus, for both
 // initialization and assignment, we have normal versions, which do make copies to

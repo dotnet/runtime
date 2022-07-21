@@ -377,7 +377,7 @@ namespace System.Management
             }
             else
             {
-                //Now create the constuctor which accepts the key values
+                //Now create the constructor which accepts the key values
                 GenerateConstructorWithKeys();
 
                 //Also generate a constructor which accepts a scope and keys
@@ -2131,7 +2131,7 @@ namespace System.Management
             cctor.Comments.Add(new CodeCommentStatement(SR.CommentConstructors));
         }
         /// <summary>
-        ///This function create the constuctor which accepts the key values.
+        ///This function create the constructor which accepts the key values.
         ///public cons(UInt32 key_Key1, String key_Key2) :this(null,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
@@ -2189,7 +2189,7 @@ namespace System.Management
         }
 
         /// <summary>
-        ///This function create the constuctor which accepts a scope and key values.
+        ///This function create the constructor which accepts a scope and key values.
         ///public cons(ManagementScope scope,UInt32 key_Key1, String key_Key2) :this(scope,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
@@ -2464,7 +2464,7 @@ namespace System.Management
 
                         try
                         {
-                            classobj.Qualifiers["priveleges"].ToString();
+                            classobj.Qualifiers["privileges"].ToString();
                         }
                         catch (ManagementException e)
                         {
@@ -2649,7 +2649,7 @@ namespace System.Management
 
             try
             {
-                classobj.Qualifiers["priveleges"].ToString();
+                classobj.Qualifiers["privileges"].ToString();
             }
             catch (ManagementException e)
             {
@@ -2725,7 +2725,7 @@ namespace System.Management
             if (bPrivileges)
             {
                 //Generate the statement
-                //    Boolean bPriveleges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
+                //    Boolean bPrivileges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
                 cpre = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
                     new CodePropertyReferenceExpression(
                     new CodeVariableReferenceExpression(PrivateNamesUsed["LateBoundObject"].ToString()),
@@ -2779,7 +2779,7 @@ namespace System.Management
             string strClassObj = "classObj";
             bool bStatic = false;
             bool bPrivileges = false;
-            CodePropertyReferenceExpression cprePriveleges = null;
+            CodePropertyReferenceExpression cprePrivileges = null;
             CimType cimRetType = CimType.SInt8;                        // Initialized to remove warnings
             CodeTypeReference retRefType = null;
             bool isRetArray = false;
@@ -2877,8 +2877,8 @@ namespace System.Management
                 if (bPrivileges)
                 {
                     //Generate the statement
-                    //    Boolean bPriveleges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
-                    cprePriveleges = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
+                    //    Boolean bPrivileges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
+                    cprePrivileges = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
                         new CodePropertyReferenceExpression(
                         new CodeVariableReferenceExpression(bStatic ? strClassObj : PrivateNamesUsed["LateBoundObject"].ToString()),
                         PublicNamesUsed["ScopeProperty"].ToString()),
@@ -2886,9 +2886,9 @@ namespace System.Management
                         "EnablePrivileges");
 
                     cis.TrueStatements.Add(new CodeVariableDeclarationStatement("System.Boolean",
-                        PrivateNamesUsed["Privileges"].ToString(), cprePriveleges));
+                        PrivateNamesUsed["Privileges"].ToString(), cprePrivileges));
 
-                    cis.TrueStatements.Add(new CodeAssignStatement(cprePriveleges, new CodePrimitiveExpression(true)));
+                    cis.TrueStatements.Add(new CodeAssignStatement(cprePrivileges, new CodePrimitiveExpression(true)));
 
                 }
 
@@ -3179,7 +3179,7 @@ namespace System.Management
                 // Assign the privileges back
                 if (bPrivileges)
                 {
-                    cis.TrueStatements.Add(new CodeAssignStatement(cprePriveleges, new CodeVariableReferenceExpression(PrivateNamesUsed["Privileges"].ToString())));
+                    cis.TrueStatements.Add(new CodeAssignStatement(cprePrivileges, new CodeVariableReferenceExpression(PrivateNamesUsed["Privileges"].ToString())));
                 }
 
                 //Now check if there is a return value. If there is one then return it from the function
@@ -6147,7 +6147,7 @@ namespace System.Management
             {
                 if (bTimeSpanConversionFunctionsAdded == false)
                 {
-                    cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConvertionFunction));
+                    cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConversionFunction));
                     bTimeSpanConversionFunctionsAdded = true;
                     // Call this function to generate conversion function
                     GenerateTimeSpanConversionFunction();

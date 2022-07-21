@@ -706,7 +706,7 @@ C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 #if defined(TARGET_X86)
 // instrDescCns holds constant values for the emitter. The X86 compiler is unique in that it
 // may represent relocated pointer values with these constants. On the 64bit to 32 bit
-// cross-targetting jit, the constant value must be represented as a 64bit value in order
+// cross-targeting jit, the constant value must be represented as a 64bit value in order
 // to represent these pointers.
 typedef ssize_t cnsval_ssize_t;
 typedef size_t  cnsval_size_t;

@@ -7,34 +7,9 @@
         <target state="translated">Skierowanie tablicy z niezarządzanej do zarządzanej wymaga ustawienia pól „SizeParamIndex” lub „SizeConst” we właściwościach dla atrybutu„MarshalAsAttribute” lub wartości „ConstantElementCount” lub elementu „CountElementName” we właściwościach dla atrybutu „MarshalUsingAttribute”.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArraySizeParamIndexOutOfRange">
-        <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
-        <target state="translated">Wartość „SizeParamIndex” w atrybucie „MarshalAsAttribute” jest poza zakresem.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">Określony parametr musi być kierowany z zarządzanego do niezarządzanego i niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
-        <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
-        <target state="translated">Atrybuty „BlittableTypeAttribute” i „NativeMarshallingAttribute” wzajemnie się wykluczają.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
-        <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
-        <target state="translated">Typ „{0}” jest oznaczony wartościami atrybutów „BlittableTypeAttribute” i „NativeMarshallingAttribute”. Typ może mieć tylko jeden z tych dwóch atrybutów.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
-        <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="translated">Typ natywny z atrybutem „GenericContiguousCollectionMarshallerAttribute” musi mieć co najmniej jedną z dwóch metod skierowania, a także właściwość „ManagedValues” typu o wartości „Span&lt;T&gt;” dla niektórych elementów „T” i właściwość „NativeValueStorage” typu o wartości „Span&lt; byte&gt;”, aby umożliwić skierowanie typu zarządzanego.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
-        <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="translated">Typ natywny „{0}” musi być typem wartości i mieć konstruktora, który przyjmuje dwa parametry, jeden typu „{1}” i wartości „int” lub mieć metodę wystąpienia bez parametrów o nazwie „ToManaged”, która zwraca wartość „{1}” oraz właściwość „ManagedValues” typu „Span&lt;T&gt;” dla niektórych wartości „T” i właściwość „NativeValueStorage” typu „Span&lt;byte&gt;”</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
@@ -45,16 +20,6 @@
       <trans-unit id="ConstantAndElementCountInfoDisallowed">
         <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
         <target state="translated">Tylko jedna z wartości „ConstantElementCount” lub element „ElementCountInfo” może być użyty w atrybucie „MarshalUsingAttribute” dla danego elementu „ElementIndirectionDepth”</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">Określony parametr musi być skierowany z parametru zarządzanego do macierzystego, ale typ natywny „{0}” go nie obsługuje.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">Określony parametr musi być skierowany z parametru natywnego do zarządzanego, ale typ natywny „{0}” go nie obsługuje.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -132,21 +97,6 @@
         <target state="translated">Ciągu lub znak marshallingu bez jawnych informacji o marshallingu nie jest obsługiwany. Określ atrybuty „LibraryImportAttribute.StringMarshalling”, „LibraryImportAttribute.StringMarshallingCustomType”, „MarshalUsingAttribute” lub „MarshalAsAttribute”.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">Typ natywny „{0}” dla typu zarządzanego „{1}” musi być zamkniętym typem ogólnym lub mieć taką samą liczbę argumentów jak typ zarządzany.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedDescription">
-        <source>The '[Out]' attribute is only supported on array parameters.</source>
-        <target state="translated">Atrybut „[Out]” jest obsługiwany tylko w przypadku parametrów tablicy.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedMessage">
-        <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
-        <target state="translated">Atrybut „[Out]” nie jest obsługiwany w parametrze „{0}”.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">Marshalling środowiska uruchomieniowego musi być wyłączony w tym projekcie przez zastosowanie do zestawu atrybutu „System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute”, aby umożliwić marshalling tego typu.</target>
@@ -157,19 +107,9 @@
         <target state="translated">Typ abstrakcyjny pochodzący od elementu „SafeHandle” nie może być skierowany przez odwołanie. Podany typ musi być konkretny.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle">
-        <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="translated">Określony typ nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">Określony parametr musi być kierowany z niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
-        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje marshalling „In” z funkcją „CallerAllocatedBuffer” dla elementu „{1}”, ale nie zapewnia konstruktora z jednym parametrem, który przyjmuje element „{1}” i wartości „Span” typu „unmanaged” jako parametry</target>
         <note />
       </trans-unit>
     </body>

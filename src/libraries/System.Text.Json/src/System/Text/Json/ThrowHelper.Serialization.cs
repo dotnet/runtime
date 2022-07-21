@@ -411,6 +411,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty()
+        {
+            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+        }
+
+        [DoesNotReturn]
         public static void ThrowNotSupportedException(ref ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
         {
             string message = ex.Message;
@@ -636,12 +642,6 @@ namespace System.Text.Json
             {
                 ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
             }
-        }
-
-        [DoesNotReturn]
-        public static void ThrowNotSupportedException_BuiltInConvertersNotRooted(Type type)
-        {
-            throw new NotSupportedException(SR.Format(SR.BuiltInConvertersNotRooted, type));
         }
 
         [DoesNotReturn]

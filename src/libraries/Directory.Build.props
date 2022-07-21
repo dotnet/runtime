@@ -53,7 +53,7 @@
   <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
   <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
-    <!-- To suppress warnings about reseting the assembly version.-->
+    <!-- To suppress warnings about resetting the assembly version.-->
     <AssemblyVersion />
   </PropertyGroup>
 

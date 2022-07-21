@@ -1171,7 +1171,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         private static bool VerifyValidPunctuation(ref __DTString str)
         {
-            // Compatability Behavior. Allow trailing nulls and surrounding hashes
+            // Compatibility Behavior. Allow trailing nulls and surrounding hashes
             char ch = str.Value[str.Index];
             if (ch == '#')
             {
@@ -4570,7 +4570,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     // hh is used, but no AM/PM designator is specified.
                     // Assume the time is AM.
-                    // Don't throw exceptions in here becasue it is very confusing for the caller.
+                    // Don't throw exceptions in here because it is very confusing for the caller.
                     // I always got confused myself when I use "hh:mm:ss" to parse a time string,
                     // and ParseExact() throws on me (because I didn't use the 24-hour clock 'HH').
                     parseInfo.timeMark = TM.AM;

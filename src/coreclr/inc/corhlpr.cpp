@@ -26,7 +26,7 @@
 extern "C" {
 
 /***************************************************************************/
-/* Note that this construtor does not set the LocalSig, but has the
+/* Note that this constructor does not set the LocalSig, but has the
    advantage that it does not have any dependancy on EE structures.
    inside the EE use the FunctionDesc constructor */
 

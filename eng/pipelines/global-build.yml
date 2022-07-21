@@ -16,6 +16,7 @@ pr:
     - eng/pipelines/global-build.yml
     exclude:
     - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
     - eng/pipelines/coreclr/*.*

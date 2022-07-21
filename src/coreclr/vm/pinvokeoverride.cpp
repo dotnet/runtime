@@ -55,7 +55,7 @@ const void* PInvokeOverride::GetMethodImpl(const char* libraryName, const char* 
             const void* result = overrideImpl(libraryName, entrypointName);
             if (result != nullptr)
             {
-                LOG((LF_INTEROP, LL_INFO1000, "PInvoke overriden for: lib: %s, entry: %s \n", libraryName, entrypointName));
+                LOG((LF_INTEROP, LL_INFO1000, "PInvoke overridden for: lib: %s, entry: %s \n", libraryName, entrypointName));
                 return result;
             }
         }
