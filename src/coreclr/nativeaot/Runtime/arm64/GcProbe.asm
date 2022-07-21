@@ -68,8 +68,11 @@ PROBE_FRAME_SIZE    field 0
         str         $trashReg, [$threadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
-    ;; Undo the effects of an ALLOC_PROBE_FRAME. This may only be called within an epilog. Note that all
-    ;; registers are restored (apart for sp and pc), even volatiles.
+;;
+;; Remove the frame from a previous call to PUSH_PROBE_FRAME from the top of the stack and restore preserved
+;; registers and return value to their values from before the probe was called (while also updating any
+;; object refs or byrefs).
+;;
     MACRO
         POP_PROBE_FRAME
 
@@ -209,7 +212,7 @@ DoRhpGcProbe
     LEAF_END RhpGcStressHijack
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
+;; Instead, go through RhpGcStressHijack.
 ;; This worker performs the GC Stress work and returns to the original return address.
 ;;
 ;; Register state on entry:
