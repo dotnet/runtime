@@ -207,11 +207,15 @@ Bumping Emscripten version involves these steps:
 
 ## Upgrading NPM packages
 In folder `src\mono\wasm\runtime\`
-- delete `node_modules`
-- delete `package-lock.json`
-- run `npm install -g vsts-npm-auth`
-- run `npm outdated`
-- run `npm update`
+```sh
+rm -rf node_modules
+rm package-lock.json
+npm install -g vsts-npm-aut`
+vsts-npm-auth -config .npmrc
+npm npm cache clean --force
+npm outdated
+npm update
+```
 
 ## Code style
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
