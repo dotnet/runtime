@@ -827,12 +827,17 @@ namespace System.Tests
             double d = 123.0;
             Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => d.ToString("Y", null)); // Invalid format
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            Assert.Throws<FormatException>(() => d.ToString("E" + int.MaxValue.ToString()));
             long intMaxPlus1 = (long)int.MaxValue + 1;
             string intMaxPlus1String = intMaxPlus1.ToString();
             Assert.Throws<FormatException>(() => d.ToString("E" + intMaxPlus1String));
-
-            // Check larger overflowed value
-            Assert.Throws<FormatException>(() => d.ToString("EG4772185890"));
+            Assert.Throws<FormatException>(() => d.ToString("E4772185890"));
+            d.ToString("E999999999"); // Should not throw
+            d.ToString("E00000999999999"); // Should not throw
+            Assert.Throws<FormatException>(() => d.ToString("E1000000000"));
+            Assert.Throws<FormatException>(() => d.ToString("E000001000000000"));
         }
 
         [Theory]

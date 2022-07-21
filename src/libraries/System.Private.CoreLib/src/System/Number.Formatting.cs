@@ -2318,25 +2318,20 @@ namespace System
                         }
                     }
 
-                    // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 2147483647,
-                    // but it can begin with any number of 0s, and thus we may need to check more than two
+                    // Fallback for symbol and any length digits.  The digits value must be >= 0 && <= 999_999_999,
+                    // but it can begin with any number of 0s, and thus we may need to check more than 9
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
                     while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                     {
-                        // Quickly check if we are about to overflow
-                        if (n >= 214748364)
+                        // Check if we are about to overflow past our limit of 9 digits
+                        if (n >= 100_000_000)
                         {
-                            // if n is 214748364, we might still have a valid input in the range (2147483640,2147483647),
-                            // so we should continue. Otherwise, throw FormatException.
-                            bool potentialValidFormat = (n == 214748364 && format[i] <= '7');
-                            if (!potentialValidFormat)
-                            {
-                                throw new FormatException(SR.Argument_BadFormatSpecifier);
-                            }
+                            throw new FormatException(SR.Argument_BadFormatSpecifier);
                         }
                         n = ((n * 10) + format[i++] - '0');
+
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something
