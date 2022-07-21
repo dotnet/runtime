@@ -1153,7 +1153,8 @@ namespace System.Net.Http
 
         private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter, bool requestCancelled)
         {
-            if (waiter == null || waiter.ConnectionCancellationTokenSource == null) return;
+            int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
+            if (waiter?.ConnectionCancellationTokenSource is null || timeout == int.MaxValue) return;
 
             lock (waiter)
             {
@@ -1164,15 +1165,15 @@ namespace System.Net.Http
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms, " +
+                    Trace($"Cancelling a pending connection attempt with timeout of {timeout} ms, " +
                         $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
                 }
 
-                if (GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion > 0)
+                if (timeout > 0)
                 {
                     // Cancel after the specified timeout. This cancellation will not fire if the connection
                     // succeeds within the delay and the CTS becomes disposed.
-                    waiter.ConnectionCancellationTokenSource.CancelAfter(GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion);
+                    waiter.ConnectionCancellationTokenSource.CancelAfter(timeout);
                 }
                 else
                 {

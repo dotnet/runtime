@@ -47,7 +47,7 @@ namespace System.Net.Http
 
             public static int PendingConnectionTimeoutOnRequestCompletion { get; } = RuntimeSettingParser.QueryRuntimeSettingInt32(
                 "System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion",
-                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION", 15_000);
+                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION", 5000);
 
             public const int DefaultHttp2MaxStreamWindowSize = 16 * 1024 * 1024;
             public const double DefaultHttp2StreamWindowScaleThresholdMultiplier = 1.0;
