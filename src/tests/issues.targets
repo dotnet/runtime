@@ -2076,12 +2076,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/gcdump/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
-            <Issue>https://github.com/dotnet/runtime/issues/59296</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54801</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3667,6 +3661,12 @@
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
+            <Issue>WASM doesn't support diagnostics tracing</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
+            <Issue>WASM doesn't support diagnostics tracing</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
             <Issue>WASM doesn't support diagnostics tracing</Issue>
         </ExcludeList>
     </ItemGroup>
