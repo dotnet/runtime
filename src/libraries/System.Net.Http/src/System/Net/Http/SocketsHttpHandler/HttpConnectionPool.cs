@@ -1133,10 +1133,10 @@ namespace System.Net.Http
                 {
                     var value = (AltSvcHeaderValue?)parsedValue;
 
-                    lock (SyncObj)
+                    // 'clear' should be the only value present.
+                    if (value == AltSvcHeaderValue.Clear)
                     {
-                        // 'clear' should be the only value present.
-                        if (value == AltSvcHeaderValue.Clear)
+                        lock (SyncObj)
                         {
                             ExpireAltSvcAuthority();
                             Debug.Assert(_authorityExpireTimer != null || _disposed);
