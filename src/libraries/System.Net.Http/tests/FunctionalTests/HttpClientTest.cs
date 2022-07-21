@@ -821,7 +821,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Contains("ConnectTimeout", connectTimeoutException.Message);
 
             Assert.Null(connectTimeoutException.InnerException);
-            Assert.DoesNotContain("42", e.ToString());
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
         }
 
         [Fact]
