@@ -485,8 +485,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!ProcessAndValidateArguments())
             return false;
 
-        _assembliesToCompile = FilterAssemblies(Assemblies);
-        _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(_assembliesToCompile);
+        IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
+        managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
+        _assembliesToCompile = managedAssemblies.Where(f => !ShouldSkipForAOT(f)).ToList();
 
         if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
             return false;
@@ -583,39 +584,40 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
-    private IList<ITaskItem> FilterAssemblies(IEnumerable<ITaskItem> assemblies)
+    private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
         foreach (var asmItem in assemblies)
         {
-            if (ShouldSkip(asmItem))
+            if (ShouldSkipForAOT(asmItem))
             {
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
                     throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {asmItem.ItemSpec}");
 
                 Log.LogMessage(MessageImportance.Low, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
-                continue;
             }
-
-            string assemblyPath = asmItem.GetMetadata("FullPath");
-            using var assemblyFile = File.OpenRead(assemblyPath);
-            using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
-            if (!reader.HasMetadata)
+            else
             {
-                Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
-                continue;
+                string assemblyPath = asmItem.GetMetadata("FullPath");
+                using var assemblyFile = File.OpenRead(assemblyPath);
+                using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
+                if (!reader.HasMetadata)
+                {
+                    Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
+                    continue;
+                }
             }
 
             filteredAssemblies.Add(asmItem);
         }
 
         return filteredAssemblies;
-
-        static bool ShouldSkip(ITaskItem asmItem)
-            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
     }
 
-    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(IList<ITaskItem> assemblies)
+    private static bool ShouldSkipForAOT(ITaskItem asmItem)
+        => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
+
+    private IEnumerable<ITaskItem> EnsureAllAssembliesInTheSameDir(IEnumerable<ITaskItem> assemblies)
     {
         string firstAsmDir = Path.GetDirectoryName(assemblies.First().GetMetadata("FullPath")) ?? string.Empty;
         bool allInSameDir = assemblies.All(asm => Path.GetDirectoryName(asm.GetMetadata("FullPath")) == firstAsmDir);
