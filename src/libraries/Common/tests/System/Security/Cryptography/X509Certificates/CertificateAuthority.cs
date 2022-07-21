@@ -142,8 +142,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 _revocationList = new List<(byte[], DateTimeOffset)>();
             }
 
-            byte[] serial = certificate.GetSerialNumber();
-            Array.Reverse(serial);
+            byte[] serial = certificate.SerialNumberBytes.ToArray();
             _revocationList.Add((serial, revocationTime));
             _crl = null;
         }
@@ -219,8 +218,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             req.CertificateExtensions.Add(cdpExtension);
             req.CertificateExtensions.Add(aiaExtension);
 
-            byte[] serial = _cert.GetSerialNumber();
-            Array.Reverse(serial);
+            byte[] serial = _cert.SerialNumberBytes.ToArray();
 
             X509Certificate2 dispose = _cert;
 
@@ -762,9 +760,7 @@ SingleResponse ::= SEQUENCE {
                     }
 
                     // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
-                    byte[] serial = _cert.GetSerialNumber();
-                    Array.Reverse(serial);
-                    writer.WriteInteger(serial, s_context2);
+                    writer.WriteInteger(_cert.SerialNumberBytes.Span, s_context2);
                 }
                 else
                 {
