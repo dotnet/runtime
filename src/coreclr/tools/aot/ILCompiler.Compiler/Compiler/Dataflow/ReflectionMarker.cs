@@ -207,7 +207,8 @@ namespace ILCompiler.Dataflow
             }
 
             if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out requiresAttribute) &&
-                !_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
+                !_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute) &&
+                !_typeHierarchyDataFlow)
             {
                 var diagnosticContext = new DiagnosticContext(
                 origin,
