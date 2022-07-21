@@ -41,7 +41,7 @@ namespace System.Threading.RateLimiting
             _options = options ?? throw new ArgumentNullException(nameof(options));
             if (options.PermitLimit <= 0)
             {
-                throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to values greater than 0.");
+                throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.");
             }
             if (options.QueueLimit < 0)
             {
