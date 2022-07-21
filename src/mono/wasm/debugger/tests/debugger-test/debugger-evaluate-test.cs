@@ -504,7 +504,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateLocalsWithElementAccessTests
+    public class EvaluateLocalsWithIndexingTests
     {
         public class TestEvaluate
         {
@@ -1457,6 +1457,20 @@ namespace DebuggerTests
             int x = 5;
             int? x_null = null;
             int? x_val = x;
+        }
+    }
+
+    public static class TypeProperties
+    {
+        public class InstanceProperties
+        {
+            public string str = "aB.c[";
+        }
+
+        public static void Run()
+        {
+            var instance = new InstanceProperties();
+            var localString = "aB.c[";
         }
     }
 }

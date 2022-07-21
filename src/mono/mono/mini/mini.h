@@ -2780,7 +2780,7 @@ guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type);
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);
 
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
-void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg);
+void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
