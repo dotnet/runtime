@@ -77,6 +77,7 @@ namespace System.Threading.RateLimiting
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public abstract int GetAvailablePermits(TResource resource);
+        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> TranslateKey<TOuter>(System.Func<TOuter, TResource> keyAdapter) { throw null; }
         public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, System.Threading.CancellationToken cancellationToken);
     }

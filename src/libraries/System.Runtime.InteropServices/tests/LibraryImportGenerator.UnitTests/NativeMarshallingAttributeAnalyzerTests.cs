@@ -256,5 +256,19 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityRule).WithLocation(0).WithArguments("MarshallerType<U, V, W>", "ManagedType<T>"));
         }
+
+        [Fact]
+        public async Task UnrelatedAssemblyOrModuleTargetDiagnostic_DoesNotCauseException()
+        {
+            string source = """
+                using System.Reflection;
+                using System.Runtime.CompilerServices;
+
+                [assembly:AssemblyMetadata("MyKey", "MyValue")]
+                [module:SkipLocalsInit]
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
     }
 }

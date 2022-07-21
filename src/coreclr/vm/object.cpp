@@ -572,6 +572,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         {
             Object * nextObj = GCHeapUtilities::GetGCHeap ()->NextObj (this);
             if ((nextObj != NULL) &&
+                (nextObj->GetGCSafeMethodTable() != nullptr) &&
                 (nextObj->GetGCSafeMethodTable() != g_pFreeObjectMethodTable))
             {
                 // we need a read barrier here - to make sure we read the object header _after_
