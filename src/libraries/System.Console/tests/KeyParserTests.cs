@@ -582,6 +582,8 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
+            yield return (new byte[] { 46 }, new ConsoleKeyInfo('.', ConsoleKey.OemPeriod, false, false, false)); // . (period using Numeric Keypad))
             // Num Lock toggle
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
@@ -598,6 +600,7 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 77 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
         }
     }
 }
@@ -750,6 +753,8 @@ public class XTermData : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
+            yield return (new byte[] { 46 }, new ConsoleKeyInfo('.', ConsoleKey.OemPeriod, false, false, false)); // . (period using Numeric Keypad))
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
             yield return (new byte[] { 27, 79, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
@@ -765,6 +770,7 @@ public class XTermData : TerminalData
             yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 77 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
         }
     }
 }
@@ -818,6 +824,8 @@ public class LinuxConsole : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
+            yield return (new byte[] { 46 }, new ConsoleKeyInfo('.', ConsoleKey.OemPeriod, false, false, false)); // . (period using Numeric Keypad))
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
             yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
@@ -832,6 +840,7 @@ public class LinuxConsole : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
         }
     }
 }
@@ -1126,6 +1135,8 @@ public class RxvtUnicode : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
+            yield return (new byte[] { 46 }, new ConsoleKeyInfo('.', ConsoleKey.OemPeriod, false, false, false)); // . (period using Numeric Keypad))
             yield return (new byte[] { 27, 79, 112 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 79, 110 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
             yield return (new byte[] { 27, 79, 113 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
@@ -1141,6 +1152,7 @@ public class RxvtUnicode : TerminalData
             yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 77 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
         }
     }
 }
@@ -1266,6 +1278,8 @@ public class TmuxData : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
+            yield return (new byte[] { 46 }, new ConsoleKeyInfo('.', ConsoleKey.OemPeriod, false, false, false)); // . (period using Numeric Keypad))
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
             yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
@@ -1281,6 +1295,7 @@ public class TmuxData : TerminalData
             yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
             yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 77 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
         }
     }
 }
@@ -1404,7 +1419,7 @@ public class Tmux256ColorData : TerminalData
             yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false)); // Enter (using Numeric Keypad))
             yield return (new byte[] { 46 }, new ConsoleKeyInfo('.', ConsoleKey.OemPeriod, false, false, false)); // . (period using Numeric Keypad))
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
