@@ -9,8 +9,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides a type converter to convert <see cref='System.DateOnly'/>
-    /// objects to and from various other representations.
+    /// Provides a type converter to convert <see cref='System.DateOnly'/> objects to and from various other representations.
     /// </summary>
     public class DateOnlyConverter : TypeConverter
     {
@@ -19,6 +18,9 @@ namespace System.ComponentModel
         /// object in the given source type to a <see cref='System.DateOnly'/>
         /// object using the specified context.
         /// </summary>
+        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
+        /// <param name="sourceType">The type to convert from.</param>
+        /// <returns><see langword="true" /> if this object can perform the conversion; otherwise, <see langword="false" />.</returns>
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
@@ -28,6 +30,9 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object
         /// to the given destination type using the context.
         /// </summary>
+        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
+        /// <param name="destinationType">The type to convert to.</param>
+        /// <returns><see langword="true" /> if this converter can perform the conversion; otherwise, <see langword="false" />.</returns>
         public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
@@ -36,6 +41,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to a <see cref='System.DateOnly'/> object.
         /// </summary>
+        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
+        /// <param name="culture">An optional <see cref="T:System.Globalization.CultureInfo" />. If not supplied, the current culture is assumed.</param>
+        /// <param name="value">The <see cref="T:System.Object" /> to convert.</param>
+        /// <returns>An <see cref="T:System.Object" /> that represents the converted <paramref name="value" />.</returns>
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
@@ -77,6 +86,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object from a <see cref='System.DateOnly'/> object using the arguments.
         /// </summary>
+        /// <param name="context">An <see cref="T:System.ComponentModel.ITypeDescriptorContext" /> that provides a format context.</param>
+        /// <param name="culture">An optional <see cref="T:System.Globalization.CultureInfo" />. If not supplied, the current culture is assumed.</param>
+        /// <param name="value">The <see cref="T:System.Object" /> to convert.</param>
+        /// <param name="destinationType">The <see cref="T:System.Type" /> to convert the value to.</param>
+        /// <returns>An <see cref="T:System.Object" /> that represents the converted <paramref name="value" />.</returns>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is DateOnly dateOnly)
