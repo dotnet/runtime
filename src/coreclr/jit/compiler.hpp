@@ -3254,6 +3254,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
     {
         AssertionIndex index        = optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
+        optAssertionDscMap.Remove(*curAssertion);
+        //printf(", Removing optAssertionCount=%d\n", optAssertionCount);
+
         optAssertionCount--;
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaCount);
@@ -3334,6 +3337,9 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
             lclNum = curAssertion->op2.lcl.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
+
+        optAssertionDscMap.Remove(*curAssertion);
+        //printf(", Removing optAssertionCount=%d\n", optAssertionCount);
 
         optAssertionCount--;
     }
