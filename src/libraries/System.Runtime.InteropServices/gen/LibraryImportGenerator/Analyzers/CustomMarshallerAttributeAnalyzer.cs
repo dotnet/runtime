@@ -526,14 +526,14 @@ namespace Microsoft.Interop.Analyzers
 
                     AnalyzeMarshallerType(
                         marshallerTypeReporter,
-                        (INamedTypeSymbol)managedType,
+                        managedType,
                         (MarshalMode)attr.ConstructorArguments[1].Value,
                         (INamedTypeSymbol)marshallerType,
                         ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
                 }
             }
 
-            private void AnalyzeMarshallerType(DiagnosticReporter diagnosticReporter, INamedTypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
+            private void AnalyzeMarshallerType(DiagnosticReporter diagnosticReporter, ITypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
             {
                 if (marshallerType.IsReferenceType && marshallerType.IsStatic)
                 {
@@ -549,7 +549,7 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            private void AnalyzeStatelessMarshallerType(DiagnosticReporter diagnosticReporter, INamedTypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
+            private void AnalyzeStatelessMarshallerType(DiagnosticReporter diagnosticReporter, ITypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
             {
                 var (shape, methods) = StatelessMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, _compilation);
 
@@ -805,7 +805,7 @@ namespace Microsoft.Interop.Analyzers
             }
 
 #pragma warning disable CA1822 // Mark members as static
-            private void AnalyzeStatefulMarshallerType(DiagnosticReporter diagnosticReporter, INamedTypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
+            private void AnalyzeStatefulMarshallerType(DiagnosticReporter diagnosticReporter, ITypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
 #pragma warning restore CA1822 // Mark members as static
             {
             }
