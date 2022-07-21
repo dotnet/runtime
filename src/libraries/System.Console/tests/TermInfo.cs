@@ -15,7 +15,7 @@ public class TermInfo
     private const string TerminfoDatabaseFactoryType = TerminfoType + "+DatabaseFactory";
     private const string ParameterizedStringsType = TerminfoType + "+ParameterizedStrings";
     private const string FormatParamType = ParameterizedStringsType + "+FormatParam";
-    private const string TerminalFormatStringsType = "System.ConsolePal+TerminalFormatStrings";
+    private const string TerminalFormatStringsType = "System.TerminalFormatStrings";
     private const string ReadDatabaseMethod = "ReadDatabase";
     private const string EvaluateMethod = "Evaluate";
     private const string ForegroundFormatField = "Foreground";
