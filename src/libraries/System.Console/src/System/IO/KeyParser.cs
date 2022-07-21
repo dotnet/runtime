@@ -216,6 +216,7 @@ internal static class KeyParser
                 'j' => ConsoleKey.Multiply, // used by both xterm and rxvt
                 'k' => ConsoleKey.Add, // used by both xterm and rxvt
                 'm' => ConsoleKey.Subtract, // used by both xterm and rxvt
+                'M' => ConsoleKey.Enter, // used by xterm, rxvt (they have it Terminfo) and tmux (no record in Terminfo)
                 'n' => ConsoleKey.Delete, // rxvt
                 'o' => ConsoleKey.Divide, // used by both xterm and rxvt
                 'P' => ConsoleKey.F1,
