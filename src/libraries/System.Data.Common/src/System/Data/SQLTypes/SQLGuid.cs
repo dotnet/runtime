@@ -320,7 +320,7 @@ namespace System.Data.SqlTypes
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("m_value", ToByteArray());
+            info.AddValue("m_value", ToByteArray(), typeof(byte[]));
         }
 
         public static readonly SqlGuid Null;
