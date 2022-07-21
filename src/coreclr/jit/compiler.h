@@ -7345,7 +7345,7 @@ protected:
     template <typename Key,
               typename KeyFuncs,
               typename Value>
-    class AssertionDscHashTable : JitHashTable<Key, false ? AssertionDscKeyFuncs_Local : AssertionDscKeyFuncs_Global, Value>
+    class AssertionDscHashTable : JitHashTable<Key, KeyFuncs, Value>
     {
 
     };
@@ -7362,7 +7362,7 @@ protected:
     {
     };
 
-    template <bool isLocal>
+    //template <bool isLocal>
     struct AssertionDscKeyFuncs
     {
     public:
@@ -7370,7 +7370,7 @@ protected:
 
         static bool Equals(const AssertionDsc x, const AssertionDsc y)
         {
-            return AssertionDsc::Equals(x, y, !isLocal);
+            return AssertionDsc::Equals(x, y, !isLocalProp);
         }
 
         static unsigned GetHashCode(const AssertionDsc dsc)
@@ -7394,7 +7394,7 @@ protected:
     using AssertionDscMap_Global = JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex>;*/
 
     //typedef AssertionDscMap<false>
-    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<true>, AssertionIndex> AssertionDscMap;
+    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
 
 
     //TODO: Use pointer

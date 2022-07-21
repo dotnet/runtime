@@ -944,7 +944,7 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
  *  Initialize the assertion prop tracking logic.
  */
 
-//bool Compiler::AssertionDscKeyFuncs::isLocalProp = false;
+bool Compiler::AssertionDscKeyFuncs::isLocalProp = false;
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
@@ -959,21 +959,21 @@ void Compiler::optAssertionInit(bool isLocalProp)
     static const unsigned       upperBound  = ArrLen(countFunc) - 1;
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
-    //AssertionDscKeyFuncs::isLocalProp       = isLocalProp;
+    AssertionDscKeyFuncs::isLocalProp       = isLocalProp;
 
     optLocalAssertionProp = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
     optComplementaryAssertionMap =
         new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
 #ifdef DEBUG
-    if (isLocalProp)
+    //if (isLocalProp)
     {
-        optAssertionDscMap = AssertionDscMap<true>(getAllocator());
+        optAssertionDscMap = AssertionDscMap(getAllocator());
     }
-    else
+    /*else
     {
         optAssertionDscMap = AssertionDscMap<false>(getAllocator());
-    }
+    }*/
 #endif
 
     assert(NO_ASSERTION_INDEX == 0);
@@ -2029,11 +2029,11 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 #endif
     if (optLocalAssertionProp)
     {
-        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<true>::GetHashCode(*newAssertion));
+        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
     }
     else
     {
-        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs<false>::GetHashCode(*newAssertion));
+        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs/*<false>*/::GetHashCode(*newAssertion));
     }
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
     optAssertionCount++;
