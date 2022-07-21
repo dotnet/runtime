@@ -325,25 +325,31 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 {
     WRAPPER_NO_CONTRACT;
 
-    static Thread *const FatalErrorNotSeenYet = nullptr;
-    static Thread *const FatalErrorLoggingFinished = reinterpret_cast<Thread *>(1);
+    static size_t s_pCrashingThreadID;
 
-    static Thread *volatile s_pCrashingThread = FatalErrorNotSeenYet;
+    size_t currentThreadID;
+#ifndef TARGET_UNIX
+    currentThreadID = GetCurrentThreadId();
+#else
+    currentThreadID = PAL_GetCurrentOSThreadId();
+#endif
 
-    Thread *pThread = GetThreadNULLOk();
-    Thread *pPreviousThread = InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, pThread, FatalErrorNotSeenYet);
+    size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_pCrashingThreadID, currentThreadID, 0);
 
-    if (pPreviousThread == pThread)
+    // Let the first crashing thread take care of the reporting.
+    if (previousThreadID != 0)
     {
-        PrintToStdErrA("Fatal error while logging another fatal error.\n");
-        return;
-    }
-    else if (pPreviousThread != nullptr)
-    {
-        GCX_PREEMP(); // Avoid blocking other threads that may be trying to suspend the runtime
-        while (s_pCrashingThread != FatalErrorLoggingFinished)
+        if (previousThreadID == currentThreadID)
         {
-            ClrSleepEx(50, /*bAlertable*/ FALSE);
+            PrintToStdErrA("Fatal error while logging another fatal error.\n");
+        }
+        else
+        {
+            // Switch to preemptive mode to avoid blocking the crashing thread. It may try to suspend the runtime
+            // for GC during the stacktrace reporting.
+            GCX_PREEMP();
+
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
         }
         return;
     }
@@ -379,9 +385,10 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
         PrintToStdErrA("\n");
 
+        Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker(GetThread());
+            LogCallstackForLogWorker(pThread);
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
@@ -392,8 +399,6 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-
-    InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
