@@ -7,7 +7,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions.Generator;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
@@ -45,7 +47,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var regex = new Regex("""", timeout: TimeSpan.FromSeconds(10));
+        var regex = new Regex("""", matchTimeout: TimeSpan.FromSeconds(10), options: RegexOptions.None);
     }
 }" };
 
@@ -56,7 +58,18 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var regex = new Regex(timeout: TimeSpan.FromSeconds(10), pattern: """");
+        var regex = new Regex(matchTimeout: TimeSpan.FromSeconds(10), pattern: """", options: RegexOptions.None);
+    }
+}" };
+
+            yield return new object[] { @"using System;
+using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var regex = new Regex(matchTimeout: TimeSpan.FromSeconds(10), options: RegexOptions.None, pattern: """");
     }
 }" };
         }
@@ -83,7 +96,12 @@ partial class Program
     [RegexGenerator("""")]
     private static partial Regex MyRegex();
 }";
-            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
+            await new VerifyCS.Test(null, usePreviewLanguageVersion: true, numberOfIterations: 1)
+            {
+                TestCode = test,
+                FixedCode = fixedCode,
+                TestState = { OutputKind = OutputKind.ConsoleApplication },
+            }.RunAsync();
         }
 
         public static IEnumerable<object[]> StaticInvocationWithTimeoutTestData()
@@ -752,6 +770,7 @@ partial class Program
                 TestState =
                 {
                     Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex("""")|];" },
+                    OutputKind = OutputKind.ConsoleApplication,
                 },
                 FixedState =
                 {

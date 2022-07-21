@@ -73,9 +73,6 @@ namespace System.Text.RegularExpressions.Tests
         {
             public Test(ReferenceAssemblies? references, bool usePreviewLanguageVersion, int numberOfIterations)
             {
-                // Code Fixer generates partial methods that will need to use the source generator to be filled.
-                this.CompilerDiagnostics = CompilerDiagnostics.None;
-
                 if (references != null)
                 {
                     ReferenceAssemblies = references;
@@ -102,6 +99,9 @@ namespace System.Text.RegularExpressions.Tests
                     return solution;
                 });
             }
+
+            // CS8795: Partial method '{0}' must have an implementation part because it has accessibility modifiers.
+            protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics) => base.IsCompilerDiagnosticIncluded(diagnostic, compilerDiagnostics) && diagnostic.Id != "CS8795";
         }
     }
 }
