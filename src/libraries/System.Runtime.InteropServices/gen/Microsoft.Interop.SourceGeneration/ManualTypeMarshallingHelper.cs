@@ -322,7 +322,7 @@ namespace Microsoft.Interop
         /// <param name="entryType">The marshaller type.</param>
         /// <param name="compilation">The compilation to use to make new type symbols.</param>
         /// <returns>The resolved managed type, or <paramref name="managedType"/> if the provided type did not have any placeholders.</returns>
-        private static ITypeSymbol ReplaceGenericPlaceholderInType(ITypeSymbol managedType, INamedTypeSymbol entryType, Compilation compilation)
+        public static ITypeSymbol ReplaceGenericPlaceholderInType(ITypeSymbol managedType, INamedTypeSymbol entryType, Compilation compilation)
         {
             if (!entryType.IsGenericType)
             {

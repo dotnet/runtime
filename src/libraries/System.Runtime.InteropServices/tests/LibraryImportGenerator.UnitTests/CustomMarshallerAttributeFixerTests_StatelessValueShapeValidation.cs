@@ -639,5 +639,70 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(ElementTypesOfReturnTypesMustMatchRule).WithLocation(1).WithArguments("MarshallerType<T>.GetManagedValuesSource(ManagedType)", "MarshallerType<T>.GetManagedValuesDestination(ManagedType)"),
                 VerifyCS.Diagnostic(ElementTypesOfReturnTypesMustMatchRule).WithLocation(2).WithArguments("MarshallerType<T>.GetManagedValuesSource(ManagedType)", "MarshallerType<T>.GetManagedValuesDestination(ManagedType)"));
         }
+
+        [Fact]
+        public async Task LinearCollection_ModeThatUsesBidirectionalShape_ArrayTarget_DoesNotReportDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType<,>|}))]
+                [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType<,>|}))]
+                [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementRef, typeof({|#2:MarshallerType<,>|}))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T, TNative>
+                {
+                    public static nint AllocateContainerForUnmanagedElements(T[] m, out int numElements) => throw null;
+                
+                    public static ReadOnlySpan<int> GetManagedValuesSource(T[] m) => default;
+                
+                    public static Span<TNative> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+
+                    public static T[] AllocateContainerForManagedElements(nint unmanaged, out int numElements) => throw null;
+                
+                    public static ReadOnlySpan<TNative> GetUnmanagedValuesSource(nint unmanaged, int numElements) => default;
+                
+                    public static Span<int> GetManagedValuesDestination(T[] m) => default;
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task LinearCollection_ModeThatUsesBidirectionalShape_NestedGeneric_DoesNotReportDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType<>.Nested|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType<>.Nested|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#2:MarshallerType<>.Nested|}))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static class Nested
+                    {
+                        public static nint AllocateContainerForUnmanagedElements(ManagedType m, out int numElements) => throw null;
+                    
+                        public static ReadOnlySpan<int> GetManagedValuesSource(ManagedType m) => default;
+                    
+                        public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+
+                        public static ManagedType AllocateContainerForManagedElements(nint unmanaged, out int numElements) => throw null;
+                    
+                        public static ReadOnlySpan<T> GetUnmanagedValuesSource(nint unmanaged, int numElements) => default;
+                    
+                        public static Span<int> GetManagedValuesDestination(ManagedType m) => default;
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
     }
 }

@@ -493,7 +493,7 @@ namespace Microsoft.Interop.Analyzers
                     DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("managedType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
                     INamedTypeSymbol entryType = (INamedTypeSymbol)attributedSymbol;
 
-                    INamedTypeSymbol? managedTypeInAttribute = (INamedTypeSymbol?)attr.ConstructorArguments[0].Value;
+                    ITypeSymbol? managedTypeInAttribute = (ITypeSymbol?)attr.ConstructorArguments[0].Value;
                     if (managedTypeInAttribute is null)
                     {
                         managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeNonNullRule, entryType.ToDisplayString());
@@ -502,7 +502,7 @@ namespace Microsoft.Interop.Analyzers
 
                     if (!ManualTypeMarshallingHelper.TryResolveManagedType(
                         entryType,
-                        managedTypeInAttribute,
+                        ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeInAttribute, entryType, context.Compilation),
                         ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType),
                         (entryType, managedType) => managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeClosedOrMatchArityRule, managedType, entryType), out ITypeSymbol managedType))
                     {
@@ -753,7 +753,8 @@ namespace Microsoft.Interop.Analyzers
                             }
                         }
 
-                        ITypeSymbol expectedUnmanagedCollectionElementType = marshallerType.TypeArguments[marshallerType.TypeArguments.Length - 1];
+                        var (typeArguments, _) = marshallerType.GetAllTypeArgumentsIncludingInContainingTypes();
+                        ITypeSymbol expectedUnmanagedCollectionElementType = typeArguments[typeArguments.Length - 1];
                         VerifyUnmanagedCollectionElementType(methods.UnmanagedValuesSource, expectedUnmanagedCollectionElementType, _readOnlySpanOfT);
                         VerifyUnmanagedCollectionElementType(methods.UnmanagedValuesDestination, expectedUnmanagedCollectionElementType, _spanOfT);
 
