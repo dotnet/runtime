@@ -901,8 +901,9 @@ namespace System.Net.Http
                     throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
 #endif
-
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection);
+                // if the authority was sent as an option through alt-svc then include alt-used header
+                bool altUsedEncode = (_http3Authority == authority) ? true : false;
+                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, altUsedEncode);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())

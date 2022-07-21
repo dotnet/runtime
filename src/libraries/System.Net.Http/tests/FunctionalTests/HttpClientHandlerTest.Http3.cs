@@ -975,8 +975,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task H3_AltUsedHeader()
         {
-            var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
             Http3LoopbackConnection connection = null;
             HttpRequestData requestData = null;
@@ -984,10 +983,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 requestData = await connection.ReadRequestDataAsync(readBody: false);
-                Console.WriteLine(requestData);
+                Assert.NotNull(connection);
+                Assert.Throws<System.Exception>(() => requestData.GetSingleHeaderValue("alt-used"));
                 await connection.SendResponseAsync();
-
-
             });
 
             using HttpClient client = CreateHttpClient();
@@ -1000,17 +998,10 @@ namespace System.Net.Http.Functional.Tests
             };
 
            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
-            
-            
             response.EnsureSuccessStatusCode();
             Assert.Equal(HttpVersion.Version30, response.Version);
 
             await serverTask;
-            Assert.NotNull(connection);
-            Assert.DoesNotContain("alt-used", requestData.ToString());
-
-            SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
-            Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
             await connection.DisposeAsync();
         }
 
