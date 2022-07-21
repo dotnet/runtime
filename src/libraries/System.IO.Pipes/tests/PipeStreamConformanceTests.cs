@@ -708,6 +708,13 @@ namespace System.IO.Pipes.Tests
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task TwoServerInstances_OnceDisposed_Throws()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Dispose'ing of pipes with active operations in flight isn't a supported use case.
+                // It works with overlapped I/O but may not when we simulate the asynchrony.
+                return;
+            }
+
             string pipeName = GetUniquePipeName();
             NamedPipeServerStream server1 = CreateServerStream(pipeName, 2);
             using NamedPipeServerStream server2 = CreateServerStream(pipeName, 2);
