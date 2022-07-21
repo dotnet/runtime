@@ -1184,7 +1184,13 @@ namespace System.Net.Http
 
                 lock (SyncObj)
                 {
-                    if (_authorityExpireTimer == null && !_disposed) // _authorityExpireTimer is nulled out on disposal
+                    if (_disposed)
+                    {
+                        // avoid creating or touching _authorityExpireTimer after disposal
+                        return;
+                    }
+
+                    if (_authorityExpireTimer == null)
                     {
                         var thisRef = new WeakReference<HttpConnectionPool>(this);
 
@@ -1213,7 +1219,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        _authorityExpireTimer?.Change(nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
+                        _authorityExpireTimer.Change(nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
                     }
 
                     _http3Authority = nextAuthority;
