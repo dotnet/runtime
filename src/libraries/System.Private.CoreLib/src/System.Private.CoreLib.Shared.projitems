@@ -115,6 +115,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\OperationStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\StandardFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Ascii.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Ascii.CaseConversion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Ascii.Transcoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Ascii.Trimming.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Encoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
