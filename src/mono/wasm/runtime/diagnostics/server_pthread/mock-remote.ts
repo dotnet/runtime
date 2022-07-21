@@ -2,53 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import type { Mock, MockScriptEngine } from "../mock";
+import type { Mock } from "../mock";
 import { mock } from "../mock";
-import { createPromiseController } from "../../promise-controller";
 
-function expectAdvertise(data: string | ArrayBuffer) {
-    if (typeof (data) === "string") {
-        return data === "ADVR_V1";
+export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
+    if (monoDiagnosticsMock) {
+        const mockPrefix = "mock:";
+        const scriptURL = mockURL.substring(mockPrefix.length);
+        return import(scriptURL).then((mockModule) => {
+            const script = mockModule.default;
+            return mock(script, { trace: true });
+        });
     } else {
-        const view = new Uint8Array(data);
-        const ADVR_V1 = Array.from("ADVR_V1\0").map((c) => c.charCodeAt(0));
-        return view.length >= ADVR_V1.length && ADVR_V1.every((v, i) => v === view[i]);
+        return Promise.resolve(undefined as unknown as Mock);
     }
 }
 
-const scriptPC = createPromiseController<void>().promise_control;
-const scriptPCunfulfilled = createPromiseController<void>().promise_control;
-
-const script: ((engine: MockScriptEngine) => Promise<void>)[] = [
-    async (engine) => {
-        await engine.waitForSend(expectAdvertise);
-        engine.reply(JSON.stringify({
-            command_set: "EventPipe", command: "CollectTracing2",
-            circularBufferMB: 1,
-            format: 1,
-            requestRundown: true,
-            providers: [
-                {
-                    keywords: [0, 0],
-                    logLevel: 5,
-                    provider_name: "WasmHello",
-                    filter_data: "EventCounterIntervalSec=1"
-                }
-            ]
-        }));
-        scriptPC.resolve();
-    },
-    async (engine) => {
-        await engine.waitForSend(expectAdvertise);
-        await scriptPC.promise;
-        engine.reply(JSON.stringify({ "command_set": "Process", "command": "ResumeRuntime" }));
-        // engine.close();
-    },
-    async (engine) => {
-        await engine.waitForSend(expectAdvertise);
-        await scriptPCunfulfilled.promise;
-    }
-];
-
-/// a mock script that simulates the initial part of the diagnostic server protocol
-export const mockScript = monoDiagnosticsMock ? mock(script, { trace: true }) : undefined as unknown as Mock;

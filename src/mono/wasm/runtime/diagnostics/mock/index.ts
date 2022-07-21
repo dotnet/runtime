@@ -3,6 +3,10 @@
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
+import { createMockEnvironment } from "./environment";
+import type { MockEnvironment, MockScriptConnection } from "./export-types";
+import { assertNever } from "../../types";
+
 export interface MockRemoteSocket extends EventTarget {
     addEventListener<T extends keyof WebSocketEventMap>(type: T, listener: (this: MockRemoteSocket, ev: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
     addEventListener(event: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
@@ -20,14 +24,11 @@ interface MockOptions {
     readonly trace: boolean;
 }
 
-export interface MockScriptEngine {
-    waitForSend(filter: (data: string | ArrayBuffer) => boolean): Promise<void>;
-    waitForSend<T>(filter: (data: string | ArrayBuffer) => boolean, extract: (data: string | ArrayBuffer) => T): Promise<T>;
-    reply(data: string | ArrayBuffer): void;
-}
+type MockConnectionScript = (engine: MockScriptConnection) => Promise<void>;
+export type MockScript = (env: MockEnvironment) => MockConnectionScript[];
 
-let MockImplConstructor: new (script: ((engine: MockScriptEngine) => Promise<void>)[], options?: MockOptions) => Mock;
-export function mock(script: ((engine: MockScriptEngine) => Promise<void>)[], options?: MockOptions): Mock {
+let MockImplConstructor: new (script: MockScript, options?: MockOptions) => Mock;
+export function mock(script: MockScript, options?: MockOptions): Mock {
     if (monoDiagnosticsMock) {
         if (!MockImplConstructor) {
             class MockScriptEngineSocketImpl implements MockRemoteSocket {
@@ -72,7 +73,7 @@ export function mock(script: ((engine: MockScriptEngine) => Promise<void>)[], op
                 }
             }
 
-            class MockScriptEngineImpl implements MockScriptEngine {
+            class MockScriptEngineImpl implements MockScriptConnection {
                 readonly socket: MockRemoteSocket;
                 // eventTarget that the MockReplySocket will dispatch to
                 readonly eventTarget: EventTarget = new EventTarget();
@@ -82,14 +83,28 @@ export function mock(script: ((engine: MockScriptEngine) => Promise<void>)[], op
                     this.socket = new MockScriptEngineSocketImpl(this);
                 }
 
-                reply(data: string | ArrayBuffer) {
+                reply(data: ArrayBuffer | Uint8Array) {
                     if (this.trace) {
                         console.debug(`mock ${this.ident} reply:`, data);
                     }
-                    this.eventTarget.dispatchEvent(new MessageEvent("message", { data }));
+                    let sendData: ArrayBuffer;
+                    if (typeof data === "object" && data instanceof ArrayBuffer) {
+                        sendData = new ArrayBuffer(data.byteLength);
+                        const sendDataView = new Uint8Array(sendData);
+                        const dataView = new Uint8Array(data);
+                        sendDataView.set(dataView);
+                    } else if (typeof data === "object" && data instanceof Uint8Array) {
+                        sendData = new ArrayBuffer(data.byteLength);
+                        const sendDataView = new Uint8Array(sendData);
+                        sendDataView.set(data);
+                    } else {
+                        console.warn(`mock ${this.ident} reply got wrong kind of reply data, expected ArrayBuffer`, data);
+                        assertNever(data);
+                    }
+                    this.eventTarget.dispatchEvent(new MessageEvent("message", { data: sendData }));
                 }
 
-                async waitForSend(filter: (data: string | ArrayBuffer) => boolean): Promise<void> {
+                async waitForSend<T = void>(filter: (data: ArrayBuffer) => boolean, extract?: (data: ArrayBuffer) => T): Promise<T> {
                     const trace = this.trace;
                     if (trace) {
                         console.debug(`mock ${this.ident} waitForSend`);
@@ -102,21 +117,32 @@ export function mock(script: ((engine: MockScriptEngine) => Promise<void>)[], op
                             resolve(event as MessageEvent<string | ArrayBuffer>);
                         }, { once: true });
                     });
-                    if (!filter(event.data)) {
+                    const data = event.data;
+                    if (typeof data === "string") {
+                        console.warn(`mock ${this.ident} waitForSend got string:`, data);
+                        throw new Error("mock script connection received string data");
+                    }
+                    if (!filter(data)) {
                         throw new Error("Unexpected data");
                     }
-                    return;
+                    if (extract) {
+                        return extract(data);
+                    }
+                    return undefined as any as T;
                 }
             }
 
             MockImplConstructor = class MockImpl implements Mock {
                 openCount: number;
                 engines: MockScriptEngineImpl[];
+                connectionScripts: MockConnectionScript[];
                 readonly trace: boolean;
-                constructor(public readonly script: ((engine: MockScriptEngine) => Promise<void>)[], options?: MockOptions) {
+                constructor(public readonly mockScript: MockScript, options?: MockOptions) {
+                    const env: MockEnvironment = createMockEnvironment();
+                    this.connectionScripts = mockScript(env);
                     this.openCount = 0;
                     this.trace = options?.trace ?? false;
-                    const count = script.length;
+                    const count = this.connectionScripts.length;
                     this.engines = new Array<MockScriptEngineImpl>(count);
                     for (let i = 0; i < count; ++i) {
                         this.engines[i] = new MockScriptEngineImpl(this.trace, i);
@@ -131,7 +157,8 @@ export function mock(script: ((engine: MockScriptEngine) => Promise<void>)[], op
                 }
 
                 async run(): Promise<void> {
-                    await Promise.all(this.script.map((script, i) => script(this.engines[i])));
+                    const scripts = this.connectionScripts;
+                    await Promise.all(scripts.map((script, i) => script(this.engines[i])));
                 }
             };
         }

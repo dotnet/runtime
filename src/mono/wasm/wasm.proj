@@ -354,7 +354,7 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/*.ts"
-		   Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
+		   Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/diagnostics-mock.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/tsconfig.*"
 		   Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>

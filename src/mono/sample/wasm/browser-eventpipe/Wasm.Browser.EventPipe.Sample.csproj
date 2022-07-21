@@ -13,16 +13,25 @@
     <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
 
+  <PropertyGroup>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == ''">true</MonoDiagnosticsMock>
+  </PropertyGroup>
+
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="mock.js" Condition="'$(MonoDiagnosticsMock)' == 'true'"/>
     <WasmExtraConfig Condition="true" Include="environment_variables" Value='
 {
   "MONO_LOG_LEVEL": "warning",
   "MONO_LOG_MASK": "all"
 }' />
-    <WasmExtraConfig Condition="true" Include="diagnostic_options" Value='
+    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' != 'true'" Include="diagnostic_options" Value='
 {
-  "server": { "suspend": false, "connect_url": "ws://localhost:8088/diagnostics" }
+  "server": { "suspend": true, "connect_url": "ws://localhost:8088/diagnostics" }
+}' />
+    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' == 'true'" Include="diagnostic_options" Value='
+{
+  "server": { "suspend": false, "connect_url": "mock:./mock.js" }
 }' />
     <WasmExtraConfig Condition="false" Include="diagnostic_options" Value='
 {

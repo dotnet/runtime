@@ -9,7 +9,8 @@ export interface CommonSocket {
     removeEventListener<T extends keyof WebSocketEventMap>(type: T, listener: (this: CommonSocket, ev: WebSocketEventMap[T]) => any): void;
     removeEventListener(event: string, listener: EventListenerOrEventListenerObject): void;
     dispatchEvent(evt: Event): boolean;
-    send(data: string | ArrayBuffer | Uint8Array | Blob | DataView): void;
+    // send is more general and can send a string, but we should only be sending binary data
+    send(data: ArrayBuffer | Uint8Array /*| Blob | DataView*/): void;
     close(): void;
 }
 

@@ -86,7 +86,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
     const data = ev.data;
     if (isMonoWorkerMessageChannelCreated(data)) {
-        console.debug("ONO_WASM: received the channel created message", data, worker);
+        console.debug("MONO_WASM: received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthread_id = data[monoSymbol].thread_id;
         const thread = addThread(pthread_id, worker, port);

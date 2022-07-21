@@ -47,6 +47,8 @@ export interface EventPipeCollectTracingCommandProvider {
     filter_data: string;
 }
 
+export type RemoveCommandSetAndId<T extends ProtocolClientCommandBase> = Omit<T, "command_set" | "command">;
+
 export type ProtocolClientCommand = ProcessCommand | EventPipeCommand;
 
 export function isDiagnosticCommandBase(x: object): x is ProtocolClientCommandBase {

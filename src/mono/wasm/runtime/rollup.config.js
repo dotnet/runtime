@@ -105,6 +105,9 @@ const typesConfig = {
     plugins: [dts()],
 };
 
+
+let diagnosticMockTypesConfig = undefined;
+
 if (isDebug) {
     // export types also into the source code and commit to git
     // so that we could notice that the API changed and review it
@@ -114,6 +117,21 @@ if (isDebug) {
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
+
+    // export types into the source code and commit to git
+    diagnosticMockTypesConfig = {
+        input: "./diagnostics/mock/export-types.ts",
+        output: [
+            {
+                format: "es",
+                file: "./diagnostics-mock.d.ts",
+                banner: banner_dts,
+                plugins: [alwaysLF(), writeOnChangePlugin()],
+            }
+        ],
+        external: externalDependencies,
+        plugins: [dts()],
+    };
 }
 
 /* Web Workers */
@@ -139,7 +157,8 @@ const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => make
 const allConfigs = [
     iffeConfig,
     typesConfig,
-].concat(workerConfigs);
+].concat(workerConfigs)
+    .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.

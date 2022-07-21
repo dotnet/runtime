@@ -9,6 +9,7 @@ import {
 } from "./ipc-protocol/types";
 import Magic from "./ipc-protocol/magic";
 import Parser from "./ipc-protocol/base-parser";
+import { assertNever } from "../../types";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
 
@@ -173,14 +174,19 @@ class ProtocolSocketImpl implements ProtocolSocket {
     private readonly messageListener: (this: CommonSocket, ev: MessageEvent) => void = this.onMessage.bind(this);
     constructor(private readonly sock: CommonSocket) { }
 
-    onMessage(this: ProtocolSocketImpl, ev: MessageEvent): void {
+    onMessage(this: ProtocolSocketImpl, ev: MessageEvent<ArrayBuffer | Blob | string>): void {
+        const data = ev.data;
         console.debug("MONO_WASM: protocol socket received message", ev.data);
-        if (typeof ev.data === "object" && ev.data instanceof ArrayBuffer) {
-            this.onArrayBuffer(ev.data);
-        } else if (typeof ev.data === "object" && ev.data instanceof Blob) {
-            ev.data.arrayBuffer().then(this.onArrayBuffer.bind(this));
+        if (typeof data === "object" && data instanceof ArrayBuffer) {
+            this.onArrayBuffer(data);
+        } else if (typeof data === "object" && data instanceof Blob) {
+            data.arrayBuffer().then(this.onArrayBuffer.bind(this));
+        } else if (typeof data === "string") {
+            // otherwise it's string, ignore it.
+            console.debug("MONO_WASM: protocol socket received string message; ignoring it", ev.data);
+        } else {
+            assertNever(data);
         }
-        // otherwise it's string, ignore it.
     }
 
     dispatchEvent(evt: Event): boolean {

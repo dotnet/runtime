@@ -4,7 +4,7 @@
 /// <reference lib="webworker" />
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { assertNever, mono_assert } from "../../types";
+import { assertNever } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
 import { Module } from "../../imports";
 import cwraps from "../../cwraps";
@@ -15,9 +15,9 @@ import {
     isDiagnosticMessage
 } from "../shared/controller-commands";
 
-import { mockScript } from "./mock-remote";
-import type { MockRemoteSocket } from "../mock";
-import { createPromiseController } from "../../promise-controller";
+import { importAndInstantiateMock } from "./mock-remote";
+import type { Mock, MockRemoteSocket } from "../mock";
+import { PromiseAndController, createPromiseController } from "../../promise-controller";
 import {
     isEventPipeCommand,
     isProcessCommand,
@@ -30,7 +30,6 @@ import {
     EventPipeCommandCollectTracing2,
 } from "./protocol-client-commands";
 import { makeEventPipeStreamingSession } from "./streaming-session";
-import parseMockCommand from "./mock-command-parser";
 import { CommonSocket } from "./common-socket";
 import {
     createProtocolSocket, dotnetDiagnosticsServerProtocolCommandEvent,
@@ -45,15 +44,9 @@ import {
     ParseClientCommandResult,
 } from "./ipc-protocol/parser";
 import {
+    createAdvertise,
     createBinaryCommandOKReply,
 } from "./ipc-protocol/serializer";
-
-function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
-    return new Promise((resolve) => {
-        const listener = (event: Event) => { resolve(event as MessageEvent<string | ArrayBuffer>); };
-        src.addEventListener("message", listener, { once: true });
-    });
-}
 
 function addOneShotProtocolCommandEventListener(src: EventTarget): Promise<ProtocolCommandEvent> {
     return new Promise((resolve) => {
@@ -75,13 +68,13 @@ export interface DiagnosticServer {
 
 class DiagnosticServerImpl implements DiagnosticServer {
     readonly websocketUrl: string;
-    readonly mocked: boolean;
+    readonly mocked: Promise<Mock> | undefined;
     runtimeResumed = false;
 
-    constructor(websocketUrl: string) {
+    constructor(websocketUrl: string, mockPromise?: Promise<Mock>) {
         this.websocketUrl = websocketUrl;
         pthread_self.addEventListenerFromBrowser(this.onMessageFromMainThread.bind(this));
-        this.mocked = monoDiagnosticsMock && websocketUrl.startsWith("mock:");
+        this.mocked = monoDiagnosticsMock ? mockPromise : undefined;
     }
 
     private startRequestedController = createPromiseController<void>().promise_control;
@@ -126,7 +119,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     async openSocket(): Promise<CommonSocket> {
         if (monoDiagnosticsMock && this.mocked) {
-            return mockScript.open();
+            return (await this.mocked).open();
         } else {
             const sock = new WebSocket(this.websocketUrl);
             // TODO: add an "error" handler here - if we get readyState === 3, the connection failed.
@@ -142,12 +135,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
             const connNum = this.openCount++;
             console.debug("MONO_WASM: opening websocket and sending ADVR_V1", connNum);
             const ws = await this.openSocket();
-            let p: Promise<MessageEvent<string | ArrayBuffer>> | Promise<ProtocolCommandEvent>;
-            if (monoDiagnosticsMock && this.mocked) {
-                p = addOneShotMessageEventListener(ws);
-            } else {
-                p = addOneShotProtocolCommandEventListener(createProtocolSocket(ws));
-            }
+            const p = addOneShotProtocolCommandEventListener(createProtocolSocket(ws));
             this.sendAdvertise(ws);
             const message = await p;
             console.debug("MONO_WASM: received advertising response: ", message, connNum);
@@ -158,7 +146,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    async parseAndDispatchMessage(ws: CommonSocket, connNum: number, message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent): Promise<void> {
+    async parseAndDispatchMessage(ws: CommonSocket, connNum: number, message: ProtocolCommandEvent): Promise<void> {
         try {
             const cmd = this.parseCommand(message, connNum);
             if (cmd === null) {
@@ -178,52 +166,25 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     sendAdvertise(ws: CommonSocket) {
-        const BUF_LENGTH = 34;
-        const buf = new ArrayBuffer(BUF_LENGTH);
-        const view = new Uint8Array(buf);
-        let pos = 0;
-        const text = "ADVR_V1";
-        for (let i = 0; i < text.length; i++) {
-            view[pos++] = text.charCodeAt(i);
-        }
-        view[pos++] = 0; // nul terminator
+        /* FIXME: don't use const fake guid and fake process id. In dotnet-dsrouter the pid is used
+         * as a dictionary key,so if we ever supprt multiple runtimes, this might need to change.
+        */
         const guid = "C979E170-B538-475C-BCF1-B04A30DA1430";
-        guid.split("-").forEach((part) => {
-            // FIXME: I'm sure the endianness is wrong here
-            for (let i = 0; i < part.length; i += 2) {
-                const idx = part.length - i - 2; // go through the pieces backwards
-                view[pos++] = parseInt(part.substring(idx, idx + 2), 16);
-            }
-        });
-        // "process ID" in 2 32-bit parts
-        const pid = [0, 1234]; // hi, lo
-        for (let i = 0; i < pid.length; i++) {
-            const j = pid[pid.length - i - 1]; //lo, hi
-            view[pos++] = j & 0xFF;
-            view[pos++] = (j >> 8) & 0xFF;
-            view[pos++] = (j >> 16) & 0xFF;
-            view[pos++] = (j >> 24) & 0xFF;
-        }
-        view[pos++] = 0;
-        view[pos++] = 0; // two reserved zero bytes
-        mono_assert(pos == BUF_LENGTH, "did not format ADVR_V1 correctly");
+        const processIdLo = 0;
+        const processIdHi = 1234;
+        const buf = createAdvertise(guid, [processIdLo, processIdHi]);
         ws.send(buf);
-
     }
 
-    parseCommand(message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
-        if (typeof message.data === "string") {
-            return parseMockCommand(message.data);
+    parseCommand(message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
+        console.debug("MONO_WASM: parsing byte command: ", message.data, connNum);
+        const result = parseProtocolCommand(message.data);
+        console.debug("MONO_WASM: parsied byte command: ", result, connNum);
+        if (result.success) {
+            return result.result;
         } else {
-            console.debug("MONO_WASM: parsing byte command: ", message.data, connNum);
-            const result = parseProtocolCommand(message.data);
-            console.debug("MONO_WASM: parsied byte command: ", result, connNum);
-            if (result.success) {
-                return result.result;
-            } else {
-                console.warn("MONO_WASM: failed to parse command: ", result.error, connNum);
-                return null;
-            }
+            console.warn("MONO_WASM: failed to parse command: ", result.error, connNum);
+            return null;
         }
     }
 
@@ -253,7 +214,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     // dispatch EventPipe commands received from the diagnostic client
-    async dispatchEventPipeCommand(ws: WebSocket | MockRemoteSocket, cmd: EventPipeClientCommandBase): Promise<void> {
+    async dispatchEventPipeCommand(ws: CommonSocket, cmd: EventPipeClientCommandBase): Promise<void> {
         if (isEventPipeCommandCollectTracing2(cmd)) {
             await this.collectTracingEventPipe(ws, cmd);
         } else if (isEventPipeCommandStopTracing(cmd)) {
@@ -263,7 +224,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    postClientReplyOK(ws: WebSocket | MockRemoteSocket, payload?: Uint8Array): void {
+    postClientReplyOK(ws: CommonSocket, payload?: Uint8Array): void {
         // FIXME: send a binary response for non-mock sessions!
         ws.send(createBinaryCommandOKReply(payload));
     }
@@ -324,12 +285,16 @@ function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ParseC
 export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
     const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
     console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
-    const server = new DiagnosticServerImpl(websocketUrl);
+    let mock: PromiseAndController<Mock> | undefined = undefined;
     if (monoDiagnosticsMock && websocketUrl.startsWith("mock:")) {
-        queueMicrotask(() => {
-            mockScript.run();
+        mock = createPromiseController<Mock>();
+        queueMicrotask(async () => {
+            const m = await importAndInstantiateMock(websocketUrl);
+            mock!.promise_control.resolve(m);
+            m.run();
         });
     }
+    const server = new DiagnosticServerImpl(websocketUrl, mock?.promise);
     queueMicrotask(() => {
         server.serverLoop();
     });
