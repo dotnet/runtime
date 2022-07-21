@@ -130,7 +130,7 @@ internal sealed unsafe class MsQuicApi
                 if (!IsQuicSupported && NativeLibrary.TryGetExport(msQuicHandle, "MsQuicClose", out IntPtr msQuicClose))
                 {
                     // Gracefully close the API table
-                    ((delegate*unmanaged[Cdecl]<QUIC_API_TABLE*, void>)msQuicClose)(apiTable);
+                    ((delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void>)msQuicClose)(apiTable);
                 }
             }
 
@@ -149,7 +149,7 @@ internal sealed unsafe class MsQuicApi
 
     private static bool IsTls13Disabled(bool isServer)
     {
-    #if TARGET_WINDOWS
+#if TARGET_WINDOWS
         string SChannelTls13RegistryKey = isServer
             ? @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
             : @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
@@ -170,7 +170,7 @@ internal sealed unsafe class MsQuicApi
         {
             return true;
         }
-    #endif
+#endif
         return false;
     }
 }
