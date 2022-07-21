@@ -13,10 +13,9 @@ namespace System.IO.Compression
         /// </summary>
         Read,
         /// <summary>
-        /// Only supports the creation of new archives.
-        /// Only writing to newly created entries in the archive is permitted.
-        /// Each entry in the archive can only be opened for writing once.
-        /// If only one entry is written to at a time, data will be written to the underlying stream or file as soon as it is available.
+        /// Only supports appending new entries to a new or existing archive. Only writing to these newly-created entries is permitted.
+        /// Each such entry can only be opened for writing once, and only one entry may be open at a time.
+        /// Data written to entries will be directly written through to the underlying stream or file.
         /// The underlying stream must be writable, but need not be seekable.
         /// </summary>
         Create,
