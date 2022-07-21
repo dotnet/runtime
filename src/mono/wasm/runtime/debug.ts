@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import Configuration from "consts:configuration";
 import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
@@ -363,7 +364,9 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
         return;
     }
 
-    console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
+    if (Configuration === "Debug") {
+        console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
+    }
 }
 
 function _readSymbolMapFile(filename: string): void {
@@ -381,9 +384,11 @@ function _readSymbolMapFile(filename: string): void {
         console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
     } catch (error: any) {
         if (error.errno == 44) // NOENT
-            console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
-        else
-            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+            if (Configuration === "Debug") {
+                console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
+            }
+            else
+                console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
         return;
     }
 }

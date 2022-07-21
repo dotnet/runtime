@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
+import Configuration from "consts:configuration";
 import { fetch_like } from "./polyfills";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 import { afterThreadInitTLS } from "./pthreads/worker";
@@ -78,11 +79,16 @@ export function setImportsAndExports(
     // script location
     runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
     anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    console.trace(`MONO_WASM: starting script ${replacements.scriptUrl}`);
-    console.trace(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
+    if (Configuration === "Debug") {
+        console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
+        console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
+    }
     if (anyModule.__locateFile === anyModule.locateFile) {
-        // it's our early version from dotnet.es6.pre.js, we could replace it
-        anyModule.locateFile = runtimeHelpers.locateFile = (path) => runtimeHelpers.scriptDirectory + path;
+        // above it's our early version from dotnet.es6.pre.js, we could replace it with better
+        anyModule.locateFile = runtimeHelpers.locateFile = (path) => {
+            if (isPathAbsolute(path)) return path;
+            return runtimeHelpers.scriptDirectory + path;
+        };
     } else {
         // we use what was given to us
         runtimeHelpers.locateFile = anyModule.locateFile;
@@ -169,6 +175,23 @@ export function detectScriptDirectory(replacements: EarlyReplacements): string {
     }
     replacements.scriptUrl = normalizeFileUrl(replacements.scriptUrl);
     return normalizeDirectoryUrl(replacements.scriptUrl);
+}
+
+const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;
+const windowsAbsoluteRx = /[a-zA-Z]:[\\/]/;
+function isPathAbsolute(path: string): boolean {
+    if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
+        // unix /x.json
+        // windows \x.json
+        // windows C:\x.json
+        // windows C:/x.json
+        return path.startsWith("/") || path.startsWith("\\") || path.indexOf("///") !== -1 || windowsAbsoluteRx.test(path);
+    }
+
+    // anything with protocol is always absolute
+    // windows file:///C:/x.json
+    // windows http://C:/x.json
+    return protocolRx.test(path);
 }
 
 let monoConfig: MonoConfig = {} as any;
