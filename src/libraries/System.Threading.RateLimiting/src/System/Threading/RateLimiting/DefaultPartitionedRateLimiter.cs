@@ -34,12 +34,19 @@ namespace System.Threading.RateLimiting
 
         public DefaultPartitionedRateLimiter(Func<TResource, RateLimitPartition<TKey>> partitioner,
             IEqualityComparer<TKey>? equalityComparer = null)
+            : this(partitioner, equalityComparer, TimeSpan.FromMilliseconds(100))
+        {
+        }
+
+        // Extra ctor for testing purposes, primarily used when wanting to test the timer manually
+        private DefaultPartitionedRateLimiter(Func<TResource, RateLimitPartition<TKey>> partitioner,
+            IEqualityComparer<TKey>? equalityComparer, TimeSpan timerInterval)
         {
             _limiters = new Dictionary<TKey, Lazy<RateLimiter>>(equalityComparer);
             _partitioner = partitioner;
 
             // TODO: Figure out what interval we should use
-            _timer = new TimerAwaitable(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100));
+            _timer = new TimerAwaitable(timerInterval, timerInterval);
             _timerTask = RunTimer();
         }
 

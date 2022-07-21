@@ -62,7 +62,7 @@ class EventPipeFileSession implements EventPipeSession {
         this._state = State.Started;
         start_streaming(this._sessionID);
         console.debug(`EventPipe session ${this.sessionID} started`);
-    }
+    };
 
     stop = () => {
         if (this._state !== State.Started) {
@@ -71,7 +71,7 @@ class EventPipeFileSession implements EventPipeSession {
         this._state = State.Done;
         stop_streaming(this._sessionID);
         console.debug(`EventPipe session ${this.sessionID} stopped`);
-    }
+    };
 
     getTraceBlob = () => {
         if (this._state !== State.Done) {
@@ -79,7 +79,7 @@ class EventPipeFileSession implements EventPipeSession {
         }
         const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
         return new Blob([data], { type: "application/octet-stream" });
-    }
+    };
 }
 
 const eventLevel = {

@@ -340,7 +340,7 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
 }
 
 export class TaskCallbackHolder implements IDisposable {
-    public promise: Promise<any>
+    public promise: Promise<any>;
 
     public constructor(promise: Promise<any>) {
         this.promise = promise;

@@ -262,8 +262,8 @@ namespace Microsoft.Interop.Analyzers
                 AttributeSyntax syntax = (AttributeSyntax)context.Node;
                 ISymbol attributedSymbol = context.ContainingSymbol!;
 
-                AttributeData attr = GetAttributeData(syntax, attributedSymbol);
-                if (attr.AttributeClass?.ToDisplayString() == TypeNames.CustomMarshallerAttribute
+                AttributeData? attr = syntax.FindAttributeData(attributedSymbol);
+                if (attr?.AttributeClass?.ToDisplayString() == TypeNames.CustomMarshallerAttribute
                     && attr.AttributeConstructor is not null)
                 {
                     DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("managedType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
@@ -312,20 +312,6 @@ namespace Microsoft.Interop.Analyzers
 #pragma warning restore CA1822 // Mark members as static
             {
                 // TODO: Implement for the V2 shapes
-            }
-
-            private static AttributeData GetAttributeData(AttributeSyntax syntax, ISymbol symbol)
-            {
-                if (syntax.FirstAncestorOrSelf<AttributeListSyntax>().Target?.Identifier.IsKind(SyntaxKind.ReturnKeyword) == true)
-                {
-                    return ((IMethodSymbol)symbol).GetReturnTypeAttributes().First(attributeSyntaxLocationMatches);
-                }
-                return symbol.GetAttributes().First(attributeSyntaxLocationMatches);
-
-                bool attributeSyntaxLocationMatches(AttributeData attrData)
-                {
-                    return attrData.ApplicationSyntaxReference!.SyntaxTree == syntax.SyntaxTree && attrData.ApplicationSyntaxReference.Span == syntax.Span;
-                }
             }
         }
     }

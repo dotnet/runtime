@@ -3606,7 +3606,8 @@ namespace System.Xml.Xsl.IlGen
         {
             QilName ndName = ndInvoke.Name;
             XmlExtensionFunction extFunc;
-            Type clrTypeRetSrc, clrTypeRetDst;
+            Type? clrTypeRetSrc;
+            Type clrTypeRetDst;
 
             // Retrieve metadata from the extension function
             extFunc = new XmlExtensionFunction(ndName.LocalName, ndName.NamespaceUri, ndInvoke.ClrMethod);
@@ -3621,7 +3622,7 @@ namespace System.Xml.Xsl.IlGen
             }
 
             // If this is not a static method, then get the instance object
-            if (!extFunc.Method.IsStatic)
+            if (!extFunc.Method!.IsStatic)
             {
                 // Special-case the XsltLibrary object
                 if (ndName.NamespaceUri.Length == 0)
@@ -3712,7 +3713,7 @@ namespace System.Xml.Xsl.IlGen
             else if (clrTypeRetSrc != clrTypeRetDst)
             {
                 // (T) runtime.ChangeTypeXsltResult(idxType, (object) value);
-                _helper.TreatAs(clrTypeRetSrc, typeof(object));
+                _helper.TreatAs(clrTypeRetSrc!, typeof(object));
                 _helper.Call(XmlILMethods.ChangeTypeXsltResult);
                 _helper.TreatAs(typeof(object), clrTypeRetDst);
             }
