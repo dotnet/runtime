@@ -1287,8 +1287,7 @@ namespace System.Net.Http
                 }
             }
 
-            bool disabled = false;
-            bool added = false;
+            bool added, disabled = false;
 
             lock (altSvcBlocklist)
             {

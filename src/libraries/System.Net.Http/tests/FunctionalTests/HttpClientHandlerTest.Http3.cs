@@ -1013,13 +1013,6 @@ namespace System.Net.Http.Functional.Tests
         {
             var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
-            using var clientDone = new SemaphoreSlim(0);
-
-            Task serverTask = Task.Run(async () =>
-            {
-                // ALPN handshake handled by transport, app level will not get any notification
-                await clientDone.WaitAsync();
-            });
 
             Task clientTask = Task.Run(async () =>
             {
@@ -1046,12 +1039,11 @@ namespace System.Net.Http.Functional.Tests
                 // second request should throw the same exception as inner as the first one
                 HttpRequestException ex2 = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request2).WaitAsync(TimeSpan.FromSeconds(10)));
 
-                clientDone.Release();
 
                 Assert.Equal(ex, ex2.InnerException);
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            await clientTask;
         }
 
 
