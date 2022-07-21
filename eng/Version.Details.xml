@@ -20,6 +20,10 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>1026ad55ddb8587bf68829d3f5e8abafa65548fe</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.400" Version="6.0.8">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>1026ad55ddb8587bf68829d3f5e8abafa65548fe</Sha>
+    </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0">
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>04c3656e0325277aefa18378f24238d39b259222</Sha>

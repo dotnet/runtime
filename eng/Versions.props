@@ -150,7 +150,7 @@
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
-    <SdkVersionForWorkloadTesting>6.0.300-preview.22159.1</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting>6.0.400</SdkVersionForWorkloadTesting>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20211019.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
@@ -173,7 +173,9 @@
     <MicrosoftNETWorkloadEmscriptenManifest60100Version>6.0.8</MicrosoftNETWorkloadEmscriptenManifest60100Version>
     <MicrosoftNETWorkloadEmscriptenManifest60200Version>6.0.8</MicrosoftNETWorkloadEmscriptenManifest60200Version>
     <MicrosoftNETWorkloadEmscriptenManifest60300Version>6.0.8</MicrosoftNETWorkloadEmscriptenManifest60300Version>
+    <MicrosoftNETWorkloadEmscriptenManifest60400Version>6.0.8</MicrosoftNETWorkloadEmscriptenManifest60400Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100Version)</MicrosoftNETRuntimeEmscriptenVersion>
+
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
