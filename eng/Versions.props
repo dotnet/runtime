@@ -151,6 +151,7 @@
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <SdkVersionForWorkloadTesting>6.0.400</SdkVersionForWorkloadTesting>
+    <SdkChannelForWorkloadTesting>6.0.4xx</SdkChannelForWorkloadTesting>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20211019.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
