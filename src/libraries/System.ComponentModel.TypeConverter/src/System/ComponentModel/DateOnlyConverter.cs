@@ -13,6 +13,10 @@ namespace System.ComponentModel
     /// </summary>
     public class DateOnlyConverter : TypeConverter
     {
+        /// <summary>
+        /// Gets a value indicating whether this converter can convert an object in the given source type to a <see cref='System.DateOnly'/>
+        /// object using the specified context.
+        /// </summary>
         /// <inheritdoc />
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object in the given source type to a <see cref='System.DateOnly'/>
