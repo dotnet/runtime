@@ -35,24 +35,24 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new FixedWindowRateLimiterOptions
+            Assert.Throws<ArgumentException>(
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
             {
                 PermitLimit = -1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1,
                 Window = TimeSpan.FromMinutes(2),
                 AutoReplenishment = false
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new FixedWindowRateLimiterOptions
+            }));
+            Assert.Throws<ArgumentException>(
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = -1,
                 Window = TimeSpan.FromMinutes(2),
                 AutoReplenishment = false
-            });
+            }));
         }
 
         [Fact]
