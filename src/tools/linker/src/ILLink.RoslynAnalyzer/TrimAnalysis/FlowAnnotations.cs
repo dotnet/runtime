@@ -34,11 +34,6 @@ namespace ILLink.Shared.TrimAnalysis
 					return true;
 			}
 
-			foreach (var typeParameter in method.TypeParameters) {
-				if (typeParameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None)
-					return true;
-			}
-
 			return false;
 		}
 

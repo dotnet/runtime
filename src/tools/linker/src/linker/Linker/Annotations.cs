@@ -678,7 +678,7 @@ namespace Mono.Linker
 			if (!method.IsVirtual)
 				return;
 
-			if (FlowAnnotations.RequiresDataFlowAnalysis (method) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
+			if (FlowAnnotations.RequiresVirtualMethodDataFlowAnalysis (method) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
 	}

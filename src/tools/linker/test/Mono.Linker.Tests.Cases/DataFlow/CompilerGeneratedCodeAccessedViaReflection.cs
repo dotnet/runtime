@@ -534,8 +534,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public static void Test ()
 				{
 					var a =
-					[ExpectedWarning ("IL2118", nameof (LambdaWhichMarksItself), "<Test>",
-						ProducedBy = ProducedBy.Trimmer)]
 					() => {
 						RequiresAllOnT<LambdaWhichMarksItself> ();
 					};
@@ -548,8 +546,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				public static void Test ()
 				{
-					[ExpectedWarning ("IL2118", nameof (LocalFunctionWhichMarksItself), "<Test>",
-						ProducedBy = ProducedBy.Trimmer)]
 					void LocalFunction ()
 					{
 						RequiresAllOnT<LocalFunctionWhichMarksItself> ();
@@ -561,7 +557,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class IteratorWhichMarksItself
 			{
-				[ExpectedWarning ("IL2118", ProducedBy = ProducedBy.Trimmer, CompilerGeneratedCode = true)]
 				public static IEnumerable<int> Test ()
 				{
 					yield return 0;
@@ -574,7 +569,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class AsyncWhichMarksItself
 			{
-				[ExpectedWarning ("IL2118", ProducedBy = ProducedBy.Trimmer, CompilerGeneratedCode = true)]
 				public static async void Test ()
 				{
 					await MethodAsync ();
@@ -599,8 +593,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class LocalFunctionWhichMarksItselfOnlyAccessedViaReflection
 			{
-				[ExpectedWarning ("IL2118", nameof (LocalFunctionWhichMarksItselfOnlyAccessedViaReflection), "<" + nameof (ClassWithLocalFunction.MethodWithLocalFunction) + ">", "LocalFunction",
-					ProducedBy = ProducedBy.Trimmer)]
 				public static void Test ()
 				{
 					RequiresNonPublicMethodsOnT<ClassWithLocalFunction> ();
@@ -610,8 +602,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 					public static void MethodWithLocalFunction ()
 					{
-						[ExpectedWarning ("IL2118", nameof (LocalFunctionWhichMarksItselfOnlyAccessedViaReflection), "<" + nameof (MethodWithLocalFunction) + ">", nameof (LocalFunction),
-							ProducedBy = ProducedBy.Trimmer)]
 						static void LocalFunction ()
 						{
 							RequiresNonPublicMethodsOnT<ClassWithLocalFunction> ();
