@@ -340,6 +340,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     }
     else if (pPreviousThread != nullptr)
     {
+        GCX_PREEMP(); // Avoid blocking other threads that may be trying to suspend the runtime
         while (s_pCrashingThread != FatalErrorLoggingFinished)
         {
             ClrSleepEx(50, /*bAlertable*/ FALSE);
