@@ -18,10 +18,6 @@ namespace System.ComponentModel
         /// object using the specified context.
         /// </summary>
         /// <inheritdoc />
-        /// <summary>
-        /// Gets a value indicating whether this converter can convert an object in the given source type to a <see cref='System.DateOnly'/>
-        /// object using the specified context.
-        /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
