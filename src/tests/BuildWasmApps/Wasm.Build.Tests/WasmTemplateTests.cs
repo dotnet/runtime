@@ -3,10 +3,13 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+
 
 #nullable enable
 
@@ -17,6 +20,19 @@ namespace Wasm.Build.Tests
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
+        }
+
+        private void updateProgramCS() {
+            string programText = """
+            Console.WriteLine("Hello, Console!");
+
+            for (int i = 0; i < args.Length; i ++)
+                Console.WriteLine ($"args[{i}] = {args[i]}");
+            """;
+            var path = Path.Combine(_projectDir!, "Program.cs");
+            string text = File.ReadAllText(path);
+            text = text.Replace(@"Console.WriteLine(""Hello, Console!"");", programText);
+            File.WriteAllText(path, text);
         }
 
         [Theory]
@@ -127,13 +143,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string programText = """
-            using System;
-
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            updateProgramCS();
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -169,13 +179,8 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string programText = """
-            using System;
-
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            updateProgramCS();
+            
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
