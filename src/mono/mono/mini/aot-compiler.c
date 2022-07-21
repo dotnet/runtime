@@ -8646,7 +8646,7 @@ can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
 {
 	if (m_class_get_type_token (klass))
 		return TRUE;
-	if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR))
+	if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR))
 		return TRUE;
 	if (m_class_get_rank (klass))
 		return can_encode_class (acfg, m_class_get_element_class (klass));
