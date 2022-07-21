@@ -52,9 +52,9 @@ namespace System.Data.SqlTypes
         {
         }
 
-        public SqlGuid(SerializationInfo si, StreamingContext sc)
+        private SqlGuid(SerializationInfo info, StreamingContext context)
         {
-            byte[]? value = (byte[]?)si.GetValue("m_value", typeof(byte[]));
+            byte[]? value = (byte[]?)info.GetValue("m_value", typeof(byte[]));
             if (value is null)
                 _value = null;
             else
@@ -318,9 +318,9 @@ namespace System.Data.SqlTypes
             return new XmlQualifiedName("string", XmlSchema.Namespace);
         }
 
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext sc)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            si.AddValue("m_value", ToByteArray());
+            info.AddValue("m_value", ToByteArray());
         }
 
         public static readonly SqlGuid Null;
