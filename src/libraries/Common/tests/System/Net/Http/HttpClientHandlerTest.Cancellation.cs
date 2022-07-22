@@ -266,7 +266,7 @@ namespace System.Net.Http.Functional.Tests
                             respStream.CopyToAsync(Stream.Null, 10, cts.Token);
                         cts.Cancel();
                         await readTask;
-                    });
+                    }).WaitAsync(TimeSpan.FromSeconds(30));
                     try
                     {
                         clientFinished.SetResult(true);
