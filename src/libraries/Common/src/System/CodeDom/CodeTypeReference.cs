@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
             Options = codeTypeReferenceOption;
         }
 
-        public CodeTypeReference(string typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
+        public CodeTypeReference(string? typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
         {
             Initialize(typeName, codeTypeReferenceOption);
         }

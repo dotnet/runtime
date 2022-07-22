@@ -12,5 +12,5 @@ App.main = async function (applicationArguments) {
     const text = exports.MyClass.Greeting();
     console.log(text);
 
-    await App.MONO.mono_run_main("console.0.dll", applicationArguments);
+    return await App.MONO.mono_run_main("console.0.dll", applicationArguments);
 }

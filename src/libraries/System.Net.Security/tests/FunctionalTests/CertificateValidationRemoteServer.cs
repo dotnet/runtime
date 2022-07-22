@@ -124,6 +124,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", typeof(PlatformDetection), nameof(PlatformDetection.IsDebian10))]
         public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
         {
             // Offline will only work if

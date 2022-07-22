@@ -61,7 +61,11 @@ namespace System.Text.Json.Serialization.Tests
             RunAsRootTypeTest(JsonNumberTestData.UInts);
             RunAsRootTypeTest(JsonNumberTestData.ULongs);
             RunAsRootTypeTest(JsonNumberTestData.Floats);
-            RunAsRootTypeTest(JsonNumberTestData.Doubles);
+            // https://github.com/dotnet/runtime/issues/72101
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAsRootTypeTest(JsonNumberTestData.Doubles);
+            }
             RunAsRootTypeTest(JsonNumberTestData.Decimals);
             RunAsRootTypeTest(JsonNumberTestData.NullableBytes);
             RunAsRootTypeTest(JsonNumberTestData.NullableSBytes);
@@ -72,7 +76,11 @@ namespace System.Text.Json.Serialization.Tests
             RunAsRootTypeTest(JsonNumberTestData.NullableUInts);
             RunAsRootTypeTest(JsonNumberTestData.NullableULongs);
             RunAsRootTypeTest(JsonNumberTestData.NullableFloats);
-            RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
+            // https://github.com/dotnet/runtime/issues/72101
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
+            }
             RunAsRootTypeTest(JsonNumberTestData.NullableDecimals);
         }
 
@@ -380,7 +388,11 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.UInts);
             RunAsCollectionElementTest(JsonNumberTestData.ULongs);
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
-            RunAsCollectionElementTest(JsonNumberTestData.Doubles);
+            // https://github.com/dotnet/runtime/issues/72101
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAsCollectionElementTest(JsonNumberTestData.Doubles);
+            }
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
 
             // https://github.com/dotnet/runtime/issues/66220
@@ -395,7 +407,11 @@ namespace System.Text.Json.Serialization.Tests
                 RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                // https://github.com/dotnet/runtime/issues/72101
+                if (!PlatformDetection.IsAndroidX86)
+                {
+                    RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                }
                 RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
             }
         }
@@ -621,7 +637,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
             RunAllDictionariessRoundTripTest(JsonNumberTestData.Floats);
-            RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
+            // https://github.com/dotnet/runtime/issues/72101
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
+            }
         }
 
         private static void RunAllDictionariessRoundTripTest<T>(List<T> numbers)

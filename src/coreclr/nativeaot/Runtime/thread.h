@@ -70,21 +70,14 @@ struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
-#if DACCESS_COMPILE
-    volatile
     PInvokeTransitionFrame* m_pTransitionFrame;
-#else
-    PInvokeTransitionFrame* m_pTransitionFrame;
-#endif
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-#ifdef HOST_64BIT
-    uintptr_t               m_uHijackedReturnValueFlags;             // used on ARM64 and UNIX only; however, ARM64 and AMD64 share field offsets
-#endif // HOST_64BIT
+    uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_PTR_VOID            m_pThreadLocalModuleStatics;
@@ -142,10 +135,18 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
+
     static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
-    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void * pvHijackTargets[]);
-    void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void* pvHijackTargets[]);
-    void HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[]);
+
+    //
+    // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
+    // Thus they cannot have any parameters or return anything.
+    //
+    typedef void HijackFunc();
+
+    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
+    void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
+    void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
     bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
