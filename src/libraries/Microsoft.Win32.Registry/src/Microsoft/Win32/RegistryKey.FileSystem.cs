@@ -92,7 +92,7 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        [return: NotNullIfNotNull("defaultValue")]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         private static object InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);

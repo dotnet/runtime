@@ -529,7 +529,7 @@ namespace Microsoft.Win32
             return names.ToArray();
         }
 
-        [return: NotNullIfNotNull("defaultValue")]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         private object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
             object? data = defaultValue;
