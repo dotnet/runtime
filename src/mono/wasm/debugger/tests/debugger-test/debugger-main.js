@@ -10,8 +10,8 @@ try {
         configSrc: "./mono-config.json",
         onConfigLoaded: (config) => {
             config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-            config.diagnostic_tracing = true;
             /* For custom logging patch the functions below
+            config.diagnostic_tracing = true;
             config.environment_variables["MONO_LOG_LEVEL"] = "debug";
             config.environment_variables["MONO_LOG_MASK"] = "all";
             INTERNAL.logging = {
