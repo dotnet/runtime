@@ -680,7 +680,7 @@ namespace System.Xml.Xsl.XsltOld
             (non-alphanumeric).
 
         */
-        [return: NotNullIfNotNull("formatString")]
+        [return: NotNullIfNotNull(nameof(formatString))]
         private static List<FormatInfo?>? ParseFormat(string? formatString)
         {
             if (formatString == null || formatString.Length == 0)

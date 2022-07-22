@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.XPath
             numFixupCurrent = numFixupPosition = numFixupLast = 0;
         }
 
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         public virtual QilNode? EndBuild(QilNode? result)
         {
             if (result == null)

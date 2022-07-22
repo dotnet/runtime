@@ -22,6 +22,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task MultipleThreads()
         {
             // Verify the test class has >32 properties since that is a threshold for using the fallback dictionary.
@@ -104,6 +105,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task PropertyCacheWithMinInputsLast()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.

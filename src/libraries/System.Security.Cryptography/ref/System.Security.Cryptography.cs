@@ -2605,6 +2605,25 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Collections.Generic.IEnumerable<string> EnumerateUris(System.Security.Cryptography.Oid accessMethodOid) { throw null; }
         public System.Collections.Generic.IEnumerable<string> EnumerateUris(string accessMethodOid) { throw null; }
     }
+    public sealed partial class X509AuthorityKeyIdentifierExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509AuthorityKeyIdentifierExtension() { }
+        public X509AuthorityKeyIdentifierExtension(byte[] rawData, bool critical = false) { }
+        public X509AuthorityKeyIdentifierExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public System.ReadOnlyMemory<byte>? KeyIdentifier { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName? NamedIssuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte>? RawIssuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte>? SerialNumber { get { throw null; } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension Create(byte[] keyIdentifier, System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, byte[] serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension Create(System.ReadOnlySpan<byte> keyIdentifier, System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.ReadOnlySpan<byte> serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, bool includeKeyIdentifier, bool includeIssuerAndSerial) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, byte[] serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.ReadOnlySpan<byte> serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(byte[] subjectKeyIdentifier) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(System.ReadOnlySpan<byte> subjectKeyIdentifier) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension subjectKeyIdentifier) { throw null; }
+    }
     public sealed partial class X509BasicConstraintsExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509BasicConstraintsExtension() { }

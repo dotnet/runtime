@@ -27,7 +27,9 @@ namespace System.Security.Cryptography
         private static volatile Oid? s_basicConstraints2Oid;
         private static volatile Oid? s_enhancedKeyUsageOid;
         private static volatile Oid? s_keyUsageOid;
+        private static volatile Oid? s_subjectAltNameOid;
         private static volatile Oid? s_subjectKeyIdentifierOid;
+        private static volatile Oid? s_authorityKeyIdentifierOid;
         private static volatile Oid? s_authorityInformationAccessOid;
         private static volatile Oid? s_commonNameOid;
         private static volatile Oid? s_countryOrRegionOid;
@@ -58,7 +60,9 @@ namespace System.Security.Cryptography
         internal static Oid BasicConstraints2Oid => s_basicConstraints2Oid ??= InitializeOid(BasicConstraints2);
         internal static Oid EnhancedKeyUsageOid => s_enhancedKeyUsageOid ??= InitializeOid(EnhancedKeyUsage);
         internal static Oid KeyUsageOid => s_keyUsageOid ??= InitializeOid(KeyUsage);
+        internal static Oid AuthorityKeyIdentifierOid => s_authorityKeyIdentifierOid ??= InitializeOid(AuthorityKeyIdentifier);
         internal static Oid SubjectKeyIdentifierOid => s_subjectKeyIdentifierOid ??= InitializeOid(SubjectKeyIdentifier);
+        internal static Oid SubjectAltNameOid => s_subjectAltNameOid ??= InitializeOid(SubjectAltName);
         internal static Oid AuthorityInformationAccessOid => s_authorityInformationAccessOid ??= InitializeOid(AuthorityInformationAccess);
 
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);

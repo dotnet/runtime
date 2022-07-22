@@ -194,7 +194,7 @@ namespace System.Windows.Forms
         /// </summary>
         /// <param name="logicalImage">The image to scale from logical units to device units</param>
         /// <param name="targetImageSize">The size to scale image to</param>
-        [return: NotNullIfNotNull("logicalImage")]
+        [return: NotNullIfNotNull(nameof(logicalImage))]
         public static Bitmap? CreateResizedBitmap(Bitmap? logicalImage, Size targetImageSize)
         {
             if (logicalImage == null)
@@ -211,7 +211,7 @@ namespace System.Windows.Forms
         /// Note: this method should be called only inside an if (DpiHelper.IsScalingRequired) clause
         /// </summary>
         /// <param name="logicalBitmap">The image to scale from logical units to device units</param>
-        public static void ScaleBitmapLogicalToDevice([NotNullIfNotNull("logicalBitmap")]ref Bitmap? logicalBitmap)
+        public static void ScaleBitmapLogicalToDevice([NotNullIfNotNull(nameof(logicalBitmap))]ref Bitmap? logicalBitmap)
         {
             if (logicalBitmap == null)
             {

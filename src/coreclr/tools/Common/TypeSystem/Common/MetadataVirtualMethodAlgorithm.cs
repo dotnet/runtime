@@ -754,6 +754,7 @@ namespace Internal.TypeSystem
             bool diamondCase = false;
             impl = null;
 
+            MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
             DefType[] consideredInterfaces;
             if (!currentType.IsInterface)
             {
@@ -778,7 +779,7 @@ namespace Internal.TypeSystem
                     if (mostSpecificInterface == null && !interfaceMethod.IsAbstract)
                     {
                         mostSpecificInterface = runtimeInterface;
-                        impl = interfaceMethod;
+                        impl = interfaceMethodDefinition;
                     }
                 }
                 else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) != -1)
@@ -789,7 +790,7 @@ namespace Internal.TypeSystem
                     {
                         foreach (MethodImplRecord implRecord in possibleImpls)
                         {
-                            if (implRecord.Decl == interfaceMethod)
+                            if (implRecord.Decl == interfaceMethodDefinition)
                             {
                                 // This interface provides a default implementation.
                                 // Is it also most specific?
@@ -822,10 +823,52 @@ namespace Internal.TypeSystem
             }
             else if (impl.IsAbstract)
             {
+                impl = null;
                 return DefaultInterfaceMethodResolution.Reabstraction;
             }
 
+            if (interfaceMethod != interfaceMethodDefinition)
+                impl = impl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
+
             return DefaultInterfaceMethodResolution.DefaultImplementation;
+        }
+
+        public override DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl)
+        {
+            return ResolveVariantInterfaceMethodToDefaultImplementationOnType(interfaceMethod, (MetadataType)currentType, out impl);
+        }
+
+        public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, MetadataType currentType, out MethodDesc impl)
+        {
+            Debug.Assert(interfaceMethod.Signature.IsStatic);
+
+            MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
+            bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
+
+            if (foundInterface)
+            {
+                DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, currentType, out impl);
+                if (resolution != DefaultInterfaceMethodResolution.None)
+                    return resolution;
+            }
+
+            MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
+            foreach (TypeDesc iface in currentType.RuntimeInterfaces)
+            {
+                if (iface.HasSameTypeDefinition(interfaceType) && iface.CanCastTo(interfaceType))
+                {
+                    MethodDesc variantMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethodDefinition);
+                    Debug.Assert(variantMethod != null);
+                    if (interfaceMethod != interfaceMethodDefinition)
+                        variantMethod = variantMethod.MakeInstantiatedMethod(interfaceMethod.Instantiation);
+                    DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(variantMethod, currentType, out impl);
+                    if (resolution != DefaultInterfaceMethodResolution.None)
+                        return resolution;
+                }
+            }
+
+            impl = null;
+            return DefaultInterfaceMethodResolution.None;
         }
 
         public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)

@@ -218,7 +218,7 @@ namespace Internal.Win32
             return GetValue(name, null);
         }
 
-        [return: NotNullIfNotNull("defaultValue")]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public object? GetValue(string name, object? defaultValue)
         {
             object? data = defaultValue;
