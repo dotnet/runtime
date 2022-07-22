@@ -31,7 +31,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum number of tokens that can be in the bucket at any time.
-        /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
         public int TokenLimit { get; set; }
 
