@@ -2948,16 +2948,6 @@ namespace Internal.JitInterface
             int index = 0;
             foreach (TypeDesc implClass in implClasses)
             {
-                Debug.Assert(!implClass.IsInterface);
-
-                if (implClass.IsCanonicalDefinitionType(CanonicalFormKind.Any) ||
-                    implClass.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                    implClass.HasVariance || implClass.IsArray || implClass.IsNullable || implClass.IsDelegate ||
-                    implClass.IsIDynamicInterfaceCastable || implClass.HasInstantiation)
-                {
-                    // Give up if we see shared types among implementations
-                    return 0;
-                }
                 exactClsRet[index++] = ObjectToHandle(implClass);
             }
 

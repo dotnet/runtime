@@ -21698,17 +21698,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
         objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
+        // Ask VM if it's able to tell us if this class has a unique impl/subclass
         if (!isExact && !objClassIsFinal && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            const int            maxExactClasses = 1;
-            CORINFO_CLASS_HANDLE exactClasses[maxExactClasses];
-            int                  exactClassesCount = 0;
-            exactClassesCount = info.compCompHnd->getExactClasses(objClass, maxExactClasses, exactClasses);
-            if (exactClassesCount == 1)
+            CORINFO_CLASS_HANDLE exactClass;
+            if (info.compCompHnd->getExactClasses(objClass, 1, &exactClass) == 1)
             {
-                assert((info.compCompHnd->compareTypesForCast(exactClasses[0], objClass) == TypeCompareState::Must));
-                objClass = exactClasses[0];
-                isExact = true;
+                assert(exactClass != NO_CLASS_HANDLE);
+                assert((info.compCompHnd->compareTypesForCast(exactClass, objClass) == TypeCompareState::Must));
+
+                if (objClass != exactClass)
+                {
+                    // update flags
+                    objClassAttribs = info.compCompHnd->getClassAttribs(exactClass);
+                    objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
+                }
+                objClass = exactClass;
+                isExact  = true;
 
                 // TODO: Enable GDV for exact classes without fallbacks, e.g. objClass is IDisposable
                 // and vm returns just two exact clases: ClassA and ClassB and so we can devirtualize it as follows:
