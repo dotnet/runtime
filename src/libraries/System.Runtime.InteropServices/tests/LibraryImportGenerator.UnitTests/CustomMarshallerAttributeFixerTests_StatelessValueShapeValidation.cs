@@ -331,8 +331,30 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
+                static class MarshallerType
+                {
+                    public static nint ConvertToUnmanaged(ManagedType m, Span<byte> b) => default;
+
+                    public static int BufferSize
+                    {
+                        get
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
         }
 

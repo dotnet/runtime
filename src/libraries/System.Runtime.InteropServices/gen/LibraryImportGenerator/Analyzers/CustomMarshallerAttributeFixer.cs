@@ -229,6 +229,17 @@ namespace Microsoft.Interop.Analyzers
                         statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
             }
 
+            if (missingMemberNames.Contains(ShapeMemberNames.BufferSize))
+            {
+                newMembers.Add(
+                    gen.WithAccessorDeclarations(
+                        gen.PropertyDeclaration(ShapeMemberNames.BufferSize,
+                            gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)),
+                            Accessibility.Public,
+                            DeclarationModifiers.Static),
+                        gen.GetAccessorDeclaration(statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) })));
+            }
+
             editor.ReplaceNode(declaringSyntax, (declaringSyntax, gen) => gen.AddMembers(declaringSyntax, newMembers));
 
             ITypeSymbol? FindUnmanagedTypeFromExistingShape()
