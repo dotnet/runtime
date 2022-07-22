@@ -135,10 +135,11 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="outputKind">Output type</param>
         /// <param name="refs">Addtional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols, allowUnsafe);
         }
 
         /// <summary>
