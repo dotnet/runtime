@@ -4662,6 +4662,51 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 			}
 	return result;
 }
+
+MonoObject*
+mono_boxed_intptr_to_pointer (MonoObject *boxed_intptr, MonoType *ret_type, MonoError *error)
+{
+	MonoClass *pointer_class;
+	void *box_args [2];
+	MonoObject *box_exc;
+
+	/*
+	 * The runtime-invoke wrapper returns a boxed IntPtr, need to
+	 * convert it to a Pointer object.
+	 */
+	pointer_class = mono_class_get_pointer_class ();
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, box_method)
+		box_method = mono_class_get_method_from_name_checked (pointer_class, "Box", -1, 0, error);
+		mono_error_assert_ok (error);
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, box_method)
+
+	if (boxed_intptr) {
+		g_assert (boxed_intptr->vtable->klass == mono_defaults.int_class);
+		box_args [0] = ((MonoIntPtr*)boxed_intptr)->m_value;
+	} else {
+		box_args [0] = NULL;
+	}
+	if (m_type_is_byref (ret_type)) {
+		// byref is already unboxed by the invoke code
+		MonoType *tmpret = mono_metadata_type_dup (NULL, ret_type);
+		tmpret->byref__ = FALSE;
+		MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
+		box_args [1] = MONO_HANDLE_RAW (type_h);
+		mono_metadata_free_type (tmpret);
+	} else {
+		MonoReflectionTypeHandle type_h = mono_type_get_object_handle (ret_type, error);
+		box_args [1] = MONO_HANDLE_RAW (type_h);
+	}
+	return_val_if_nok (error, NULL);
+
+	MonoObject *res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);
+	g_assert (box_exc == NULL);
+	mono_error_assert_ok (error);
+
+	return res;
+}
+
 /**
  * mono_runtime_invoke_array:
  * \param method method to invoke
@@ -4721,6 +4766,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	return res;
 }
 
+// FIXME Remove this method. Make all callers reuse the byref version from ves_icall_InternalInvoke
 static MonoObject*
 mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *params_span,
 			       MonoObject **exc, MonoError *error)
@@ -4810,43 +4856,8 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *
 		goto_if_nok (error, exit_null);
 
 		if (sig->ret->type == MONO_TYPE_PTR) {
-			MonoClass *pointer_class;
-			void *box_args [2];
-			MonoObject *box_exc;
-
-			/*
-			 * The runtime-invoke wrapper returns a boxed IntPtr, need to
-			 * convert it to a Pointer object.
-			 */
-			pointer_class = mono_class_get_pointer_class ();
-
-			MONO_STATIC_POINTER_INIT (MonoMethod, box_method)
-				box_method = mono_class_get_method_from_name_checked (pointer_class, "Box", -1, 0, error);
-				mono_error_assert_ok (error);
-			MONO_STATIC_POINTER_INIT_END (MonoMethod, box_method)
-
-			if (res) {
-				g_assert (res->vtable->klass == mono_defaults.int_class);
-				box_args [0] = ((MonoIntPtr*)res)->m_value;
-			} else {
-				box_args [0] = NULL;
-			}
-			if (m_type_is_byref (sig->ret)) {
-				// byref is already unboxed by the invoke code
-				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
-				tmpret->byref__ = FALSE;
-				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
-				box_args [1] = MONO_HANDLE_RAW (type_h);
-				mono_metadata_free_type (tmpret);
-			} else {
-				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (sig->ret, error);
-				box_args [1] = MONO_HANDLE_RAW (type_h);
-			}
+			res = mono_boxed_intptr_to_pointer (res, sig->ret, error);
 			goto_if_nok (error, exit_null);
-
-			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);
-			g_assert (box_exc == NULL);
-			mono_error_assert_ok (error);
 		}
 
 		if (has_byref_nullables) {

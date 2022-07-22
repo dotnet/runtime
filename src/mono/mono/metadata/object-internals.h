@@ -1775,6 +1775,9 @@ mono_error_set_pending_exception (MonoError *error)
 MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);
 
+MonoObject*
+mono_boxed_intptr_to_pointer (MonoObject *boxed_intptr, MonoType *ret_type, MonoError *error);
+
 MONO_COMPONENT_API MonoObject *
 mono_object_new_checked (MonoClass *klass, MonoError *error);
 

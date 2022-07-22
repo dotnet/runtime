@@ -3448,13 +3448,63 @@ ves_icall_RuntimeMethodInfo_GetGenericArguments (MonoReflectionMethodHandle ref_
 	return res;
 }
 
+static gpointer
+invoke_byrefs_extract_argument (gpointer *params_byref, int i, MonoType *t, MonoError *error)
+{
+	gpointer result = NULL;
+	error_init (error);
+again:
+	switch (t->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_VALUETYPE:
+			result = params_byref [i];
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			if (m_type_is_byref (t))
+				result = params_byref [i];
+			else
+				result = *(MonoObject**)params_byref [i];
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (m_type_is_byref (t))
+				t = m_class_get_this_arg (t->data.generic_class->container_class);
+			else
+				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			goto again;
+		case MONO_TYPE_PTR: {
+			result = *(gpointer*)params_byref [i];
+			break;
+		}
+		default:
+			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", t->type);
+	}
+
+	return result;
+}
+
 MonoObjectHandle
 ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle,
-			  MonoSpanOfObjects *params_span, MonoExceptionHandleOut exception_out, MonoError *error)
+			  gpointer *params_byref, MonoExceptionHandleOut exception_out, MonoError *error)
 {
 	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
 	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
-	g_assert (params_span != NULL);
 
 	/*
 	 * Invoke from reflection is supposed to always be a virtual call (the API
@@ -3463,7 +3513,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	 */
 	MonoMethod *m = method->method;
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
-	int pcount = 0;
 	void *obj = this_arg;
 	MonoObject *result = NULL;
 	MonoArray *arr = NULL;
@@ -3494,11 +3543,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 
 	/* Array constructor */
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
-		pcount = mono_span_length (params_span);
-		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
+		int pcount = sig->param_count;
+		uintptr_t *lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (int i = 0; i < pcount; ++i)
-			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) params_byref [i];
 
 		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
@@ -3524,11 +3573,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		} else {
 			g_assert (pcount == (m_class_get_rank (m->klass) * 2));
 			/* The arguments are lower-bound-length pairs */
-			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
+			intptr_t *lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 			for (int i = 0; i < pcount / 2; ++i) {
-				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
-				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
+				lower_bounds [i] = *(int32_t*) params_byref [i * 2];
+				lengths [i] = *(int32_t*) params_byref [i * 2 + 1];
 			}
 
 			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
@@ -3536,7 +3585,75 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			goto exit;
 		}
 	}
-	result = mono_runtime_invoke_span_checked (m, obj, params_span, error);
+
+	int params_length = sig->param_count;
+	gpointer *pa = NULL;
+	if (params_length > 0) {
+		pa = g_newa (gpointer, params_length);
+		for (int i = 0; i < params_length; i++) {
+			MonoType *t = sig->params [i];
+			pa [i] = invoke_byrefs_extract_argument (params_byref, i, t, error);
+			goto_if_nok (error, return_null);
+		}
+	}
+	if (!strcmp (m->name, ".ctor") && m->klass != mono_defaults.string_class) {
+		gpointer o = obj;
+		if (mono_class_is_nullable (m->klass)) {
+			/* Need to create a boxed vtype instead */
+			g_assert (!obj);
+
+			if (params_length == 0) {
+				goto_if_nok (error, return_null);
+			} else {
+				result = mono_value_box_checked (m_class_get_cast_class (m->klass), pa [0], error);
+				goto exit;
+			}
+		}
+
+		if (!obj) {
+			MonoObjectHandle obj_h = mono_object_new_handle (m->klass, error);
+			goto_if_nok (error, return_null);
+			obj = MONO_HANDLE_RAW (obj_h);
+			g_assert (obj); /*maybe we should raise a TLE instead?*/
+			if (m_class_is_valuetype (m->klass))
+				o = (MonoObject *)mono_object_unbox_internal ((MonoObject *)obj);
+			else
+				o = obj;
+		} else if (m_class_is_valuetype (m->klass)) {
+			MonoObjectHandle obj_h = mono_value_box_handle (m->klass, obj, error);
+			goto_if_nok (error, return_null);
+			obj = MONO_HANDLE_RAW (obj_h);
+		}
+
+		mono_runtime_invoke_checked (m, o, pa, error);
+		result = (MonoObject*)obj;
+	} else {
+		if (mono_class_is_nullable (m->klass)) {
+			if (m->flags & METHOD_ATTRIBUTE_STATIC) {
+				obj = NULL;
+			} else {
+				/* Convert the unboxed vtype into a Nullable structure */
+				MonoObjectHandle nullable_h = mono_object_new_handle (m->klass, error);
+				goto_if_nok (error, return_null);
+				MonoObject* nullable = MONO_HANDLE_RAW (nullable_h);
+
+				MonoObjectHandle boxed_h = mono_value_box_handle (m_class_get_cast_class (m->klass), obj, error);
+				goto_if_nok (error, return_null);
+				mono_nullable_init ((guint8 *)mono_object_unbox_internal (nullable), MONO_HANDLE_RAW (boxed_h), m->klass);
+				obj = mono_object_unbox_internal (nullable);
+			}
+		}
+
+		result = mono_runtime_invoke_checked (m, obj, pa, error);
+		MONO_HANDLE_PIN (result);
+		goto_if_nok (error, return_null);
+
+		if (sig->ret->type == MONO_TYPE_PTR) {
+			result = mono_boxed_intptr_to_pointer (result, sig->ret, error);
+			goto_if_nok (error, return_null);
+		}
+	}
+
 	goto exit;
 return_null:
 	result = NULL;
