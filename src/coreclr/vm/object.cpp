@@ -396,7 +396,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
 
     if (argDest->IsStructPassedInRegs())
     {
-        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes());
+        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes(), destOffset);
         return;
     }
 
