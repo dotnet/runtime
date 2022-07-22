@@ -454,6 +454,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
         // TODO: we should propagate transport error code.
+        // https://github.com/dotnet/runtime/issues/72666
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
