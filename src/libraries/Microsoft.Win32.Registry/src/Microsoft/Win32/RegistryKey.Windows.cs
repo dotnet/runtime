@@ -6,6 +6,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security;
 
@@ -528,6 +529,7 @@ namespace Microsoft.Win32
             return names.ToArray();
         }
 
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         private object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
             object? data = defaultValue;
