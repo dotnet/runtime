@@ -50,7 +50,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
             if (count > buffer.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
-            MoveToInitial(quotas, session, null);
+            MoveToInitial_(quotas);
             BufferReader.SetBuffer(buffer, offset, count, dictionary, session);
             _buffered = true;
         }
@@ -63,12 +63,12 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            MoveToInitial(quotas, session, null);
+            MoveToInitial(quotas);
             BufferReader.SetBuffer(stream, dictionary, session);
             _buffered = false;
         }
 
-        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession? session, OnXmlDictionaryReaderClose? onClose)
+        private void MoveToInitial_(XmlDictionaryReaderQuotas quotas)
         {
             MoveToInitial(quotas);
             _maxBytesPerRead = quotas.MaxBytesPerRead;

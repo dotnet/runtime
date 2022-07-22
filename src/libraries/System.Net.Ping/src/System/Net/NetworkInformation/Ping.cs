@@ -39,9 +39,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
+        private void CheckArgs(int timeout, byte[] buffer)
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
             ArgumentNullException.ThrowIfNull(buffer);
 
             if (buffer.Length > MaxBufferSize)
@@ -55,9 +55,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private void CheckArgs(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
+        private void CheckArgs(IPAddress address, int timeout, byte[] buffer)
         {
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -68,11 +68,6 @@ namespace System.Net.NetworkInformation
             {
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
-        }
-
-        private void CheckDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_disposeRequested, this);
         }
 
         private void CheckStart()
@@ -203,14 +198,14 @@ namespace System.Net.NetworkInformation
                 return Send(address, timeout, buffer, options);
             }
 
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             return GetAddressAndSend(hostNameOrAddress, timeout, buffer, options);
         }
 
         public PingReply Send(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
-            CheckArgs(address, timeout, buffer, options);
+            CheckArgs(address, timeout, buffer);
 
             // Need to snapshot the address here, so we're sure that it's not changed between now
             // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
@@ -320,7 +315,7 @@ namespace System.Net.NetworkInformation
 
         public Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
-            CheckArgs(address, timeout, buffer, options);
+            CheckArgs(address, timeout, buffer);
             return SendPingAsyncInternal(address, timeout, buffer, options);
         }
 
@@ -358,7 +353,7 @@ namespace System.Net.NetworkInformation
                 return SendPingAsync(address, timeout, buffer, options);
             }
 
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
         }

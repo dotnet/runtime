@@ -15,7 +15,7 @@ internal static class DataSetUtil
         }
     }
 
-    private static T TraceException<T>(string trace, T e)
+    private static T TraceException<T>(T e)
     {
         Debug.Assert(null != e, "TraceException: null Exception");
         return e;
@@ -23,7 +23,7 @@ internal static class DataSetUtil
 
     private static T TraceExceptionAsReturnValue<T>(T e)
     {
-        return TraceException("<comm.ADP.TraceException|ERR|THROW> '%ls'\n", e);
+        return TraceException(e);
     }
 
     internal static ArgumentException Argument(string message)

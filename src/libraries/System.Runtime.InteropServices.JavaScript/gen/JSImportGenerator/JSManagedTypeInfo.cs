@@ -155,7 +155,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        public static TypePositionInfo CreateForType(TypePositionInfo inner, ITypeSymbol type, MarshallingInfo jsMarshallingInfo, Compilation compilation)
+        public static TypePositionInfo CreateForType(TypePositionInfo inner, ITypeSymbol type, MarshallingInfo jsMarshallingInfo)
         {
             ManagedTypeInfo jsTypeInfo = CreateJSTypeInfoForTypeSymbol(type);
             var typeInfo = new TypePositionInfo(jsTypeInfo, jsMarshallingInfo)

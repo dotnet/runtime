@@ -82,12 +82,6 @@ namespace System.Threading
         {
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
-        {
-            return true;
-        }
-
         internal static bool NotifyThreadBlocked() => false;
 
         internal static void NotifyThreadUnblocked()
@@ -95,6 +89,13 @@ namespace System.Threading
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+
+#pragma warning disable IDE0060
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        {
+            return true;
+        }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
@@ -147,5 +148,6 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
+#pragma warning restore IDE0060
     }
 }

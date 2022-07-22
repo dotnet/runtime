@@ -1201,7 +1201,6 @@ namespace System.Text.Json.SourceGeneration
 
                 ProcessMember(
                     memberInfo,
-                    memberCLRType,
                     hasJsonInclude,
                     out bool isReadOnly,
                     out bool isPublic,
@@ -1359,7 +1358,6 @@ namespace System.Text.Json.SourceGeneration
 
             private static void ProcessMember(
                 MemberInfo memberInfo,
-                Type memberClrType,
                 bool hasJsonInclude,
                 out bool isReadOnly,
                 out bool isPublic,

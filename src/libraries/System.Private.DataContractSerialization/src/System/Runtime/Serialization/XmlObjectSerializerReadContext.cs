@@ -85,24 +85,24 @@ namespace System.Runtime.Serialization
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, int id, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
         {
             DataContract dataContract = GetDataContract(id, declaredTypeHandle);
-            return InternalDeserialize(xmlReader, name, ns, Type.GetTypeFromHandle(declaredTypeHandle)!, ref dataContract);
+            return InternalDeserialize(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle)!, ref dataContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, string name, string ns)
         {
             DataContract dataContract = GetDataContract(declaredType);
-            return InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
+            return InternalDeserialize(xmlReader, declaredType, ref dataContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, DataContract? dataContract, string? name, string? ns)
         {
             dataContract ??= GetDataContract(declaredType);
-            return InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
+            return InternalDeserialize(xmlReader, declaredType, ref dataContract);
         }
 
-        protected bool TryHandleNullOrRef(XmlReaderDelegator reader, Type declaredType, string? name, string? ns, ref object? retObj)
+        protected bool TryHandleNullOrRef(XmlReaderDelegator reader, Type declaredType, ref object? retObj)
         {
             ReadAttributes(reader);
 
@@ -114,7 +114,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    retObj = GetExistingObject(attributes.Ref, declaredType, name, ns);
+                    retObj = GetExistingObject(attributes.Ref);
                     reader.Skip();
                     return true;
                 }
@@ -128,10 +128,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        protected object? InternalDeserialize(XmlReaderDelegator reader, string? name, string? ns, Type declaredType, ref DataContract dataContract)
+        protected object? InternalDeserialize(XmlReaderDelegator reader, Type declaredType, ref DataContract dataContract)
         {
             object? retObj = null;
-            if (TryHandleNullOrRef(reader, dataContract.UnderlyingType, name, ns, ref retObj))
+            if (TryHandleNullOrRef(reader, dataContract.UnderlyingType, ref retObj))
                 return retObj;
 
             bool knownTypesAddedInCurrentScope = false;
@@ -357,7 +357,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal object GetExistingObject(string id, Type? type, string? name, string? ns)
+        internal object GetExistingObject(string id)
         {
             object? retObj = DeserializedObjects.GetObject(id);
             if (retObj == null)
@@ -522,7 +522,7 @@ namespace System.Runtime.Serialization
                 if (attributes.Ref != Globals.NewObjectId)
                 {
                     xmlReader.Skip();
-                    value = GetExistingObject(attributes.Ref, null, name, string.Empty);
+                    value = GetExistingObject(attributes.Ref);
                 }
                 else if (attributes.XsiNil)
                 {

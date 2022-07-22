@@ -29,7 +29,7 @@ namespace System.Net.Security
         // defined in winerror.h
         private const int NTE_FAIL = unchecked((int)0x80090020);
 
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
+        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext _ /*securityContext*/)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
@@ -291,9 +291,9 @@ namespace System.Net.Security
         internal static SecurityStatusPal AcceptSecurityContext(
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
-            ContextFlagsPal requestedContextFlags,
+            ContextFlagsPal _ /*requestedContextFlags*/,
             ReadOnlySpan<byte> incomingBlob,
-            ChannelBinding? channelBinding,
+            ChannelBinding? _1 /*channelBinding*/,
             ref byte[] resultBlob,
             out int resultBlobLength,
             ref ContextFlagsPal contextFlags)
@@ -426,7 +426,7 @@ namespace System.Net.Security
             return new Win32Exception(NTE_FAIL, (statusCode.Exception != null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
         }
 
-        internal static int QueryMaxTokenSize(string package)
+        internal static int QueryMaxTokenSize(string _ /*package*/)
         {
             // This value is not used on Unix
             return 0;
@@ -467,8 +467,8 @@ namespace System.Net.Security
         }
 
         internal static SecurityStatusPal CompleteAuthToken(
-            ref SafeDeleteContext? securityContext,
-            ReadOnlySpan<byte> incomingBlob)
+            ref SafeDeleteContext? _ /*securityContext*/,
+            ReadOnlySpan<byte> _1 /*incomingBlob*/)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }

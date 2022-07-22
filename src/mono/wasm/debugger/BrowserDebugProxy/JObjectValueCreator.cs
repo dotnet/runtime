@@ -335,7 +335,6 @@ internal sealed class JObjectValueCreator
                                                     initialPos,
                                                     className,
                                                     typeId,
-                                                    numValues,
                                                     isEnum,
                                                     token);
         _valueTypes[valueType.Id.Value] = valueType;

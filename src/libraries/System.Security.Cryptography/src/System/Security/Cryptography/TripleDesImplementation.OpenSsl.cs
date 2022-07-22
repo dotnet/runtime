@@ -26,7 +26,6 @@ namespace System.Security.Cryptography
 
         private static ILiteSymmetricCipher CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
@@ -39,7 +38,6 @@ namespace System.Security.Cryptography
 
             return new OpenSslCipherLite(
                 algorithm,
-                cipherMode,
                 blockSize,
                 paddingSize,
                 key,

@@ -46,7 +46,7 @@ namespace System.Reflection.Metadata
         /// Get file name from path.
         /// </summary>
         /// <remarks>Unlike <see cref="System.IO.Path.GetFileName(string)"/> this method doesn't check for invalid path characters.</remarks>
-        internal static string GetFileName(string path, bool includeExtension = true)
+        internal static string GetFileName(string path)
         {
             int fileNameStart = IndexOfFileName(path);
             return (fileNameStart <= 0) ? path : path.Substring(fileNameStart);

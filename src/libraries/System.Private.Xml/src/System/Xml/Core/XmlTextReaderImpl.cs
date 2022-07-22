@@ -4559,7 +4559,7 @@ namespace System.Xml
 
                 foreach (IDtdDefaultAttributeInfo defaultAttributeInfo in defaultAttributes)
                 {
-                    if (AddDefaultAttributeDtd(defaultAttributeInfo, true, nameSortedAttributes))
+                    if (AddDefaultAttributeDtd(defaultAttributeInfo, nameSortedAttributes))
                     {
                         if (DtdValidation && _standalone && defaultAttributeInfo.IsDeclaredInExternal)
                         {
@@ -9240,7 +9240,7 @@ namespace System.Xml
             }
         }
 
-        private bool AddDefaultAttributeDtd(IDtdDefaultAttributeInfo defAttrInfo, bool definedInDtd, NodeData[]? nameSortedNodeData)
+        private bool AddDefaultAttributeDtd(IDtdDefaultAttributeInfo defAttrInfo, NodeData[]? nameSortedNodeData)
         {
             if (defAttrInfo.Prefix.Length > 0)
             {
@@ -9787,6 +9787,8 @@ namespace System.Xml
             Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
         }
 
+#pragma warning disable IDE0060
         static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver);
+#pragma warning restore IDE0060
     }
 }

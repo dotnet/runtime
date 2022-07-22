@@ -15,7 +15,7 @@ namespace System.Text.Json
     internal static class JsonSerializerOptionsUpdateHandler
     {
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        public static void ClearCache(Type[]? types)
+        public static void ClearCache()
         {
             // Ignore the types, and just clear out all reflection caches from serializer options.
             foreach (KeyValuePair<JsonSerializerOptions, object?> options in JsonSerializerOptions.TrackedOptionsInstances.All)

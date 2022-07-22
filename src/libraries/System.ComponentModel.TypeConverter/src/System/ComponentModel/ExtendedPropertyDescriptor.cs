@@ -80,7 +80,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the data type of the property.
         /// </summary>
-        public override Type PropertyType => _extenderInfo.ExtenderGetType(_provider);
+        public override Type PropertyType => _extenderInfo.ExtenderGetType();
 
         /// <summary>
         /// Retrieves the display name of the property. This is the name that will

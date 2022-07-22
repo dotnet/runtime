@@ -113,7 +113,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return DataContract.GetDataContract(typeHandle, type, Mode);
+                return DataContract.GetDataContract(typeHandle, Mode);
             }
         }
 

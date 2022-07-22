@@ -112,7 +112,7 @@ namespace System.Runtime.Serialization
             _codeGenTrace = CodeGenTrace.None;
         }
 
-        internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
+        internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, string methodName, Type[] argTypes)
         {
             _dynamicMethod = dynamicMethod;
             _ilGen = _dynamicMethod.GetILGenerator();
@@ -293,7 +293,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void ForEach(LocalBuilder local, Type elementType, Type enumeratorType,
+        internal void ForEach(LocalBuilder local, Type elementType,
             LocalBuilder enumerator, MethodInfo getCurrentMethod)
         {
             ForState forState = new ForState(local, DefineLabel(), DefineLabel(), enumerator);
@@ -635,7 +635,6 @@ namespace System.Runtime.Serialization
             else
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.CannotLoadMemberType, "Unknown", memberInfo.DeclaringType, memberInfo.Name)));
 
-            EmitStackTop(memberType);
             return memberType;
         }
 
@@ -985,14 +984,12 @@ namespace System.Runtime.Serialization
             if (_codeGenTrace != CodeGenTrace.None)
                 EmitSourceInstruction("Ldloc " + _localNames[localBuilder]);
             _ilGen.Emit(OpCodes.Ldloc, localBuilder);
-            EmitStackTop(localBuilder.LocalType);
         }
 
         internal void Stloc(LocalBuilder local)
         {
             if (_codeGenTrace != CodeGenTrace.None)
                 EmitSourceInstruction("Stloc " + _localNames[local]);
-            EmitStackTop(local.LocalType);
             _ilGen.Emit(OpCodes.Stloc, local);
         }
 
@@ -1002,7 +999,6 @@ namespace System.Runtime.Serialization
             if (_codeGenTrace != CodeGenTrace.None)
                 EmitSourceInstruction("Ldloca " + _localNames[localBuilder]);
             _ilGen.Emit(OpCodes.Ldloca, localBuilder);
-            EmitStackTop(localBuilder.LocalType);
         }
 
         internal void LdargAddress(ArgBuilder argBuilder)
@@ -1096,7 +1092,6 @@ namespace System.Runtime.Serialization
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction(opCode.ToString()!);
                 _ilGen.Emit(opCode);
-                EmitStackTop(arrayElementType);
             }
         }
         internal void Ldelema(Type arrayElementType)
@@ -1105,8 +1100,6 @@ namespace System.Runtime.Serialization
             if (_codeGenTrace != CodeGenTrace.None)
                 EmitSourceInstruction(opCode.ToString()!);
             _ilGen.Emit(opCode, arrayElementType);
-
-            EmitStackTop(arrayElementType);
         }
 
         private static OpCode GetStelemOpCode(TypeCode typeCode) =>
@@ -1140,7 +1133,6 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction(opCode.ToString()!);
-                EmitStackTop(arrayElementType);
                 _ilGen.Emit(opCode);
             }
         }
@@ -1351,24 +1343,19 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExpectingEnd, expected.ToString())));
         }
 
-
-        internal static void EmitSourceInstruction(string line)
+        [Conditional ("DEBUG")]
+        internal static void EmitSourceInstruction(string _)
         {
         }
 
-        internal static void EmitSourceLabel(string line)
+        [Conditional ("DEBUG")]
+        internal static void EmitSourceLabel(string _)
         {
         }
 
-        internal static void EmitSourceComment(string comment)
+        [Conditional ("DEBUG")]
+        internal static void EmitSourceComment(string _)
         {
-        }
-
-
-        internal void EmitStackTop(Type stackTopType)
-        {
-            if (_codeGenTrace != CodeGenTrace.Tron)
-                return;
         }
 
         internal Label[] Switch(int labelCount)

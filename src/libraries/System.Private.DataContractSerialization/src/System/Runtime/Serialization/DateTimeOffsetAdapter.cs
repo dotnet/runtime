@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTimeOffset", exception));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToStringDiagnostic(), "DateTimeOffset", exception));
             }
         }
 
@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization
             return new DateTimeOffsetAdapter(value.UtcDateTime, (short)value.Offset.TotalMinutes);
         }
 
-        public string ToString(IFormatProvider provider)
+        private string ToStringDiagnostic()
         {
             return "DateTime: " + this.UtcDateTime + ", Offset: " + this.OffsetMinutes;
         }

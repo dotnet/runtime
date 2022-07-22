@@ -307,9 +307,9 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable CA1822, IDE0060 // Mark members as static, Remove unused parameter
             private void AnalyzeMarshallerType(DiagnosticReporter diagnosticFactory, INamedTypeSymbol? managedType, MarshalMode mode, INamedTypeSymbol? marshallerType, bool isLinearCollectionMarshaller)
-#pragma warning restore CA1822 // Mark members as static
+#pragma warning restore CA1822, IDE0060 // Mark members as static, Remove unused parameter
             {
                 // TODO: Implement for the V2 shapes
             }

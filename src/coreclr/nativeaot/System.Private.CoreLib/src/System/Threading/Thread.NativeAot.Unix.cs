@@ -28,7 +28,7 @@ namespace System.Threading
             _stopped = new ManualResetEvent(false);
         }
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         private ThreadPriority GetPriorityLive()
         {
             return ThreadPriority.Normal;
@@ -38,7 +38,7 @@ namespace System.Threading
         {
             return true;
         }
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
 
         [UnmanagedCallersOnly]
         private static void OnThreadExit()

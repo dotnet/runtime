@@ -41,7 +41,7 @@ namespace System.Net.Security
             get { return _policy; }
         }
 
-        public SafeFreeSslCredentials(SslStreamCertificateContext? context, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public SafeFreeSslCredentials(SslStreamCertificateContext? context, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
 

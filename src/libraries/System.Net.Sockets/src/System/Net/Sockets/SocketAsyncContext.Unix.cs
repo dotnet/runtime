@@ -625,7 +625,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool result = SocketPal.TryCompleteConnect(context._socket, SocketAddressLen, out ErrorCode);
+                bool result = SocketPal.TryCompleteConnect(context._socket, out ErrorCode);
                 context._socket.RegisterConnectResult(ErrorCode);
                 return result;
             }

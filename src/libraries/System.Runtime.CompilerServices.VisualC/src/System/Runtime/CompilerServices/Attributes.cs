@@ -41,7 +41,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.All)]
     internal sealed class DecoratedNameAttribute : Attribute
     {
-        public DecoratedNameAttribute(string decoratedName) { }
+        public DecoratedNameAttribute(string _) { }
     }
 
     // Indicates that the modified instance is pinned in memory.

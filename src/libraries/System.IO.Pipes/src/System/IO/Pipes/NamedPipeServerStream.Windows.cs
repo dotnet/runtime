@@ -275,16 +275,14 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
             ExecuteHelper execHelper = new ExecuteHelper(impersonationWorker, InternalHandle);
-            bool exceptionThrown = true;
 
             try
             {
                 ImpersonateAndTryCode(execHelper);
-                exceptionThrown = false;
             }
             finally
             {
-                RevertImpersonationOnBackout(execHelper, exceptionThrown);
+                RevertImpersonationOnBackout(execHelper);
             }
 
             // now handle win32 impersonate/revert specific errors by throwing corresponding exceptions
@@ -318,7 +316,7 @@ namespace System.IO.Pipes
             }
         }
 
-        private static void RevertImpersonationOnBackout(object? helper, bool exceptionThrown)
+        private static void RevertImpersonationOnBackout(object? helper)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper!;
 

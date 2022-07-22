@@ -16,7 +16,7 @@ namespace System
 {
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        internal static EnumInfo GetEnumInfo(Type enumType, bool getNames = true)
+        internal static EnumInfo GetEnumInfo(Type enumType, bool _ /*getNames*/ = true)
         {
             Debug.Assert(enumType != null);
             Debug.Assert(enumType is RuntimeType);

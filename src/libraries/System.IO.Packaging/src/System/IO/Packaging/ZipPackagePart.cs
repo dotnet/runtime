@@ -33,13 +33,13 @@ namespace System.IO.Packaging
                 // we'll want this call to SetLength.
                 if (streamFileMode == FileMode.Create && _zipArchiveEntry.Archive.Mode != ZipArchiveMode.Create)
                 {
-                    using (var tempStream = _zipStreamManager.Open(_zipArchiveEntry, streamFileMode, streamFileAccess))
+                    using (var tempStream = _zipStreamManager.Open(_zipArchiveEntry, streamFileAccess))
                     {
                         tempStream.SetLength(0);
                     }
                 }
 
-                var stream = _zipStreamManager.Open(_zipArchiveEntry, streamFileMode, streamFileAccess);
+                var stream = _zipStreamManager.Open(_zipArchiveEntry, streamFileAccess);
                 return stream;
             }
             return null;

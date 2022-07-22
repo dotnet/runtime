@@ -192,7 +192,7 @@ namespace System.DirectoryServices.Protocols
             public static ref int GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.bv_len);
 
             // All usages in our currently supported scenarios will always go through GetPinnableReference
-            public static int* ConvertToUnmanaged(BerVal managed) => throw new UnreachableException();
+            public static int* ConvertToUnmanaged(BerVal _) => throw new UnreachableException();
         }
 #endif
     }

@@ -51,10 +51,12 @@ namespace System.IO.Internal
 #else
         internal
 #endif
+#pragma warning disable IDE0060
         void Dispose(bool disposing)
         {
             SafeDelete();
         }
+#pragma warning restore IDE0060
 
         ~TempFileCollection()
         {

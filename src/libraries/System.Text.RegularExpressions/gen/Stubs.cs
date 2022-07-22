@@ -90,7 +90,9 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexReplacement
     {
+#pragma warning disable IDE0060
         public RegexReplacement(string rep, RegexNode concat, Hashtable caps) { }
+#pragma warning restore IDE0060
 
         public const int LeftPortion = -1;
         public const int RightPortion = -2;

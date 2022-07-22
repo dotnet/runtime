@@ -350,10 +350,10 @@ namespace System.Xml
 
         public virtual byte[] ReadContentAsBase64()
         {
-            return ReadContentAsBase64(Quotas.MaxArrayLength, MaxInitialArrayLength);
+            return ReadContentAsBase64(MaxInitialArrayLength);
         }
 
-        internal byte[] ReadContentAsBase64(int maxByteArrayContentLength, int maxInitialCount)
+        internal byte[] ReadContentAsBase64(int maxInitialCount)
         {
             int length;
             if (TryGetBase64ContentLength(out length))
@@ -372,7 +372,7 @@ namespace System.Xml
                     return buffer;
                 }
             }
-            return ReadContentAsBytes(true, maxByteArrayContentLength);
+            return ReadContentAsBytes(true);
         }
 
         public override string ReadContentAsString()
@@ -495,10 +495,10 @@ namespace System.Xml
 
         protected byte[] ReadContentAsBinHex(int maxByteArrayContentLength)
         {
-            return ReadContentAsBytes(false, maxByteArrayContentLength);
+            return ReadContentAsBytes(false);
         }
 
-        private byte[] ReadContentAsBytes(bool base64, int maxByteArrayContentLength)
+        private byte[] ReadContentAsBytes(bool base64)
         {
             byte[][] buffers = new byte[32][];
             byte[] buffer;

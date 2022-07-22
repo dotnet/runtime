@@ -20,7 +20,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Compile(Compiler compiler)
         {
             CompileAttributes(compiler);
-            CheckRequiredAttribute(compiler, _nameAvt, "name");
+            CheckRequiredAttribute(_nameAvt, "name");
 
             if (_nameAvt!.IsConstant)
             {

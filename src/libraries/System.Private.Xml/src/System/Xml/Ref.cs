@@ -21,7 +21,7 @@ namespace System.Xml
 
         // Prevent typos. If someone uses Ref.Equals instead of Ref.Equal,
         // the program would not compile.
-        public static new void Equals(object objA, object objB)
+        public static new void Equals(object _1, object _2)
         {
         }
     }

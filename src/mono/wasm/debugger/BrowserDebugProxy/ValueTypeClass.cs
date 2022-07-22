@@ -51,7 +51,6 @@ namespace BrowserDebugProxy
                                                 long initialPos,
                                                 string className,
                                                 int typeId,
-                                                int numValues,
                                                 bool isEnum,
                                                 CancellationToken token)
         {

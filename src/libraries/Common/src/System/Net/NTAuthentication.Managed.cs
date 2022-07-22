@@ -1084,7 +1084,7 @@ namespace System.Net
             return NegotiateAuthenticationStatusCode.Completed;
         }
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             throw new PlatformNotSupportedException();
@@ -1106,6 +1106,6 @@ namespace System.Net
         internal bool IsValidContext => true;
 
         internal string? ClientSpecifiedSpn => _spn;
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
     }
 }

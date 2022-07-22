@@ -580,7 +580,7 @@ namespace System.Net
                         FinishRequestStage(RequestStage.ReadReady);
                     CheckError();
 
-                    EnsureFtpWebResponse(null);
+                    EnsureFtpWebResponse();
                 }
             }
             catch (Exception exception)
@@ -1105,7 +1105,7 @@ namespace System.Net
             {
                 if (exception is WebException)
                 {
-                    EnsureFtpWebResponse(exception);
+                    EnsureFtpWebResponse();
                     _exception = new WebException(exception.Message, null, ((WebException)exception).Status, _ftpWebResponse);
                 }
                 else if (exception is AuthenticationException || exception is SecurityException)
@@ -1114,7 +1114,7 @@ namespace System.Net
                 }
                 else if (connection != null && connection.StatusCode != FtpStatusCode.Undefined)
                 {
-                    EnsureFtpWebResponse(exception);
+                    EnsureFtpWebResponse();
                     _exception = new WebException(SR.Format(SR.net_ftp_servererror, connection.StatusLine), exception, WebExceptionStatus.ProtocolError, _ftpWebResponse);
                 }
                 else
@@ -1174,7 +1174,7 @@ namespace System.Net
 
                     if (connection != null)
                     {
-                        EnsureFtpWebResponse(null);
+                        EnsureFtpWebResponse();
 
                         // This to update response status and exit message if any.
                         // Note that status 221 "Service closing control connection" is always suppressed.
@@ -1268,7 +1268,7 @@ namespace System.Net
                         }
 
                         stream.SetSocketTimeoutOption(Timeout);
-                        EnsureFtpWebResponse(null);
+                        EnsureFtpWebResponse();
 
                         stageMode = stream.CanRead ? RequestStage.ReadReady : RequestStage.WriteReady;
                     }
@@ -1278,7 +1278,7 @@ namespace System.Net
 
                         if (connection != null)
                         {
-                            EnsureFtpWebResponse(null);
+                            EnsureFtpWebResponse();
 
                             // This to update response status and exit message if any.
                             // Note that the status 221 "Service closing control connection" is always suppressed.
@@ -1626,7 +1626,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Creates an FTP WebResponse based off the responseStream and our active Connection</para>
         /// </summary>
-        private void EnsureFtpWebResponse(Exception? exception)
+        private void EnsureFtpWebResponse()
         {
             if (_ftpWebResponse == null || (_ftpWebResponse.GetResponseStream() is FtpWebResponse.EmptyStream && _stream != null))
             {

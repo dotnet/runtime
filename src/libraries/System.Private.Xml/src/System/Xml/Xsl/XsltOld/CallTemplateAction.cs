@@ -17,7 +17,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Compile(Compiler compiler)
         {
             CompileAttributes(compiler);
-            CheckRequiredAttribute(compiler, _name, "name");
+            CheckRequiredAttribute(_name, "name");
             CompileContent(compiler);
         }
 

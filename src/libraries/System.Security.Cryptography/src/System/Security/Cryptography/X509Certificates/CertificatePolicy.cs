@@ -375,7 +375,7 @@ namespace System.Security.Cryptography.X509Certificates
                 List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();
                 while (sequenceReader.HasData)
                 {
-                    CertificatePolicyMappingAsn.Decode(ref sequenceReader, rawData, out CertificatePolicyMappingAsn mapping);
+                    CertificatePolicyMappingAsn.Decode(ref sequenceReader, out CertificatePolicyMappingAsn mapping);
                     mappings.Add(mapping);
                 }
 

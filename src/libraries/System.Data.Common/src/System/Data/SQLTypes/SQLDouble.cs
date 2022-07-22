@@ -26,7 +26,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlDouble(bool fNull)
+        private SqlDouble(bool _)
         {
             m_fNotNull = false;
             m_value = 0.0;

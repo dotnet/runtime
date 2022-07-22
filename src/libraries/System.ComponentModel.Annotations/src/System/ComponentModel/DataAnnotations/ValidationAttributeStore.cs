@@ -34,7 +34,6 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext)
         {
-            EnsureValidationContext(validationContext);
             var item = GetTypeStoreItem(validationContext.ObjectType);
             return item.ValidationAttributes;
         }
@@ -47,7 +46,6 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
         {
-            EnsureValidationContext(validationContext);
             var item = GetTypeStoreItem(validationContext.ObjectType);
             return item.DisplayAttribute;
         }
@@ -60,7 +58,6 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.ValidationAttributes;
@@ -74,7 +71,6 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.DisplayAttribute;
@@ -88,7 +84,6 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal Type GetPropertyType(ValidationContext validationContext)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.PropertyType;
@@ -104,7 +99,6 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         internal bool IsPropertyContext(ValidationContext validationContext)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out _);
         }

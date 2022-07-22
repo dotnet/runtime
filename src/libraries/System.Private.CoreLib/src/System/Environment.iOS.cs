@@ -18,7 +18,7 @@ namespace System
 
         private static Dictionary<SpecialFolder, string>? s_specialFolders;
 
-        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
+        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption _ /*option*/)
         {
             if (s_specialFolders == null)
             {

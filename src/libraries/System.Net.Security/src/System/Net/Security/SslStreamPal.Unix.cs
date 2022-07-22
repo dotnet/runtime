@@ -37,7 +37,7 @@ namespace System.Net.Security
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
-            string? targetName,
+            string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions,
@@ -51,11 +51,10 @@ namespace System.Net.Security
             return new SafeFreeSslCredentials(
                 sslAuthenticationOptions.CertificateContext,
                 sslAuthenticationOptions.EnabledSslProtocols,
-                sslAuthenticationOptions.EncryptionPolicy,
-                sslAuthenticationOptions.IsServer);
+                sslAuthenticationOptions.EncryptionPolicy);
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int _ /*headerSize*/, int _1 /*trailerSize*/, ref byte[] output, out int resultSize)
         {
             try
             {
@@ -146,7 +145,7 @@ namespace System.Net.Security
             return HandshakeInternal(credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
-        public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
+        public static void QueryContextStreamSizes(SafeDeleteContext? _ /*securityContext*/, out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
         }
@@ -223,15 +222,17 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+#pragma warning disable IDE0060
+        public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by
             // SSLHandshake.
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
-        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteSslContext sslContext)
+        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteSslContext sslContext)
         {
             // Unset the quiet shutdown option initially configured.
             Interop.Ssl.SslSetQuietShutdown(sslContext.SslContext, 0);

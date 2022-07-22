@@ -3776,7 +3776,7 @@ namespace System
                     CorElementType dstElementType = GetUnderlyingType(this);
                     if (dstElementType != srcElementType)
                     {
-                        value = InvokeUtils.ConvertOrWiden(srcType, srcElementType, value, this, dstElementType);
+                        value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
                     }
                 }
 

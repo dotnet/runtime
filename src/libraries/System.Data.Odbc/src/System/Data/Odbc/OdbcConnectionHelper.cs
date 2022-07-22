@@ -135,7 +135,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal void Abort(Exception e)
+        internal void Abort()
         {
             DbConnectionInternal innerConnection = _innerConnection;
             if (ConnectionState.Open == innerConnection.State)

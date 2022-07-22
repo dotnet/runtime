@@ -7,7 +7,7 @@ namespace System.Net.Internals
 {
     internal static partial class SocketExceptionFactory
     {
-        public static SocketException CreateSocketException(SocketError errorCode, int platformError)
+        public static SocketException CreateSocketException(SocketError errorCode, int _ /*platformError*/)
         {
             return new SocketException((int)errorCode);
         }

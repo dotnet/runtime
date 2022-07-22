@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Xml
 
         // The goal behind this method is to pump the input stream through the transforms and get back something that
         // can be hashed
-        internal Stream TransformToOctetStream(object inputObject, Type inputType, XmlResolver resolver, string baseUri)
+        internal Stream TransformToOctetStream(object inputObject, XmlResolver resolver, string baseUri)
         {
             object currentInput = inputObject;
             foreach (Transform transform in _transforms)
@@ -152,12 +152,12 @@ namespace System.Security.Cryptography.Xml
 
         internal Stream TransformToOctetStream(Stream input, XmlResolver resolver, string baseUri)
         {
-            return TransformToOctetStream(input, typeof(Stream), resolver, baseUri);
+            return TransformToOctetStream(input, resolver, baseUri);
         }
 
         internal Stream TransformToOctetStream(XmlDocument document, XmlResolver resolver, string baseUri)
         {
-            return TransformToOctetStream(document, typeof(XmlDocument), resolver, baseUri);
+            return TransformToOctetStream(document, resolver, baseUri);
         }
 
         internal XmlElement GetXml(XmlDocument document, string ns)

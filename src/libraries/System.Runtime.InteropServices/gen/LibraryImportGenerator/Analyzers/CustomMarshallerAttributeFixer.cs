@@ -126,11 +126,13 @@ namespace Microsoft.Interop.Analyzers
             return editor.GetChangedDocument();
         }
 
+#pragma warning disable IDE0060
         private static SyntaxNode AddMissingMembers(SyntaxNode node, ITypeSymbol
             marshallerType, List<string> missingMemberNames, Compilation compilation, SyntaxGenerator gen)
         {
             // TODO: Implement adding the missing members for the V2 shapes
             return node;
         }
+#pragma warning disable IDE0060
     }
 }

@@ -404,7 +404,7 @@ namespace System.Runtime.InteropServices
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             object? obj;
-            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, IntPtr.Zero, flags, null, out obj))
+            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, flags, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
@@ -447,7 +447,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(wrapper));
 
             object? obj;
-            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, out obj))
+            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, flags, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
@@ -469,16 +469,12 @@ namespace System.Runtime.InteropServices
         /// Get the currently registered managed object or creates a new managed object and registers it.
         /// </summary>
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
-        /// <param name="innerMaybe">The inner instance if aggregation is involved</param>
         /// <param name="flags">Flags used to describe the external object.</param>
-        /// <param name="wrapperMaybe">The <see cref="object"/> to be used as the wrapper for the external object.</param>
         /// <param name="retValue">The managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</param>
         /// <returns>Returns <c>true</c> if a managed object could be retrieved/created, <c>false</c> otherwise</returns>
         private unsafe bool TryGetOrCreateObjectForComInstanceInternal(
             IntPtr externalComObject,
-            IntPtr innerMaybe,
             CreateObjectFlags flags,
-            object? wrapperMaybe,
             out object? retValue)
         {
             if (externalComObject == IntPtr.Zero)

@@ -681,7 +681,7 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryCompleteConnect(SafeSocketHandle socket, int socketAddressLen, out SocketError errorCode)
+        public static unsafe bool TryCompleteConnect(SafeSocketHandle socket, out SocketError errorCode)
         {
             Interop.Error socketError = default;
             Interop.Error err;
@@ -1343,7 +1343,7 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError WindowsIoctl(SafeSocketHandle handle, int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue, out int optionLength)
+        public static SocketError WindowsIoctl(SafeSocketHandle handle, int ioControlCode, byte[]? _ /*optionInValue*/, byte[]? optionOutValue, out int optionLength)
         {
             // Three codes are called out in the Winsock IOCTLs documentation as "The following Unix IOCTL codes (commands) are supported." They are
             // also the three codes available for use with ioctlsocket on Windows. Developers should be discouraged from using Socket.IOControl in
@@ -1545,10 +1545,12 @@ namespace System.Net.Sockets
             }
         }
 
+#pragma warning disable IDE0060
         public static void SetIPProtectionLevel(Socket socket, SocketOptionLevel optionLevel, int protectionLevel)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_IPProtectionLevel);
         }
+#pragma warning restore IDE0060
 
         public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {

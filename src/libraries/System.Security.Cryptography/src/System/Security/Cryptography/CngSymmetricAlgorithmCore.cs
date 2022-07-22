@@ -126,21 +126,20 @@ namespace System.Security.Cryptography
             return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        public ILiteSymmetricCipher CreateLiteSymmetricCipher(ReadOnlySpan<byte> iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
+        public ILiteSymmetricCipher CreateLiteSymmetricCipher(ReadOnlySpan<byte> iv, bool encrypting, CipherMode mode, int feedbackSizeInBits)
         {
             if (KeyInPlainText)
             {
-                return CreateLiteSymmetricCipher(_outer.BaseKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+                return CreateLiteSymmetricCipher(_outer.BaseKey, iv, encrypting, mode, feedbackSizeInBits);
             }
 
-            return CreatePersistedLiteSymmetricCipher(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+            return CreatePersistedLiteSymmetricCipher(ProduceCngKey, iv, encrypting, mode, feedbackSizeInBits);
         }
 
         private ILiteSymmetricCipher CreateLiteSymmetricCipher(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             bool encrypting,
-            PaddingMode padding,
             CipherMode mode,
             int feedbackSizeInBits)
         {
@@ -162,7 +161,6 @@ namespace System.Security.Cryptography
 
             return new BasicSymmetricCipherLiteBCrypt(
                 algorithmModeHandle,
-                mode,
                 blockSizeInBytes,
                 _outer.GetPaddingSize(mode, feedbackSizeInBits),
                 processedKey,
@@ -212,7 +210,6 @@ namespace System.Security.Cryptography
             Func<CngKey> cngKeyFactory,
             ReadOnlySpan<byte> iv,
             bool encrypting,
-            PaddingMode padding,
             CipherMode mode,
             int feedbackSizeInBits)
         {

@@ -91,6 +91,7 @@ namespace System
             UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
         }
 
+#pragma warning disable IDE0060
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opprotunity to customize the
         // termination behavior in whatever way necessary.
@@ -122,5 +123,6 @@ namespace System
         internal static void OnUnhandledException(object e)
         {
         }
+#pragma warning restore IDE0060
     }
 }

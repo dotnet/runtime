@@ -264,11 +264,7 @@ namespace Microsoft.Interop
                             type,
                             (INamedTypeSymbol)useSiteAttribute.ConstructorArguments[0].Value!,
                             useSiteAttribute,
-                            isMarshalUsingAttribute: true,
-                            indirectionLevel,
                             parsedCountInfo,
-                            useSiteAttributes,
-                            inspectedElements,
                             ref maxIndirectionDepthUsed);
                     }
                 }
@@ -286,11 +282,7 @@ namespace Microsoft.Interop
                         type,
                         (INamedTypeSymbol)typeAttribute.ConstructorArguments[0].Value!,
                         typeAttribute,
-                        isMarshalUsingAttribute: false,
-                        indirectionLevel,
                         parsedCountInfo,
-                        useSiteAttributes,
-                        inspectedElements,
                         ref maxIndirectionDepthUsed);
                 }
             }
@@ -535,11 +527,7 @@ namespace Microsoft.Interop
             ITypeSymbol type,
             INamedTypeSymbol entryPointType,
             AttributeData attrData,
-            bool isMarshalUsingAttribute,
-            int indirectionLevel,
             CountInfo parsedCountInfo,
-            Dictionary<int, AttributeData> useSiteAttributes,
-            ImmutableHashSet<string> inspectedElements,
             ref int maxIndirectionDepthUsed)
         {
             if (!ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryPointType))
@@ -688,7 +676,7 @@ namespace Microsoft.Interop
                         AttributeData attrData = _contextSymbol is IMethodSymbol
                             ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                             : default;
-                        marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
+                        marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, parsedCountInfo, ref maxIndirectionDepthUsed);
                         return true;
                     }
                 }

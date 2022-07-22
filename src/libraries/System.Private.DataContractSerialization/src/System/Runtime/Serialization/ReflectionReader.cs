@@ -95,7 +95,7 @@ namespace System.Runtime.Serialization
 
             int arraySize = context.GetArraySize();
             object? resultArray;
-            if (isArray && ReflectionTryReadPrimitiveArray(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract.UnderlyingType, collectionContract.ItemType, arraySize, out resultArray))
+            if (isArray && ReflectionTryReadPrimitiveArray(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract.ItemType, arraySize, out resultArray))
             {
                 return resultArray;
             }
@@ -292,7 +292,7 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        value = context.GetExistingObject(objectId, type, name, ns);
+                        value = context.GetExistingObject(objectId);
                     }
                 }
             }
@@ -604,7 +604,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
+        private static bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
         {
             resultArray = null;
 

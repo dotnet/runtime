@@ -408,7 +408,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return DataContract.GetDataContract(objectType.TypeHandle, objectType, SerializationMode.SharedContract);
+                return DataContract.GetDataContract(objectType.TypeHandle, SerializationMode.SharedContract);
             }
         }
 

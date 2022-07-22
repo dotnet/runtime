@@ -8,7 +8,7 @@ namespace System.Xml
 {
     internal abstract class ArrayHelper<TArgument, TArray>
     {
-        public TArray[] ReadArray(XmlDictionaryReader reader, TArgument localName, TArgument namespaceUri, int maxArrayLength)
+        public TArray[] ReadArray(XmlDictionaryReader reader, TArgument localName, TArgument namespaceUri, int _)
         {
             TArray[][]? arrays = null;
             TArray[]? array;

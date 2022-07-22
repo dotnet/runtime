@@ -87,7 +87,7 @@ namespace System.Diagnostics.Metrics
                 MeasurementsCompleted = (instrument, cookie) =>
                 {
                     _endInstrumentMeasurements(instrument);
-                    RemoveInstrumentState(instrument, (InstrumentState)cookie!);
+                    RemoveInstrumentState(instrument);
                 }
             };
             _listener.SetMeasurementEventCallback<double>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
@@ -217,7 +217,7 @@ namespace System.Diagnostics.Metrics
             _listener.Dispose();
         }
 
-        private void RemoveInstrumentState(Instrument instrument, InstrumentState state)
+        private void RemoveInstrumentState(Instrument instrument)
         {
             _instrumentStates.TryRemove(instrument, out _);
         }

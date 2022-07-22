@@ -14,7 +14,7 @@ namespace System.Xml
         private XmlLinkedNode? _lastChild;
         private bool _childrenFoliating;
 
-        internal XmlEntity(string name, string? strdata, string? publicId, string? systemId, string? notationName, XmlDocument doc) : base(doc)
+        internal XmlEntity(string name, string? publicId, string? systemId, string? notationName, XmlDocument doc) : base(doc)
         {
             _name = doc.NameTable.Add(name);
             _publicId = publicId;

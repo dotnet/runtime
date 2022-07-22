@@ -20,6 +20,8 @@ namespace System
 
     internal static class ConsolePal
     {
+#pragma warning disable IDE0060
+
         internal static void EnsureConsoleInitialized() { }
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
@@ -150,5 +152,7 @@ namespace System
         public static void SetWindowPosition(int left, int top) => throw new PlatformNotSupportedException();
 
         public static void SetWindowSize(int width, int height) => throw new PlatformNotSupportedException();
+
+#pragma warning restore IDE0060
     }
 }

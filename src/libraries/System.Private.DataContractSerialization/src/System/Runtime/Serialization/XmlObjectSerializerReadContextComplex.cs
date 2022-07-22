@@ -39,11 +39,11 @@ namespace System.Runtime.Serialization
                 if (_serializationSurrogateProvider == null)
                     return base.InternalDeserialize(xmlReader, declaredTypeID, declaredTypeHandle, name, ns);
                 else
-                    return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle)!, null /*surrogateDataContract*/, name, ns);
+                    return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle)!, null /*surrogateDataContract*/);
             }
             else
             {
-                return InternalDeserializeInSharedTypeMode(xmlReader, declaredTypeID, Type.GetTypeFromHandle(declaredTypeHandle)!, name, ns);
+                return InternalDeserializeInSharedTypeMode(xmlReader, declaredTypeID, Type.GetTypeFromHandle(declaredTypeHandle)!);
             }
         }
 
@@ -55,11 +55,11 @@ namespace System.Runtime.Serialization
                 if (_serializationSurrogateProvider == null)
                     return base.InternalDeserialize(xmlReader, declaredType, name, ns);
                 else
-                    return InternalDeserializeWithSurrogate(xmlReader, declaredType, null /*surrogateDataContract*/, name, ns);
+                    return InternalDeserializeWithSurrogate(xmlReader, declaredType, null /*surrogateDataContract*/);
             }
             else
             {
-                return InternalDeserializeInSharedTypeMode(xmlReader, -1, declaredType, name, ns);
+                return InternalDeserializeInSharedTypeMode(xmlReader, -1, declaredType);
             }
         }
 
@@ -71,21 +71,21 @@ namespace System.Runtime.Serialization
                 if (_serializationSurrogateProvider == null)
                     return base.InternalDeserialize(xmlReader, declaredType, dataContract, name, ns);
                 else
-                    return InternalDeserializeWithSurrogate(xmlReader, declaredType, dataContract, name, ns);
+                    return InternalDeserializeWithSurrogate(xmlReader, declaredType, dataContract);
             }
             else
             {
-                return InternalDeserializeInSharedTypeMode(xmlReader, -1, declaredType, name, ns);
+                return InternalDeserializeInSharedTypeMode(xmlReader, -1, declaredType);
             }
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private object? InternalDeserializeInSharedTypeMode(XmlReaderDelegator xmlReader, int declaredTypeID, Type declaredType, string? name, string? ns)
+        private object? InternalDeserializeInSharedTypeMode(XmlReaderDelegator xmlReader, int declaredTypeID, Type declaredType)
         {
             Debug.Assert(attributes != null);
 
             object? retObj = null;
-            if (TryHandleNullOrRef(xmlReader, declaredType, name, ns, ref retObj))
+            if (TryHandleNullOrRef(xmlReader, declaredType, ref retObj))
                 return retObj;
 
             DataContract dataContract;
@@ -93,20 +93,8 @@ namespace System.Runtime.Serialization
             string? typeName = attributes.ClrType;
             if (assemblyName != null && typeName != null)
             {
-                Assembly assembly;
-                DataContract? tempDataContract = ResolveDataContractInSharedTypeMode(assemblyName, typeName, out assembly, out _);
-                if (tempDataContract == null)
-                {
-                    if (assembly == null)
-                        throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.AssemblyNotFound, assemblyName));
-
-                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ClrTypeNotFound, assembly.FullName, typeName));
-                }
-
-                dataContract = tempDataContract;
-                //Array covariance is not supported in XSD. If declared type is array, data is sent in format of base array
-                if (declaredType != null && declaredType.IsArray)
-                    dataContract = (declaredTypeID < 0) ? GetDataContract(declaredType) : GetDataContract(declaredTypeID, declaredType.TypeHandle);
+                ThrowDataContractInSharedTypeMode();
+                return null; // unreachable
             }
             else
             {
@@ -122,7 +110,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract, string? name, string? ns)
+        private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract)
         {
             Debug.Assert(_serializationSurrogateProvider != null);
 
@@ -134,30 +122,19 @@ namespace System.Runtime.Serialization
             }
             ReadAttributes(xmlReader);
             string objectId = GetObjectId();
-            object? oldObj = InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
+            object? oldObj = InternalDeserialize(xmlReader, declaredType, ref dataContract);
             object? obj = DataContractSurrogateCaller.GetDeserializedObject(_serializationSurrogateProvider, oldObj, dataContract.UnderlyingType, declaredType);
             ReplaceDeserializedObject(objectId, oldObj, obj);
 
             return obj;
         }
 
-        private static Type ResolveDataContractTypeInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly)
+        [DoesNotReturn]
+        private static void ThrowDataContractInSharedTypeMode()
         {
             // The method is used only when _mode == SerializationMode.SharedType.
             // _mode is set to SerializationMode.SharedType only when the context is for NetDataContractSerializer.
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NetDataContractSerializer);
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private DataContract? ResolveDataContractInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly, out Type type)
-        {
-            type = ResolveDataContractTypeInSharedTypeMode(assemblyName, typeName, out assembly);
-            if (type != null)
-            {
-                return GetDataContract(type);
-            }
-
-            return null;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -169,12 +146,9 @@ namespace System.Runtime.Serialization
             {
                 return base.ResolveDataContractFromTypeName();
             }
-            else
+            else if (attributes.ClrAssembly != null && attributes.ClrType != null)
             {
-                if (attributes.ClrAssembly != null && attributes.ClrType != null)
-                {
-                    return ResolveDataContractInSharedTypeMode(attributes.ClrAssembly, attributes.ClrType, out _, out _);
-                }
+                ThrowDataContractInSharedTypeMode();
             }
             return null;
         }

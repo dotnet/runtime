@@ -255,7 +255,7 @@ namespace System.Data
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
-            (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
+            (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection() : s_zeroPropertyDescriptorCollection);
 
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd) => this;
         #endregion

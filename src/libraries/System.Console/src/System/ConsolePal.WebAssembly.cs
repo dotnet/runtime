@@ -74,6 +74,7 @@ namespace System
 
     internal static partial class ConsolePal
     {
+#pragma warning disable IDE0060        
         [JSImport("globalThis.console.clear")]
         public static partial void Clear();
 
@@ -213,5 +214,7 @@ namespace System
         public static void SetWindowPosition(int left, int top) => throw new PlatformNotSupportedException();
 
         public static void SetWindowSize(int width, int height) => throw new PlatformNotSupportedException();
+
+#pragma warning restore IDE0060
     }
 }

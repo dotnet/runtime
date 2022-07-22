@@ -434,7 +434,7 @@ namespace System.Xml.Schema
         }
 
         //no recursive version of expand tree for Sequence and Choice node
-        protected void ExpandTreeNoRecursive(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
+        protected void ExpandTreeNoRecursive(SymbolsDictionary symbols, Positions positions)
         {
             Stack<InteriorNode> nodeStack = new Stack<InteriorNode>();
             InteriorNode this_ = this;
@@ -560,7 +560,7 @@ namespace System.Xml.Schema
 
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
-            ExpandTreeNoRecursive(parent, symbols, positions);
+            ExpandTreeNoRecursive(symbols, positions);
         }
 
 #if DEBUG
@@ -643,7 +643,7 @@ namespace System.Xml.Schema
 
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
-            ExpandTreeNoRecursive(parent, symbols, positions);
+            ExpandTreeNoRecursive(symbols, positions);
         }
 
 #if DEBUG
@@ -1268,7 +1268,7 @@ namespace System.Xml.Schema
             if (_minMaxNodesCount > 0)
             { //If the tree has any terminal range nodes
                 BitSet positionsWithRangeTerminals;
-                BitSet[] minMaxFollowPos = CalculateTotalFollowposForRangeNodes(firstpos, followpos, out positionsWithRangeTerminals);
+                BitSet[] minMaxFollowPos = CalculateTotalFollowposForRangeNodes(followpos, out positionsWithRangeTerminals);
 
                 if (_enableUpaCheck)
                 {
@@ -1309,7 +1309,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private BitSet[] CalculateTotalFollowposForRangeNodes(BitSet firstpos, BitSet[] followpos, out BitSet posWithRangeTerminals)
+        private BitSet[] CalculateTotalFollowposForRangeNodes(BitSet[] followpos, out BitSet posWithRangeTerminals)
         {
             int positionsCount = _positions!.Count; //terminals
             posWithRangeTerminals = new BitSet(positionsCount);
