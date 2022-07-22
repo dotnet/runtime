@@ -204,10 +204,13 @@ public:
     //    v - the value
     //    kind - Normal, we are not allowed to overwrite
     //           Overwrite, we are allowed to overwrite
+    //           SkipIfExist, skip if value exists.
     //           currently only used by CHK/DBG builds in an assert.
+    //    pVal - If SkipIfExist is passed, returns the value that
+    //           was already present in the table. Otherwise, unchanged.
     //
     // Return Value:
-    //    `true` if the key exists and was overwritten,
+    //    `true` if the key exists and was overwritten/skipped.
     //    `false` otherwise.
     //
     // Notes:
@@ -217,10 +220,14 @@ public:
     enum SetKind
     {
         None,
-        Overwrite
+        Overwrite,
+
+         //Skip setting if it exists. Useful to find node just once instead of
+         //Lookup() and Set         
+        SkipIfExist
     };
 
-    bool Set(Key k, Value v, SetKind kind = None)
+    bool Set(Key k, Value v, SetKind kind = None, Value *pVal = nullptr)
     {
         CheckGrowth();
 
@@ -235,8 +242,19 @@ public:
         }
         if (pN != nullptr)
         {
-            assert(kind == Overwrite);
-            pN->m_val = v;
+            if (kind == SkipIfExist)
+            {
+                assert(KeyFuncs::Equals(k, pN->m_key));
+                if (pVal != nullptr)
+                {
+                    *pVal = pN->m_val;
+                }
+            }
+            else
+            {
+                assert(kind == Overwrite);
+                pN->m_val = v;
+            }
             return true;
         }
         else
