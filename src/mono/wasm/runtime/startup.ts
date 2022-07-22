@@ -299,7 +299,6 @@ function mono_wasm_before_user_runtime_initialized(): void {
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
-        if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
     } catch (err: any) {
         _print_error("MONO_WASM: Error in mono_wasm_before_user_runtime_initialized", err);
@@ -330,11 +329,6 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
         }
 
         if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: Initializing mono runtime");
-
-        // these are second calls in case of non-blazor. 
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
-        if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
-        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
         if (Module.onDotnetReady) {
             try {
@@ -553,6 +547,8 @@ export function mono_wasm_load_runtime(unused?: string, debug_level?: number): v
         }
         cwraps.mono_wasm_load_runtime(unused || "unused", debug_level);
         runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
+
+        if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
