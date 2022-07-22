@@ -25,7 +25,6 @@ Example console output:
     > make run
     console.debug: MONO_WASM: Initializing mono runtime
     console.debug: MONO_WASM: ICU data archive(s) loaded, disabling invariant mode
-    console.debug: mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
     console.info: Initializing.....
     Benchmark started
     Exceptions, NoExceptionHandling count: 8344090, per call: 6.807213249138013E-05ms, total: 0.568s

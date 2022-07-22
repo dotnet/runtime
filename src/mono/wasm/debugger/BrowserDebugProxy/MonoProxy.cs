@@ -93,7 +93,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Runtime.consoleAPICalled":
                     {
                         string type = args["type"]?.ToString();
-                        if (type == "debug")
+                        if (type == "debug" || type == "assert")
                         {
                             JToken a = args["args"];
                             if (a is null)
