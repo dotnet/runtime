@@ -152,7 +152,7 @@ namespace System.Buffers.Text
                 }
                 else
                 {
-                    srcVector.As<TTo>().StoreUnsafe(ref *pDest);
+                    srcVector.As<TFrom, TTo>().StoreUnsafe(ref *pDest);
                 }
             }
 
