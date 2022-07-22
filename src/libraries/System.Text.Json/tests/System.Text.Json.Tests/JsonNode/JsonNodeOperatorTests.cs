@@ -86,6 +86,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"), (Guid)jObject["MyGuid"]);
         }
 
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static void ExplicitOperators_FromValues()
         {
