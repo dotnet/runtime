@@ -189,38 +189,23 @@ __PPF_ThreadReg SETS "r2"
     EXTERN RhpPInvokeExceptionGuard
 
 
-    NESTED_ENTRY RhpGcProbeHijackScalarWrapper, .text, RhpPInvokeExceptionGuard
+    NESTED_ENTRY RhpGcProbeHijackWrapper, .text, RhpPInvokeExceptionGuard
 
         HijackTargetFakeProlog
 
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackScalar
+    LABELED_RETURN_ADDRESS RhpGcProbeHijack
 
         FixupHijackedCallstack
-        mov         r12, #DEFAULT_FRAME_SAVE_FLAGS
+
+        ldr         r3, =RhpTrapThreads
+        ldr         r3, [r3]
+        tst         r3, #TrapThreadsFlags_TrapThreads
+        bne         %0
+        bx          lr
+0
+        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
         b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackScalarWrapper
-
-    NESTED_ENTRY RhpGcProbeHijackObjectWrapper, .text, RhpPInvokeExceptionGuard
-
-        HijackTargetFakeProlog
-
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackObject
-
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_GCREF)
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackObjectWrapper
-
-    NESTED_ENTRY RhpGcProbeHijackByrefWrapper, .text, RhpPInvokeExceptionGuard
-
-        HijackTargetFakeProlog
-
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackByref
-
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_BYREF)
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackByrefWrapper
+    NESTED_END RhpGcProbeHijackWrapper
 
 #ifdef FEATURE_GC_STRESS
 ;;
@@ -228,28 +213,15 @@ __PPF_ThreadReg SETS "r2"
 ;; GC Stress Hijack targets
 ;;
 ;;
-    LEAF_ENTRY RhpGcStressHijackScalar
+    LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        mov         r12, #DEFAULT_FRAME_SAVE_FLAGS
+        mov         r12, #DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0
         b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackScalar
-
-    LEAF_ENTRY RhpGcStressHijackObject
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_GCREF)
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackObject
-
-    LEAF_ENTRY RhpGcStressHijackByref
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_BYREF)
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackByref
-
+    LEAF_END RhpGcStressHijack
 
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
+;; Instead, go through RhpGcStressHijack.
 ;; This worker performs the GC Stress work and returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -273,17 +245,7 @@ __PPF_ThreadReg SETS "r2"
 
     EXTERN RhpThrowHwEx
 
-    LEAF_ENTRY RhpGcProbe
-        ldr         r3, =RhpTrapThreads
-        ldr         r3, [r3]
-        tst         r3, #TrapThreadsFlags_TrapThreads
-        bne         %0
-        bx          lr
-0
-        b           RhpGcProbeRare
-    LEAF_END RhpGcProbe
-
-    NESTED_ENTRY RhpGcProbeRare
+    NESTED_ENTRY RhpGcProbe
         PROLOG_PROBE_FRAME r2, r3, r12
 
         ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame] 

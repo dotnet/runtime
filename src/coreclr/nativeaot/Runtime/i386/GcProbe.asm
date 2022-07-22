@@ -154,12 +154,6 @@ extern RhpThrowHwEx : proc
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
 RhpGcProbe  proc
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
-        jnz         SynchronousRendezVous
-
-        HijackFixupEpilog
-
-SynchronousRendezVous:
         PushProbeFrame ecx      ; bitmask in ECX
 
         mov         ecx, esp
@@ -236,51 +230,23 @@ RhpGcStressProbe  endp
 
 endif ;; FEATURE_GC_STRESS
 
-FASTCALL_FUNC RhpGcProbeHijackScalar, 0
-
+FASTCALL_FUNC RhpGcProbeHijack, 0
         HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS
-        jmp         RhpGcProbe
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         DoRhpGcProbe
+        HijackFixupEpilog
 
-FASTCALL_ENDFUNC
-
-FASTCALL_FUNC RhpGcProbeHijackObject, 0
-
-        HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
-        jmp         RhpGcProbe
-
-FASTCALL_ENDFUNC
-
-FASTCALL_FUNC RhpGcProbeHijackByref, 0
-
-        HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_BYREF
+DoRhpGcProbe:
+        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpGcProbe
 
 FASTCALL_ENDFUNC
 
 ifdef FEATURE_GC_STRESS
-FASTCALL_FUNC RhpGcStressHijackScalar, 0
+FASTCALL_FUNC RhpGcStressHijack, 0
 
         HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS
-        jmp         RhpGcStressProbe
-
-FASTCALL_ENDFUNC
-
-FASTCALL_FUNC RhpGcStressHijackObject, 0
-
-        HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
-        jmp         RhpGcStressProbe
-
-FASTCALL_ENDFUNC
-
-FASTCALL_FUNC RhpGcStressHijackByref, 0
-
-        HijackFixupProlog
-        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_BYREF
+        mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpGcStressProbe
 
 FASTCALL_ENDFUNC
