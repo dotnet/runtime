@@ -67,19 +67,19 @@ namespace ILCompiler.Dataflow
                     var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                     if (ecmaMethod == null)
                         return false;
-                    decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
+                    decoded = ecmaMethod.GetDecodedCustomAttribute(CodeAnalysisNamespace, requiresAttributeName);
                     break;
                 case MetadataType type:
                     var ecmaType = type as EcmaType;
                     if (ecmaType == null)
                         return false;
-                    decoded = ecmaType.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
+                    decoded = ecmaType.GetDecodedCustomAttribute(CodeAnalysisNamespace, requiresAttributeName);
                     break;
                 case PropertyPseudoDesc property:
-                    decoded = property.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
+                    decoded = property.GetDecodedCustomAttribute(CodeAnalysisNamespace, requiresAttributeName);
                     break;
                 case EventPseudoDesc @event:
-                    decoded = @event.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
+                    decoded = @event.GetDecodedCustomAttribute(CodeAnalysisNamespace, requiresAttributeName);
                     break;
                 default:
                     Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + member.GetType().ToString());
@@ -158,7 +158,7 @@ namespace ILCompiler.Dataflow
 
         private static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute, bool checkAssociatedSymbol)
         {
-            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttribute) && !method.IsStaticConstructor)
+            if (method.HasCustomAttribute(CodeAnalysisNamespace, requiresAttribute) && !method.IsStaticConstructor)
                 return true;
 
             if (method.OwningType is TypeDesc type && TryGetRequiresAttribute(type, requiresAttribute, out _))
@@ -224,5 +224,9 @@ namespace ILCompiler.Dataflow
         internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
         internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
         internal const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
+        internal const string CodeAnalysisNamespace = nameof(System.Diagnostics.CodeAnalysis);
+        internal const string DynamicallyAccessedMembersAttribute = nameof(DynamicallyAccessedMembersAttribute);
+        internal const string UnconditionalSuppressMessageAttribute = nameof(UnconditionalSuppressMessageAttribute);
+        internal const string DynamicDependencyAttribute = nameof(DynamicDependencyAttribute);
     }
 }

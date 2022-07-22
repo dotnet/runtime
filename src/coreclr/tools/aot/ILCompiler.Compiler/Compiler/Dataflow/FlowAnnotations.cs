@@ -265,7 +265,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
             {
-                CustomAttributeHandle ca = reader.GetCustomAttributeHandle(customAttributeHandles, "System.Diagnostics.CodeAnalysis", "DynamicallyAccessedMembersAttribute");
+                CustomAttributeHandle ca = reader.GetCustomAttributeHandle(customAttributeHandles, DiagnosticUtilities.CodeAnalysisNamespace, DiagnosticUtilities.DynamicallyAccessedMembersAttribute);
                 if (ca.IsNil)
                     return DynamicallyAccessedMemberTypes.None;
 

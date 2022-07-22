@@ -16,6 +16,7 @@ using static ILCompiler.Dataflow.DynamicallyAccessedMembersBinder;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using MethodAttributes = System.Reflection.MethodAttributes;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -27,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
-            foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+            foreach (var attribute in method.GetDecodedCustomAttributes(DiagnosticUtilities.CodeAnalysisNamespace, DiagnosticUtilities.DynamicDependencyAttribute))
             {
                 IEnumerable<TypeSystemEntity> members;
 
