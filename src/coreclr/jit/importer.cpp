@@ -3693,6 +3693,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #ifdef FEATURE_HW_INTRINSICS
         if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
         {
+            if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
+            {
+                *pIntrinsicName = NI_Illegal;
+                return nullptr;
+            }
+
             GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
             if (mustExpand && (hwintrinsic == nullptr))
