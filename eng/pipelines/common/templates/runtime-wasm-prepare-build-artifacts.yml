@@ -19,7 +19,7 @@ steps:
         artifactNameSuffix: libtests
 
   - script: >-
-      rm -Rf $(Build.SourcesDirectory)/artifacts/*/*Tests*
+      rm -Rf $(Build.SourcesDirectory)/artifacts/*/*Tests* $(Build.SourcesDirectory)/artifacts/helix
     displayName: "Clean up test artifacts"
 
   - ${{ if containsValue(parameters.buildTypes, 'libtests-eat') }}:
@@ -29,6 +29,7 @@ steps:
         /p:ContinuousIntegrationBuild=true
         ${{ parameters.buildArgs }}
         /p:EnableAggressiveTrimming=true
+        /p:BuildAOTTestsOnHelix=true
         /p:ArchiveTests=true
       displayName: "Build EAT tests"
 
