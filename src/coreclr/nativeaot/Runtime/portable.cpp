@@ -535,15 +535,6 @@ COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-#ifdef CALLDESCR_FPARGREGSARERETURNREGS
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub))
-#else
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub, uintptr_t* pReturnFloatingPointReturn4Thunk, uintptr_t* pReturnFloatingPointReturn8Thunk))
-#endif
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
 COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
