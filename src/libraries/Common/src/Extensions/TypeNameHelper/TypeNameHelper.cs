@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Internal
             { typeof(ushort), "ushort" }
         };
 
-        [return: NotNullIfNotNull("item")]
+        [return: NotNullIfNotNull(nameof(item))]
         public static string? GetTypeDisplayName(object? item, bool fullName = true)
         {
             return item == null ? null : GetTypeDisplayName(item.GetType(), fullName);

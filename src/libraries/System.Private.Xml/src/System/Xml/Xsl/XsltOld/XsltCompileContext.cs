@@ -661,7 +661,7 @@ namespace System.Xml.Xsl.XsltOld
                 return string.Empty;
             }
 
-            [return: NotNullIfNotNull("argument")]
+            [return: NotNullIfNotNull(nameof(argument))]
             public static string? ToString(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
