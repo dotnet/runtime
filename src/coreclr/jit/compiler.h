@@ -7238,15 +7238,80 @@ public:
         }
 
     public:
-        unsigned GetHashCode()
+        unsigned GetHashCode(bool vnBased)
         {
-            /*
-             *  0 ~ 2 : assertionKind
-             *  3 ~ 6 : op1Kind
-             *  7 ~ 11: op2Kind
-             */
-            unsigned result = ((op2.kind << 7) | (op1.kind << 3) | (assertionKind));
-            return result;
+            assert(assertionKind != OAK_INVALID);
+            unsigned op2Valid = op2.kind ^ O2K_INVALID;
+            unsigned op1Valid = op1.kind ^ O1K_INVALID;
+            unsigned hashCode = 0;
+
+            if (vnBased)
+            {
+                if (op2Valid)
+                {
+                    /* op2.lcl's lclNum combined 9-bits will take care of 9-bits of other members
+                       of union like u1.iconVal, lconVal, dconVal.
+                     */
+                    hashCode |=
+                        ((op2.lcl.lclNum & 0x1FF) << 23) | /* 31 ~ 23 : op2.lcl.lclNum    (low 9-bits) */
+                        (op2.kind << 18);                  /* 22 ~ 18 : op2Kind           (5-bits) */
+                }
+
+                if (op1.kind == O1K_ARR_BND)
+                {
+                    hashCode |=
+                        ((op1.lcl.lclNum & 0x7FF) << 7) |  /* 17 ~ 07 : op1.lcl.lclNum    (low 11-bits) */
+                        (op1.kind << 3);                   /* 06 ~ 03 : op1Kind           (4-bits) */
+                }
+                else if (op1Valid)
+                {
+                    hashCode |=
+                        ((op1.vn & 0x7FF) << 7)       |    /* 17 ~ 07 : op1.vn            (low 11-bits) */
+                        (op1.kind << 3);                   /* 06 ~ 03 : op1Kind           (4-bits) */
+                }
+
+                return hashCode |
+                       (assertionKind);                     /* 02 ~ 00 : assertionKind     (3-bits)*/
+
+                //return (
+                //    ((op2.lcl.lclNum & 0x1FF) << 23)    |   /* 31 ~ 23 : op2.lcl.lclNum    (low 9-bits) */
+                //    (op2.kind << 18)                    |   /* 22 ~ 18 : op2Kind           (5-bits) */
+                //    ((op1.vn & 0x7FF) << 7)             |   /* 17 ~ 07 : op1.vn            (low 11-bits) */
+                //    (op1.kind << 3)                     |   /* 06 ~ 03 : op1Kind           (4-bits) */
+                //    (assertionKind));                       /* 02 ~ 00 : assertionKind     (3-bits)*/
+                //return GetHashCodeGlobal(&dsc);
+            }
+            else
+            {
+                if (op2Valid)
+                {
+                    /* op2.lcl's lclNum combined 15-bits will take care of 15-bits of other members
+                       of union like u1.iconVal, lconVal, dconVal.
+                     */
+                    hashCode |=
+                        ((op2.lcl.lclNum & 0x7FFF) << 17)  |  /* 31 ~ 17 : op2.lcl.lclNum    (low 15-bits) */
+                        (op2.kind << 12);                     /* 16 ~ 12 : op2Kind           (5-bits) */
+                }
+
+                if (op1Valid)
+                {
+                    hashCode |=
+                        ((op1.lcl.lclNum & 0x1F) << 7)    |  /* 11 ~ 07 : op1.lcl.lclNum    (low 5-bits) */
+                        (op1.kind << 3);                     /* 06 ~ 03 : op1Kind           (4-bits) */
+                }
+
+                return hashCode |
+                    (assertionKind);                         /* 02 ~ 00 : assertionKind     (3-bits)*/
+
+                //return (
+                //    ((op2.lcl.lclNum & 0x7FFF) << 17) |  /* 31 ~ 17 : op2.lcl.lclNum    (low 15-bits) */
+                //    (op2.kind << 12)                  |  /* 16 ~ 12 : op2Kind           (5-bits) */
+                //    ((op1.lcl.lclNum & 0x1F) << 7)    |  /* 11 ~ 07 : op1.lcl.lclNum    (low 5-bits) */
+                //    (op1.kind << 3)                   |  /* 06 ~ 03 : op1Kind           (4-bits) */
+                //    (assertionKind));                    /* 02 ~ 00 : assertionKind     (3-bits) */
+                //return GetHashCodeLocal(&dsc);
+            }
+            //return assertionHashCodeFn(dsc);
         }
     };
 
@@ -7274,10 +7339,9 @@ protected:
     bool           optCanPropBndsChk;
     bool           optCanPropSubRange;
 
-     //template <bool isLocal>
     struct AssertionDscKeyFuncs
     {
-        typedef unsigned (*HashCodeFn)(AssertionDsc);
+        typedef unsigned (*HashCodeFn)(AssertionDsc*);
 
         static bool vnBased;
         static HashCodeFn assertionHashCodeFn;
@@ -7297,36 +7361,31 @@ protected:
 
         static bool Equals(AssertionDsc x, AssertionDsc y)
         {
-            AssertionDsc* _x = &x;
-            AssertionDsc* _y = &y;
-            return _x->Equals(_y, vnBased);
+            return (&x)->Equals(&y, vnBased);
         }
 
         static unsigned GetHashCode(AssertionDsc dsc)
         {
-            return assertionHashCodeFn(dsc);
+            return dsc.GetHashCode(vnBased);
+            //if (vnBased)
+            //{
+            //    //return GetHashCodeGlobal(&dsc);
+            //}
+            //else
+            //{
+            //    //return GetHashCodeLocal(&dsc);
+            //}
+            ////return assertionHashCodeFn(dsc);
         }
 
-        static unsigned GetHashCodeGlobal(AssertionDsc dsc)
+        static unsigned GetHashCodeGlobal(AssertionDsc* dsc)
         {
-            /*
-             *  0 ~ 2 : assertionKind
-             *  3 ~ 6 : op1Kind
-             *  7 ~ 11: op2Kind
-             */
-            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-            return result;
+            return 0;
         }
 
-        static unsigned GetHashCodeLocal(AssertionDsc dsc)
+        static unsigned GetHashCodeLocal(AssertionDsc* dsc)
         {
-            /*
-             *  0 ~ 2 : assertionKind
-             *  3 ~ 6 : op1Kind
-             *  7 ~ 11: op2Kind
-             */
-            unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-            return result;
+            return 0;
         }
     };
 
