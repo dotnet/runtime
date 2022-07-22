@@ -6,7 +6,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Unicode;
@@ -21,15 +20,15 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten)
-            => ChangeCase<char, char, ToUpperConversion>(source, destination, out charsConsumed, out charsWritten);
+            => ChangeCase<ushort, ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsConsumed, out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten)
-            => ChangeCase<byte, char, ToUpperConversion>(source, destination, out bytesConsumed, out charsWritten);
+            => ChangeCase<byte, ushort, ToUpperConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out bytesConsumed, out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
-            => ChangeCase<char, byte, ToUpperConversion>(source, destination, out charsConsumed, out bytesWritten);
+            => ChangeCase<ushort, byte, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
@@ -37,15 +36,15 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten)
-            => ChangeCase<char, char, ToLowerConversion>(source, destination, out charsConsumed, out charsWritten);
+            => ChangeCase<ushort, ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsConsumed, out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten)
-            => ChangeCase<byte, char, ToLowerConversion>(source, destination, out bytesConsumed, out charsWritten);
+            => ChangeCase<byte, ushort, ToLowerConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out bytesConsumed, out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
-            => ChangeCase<char, byte, ToLowerConversion>(source, destination, out charsConsumed, out bytesWritten);
+            => ChangeCase<ushort, byte, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten);
 
         private static unsafe OperationStatus ChangeCase<TFrom, TTo, TCasing>(ReadOnlySpan<TFrom> source, Span<TTo> destination, out int sourceElementsConsumed, out int destinationElementsWritten)
             where TFrom : unmanaged, IBinaryInteger<TFrom>
@@ -112,11 +111,13 @@ namespace System.Buffers.Text
                 goto DrainRemaining;
             }
 
-            // Attempt to process 128 input bits.
+            // Attempt to process blocks of 128 input bits.
 
             if (Vector128.IsHardwareAccelerated && elementCount >= (nuint)(16 / sizeof(TFrom)))
             {
-                Vector128<TFrom> srcVector = Vector128.LoadUnsafe(ref *pSrc);
+                // The first iteration of this loop will be unaligned.
+
+                Vector128<TFrom> srcVector = Vector128.LoadUnsafe(ref *pSrc, i);
 
                 // First, check for non-ASCII data. If we see any, immediately
                 // exit the vectorized logic and fall back to the slower drain paths.
@@ -127,39 +128,77 @@ namespace System.Buffers.Text
                 }
 
                 // Now find matching characters and perform case conversion.
+                // Basically, the (A <= value && value <= Z) check is converted to:
+                // (value - CONST) < (Z - A), but using signed instead of unsigned arithmetic.
 
-                Vector128<TFrom> searchValuesLowerExclusive = Vector128.Create(TFrom.CreateTruncating(ConversionIsToUpper ? '`' : '@')); // just before 'a' and 'A'
-                Vector128<TFrom> searchValuesUpperExclusive = Vector128.Create(TFrom.CreateTruncating(ConversionIsToUpper ? '{' : '[')); // just after 'z' and 'Z'
+                Vector128<TFrom> subtractionVector = Vector128.Create(TFrom.CreateTruncating((ConversionIsToUpper ? 'a' : 'A') + 0x80));
+                Vector128<TFrom> comparisionVector = Vector128.Create(TFrom.CreateTruncating(26 /* a..z or A..Z */));
                 Vector128<TFrom> caseConversionVector = Vector128.Create(TFrom.CreateTruncating(0x20)); // works both directions
 
-                Vector128<TFrom> matches = Vector128.LessThan(srcVector, searchValuesUpperExclusive)
-                    & Vector128.LessThan(searchValuesLowerExclusive, srcVector);
+                Vector128<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
                 srcVector ^= (matches & caseConversionVector);
 
                 // Now narrow or widen the vector as needed and write to the destination.
 
                 if (ConversionIsNarrowing)
                 {
-                    Vector128<ushort> wide = srcVector.AsUInt16();
-                    Vector128<byte> narrow = Vector128.Narrow(wide, wide);
-                    Unsafe.WriteUnaligned<ulong>(pDest, narrow.AsUInt64().ToScalar());
+                    Narrow16To8AndAndWriteTo(srcVector.AsUInt16(), (byte*)pDest, 0);
                 }
                 else if (ConversionIsWidening)
                 {
-                    Vector128<byte> narrow = srcVector.AsByte();
-                    Vector128.WidenLower(narrow).StoreUnsafe(ref *(ushort*)pDest);
-                    Vector128.WidenUpper(narrow).StoreUnsafe(ref *(ushort*)pDest, 8);
+                    Widen8To16AndAndWriteTo(srcVector.AsByte(), (char*)pDest, 0);
                 }
                 else
                 {
                     srcVector.As<TFrom, TTo>().StoreUnsafe(ref *pDest);
                 }
-            }
 
+                // Now that the first conversion is out of the way, calculate how
+                // many elements we should skip in order to have future writes be
+                // aligned.
+
+                uint expectedWriteAlignment = ConversionIsNarrowing ? 8u : 16u; // JIT turns this into a const
+                i = expectedWriteAlignment - ((uint)pDest & (expectedWriteAlignment - 1)) / (uint)sizeof(TTo);
+                Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment == 0, "Destination buffer wasn't properly aligned!");
+
+                // Future iterations of this loop will be aligned.
+
+                for (; (elementCount - i) >= (nuint)(16 / sizeof(TFrom)); i += (nuint)(16 / sizeof(TFrom)))
+                {
+                    // Unaligned read & check for non-ASCII data.
+
+                    srcVector = Vector128.LoadUnsafe(ref *pSrc, i);
+                    if (VectorContainsAnyNonAsciiData(srcVector))
+                    {
+                        goto Drain64;
+                    }
+
+                    // Now find matching characters and perform case conversion.
+
+                    matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                    srcVector ^= (matches & caseConversionVector);
+
+                    // Now narrow or widen the vector as needed and write to the destination.
+                    // We expect this write to be aligned.
+
+                    if (ConversionIsNarrowing)
+                    {
+                        Narrow16To8AndAndWriteTo(srcVector.AsUInt16(), (byte*)pDest, i);
+                    }
+                    else if (ConversionIsWidening)
+                    {
+                        Widen8To16AndAndWriteTo(srcVector.AsByte(), (char*)pDest, i);
+                    }
+                    else
+                    {
+                        srcVector.As<TFrom, TTo>().StoreUnsafe(ref *pDest, i);
+                    }
+                }
+            }
 
         Drain64:
 
-            // Attempt to process 64 input bits.
+            // Attempt to process blocks of 64 input bits.
 
             if (IntPtr.Size >= 8 && (elementCount - i) >= (nuint)(8 / sizeof(TFrom)))
             {
@@ -212,7 +251,7 @@ namespace System.Buffers.Text
 
         Drain32:
 
-            // Attempt to process 32 input bits.
+            // Attempt to process blocks of 32 input bits.
 
             if ((elementCount - i) >= (nuint)(4 / sizeof(TFrom)))
             {
@@ -267,6 +306,8 @@ namespace System.Buffers.Text
 
         DrainRemaining:
 
+            // Process single elements at a time.
+
             for (; i < elementCount; i++)
             {
                 uint element = uint.CreateTruncating(pSrc[i]);
@@ -310,6 +351,59 @@ namespace System.Buffers.Text
             }
 
             return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void Widen8To16AndAndWriteTo(Vector128<byte> narrowVector, char* pDest, nuint destOffset)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                Vector256<ushort> wide = Vector256.WidenLower(narrowVector.ToVector256Unsafe());
+                wide.StoreUnsafe(ref *(ushort*)pDest, destOffset);
+            }
+            else
+            {
+                Vector128.WidenLower(narrowVector).StoreUnsafe(ref *(ushort*)pDest, destOffset);
+                Vector128.WidenUpper(narrowVector).StoreUnsafe(ref *(ushort*)pDest, destOffset + 8);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void Narrow16To8AndAndWriteTo(Vector128<ushort> wideVector, byte* pDest, nuint destOffset)
+        {
+            Vector128<byte> narrow = Vector128.Narrow(wideVector, wideVector);
+
+            if (Sse2.IsSupported)
+            {
+                // MOVQ is supported even on x86, unaligned accesses allowed
+                Sse2.StoreScalar((ulong*)(pDest + destOffset), narrow.AsUInt64());
+            }
+            else if (Vector64.IsHardwareAccelerated)
+            {
+                narrow.GetLower().StoreUnsafe(ref *pDest, destOffset);
+            }
+            else
+            {
+                Unsafe.WriteUnaligned<ulong>(pDest + destOffset, narrow.AsUInt64().ToScalar());
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector128<T> SignedLessThan<T>(Vector128<T> left, Vector128<T> right)
+            where T : unmanaged
+        {
+            if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
+            {
+                return Vector128.LessThan(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+            }
+            else if (typeof(T) == typeof(ushort) || typeof(T) == typeof(short))
+            {
+                return Vector128.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

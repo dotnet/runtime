@@ -12,8 +12,11 @@ namespace System.Text
 {
     internal static partial class ASCIIUtility
     {
+        /// <summary>
+        /// Returns <see langword="true"/> iff all bytes in <paramref name="value"/> are ASCII.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool AllBytesInUInt64AreAscii(ulong value)
+        internal static bool AllBytesInUInt64AreAscii(ulong value)
         {
             // If the high bit of any byte is set, that byte is non-ASCII.
 
@@ -1378,7 +1381,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
             if (Sse2.IsSupported)
             {
@@ -1415,8 +1418,13 @@ namespace System.Text
             }
             else
             {
-                throw new PlatformNotSupportedException();
+                // Fallback: use Vector's default implementation.
+                if (Vector128.GreaterThanOrEqualAny(utf16Vector, Vector128.Create((ushort)0x0080)))
+                {
+                    return true;
+                }
             }
+
             return false;
         }
 
