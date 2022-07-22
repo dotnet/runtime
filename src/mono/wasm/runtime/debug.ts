@@ -380,15 +380,18 @@ function _readSymbolMapFile(filename: string): void {
             parts[1] = parts.splice(1).join(":");
             wasm_func_map.set(Number(parts[0]), parts[1]);
         });
-
-        console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+        if (Configuration === "Debug") {
+            console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+        }
     } catch (error: any) {
-        if (error.errno == 44) // NOENT
+        if (error.errno == 44) {// NOENT
             if (Configuration === "Debug") {
                 console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
             }
-            else
-                console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+        }
+        else {
+            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+        }
         return;
     }
 }
