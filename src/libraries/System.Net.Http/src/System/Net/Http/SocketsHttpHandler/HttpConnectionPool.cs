@@ -902,7 +902,7 @@ namespace System.Net.Http
                 }
 #endif
                 // if the authority was sent as an option through alt-svc then include alt-used header
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, altUsedEncode: _http3Authority == authority);
+                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())
