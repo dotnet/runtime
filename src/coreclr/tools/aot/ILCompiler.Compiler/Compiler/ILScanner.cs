@@ -396,10 +396,46 @@ namespace ILCompiler
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                            // Record all interfaces this class implements to _interfaceImplementators
-                            foreach (DefType baseInterface in canonType.RuntimeInterfaces)
+                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             {
-                                RecordImplementation(baseInterface, canonType);
+                                // Record all interfaces this class implements to _interfaceImplementators
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    bool skip = false;
+                                    Instantiation interfaceInstantiation = baseInterface.Instantiation;
+                                    if (!interfaceInstantiation.IsNull)
+                                    {
+                                        foreach (GenericParameterDesc genericParam in baseInterface.GetTypeDefinition().Instantiation)
+                                        {
+                                            if (genericParam.Variance != GenericVariance.None)
+                                            {
+                                                // If the interface has any variance, this gets complicated.
+                                                // Skip for now.
+                                                skip = true;
+                                                break;
+                                            }
+                                        }
+
+                                        // Interfaces implemented by arrays also behave covariantly on arrays even though
+                                        // they're not actually variant. Skip for now.
+                                        skip |= ((CompilerTypeSystemContext)type.Context).IsGenericArrayInterfaceType(baseInterface);
+
+                                        // If the interface has a canonical form, we might not have a full view of all implementers.
+                                        // E.g. if we have:
+                                        // class Fooer<T> : IFooable<T> { }
+                                        // class Doer<T> : IFooable<T> { }
+                                        // And we instantiated Fooer<string>, but not Doer<string>. But we do have code for Doer<__Canon>.
+                                        // We might think we can devirtualize IFooable<string> to Fooer<string>, but someone could
+                                        // typeof(Doer<>).MakeGenericType(typeof(string)) and break our whole program view.
+                                        // This is only a problem if canonical form of the interface exists.
+                                        skip |= baseInterface.ConvertToCanonForm(CanonicalFormKind.Specific) != baseInterface;
+
+                                        if (skip)
+                                            continue;
+                                    }
+
+                                    RecordImplementation(baseInterface, type);
+                                }
                             }
 
                             bool hasNonAbstractTypeInHierarchy = canonType is not MetadataType mdType || !mdType.IsAbstract;
