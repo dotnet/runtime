@@ -76,6 +76,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineNestedType("NestedType");
 
             Type createdType = type.CreateType();
+            Assert.NotNull(createdType);
             Assert.Equal(type.Name, createdType.Name);
         }
 
@@ -86,6 +87,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineGenericParameters("T");
 
             Type createdType = type.CreateType();
+            Assert.NotNull(createdType);
             Assert.Equal(type.Name, createdType.Name);
         }
     }
