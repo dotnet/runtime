@@ -129,10 +129,10 @@ namespace System.Buffers.Text
 
                 // Now find matching characters and perform case conversion.
                 // Basically, the (A <= value && value <= Z) check is converted to:
-                // (value - CONST) < (Z - A), but using signed instead of unsigned arithmetic.
+                // (value - CONST) <= (Z - A), but using signed instead of unsigned arithmetic.
 
                 Vector128<TFrom> subtractionVector = Vector128.Create(TFrom.CreateTruncating((ConversionIsToUpper ? 'a' : 'A') + 0x80));
-                Vector128<TFrom> comparisionVector = Vector128.Create(TFrom.CreateTruncating(26 /* a..z or A..Z */));
+                Vector128<TFrom> comparisionVector = Vector128.Create(TFrom.CreateTruncating(26 /* a..z or A..Z */ - 0x80));
                 Vector128<TFrom> caseConversionVector = Vector128.Create(TFrom.CreateTruncating(0x20)); // works both directions
 
                 Vector128<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
