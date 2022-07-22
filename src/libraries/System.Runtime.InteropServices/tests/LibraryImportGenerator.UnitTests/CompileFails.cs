@@ -221,6 +221,9 @@ using System.Runtime.InteropServices.Marshalling;
 
             // The errors should indicate the AllowUnsafeBlocks is required.
             Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1062"));
+
+            // There should only be one SYSLIB1062, even if there are multiple LibraryImportAttribute uses.
+            Assert.Equal(1, generatorDiags.Count());
         }
     }
 }
