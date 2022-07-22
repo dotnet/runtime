@@ -45,7 +45,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum cumulative token count of queued acquisition requests.
-        /// Must be set to a nonzero value by the team these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
+        /// Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
         public int QueueLimit { get; set; }
     }
