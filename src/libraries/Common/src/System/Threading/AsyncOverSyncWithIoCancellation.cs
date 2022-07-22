@@ -73,26 +73,18 @@ namespace System.Threading
             // awaiter itself to the thread pool.
             await workItem;
 
-            // Register for cancellation, perform the work, and clean up.
+            // Register for cancellation, perform the work, and clean up. Even though we're in an async method, awaits _must not_ be used inside
+            // the using block, or else the I/O cancellation could both not work and negatively interact with I/O on another thread.  The func
+            // _must_ be invoked on the same thread that invoked RegisterCancellation, with no intervening work.
             await using (workItem.RegisterCancellation(cancellationToken).ConfigureAwait(false))
             {
-                // Even though we're in an async method, awaits _must not_ be used inside
-                // the using block, or else the I/O cancellation could both not work and negatively
-                // interact with I/O on another thread.
                 try
                 {
                     action(state);
                 }
                 catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested && oce.CancellationToken != cancellationToken)
                 {
-                    // If the operation fails because of cancellation, make sure it contains this cancellation token
-                    // if this cancellation token could have been the cause.
-                    var newOce = new OperationCanceledException(cancellationToken);
-                    if (oce.StackTrace is string stackTrace)
-                    {
-                        ExceptionDispatchInfo.SetRemoteStackTrace(newOce, stackTrace);
-                    }
-                    throw newOce;
+                    throw CreateAppropriateCancellationException(cancellationToken, oce);
                 }
             }
         }
@@ -121,29 +113,36 @@ namespace System.Threading
             // awaiter itself to the thread pool.
             await workItem;
 
-            // Register for cancellation, perform the work, and clean up.
+            // Register for cancellation, perform the work, and clean up. Even though we're in an async method, awaits _must not_ be used inside
+            // the using block, or else the I/O cancellation could both not work and negatively interact with I/O on another thread.  The func
+            // _must_ be invoked on the same thread that invoked RegisterCancellation, with no intervening work.
             await using (workItem.RegisterCancellation(cancellationToken).ConfigureAwait(false))
             {
-                // Even though we're in an async method, awaits _must not_ be used inside
-                // the using block, or else the I/O cancellation could both not work and negatively
-                // interact with I/O on another thread.  The func _must_ be invoked on the same
-                // thread that invoked RegisterCancellation, with no intervening work.
                 try
                 {
                     return func(state);
                 }
                 catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested && oce.CancellationToken != cancellationToken)
                 {
-                    // If the operation fails because of cancellation, make sure it contains this cancellation token
-                    // if this cancellation token could have been the cause.
-                    var newOce = new OperationCanceledException(cancellationToken);
-                    if (oce.StackTrace is string stackTrace)
-                    {
-                        ExceptionDispatchInfo.SetRemoteStackTrace(newOce, stackTrace);
-                    }
-                    throw newOce;
+                    throw CreateAppropriateCancellationException(cancellationToken, oce);
                 }
             }
+        }
+
+        /// <summary>Translates an <see cref="OperationCanceledException"/> that's not associated with the relevant <see cref="CancellationToken"/> to one that is.</summary>
+        private static OperationCanceledException CreateAppropriateCancellationException(CancellationToken cancellationToken, OperationCanceledException originalOce)
+        {
+            Debug.Assert(cancellationToken.IsCancellationRequested && originalOce.CancellationToken != cancellationToken);
+
+            // If the operation fails because of cancellation, make sure it contains this cancellation token
+            // if this cancellation token could have been the cause.
+            var newOce = new OperationCanceledException(cancellationToken);
+            if (originalOce.StackTrace is string stackTrace)
+            {
+                ExceptionDispatchInfo.SetRemoteStackTrace(newOce, stackTrace);
+            }
+
+            return newOce;
         }
 
         /// <summary>The struct IDisposable returned from <see cref="RegisterCancellation"/> in order to clean up after the registration.</summary>
@@ -169,8 +168,8 @@ namespace System.Threading
                 // will never be invoked.
                 CancellationRegistration.Dispose();
 
-                // Now that we know the callback has quiesced, check to see whether it scheduled asynchronous
-                // work.  If it did, wait for that work to complete.
+                // Now that we know the synchronous callback has quiesced, check to see whether it scheduled
+                // asynchronous work.  If it did, wait for that work to complete.
                 WorkItem.CallbackCompleted?.GetAwaiter().GetResult();
             }
 
@@ -191,8 +190,8 @@ namespace System.Threading
                 // will never be invoked.
                 await CancellationRegistration.DisposeAsync().ConfigureAwait(false);
 
-                // Now that we know the callback has quiesced, check to see whether it scheduled asynchronous
-                // work.  If it did, wait for that work to complete.
+                // Now that we know the synchronous callback has quiesced, check to see whether it scheduled
+                // asynchronous work.  If it did, wait for that work to complete.
                 if (WorkItem.CallbackCompleted is Task t)
                 {
                     await t.ConfigureAwait(false);
@@ -214,10 +213,18 @@ namespace System.Threading
             // in response to the cancellation token having cancellation requested.  If the handle is invalid,
             // which could happen if OpenThread fails, skip attempts at cancellation. The handle needs to be
             // opened with THREAD_TERMINATE in order to be able to call CancelSynchronousIo.
-            ThreadHandle = t_currentThreadHandle ??= Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_TERMINATE, bInheritHandle: false, Interop.Kernel32.GetCurrentThreadId());
-            if (ThreadHandle.IsInvalid)
+            ThreadHandle = t_currentThreadHandle;
+            if (ThreadHandle is null)
             {
-                return default;
+                ThreadHandle = Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_TERMINATE, bInheritHandle: false, Interop.Kernel32.GetCurrentThreadId());
+                if (ThreadHandle.IsInvalid)
+                {
+                    int lastError = Marshal.GetLastPInvokeError();
+                    Debug.Fail($"{nameof(Interop.Kernel32.OpenThread)} unexpectedly failed with 0x{lastError:X8}: {Marshal.GetPInvokeErrorMessage(lastError)}");
+                    return default;
+                }
+
+                t_currentThreadHandle = ThreadHandle;
             }
 
             // Register with the token.
@@ -225,6 +232,17 @@ namespace System.Threading
             reg.WorkItem = this;
             reg.CancellationRegistration = cancellationToken.UnsafeRegister(static s =>
             {
+                var state = (AsyncOverSyncWithIoCancellation)s!;
+
+                // If cancellation was already requested when UnsafeRegister was called, it'll invoke
+                // the callback immediately.  If we allowed that to loop until cancellation was successful,
+                // we'd deadlock, as we'd never perform the very I/O it was waiting for.  As such, if
+                // the callback is invoked prior to be ready for it, we ignore the callback.
+                if (!state.FinishedCancellationRegistration)
+                {
+                    return;
+                }
+
                 // In the rare situation where between registration with the token and invocation of the I/O
                 // cancellation is requested, we need to loop until the I/O happens; otherwise, we could try
                 // to cancel it too early and miss it.  However, if such looping takes too long, it could end
@@ -232,18 +250,9 @@ namespace System.Threading
                 // this looping synchronously, we instead queue the invocation of the looping so that it
                 // runs asynchronously from the Cancel call.  Then in order to be able to track its completion,
                 // we store the Task representing that asynchronous work, such that cleanup can wait for the Task.
-                ((AsyncOverSyncWithIoCancellation)s!).CallbackCompleted = Task.Factory.StartNew(static s =>
+                state.CallbackCompleted = Task.Factory.StartNew(static s =>
                 {
                     var state = (AsyncOverSyncWithIoCancellation)s!;
-
-                    // If cancellation was already requested when UnsafeRegister was called, it'll invoke
-                    // the callback immediately.  If we allowed that to loop until cancellation was successful,
-                    // we'd deadlock, as we'd never perform the very I/O it was waiting for.  As such, if
-                    // the callback is invoked prior to be ready for it, we ignore the callback.
-                    if (!state.FinishedCancellationRegistration)
-                    {
-                        return;
-                    }
 
                     // Cancel the I/O.  If the cancellation happens too early and we haven't yet initiated
                     // the synchronous operation, CancelSynchronousIo will fail with ERROR_NOT_FOUND, and
