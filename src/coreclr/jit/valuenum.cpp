@@ -2071,28 +2071,38 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     assert(func != VNF_MemOpaque);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
-    // Try to perform constant-folding.
-    if (VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
-    {
-        return EvalFuncForConstantArgs(typ, func, arg0VN);
-    }
-
-    ValueNum resultVN;
+    ValueNum resultVN = NoVN;
 
     // Have we already assigned a ValueNum for 'func'('arg0VN') ?
+    //
     VNDefFuncApp<1> fstruct(func, arg0VN);
-    if (!GetVNFunc1Map()->Lookup(fstruct, &resultVN))
+    if (GetVNFunc1Map()->Lookup(fstruct, &resultVN))
     {
+        assert(resultVN != NoVN);
+    }
+    else
+    {
+        // Try to perform constant-folding.
+        //
+        if (VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
+        {
+            resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
+        }
+
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN')
         //
-        Chunk* const          c                 = GetAllocChunk(typ, CEA_Func1);
-        unsigned const        offsetWithinChunk = c->AllocVN();
-        VNDefFuncAppFlexible* fapp              = c->PointerToFuncApp(offsetWithinChunk, 1);
-        fapp->m_func                            = func;
-        fapp->m_args[0]                         = arg0VN;
-        resultVN                                = c->m_baseVN + offsetWithinChunk;
+        if (resultVN == NoVN)
+        {
+            Chunk* const          c                 = GetAllocChunk(typ, CEA_Func1);
+            unsigned const        offsetWithinChunk = c->AllocVN();
+            VNDefFuncAppFlexible* fapp              = c->PointerToFuncApp(offsetWithinChunk, 1);
+            fapp->m_func                            = func;
+            fapp->m_args[0]                         = arg0VN;
+            resultVN                                = c->m_baseVN + offsetWithinChunk;
+        }
 
         // Record 'resultVN' in the Func1Map
+        //
         GetVNFunc1Map()->Set(fstruct, resultVN);
     }
     return resultVN;
@@ -2123,16 +2133,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert((VNFuncArity(func) == 0) || (VNFuncArity(func) == 2));
     assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
 
-    ValueNum resultVN;
-
-    // When both operands are constants we can usually perform constant-folding,
-    // except if the expression will always throw an exception (constant VN-based
-    // propagation depends on that).
-    //
-    if (VNEvalCanFoldBinaryFunc(typ, func, arg0VN, arg1VN) && VNEvalShouldFold(typ, func, arg0VN, arg1VN))
-    {
-        return EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
-    }
+    ValueNum resultVN = NoVN;
 
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
@@ -2148,7 +2149,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
     //
     VNDefFuncApp<2> fstruct(func, arg0VN, arg1VN);
-    if (!GetVNFunc2Map()->Lookup(fstruct, &resultVN))
+    if (GetVNFunc2Map()->Lookup(fstruct, &resultVN))
+    {
+        assert(resultVN != NoVN);
+    }
+    else
     {
         if (func == VNF_CastClass)
         {
@@ -2159,10 +2164,27 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         }
         else
         {
-            resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
+            // When both operands are constants we can usually perform constant-folding,
+            // except if the expression will always throw an exception (constant VN-based
+            // propagation depends on that).
+            //
+            bool folded = false;
+            if (VNEvalCanFoldBinaryFunc(typ, func, arg0VN, arg1VN) && VNEvalShouldFold(typ, func, arg0VN, arg1VN))
+            {
+                resultVN = EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
+            }
+
+            if (resultVN != NoVN)
+            {
+                folded = true;
+            }
+            else
+            {
+                resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
+            }
 
             // Do we have a valid resultVN?
-            if ((resultVN == NoVN) || (genActualType(TypeOfVN(resultVN)) != genActualType(typ)))
+            if ((resultVN == NoVN) || (!folded && (genActualType(TypeOfVN(resultVN)) != genActualType(typ))))
             {
                 // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
                 //
@@ -2173,10 +2195,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                 fapp->m_args[0]                         = arg0VN;
                 fapp->m_args[1]                         = arg1VN;
                 resultVN                                = c->m_baseVN + offsetWithinChunk;
-                // Record 'resultVN' in the Func2Map
-                GetVNFunc2Map()->Set(fstruct, resultVN);
             }
         }
+
+        // Record 'resultVN' in the Func2Map
+        GetVNFunc2Map()->Set(fstruct, resultVN);
     }
     return resultVN;
 }
@@ -9389,7 +9412,16 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     ValueNum srcLibVN  = srcVNPair.GetLiberal();
     ValueNum srcConVN  = srcVNPair.GetConservative();
     ValueNum castLibVN = VNForCast(srcLibVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
-    ValueNum castConVN = VNForCast(srcConVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+    ValueNum castConVN;
+
+    if (srcVNPair.BothEqual())
+    {
+        castConVN = castLibVN;
+    }
+    else
+    {
+        castConVN = VNForCast(srcConVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+    }
 
     return {castLibVN, castConVN};
 }
@@ -9476,7 +9508,16 @@ ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types c
     ValueNum srcConVN = srcVNPair.GetConservative();
 
     ValueNum bitCastLibVN = VNForBitCast(srcLibVN, castToType);
-    ValueNum bitCastConVN = VNForBitCast(srcConVN, castToType);
+    ValueNum bitCastConVN;
+
+    if (srcVNPair.BothEqual())
+    {
+        bitCastConVN = bitCastLibVN;
+    }
+    else
+    {
+        bitCastConVN = VNForBitCast(srcConVN, castToType);
+    }
 
     return ValueNumPair(bitCastLibVN, bitCastConVN);
 }

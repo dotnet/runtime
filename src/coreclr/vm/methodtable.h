@@ -750,6 +750,7 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(TARGET_LOONGARCH64)
+    static bool IsLoongArch64OnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 

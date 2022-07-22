@@ -1136,10 +1136,13 @@ namespace System.Net.Http
                     // 'clear' should be the only value present.
                     if (value == AltSvcHeaderValue.Clear)
                     {
-                        ExpireAltSvcAuthority();
-                        Debug.Assert(_authorityExpireTimer != null);
-                        _authorityExpireTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                        break;
+                        lock (SyncObj)
+                        {
+                            ExpireAltSvcAuthority();
+                            Debug.Assert(_authorityExpireTimer != null || _disposed);
+                            _authorityExpireTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                            break;
+                        }
                     }
 
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
@@ -1181,6 +1184,12 @@ namespace System.Net.Http
 
                 lock (SyncObj)
                 {
+                    if (_disposed)
+                    {
+                        // avoid creating or touching _authorityExpireTimer after disposal
+                        return;
+                    }
+
                     if (_authorityExpireTimer == null)
                     {
                         var thisRef = new WeakReference<HttpConnectionPool>(this);
@@ -1274,6 +1283,12 @@ namespace System.Net.Http
             {
                 lock (SyncObj)
                 {
+                    if (_disposed)
+                    {
+                        // avoid creating _altSvcBlocklistTimerCancellation after disposal
+                        return;
+                    }
+
                     altSvcBlocklist = _altSvcBlocklist;
                     if (altSvcBlocklist == null)
                     {
@@ -1297,36 +1312,46 @@ namespace System.Net.Http
                 }
             }
 
+            CancellationToken altSvcBlocklistTimerCt;
+
             lock (SyncObj)
             {
+                if (_disposed)
+                {
+                    // avoid touching _authorityExpireTimer and _altSvcBlocklistTimerCancellation after disposal
+                    return;
+                }
+
                 if (_http3Authority == badAuthority)
                 {
                     ExpireAltSvcAuthority();
                     Debug.Assert(_authorityExpireTimer != null);
                     _authorityExpireTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 }
+
+                Debug.Assert(_altSvcBlocklistTimerCancellation != null);
+                altSvcBlocklistTimerCt = _altSvcBlocklistTimerCancellation.Token;
             }
 
-            Debug.Assert(_altSvcBlocklistTimerCancellation != null);
             if (added)
             {
-                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
+                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds, altSvcBlocklistTimerCt)
                     .ContinueWith(t =>
                     {
                         lock (altSvcBlocklist)
                         {
                             altSvcBlocklist.Remove(badAuthority);
                         }
-                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, altSvcBlocklistTimerCt, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
             if (disabled)
             {
-                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
+                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds, altSvcBlocklistTimerCt)
                     .ContinueWith(t =>
                     {
                         _altSvcEnabled = true;
-                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, altSvcBlocklistTimerCt, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
@@ -1337,8 +1362,8 @@ namespace System.Net.Http
                 if (_http3Authority != null && _persistAuthority == false)
                 {
                     ExpireAltSvcAuthority();
-                    Debug.Assert(_authorityExpireTimer != null);
-                    _authorityExpireTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    Debug.Assert(_authorityExpireTimer != null || _disposed);
+                    _authorityExpireTimer?.Change(Timeout.Infinite, Timeout.Infinite);
                 }
             }
         }
