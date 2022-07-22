@@ -828,6 +828,41 @@ namespace Internal.TypeSystem
             return DefaultInterfaceMethodResolution.DefaultImplementation;
         }
 
+        public override DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl)
+        {
+            return ResolveVariantInterfaceMethodToDefaultImplementationOnType(interfaceMethod, (MetadataType)currentType, out impl);
+        }
+
+        public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, MetadataType currentType, out MethodDesc impl)
+        {
+            Debug.Assert(interfaceMethod.Signature.IsStatic);
+
+            MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
+            bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
+
+            if (foundInterface)
+            {
+                DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, currentType, out impl);
+                if (resolution != DefaultInterfaceMethodResolution.None)
+                    return resolution;
+            }
+
+            foreach (TypeDesc iface in currentType.RuntimeInterfaces)
+            {
+                if (iface.HasSameTypeDefinition(interfaceType) && iface.CanCastTo(interfaceType))
+                {
+                    MethodDesc variantMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethod);
+                    Debug.Assert(variantMethod != null);
+                    DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(variantMethod, currentType, out impl);
+                    if (resolution != DefaultInterfaceMethodResolution.None)
+                        return resolution;
+                }
+            }
+
+            impl = null;
+            return DefaultInterfaceMethodResolution.None;
+        }
+
         public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
         {
             return EnumAllVirtualSlots((MetadataType)type);
