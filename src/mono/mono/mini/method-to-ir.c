@@ -7335,6 +7335,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			//g_assert (!virtual_ || fsig->hasthis);
 
+			if (n == 0 && fsig->call_convention == MONO_CALL_THISCALL)
+				mono_cfg_set_exception_invalid_program(cfg, "thiscall with 0 arguments");
+
 			sp -= n;
 
 			if (!(cfg->method->wrapper_type && cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD) && check_call_signature (cfg, fsig, sp)) {

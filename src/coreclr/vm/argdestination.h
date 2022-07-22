@@ -90,7 +90,13 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void CopyStructToRegisters(void *src, int fieldBytes)
+    // Copy struct argument into registers described by the current ArgDestination.
+    // Arguments:
+    //  src = source data of the structure
+    //  fieldBytes - size of the structure
+    //  destOffset - nonzero when copying values into Nullable<T>, it is the offset
+    //               of the T value inside of the Nullable<T>
+    void CopyStructToRegisters(void *src, int fieldBytes, int destOffset)
     {
         _ASSERTE(IsStructPassedInRegs());
         _ASSERTE(fieldBytes <= 16);
@@ -106,33 +112,59 @@ public:
         }
         else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
         { // the first field is float or double.
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
-                *(INT64*)((char*)m_base + argOfs) = *(INT32*)src; // the first field is float
-            else
-                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // the first field is double.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
             _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) == 0);//the second field is integer.
+
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
+            {
+                *(INT64*)((char*)m_base + argOfs) = *(INT32*)src; // the first field is float
+            }
+            else
+            {
+                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // the first field is double.
+            }
+
             argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
             if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != 0)
+            {
                 *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+            }
             else
+            {
                 *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
+            }
         }
         else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) != 0)
         { // the second field is float or double.
-            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // NOTE: here ignoring the first size.
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
-                *(UINT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
-            else
-                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
             _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) == 0);//the first field is integer.
-            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+
+            // destOffset - nonzero when copying values into Nullable<T>, it is the offset of the T value inside of the Nullable<T>.
+            // here the first field maybe Nullable.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
+            {
+                // the second field is float.
+                *(INT64*)((char*)m_base + argOfs) = destOffset == 0 ? *((INT32*)src + 1) : *(INT32*)src;
+            }
+            else
+            {
+                // the second field is double.
+                *(UINT64*)((char*)m_base + argOfs) = destOffset == 0 ? *((UINT64*)src + 1) : *(UINT64*)src;
+            }
+
+            if (0 == destOffset)
+            {
+                // NOTE: here ignoring the first size.
+                argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
+            }
         }
         else
+        {
             _ASSERTE(!"---------UNReachable-------LoongArch64!!!");
+        }
     }
 #endif // !DACCESS_COMPILE
 

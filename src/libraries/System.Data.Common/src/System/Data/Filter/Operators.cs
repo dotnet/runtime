@@ -144,7 +144,7 @@ namespace System.Data
 
         internal static int Priority(int op)
         {
-            if (op > s_priority.Length)
+            if ((uint)op >= (uint)s_priority.Length)
                 return priMax;
             return s_priority[op];
         }
@@ -226,7 +226,7 @@ namespace System.Data
         {
             string st;
 
-            if (op <= s_looks.Length)
+            if ((uint)op < (uint)s_looks.Length)
                 st = s_looks[op];
             else
                 st = "Unknown op";

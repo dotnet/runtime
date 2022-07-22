@@ -9,8 +9,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
-
 namespace Microsoft.Extensions.Hosting
 {
     internal sealed class HostFactoryResolver

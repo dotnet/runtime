@@ -55,7 +55,8 @@ namespace System.Linq
             if (e.MoveNext())
             {
                 List<TSource> chunkBuilder = new();
-                while (true)
+                int lastLength;
+                do
                 {
                     do
                     {
@@ -63,14 +64,12 @@ namespace System.Linq
                     }
                     while (chunkBuilder.Count < size && e.MoveNext());
 
-                    yield return chunkBuilder.ToArray();
-
-                    if (chunkBuilder.Count < size || !e.MoveNext())
-                    {
-                        yield break;
-                    }
+                    TSource[] array = chunkBuilder.ToArray();
                     chunkBuilder.Clear();
+                    lastLength = array.Length;
+                    yield return array;
                 }
+                while (lastLength >= size && e.MoveNext());
             }
         }
     }

@@ -57,7 +57,7 @@ namespace System.Text.Json
         {
             JsonTypeInfo? typeInfo = null;
 
-            if (IsLockedInstance)
+            if (IsImmutable)
             {
                 typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
                 if (ensureConfigured)
@@ -115,7 +115,7 @@ namespace System.Text.Json
 
         private CachingContext? GetCachingContext()
         {
-            Debug.Assert(IsLockedInstance);
+            Debug.Assert(IsImmutable);
 
             return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
         }
@@ -166,7 +166,7 @@ namespace System.Text.Json
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
-                Debug.Assert(options.IsLockedInstance, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options.IsImmutable, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 Debug.Assert(options._typeInfoResolver != null);
 
                 ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;

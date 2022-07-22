@@ -51,18 +51,19 @@ namespace Microsoft.Interop
                         arrayManagedType.ElementType,
                         entryPointType.TypeArguments.Last());
                 }
-                else if (type is INamedTypeSymbol namedManagedType)
+                else if (type is INamedTypeSymbol namedManagedCollectionType && entryPointType.IsUnboundGenericType)
                 {
-                    // Entry point type for linear collection marshalling must have the arity of the managed type + 1
-                    // for the element unmanaged type placeholder
-                    if (entryPointType.Arity != namedManagedType.Arity + 1)
+                    if (!ManualTypeMarshallingHelper.TryResolveEntryPointType(
+                        namedManagedCollectionType,
+                        entryPointType,
+                        isLinearCollectionMarshalling,
+                        (type, entryPointType) => diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString()),
+                        out ITypeSymbol resolvedEntryPointType))
                     {
-                        diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString());
                         return NoMarshallingInfo.Instance;
                     }
 
-                    entryPointType = entryPointType.ConstructedFrom.Construct(
-                        namedManagedType.TypeArguments.Add(entryPointType.TypeArguments.Last()).ToArray());
+                    entryPointType = (INamedTypeSymbol)resolvedEntryPointType;
                 }
                 else
                 {
@@ -71,16 +72,33 @@ namespace Microsoft.Interop
                 }
 
                 Func<ITypeSymbol, MarshallingInfo> getMarshallingInfoForElement = (ITypeSymbol elementType) => getMarshallingInfoCallback(elementType, useSiteAttributeProvider, indirectionDepth + 1);
-                if (ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(entryPointType, type, compilation, getMarshallingInfoForElement, out CustomTypeMarshallers? marshallers))
+                if (ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(entryPointType, type, compilation, getMarshallingInfoForElement, out CustomTypeMarshallers? collectionMarshallers))
                 {
                     return new NativeLinearCollectionMarshallingInfo(
                         entryPointTypeInfo,
-                        marshallers.Value,
+                        collectionMarshallers.Value,
                         parsedCountInfo,
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()));
                 }
+                return NoMarshallingInfo.Instance;
             }
-            else if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, compilation, out CustomTypeMarshallers? marshallers))
+
+            if (type is INamedTypeSymbol namedManagedType && entryPointType.IsUnboundGenericType)
+            {
+                if (!ManualTypeMarshallingHelper.TryResolveEntryPointType(
+                    namedManagedType,
+                    entryPointType,
+                    isLinearCollectionMarshalling,
+                    (type, entryPointType) => diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString()),
+                    out ITypeSymbol resolvedEntryPointType))
+                {
+                    return NoMarshallingInfo.Instance;
+                }
+
+                entryPointType = (INamedTypeSymbol)resolvedEntryPointType;
+            }
+
+            if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, compilation, out CustomTypeMarshallers? marshallers))
             {
                 return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
             }

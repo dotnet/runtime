@@ -475,10 +475,12 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", typeof(HMACSHA512).FullName, true };
 
                     // X509
+                    yield return new object[] { "1.3.6.1.5.5.7.1.1", "System.Security.Cryptography.X509Certificates.X509AuthorityInformationAccessExtension", true };
                     yield return new object[] { "2.5.29.10", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension", true };
                     yield return new object[] { "2.5.29.19", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension", true };
                     yield return new object[] { "2.5.29.14", "System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.15", "System.Security.Cryptography.X509Certificates.X509KeyUsageExtension", true };
+                    yield return new object[] { "2.5.29.17", "System.Security.Cryptography.X509Certificates.X509SubjectAlternativeNameExtension", true };
                     yield return new object[] { "2.5.29.37", "System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension", true };
                     yield return new object[] { "X509Chain", "System.Security.Cryptography.X509Certificates.X509Chain", true };
 

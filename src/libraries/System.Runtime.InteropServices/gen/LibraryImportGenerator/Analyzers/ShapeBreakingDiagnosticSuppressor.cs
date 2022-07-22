@@ -62,7 +62,7 @@ namespace Microsoft.Interop.Analyzers
                             && attr.AttributeConstructor is not null
                             && !attr.ConstructorArguments[0].IsNull
                             && attr.ConstructorArguments[2].Value is INamedTypeSymbol marshallerTypeInAttribute
-                            && ManualTypeMarshallingHelper.TryResolveMarshallerType(containingType, marshallerTypeInAttribute, _ => { }, out ITypeSymbol? constructedMarshallerType)
+                            && ManualTypeMarshallingHelper.TryResolveMarshallerType(containingType, marshallerTypeInAttribute, (_, _) => { }, out ITypeSymbol constructedMarshallerType)
                             && SymbolEqualityComparer.Default.Equals(constructedMarshallerType, marshallerType));
                 if (attrData is not null)
                 {

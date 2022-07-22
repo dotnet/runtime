@@ -49,14 +49,6 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
         /// </summary>
-        internal virtual object CreateObject(JsonSerializerOptions options)
-        {
-            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
-        }
-
-        /// <summary>
-        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
-        /// </summary>
         internal virtual void ReadElementAndSetProperty(
             object obj,
             string propertyName,
@@ -64,7 +56,9 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref ReadStack state)
         {
-            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
         }
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();

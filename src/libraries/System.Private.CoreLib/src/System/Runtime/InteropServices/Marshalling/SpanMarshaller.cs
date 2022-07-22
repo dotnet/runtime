@@ -180,6 +180,11 @@ namespace System.Runtime.InteropServices.Marshalling
                 NativeMemory.Free(_allocatedMemory);
             }
 
+            /// <summary>
+            /// Gets a pinnable reference to the managed span.
+            /// </summary>
+            /// <param name="managed">The managed span.</param>
+            /// <returns>A reference that can be pinned and directly passed to unmanaged code.</returns>
             public static ref T GetPinnableReference(Span<T> managed)
             {
                 return ref MemoryMarshal.GetReference(managed);

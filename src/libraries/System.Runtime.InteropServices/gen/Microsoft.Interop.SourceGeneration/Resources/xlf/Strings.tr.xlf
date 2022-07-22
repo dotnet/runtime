@@ -7,34 +7,9 @@
         <target state="translated">Bir diziyi yönetilmeyenden yönetilene sıralamak için 'SizeParamIndex' veya 'SizeConst' alanlarının 'MarshalAsAttribute' olarak ya da 'ConstantElementCount' veya 'CountElementName' özelliklerinin bir 'MarshalUsingAttribute' olarak ayarlanmış olması gerekir.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArraySizeParamIndexOutOfRange">
-        <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
-        <target state="translated">'MarshalAsAttribute' öğesindeki 'SizeParamIndex' değeri aralık dışında.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">Belirtilen parametrenin yönetilenden yönetilmeyene ve yönetilmeyenden yönetilene doğru hazırlanması gerekiyor, ancak '{0}' hazırlayıcı türü bunu desteklemiyor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
-        <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
-        <target state="translated">'BlittableTypeAttribute' ve 'NativeMarshallingAttribute' öznitelikleri birlikte kullanılamazlar.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
-        <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
-        <target state="translated">'{0}' türü 'BlittableTypeAttribute' ve 'NativeMarshallingAttribute' ile işaretlendi. Bir tür, bu iki özniteliklerden yalnızca birine sahip olabilir.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
-        <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="translated">Yönetilen türü sıralamayı etkinleştirmek için 'GenericContiguousCollectionMarshallerAttribute' değerine sahip bir yerel türün iki sıralama metodundan en az birine ek olarak, 'T' değeri için 'Span&lt;T&gt;' türünde bir 'ManagedValues' özelliğine ve 'Span&lt;byte&gt; türünde bir 'NativeValueStorage' özelliğine sahip olması gerekir.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
-        <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="translated">'{0}' yerel türü bir değer türüne sahip olmalı ve '{1}' türünden bir parametre ve 'int' olmak üzere iki parametre alan bir oluşturucuya sahip olmalı ya da 'T' değeri için 'Span&lt;T&gt;' türünde bir 'ManagedValues' özelliğine ve 'Span&lt;byte&gt; türünde bir 'NativeValueStorage' özelliğine ek olarak '{1}' değerini döndüren 'ToManaged' adında bir parametresiz örnek metoduna sahip olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
@@ -45,16 +20,6 @@
       <trans-unit id="ConstantAndElementCountInfoDisallowed">
         <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
         <target state="translated">Belirli bir 'ElementIndirectionDepth' için 'MarshalUsingAttribute' içinde 'ConstantElementCount' veya 'ElementCountInfo' değerlerinden yalnızca biri kullanılabilir</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">Belirtilen parametrenin yönetilenden yerele doğru sıraya dizilmesi gerekiyor, ancak '{0}' yerel türü bunu desteklemiyor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">Belirtilen parametrenin yerelden yönetilene doğru sıraya dizilmesi gerekiyor, ancak '{0}' yerel türü bunu desteklemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -132,21 +97,6 @@
         <target state="translated">Açık sıralama bilgileri olmadan dize veya karakter sıralama desteklenmiyor. 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' veya 'MarshalAsAttribute' belirtin.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">'{1}' yönetilen türü için '{0}' yerel türü kapalı bir genel tür olmalıdır veya yönetilen tür ile aynı parametre sayısı değerine sahip olmalıdır.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedDescription">
-        <source>The '[Out]' attribute is only supported on array parameters.</source>
-        <target state="translated">'[Out]' özniteliği yalnızca dizi parametrelerinde destekleniyor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedMessage">
-        <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
-        <target state="translated">'[Out]' özniteliği '{0}' parametresinde desteklenmiyor.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">Bu türü sıralamayı etkinleştirmek için derlemeye 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' uygulanarak bu projede çalışma zamanı sıralaması devre dışı bırakılmalıdır.</target>
@@ -157,19 +107,9 @@
         <target state="translated">'SafeHandle' özelliğinden türetilen soyut türler, başvuruya göre sıralanamaz. Sağlanan tür somut olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle">
-        <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="translated">Belirtilen tür, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">Belirtilen parametrenin yönetilmeyenden yönetilene doğru hazırlanması gerekiyor, ancak '{0}' hazırlayıcı türü bunu desteklemiyor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
-        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="translated">'{0}' türünde '{1}' için 'CallerAllocatedBuffer' özelliğiyle 'In' sıralamasının desteklendiği belirtiliyor, ancak parametre olarak '{1}' ve 'unmanaged' türünün 'Span' değerlerini alan tek parametreli bir oluşturucu sağlanmıyor</target>
         <note />
       </trans-unit>
     </body>
