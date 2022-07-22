@@ -2018,8 +2018,12 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
     else
     {
+        if (found)
+        {
+            printf("%u not found.\n", AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
+            assert(false);
+        }
         //printf("%u not found\n", AssertionDscKeyFuncs::GetHashCode(*newAssertion));
-        assert(!found);
     }
 #endif // DEBUG
 
@@ -2032,14 +2036,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 #ifdef DEBUG
     optAssertionDscMap->Set(*newAssertion, optAssertionCount + 1);
 #endif
-    if (optLocalAssertionProp)
-    {
-        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
-    }
-    else
-    {
-        printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs/*<false>*/::GetHashCode(*newAssertion));
-    }
+    printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
     optAssertionCount++;
 
