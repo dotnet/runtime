@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
@@ -23,6 +21,10 @@ namespace System.Diagnostics.CodeAnalysis
     /// </para>
     /// <para>
     /// This attribute is used in those instances where the <see langword="ref"/> should be allowed to escape.
+    /// </para>
+    /// <para>
+    /// Applying this attribute, in any form, has impact on consumers of the applicable API. It is necessary for
+    /// API authors to understand the lifetime implications of applying this attribute and how it may impact their users.
     /// </para>
     /// </remarks>
     [AttributeUsageAttribute(

@@ -8300,7 +8300,7 @@ namespace System.Diagnostics.CodeAnalysis
         public bool ReturnValue { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    public sealed class UnscopedRefAttribute : Attribute
+    public sealed class UnscopedRefAttribute : System.Attribute
     {
         public UnscopedRefAttribute() { }
     }
