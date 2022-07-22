@@ -7244,14 +7244,6 @@ public:
 
                 return hashCode |
                        (assertionKind);                     /* 02 ~ 00 : assertionKind     (3-bits)*/
-
-                //return (
-                //    ((op2.lcl.lclNum & 0x1FF) << 23)    |   /* 31 ~ 23 : op2.lcl.lclNum    (low 9-bits) */
-                //    (op2.kind << 18)                    |   /* 22 ~ 18 : op2Kind           (5-bits) */
-                //    ((op1.vn & 0x7FF) << 7)             |   /* 17 ~ 07 : op1.vn            (low 11-bits) */
-                //    (op1.kind << 3)                     |   /* 06 ~ 03 : op1Kind           (4-bits) */
-                //    (assertionKind));                       /* 02 ~ 00 : assertionKind     (3-bits)*/
-                //return GetHashCodeGlobal(&dsc);
             }
             else
             {
@@ -7274,16 +7266,7 @@ public:
 
                 return hashCode |
                     (assertionKind);                         /* 02 ~ 00 : assertionKind     (3-bits)*/
-
-                //return (
-                //    ((op2.lcl.lclNum & 0x7FFF) << 17) |  /* 31 ~ 17 : op2.lcl.lclNum    (low 15-bits) */
-                //    (op2.kind << 12)                  |  /* 16 ~ 12 : op2Kind           (5-bits) */
-                //    ((op1.lcl.lclNum & 0x1F) << 7)    |  /* 11 ~ 07 : op1.lcl.lclNum    (low 5-bits) */
-                //    (op1.kind << 3)                   |  /* 06 ~ 03 : op1Kind           (4-bits) */
-                //    (assertionKind));                    /* 02 ~ 00 : assertionKind     (3-bits) */
-                //return GetHashCodeLocal(&dsc);
             }
-            //return assertionHashCodeFn(dsc);
         }
 
         AssertionDsc(bool isLocalProp = false)
@@ -7324,88 +7307,9 @@ protected:
         static unsigned GetHashCode(AssertionDsc dsc)
         {
             return dsc.GetHashCode();
-            //if (vnBased)
-            //{
-            //    //return GetHashCodeGlobal(&dsc);
-            //}
-            //else
-            //{
-            //    //return GetHashCodeLocal(&dsc);
-            //}
-            ////return assertionHashCodeFn(dsc);
-        }
-
-        static unsigned GetHashCodeGlobal(AssertionDsc* dsc)
-        {
-            return 0;
-        }
-
-        static unsigned GetHashCodeLocal(AssertionDsc* dsc)
-        {
-            return 0;
         }
     };
 
-    //struct AssertionDscKeyFuncs_Local : AssertionDscKeyFuncs
-    //{
-    //public:
-    //    static bool Equals(const AssertionDsc x, const AssertionDsc y)
-    //    {
-    //        return AssertionDsc::Equals(x, y, false);
-    //    }
-
-    //    static unsigned GetHashCode(const AssertionDsc dsc)
-    //    {
-    //        /*
-    //         *  0 ~ 2 : assertionKind
-    //         *  3 ~ 6 : op1Kind
-    //         *  7 ~ 11: op2Kind
-    //         */
-    //        unsigned result = ((dsc.op2.kind << 7) | (dsc.op1.kind << 3) | (dsc.assertionKind));
-    //        return result;
-    //    }
-    //};
-
-    //struct AssertionDscKeyFuncs_Global: AssertionDscKeyFuncs
-    //{
-    //public:
-    //    static bool Equals(const AssertionDsc x, const AssertionDsc y)
-    //    {
-    //        return AssertionDsc::Equals(x, y, true);
-    //    }
-
-    //    static unsigned GetHashCode(const AssertionDsc dsc)
-    //    {
-    //        return dsc
-    //    }
-    //};
-
-    //template <typename KeyFuncs = AssertionDscKeyFuncs>
-    //class AssertionDscHashTable : public JitHashTable<AssertionDsc, KeyFuncs, AssertionIndex>
-    //{
-    //public:
-    //    AssertionDscHashTable() : JitHashTable(getAllocator())
-    //    {
-    //    }
-    //};
-
-    //class AssertionDscHashTable_Local : AssertionDscHashTable<AssertionDscKeyFuncs_Local>
-    //{
-    //};
-
-    //class AssertionDscHashTable_Global : AssertionDscHashTable<AssertionDscKeyFuncs_Global>
-    //{
-    //};
-
-    // Map from Block to Block.  Used for a variety of purposes.
-    //typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex> AssertionDscMap;
-    //typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs<true>, AssertionIndex> AssertionDscMap;
-
-    //template <bool isLocal>
-    /*using AssertionDscMap_Local = JitHashTable<AssertionDsc, AssertionDscKeyFuncs<true>, AssertionIndex>;
-    using AssertionDscMap_Global = JitHashTable<AssertionDsc, AssertionDscKeyFuncs<false>, AssertionIndex>;*/
-
-    //typedef AssertionDscMap<false>
     typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
     AssertionDscMap* optAssertionDscMap;
 

@@ -3259,7 +3259,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 #endif
         
         optAssertionCount--;
-        printf("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs::GetHashCode(*curAssertion));
+        JITDUMP("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs::GetHashCode(*curAssertion));
 
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaCount);
@@ -3286,7 +3286,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 #ifdef DEBUG
         optAssertionDscMap->Set(*curAssertion, optAssertionCount);
 #endif
-        printf("++ Added map[%d] = %u\n", optAssertionCount - 1,
+        JITDUMP("++ Added map[%d] = %u\n", optAssertionCount - 1,
                AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*curAssertion));
 
         unsigned       lclNum       = curAssertion->op1.lcl.lclNum;
@@ -3352,7 +3352,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         optAssertionDscMap->Remove(*curAssertion);
 #endif
         optAssertionCount--;
-        printf("-- Removed map[%d] = %u\n", optAssertionCount,
+        JITDUMP("-- Removed map[%d] = %u\n", optAssertionCount,
                    AssertionDscKeyFuncs/*<true>*/::GetHashCode(*curAssertion));
     }
     else
