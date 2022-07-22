@@ -12,6 +12,7 @@ namespace System.Diagnostics.Tracing
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
         private static readonly object s_counterGroupLock = new object();
+        private static int s_refCount = 0;
 
         internal CounterGroup(EventSource eventSource)
         {
@@ -47,9 +48,14 @@ namespace System.Diagnostics.Tracing
 
                 if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr) && float.TryParse(valueStr, out float value))
                 {
-                    lock (s_counterGroupLock)      // Lock the CounterGroup
+                    lock (s_counterGroupLock)
                     {
-                        EnableTimer(value);
+                        if (s_refCount == 0)
+                        {
+                            EnableTimer(value);
+                        }
+
+                        ++s_refCount;
                     }
                 }
             }
@@ -57,7 +63,12 @@ namespace System.Diagnostics.Tracing
             {
                 lock (s_counterGroupLock)
                 {
-                    DisableTimer();
+                    if (s_refCount == 1)
+                    {
+                        DisableTimer();
+                    }
+
+                    --s_refCount;
                 }
             }
         }
