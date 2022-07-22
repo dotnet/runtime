@@ -944,8 +944,6 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
  *  Initialize the assertion prop tracking logic.
  */
 
-bool Compiler::AssertionDscKeyFuncs::vnBased = false;
-Compiler::AssertionDscKeyFuncs::HashCodeFn Compiler::AssertionDscKeyFuncs::assertionHashCodeFn = &Compiler::AssertionDscKeyFuncs::GetHashCodeLocal;
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
@@ -961,10 +959,15 @@ void Compiler::optAssertionInit(bool isLocalProp)
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
 
-    AssertionDscKeyFuncs::InitAssertionDscKey(isLocalProp);
-
     optLocalAssertionProp = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
+
+    for (int i = 0; i < optMaxAssertionCount; i++)
+    {
+        optAssertionTabPrivate[i].vnBased = !isLocalProp;
+    }
+
+    //memset(optAssertionTabPrivate, 0, optMaxAssertionCount * (sizeof()))
     optComplementaryAssertionMap =
         new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
 
@@ -1358,7 +1361,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     assert(op1 != nullptr);
     assert(!helperCallArgs || (op2 != nullptr));
 
-    AssertionDsc assertion = {OAK_INVALID};
+    AssertionDsc assertion(optLocalAssertionProp);
     assert(assertion.assertionKind == OAK_INVALID);
 
     if (op1->OperIs(GT_BOUNDS_CHECK))
@@ -1998,7 +2001,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     for (AssertionIndex index = optAssertionCount; index >= 1; index--)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (curAssertion->Equals(newAssertion, !optLocalAssertionProp))
+        if (curAssertion->Equals(newAssertion))
         {
 #ifdef DEBUG
             found      = true;
@@ -2314,7 +2317,8 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
         return NO_ASSERTION_INDEX;
     }
 
-    AssertionDsc assertion   = {OAK_SUBRANGE};
+    AssertionDsc assertion(optLocalAssertionProp);
+    assertion.assertionKind  = OAK_SUBRANGE;
     assertion.op1.kind       = O1K_LCLVAR;
     assertion.op1.vn         = vnStore->VNConservativeNormalValue(lclVar->gtVNPair);
     assertion.op1.lcl.lclNum = lclVar->GetLclNum();
@@ -2374,6 +2378,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     ValueNum op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
     ValueNum op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+    AssertionDsc dsc(optLocalAssertionProp);
 
     bool hasTestAgainstZero =
         (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
@@ -2384,7 +2389,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd +/- k == 0"
     if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBoundArith(op1VN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_BOUND_OPER_BND;
         dsc.op1.vn           = op1VN;
@@ -2401,7 +2405,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd +/- k != 0"
     else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_BOUND_OPER_BND;
         dsc.op1.vn           = relopVN;
@@ -2418,7 +2421,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd == false"
     else if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBound(op1VN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_BOUND_LOOP_BND;
         dsc.op1.vn           = op1VN;
@@ -2435,7 +2437,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd != 0"
     else if (vnStore->IsVNCompareCheckedBound(relopVN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_BOUND_LOOP_BND;
         dsc.op1.vn           = relopVN;
@@ -2455,7 +2456,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
         assert(vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
 
-        AssertionDsc dsc;
         dsc.assertionKind = OAK_NO_THROW;
         dsc.op1.kind      = O1K_ARR_BND;
         dsc.op1.vn        = relopVN;
@@ -2478,7 +2478,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < 100 == false"
     else if (hasTestAgainstZero && vnStore->IsVNConstantBound(op1VN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_CONSTANT_LOOP_BND;
         dsc.op1.vn           = op1VN;
@@ -2495,7 +2494,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < 100 != 0"
     else if (vnStore->IsVNConstantBound(relopVN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_CONSTANT_LOOP_BND;
         dsc.op1.vn           = relopVN;
@@ -2509,7 +2507,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
     else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
-        AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
         dsc.op1.kind         = O1K_CONSTANT_LOOP_BND_UN;
         dsc.op1.vn           = relopVN;
@@ -2591,7 +2588,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         int con = vnStore->ConstantValue<int>(op2VN);
         if (con >= 0)
         {
-            AssertionDsc dsc;
+            AssertionDsc dsc(optLocalAssertionProp);
 
             // For arr.Length != 0, we know that 0 is a valid index
             // For arr.Length == con, we know that con - 1 is the greatest valid index
@@ -2893,7 +2890,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
     {
         // Make sure assertion kinds are complementary and op1, op2 kinds match.
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (curAssertion->Complementary(inputAssertion, !optLocalAssertionProp))
+        if (curAssertion->Complementary(inputAssertion))
         {
             optMapComplementary(assertIndex, index);
             return index;
