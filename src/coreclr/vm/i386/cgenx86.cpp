@@ -1157,7 +1157,7 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
     m_jmp        = X86_INSTR_JMP_REL32;
     m_execstub   = (BYTE*) ((pTargetCode) - (4+((BYTE*)&pEntryThunkCodeRX->m_execstub)));
 
-    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode));
+    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset());
 }
 
 void UMEntryThunkCode::Poison()
@@ -1172,7 +1172,7 @@ void UMEntryThunkCode::Poison()
     // mov ecx, imm32
     pThisRW->m_movEAX = 0xb9;
 
-    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode));
+    FlushInstructionCache(GetCurrentProcess(), GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset());
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)

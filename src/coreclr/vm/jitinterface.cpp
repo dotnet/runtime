@@ -12996,7 +12996,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         //DbgPrintf("Jitted Entry at" FMT_ADDR "method %s::%s %s size %08x\n", DBG_ADDR(nativeEntry),
         //          pszDebugClassName, pszDebugMethodName, pszDebugMethodSignature, sizeOfCode);
 
-        ClrFlushInstructionCache(nativeEntry, sizeOfCode);
+        FlushInstructionCache(GetCurrentProcess(), nativeEntry, sizeOfCode);
         ret = (PCODE)nativeEntry;
 
 #ifdef TARGET_ARM
