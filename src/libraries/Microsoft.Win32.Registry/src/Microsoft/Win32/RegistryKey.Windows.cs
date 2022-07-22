@@ -531,6 +531,7 @@ namespace Microsoft.Win32
             return names.ToArray();
         }
 
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         private unsafe object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
             // Create an initial stack buffer large enough to satisfy many reg keys.  We need to call RegQueryValueEx

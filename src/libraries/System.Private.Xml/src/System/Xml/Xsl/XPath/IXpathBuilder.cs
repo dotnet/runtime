@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.XPath
         void StartBuild();
 
         // Should be called after build for result tree post-processing
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         Node? EndBuild(Node? result);
 
         Node String(string value);

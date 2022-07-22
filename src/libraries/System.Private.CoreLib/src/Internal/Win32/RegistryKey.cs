@@ -219,7 +219,7 @@ namespace Internal.Win32
             return GetValue(name, null);
         }
 
-        [return: NotNullIfNotNull("defaultValue")]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public unsafe object? GetValue(string name, object? defaultValue)
         {
             // Create an initial stack buffer large enough to satisfy many reg keys.  We need to call RegQueryValueEx

@@ -238,7 +238,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return membersTable;
         }
 
-        [return: NotNullIfNotNull("parameters")]
+        [return: NotNullIfNotNull(nameof(parameters))]
         private Dictionary<Lazy<ParameterInfo>, ParameterInfo>? BuildParametersTable(List<Lazy<ParameterInfo>>? parameters)
         {
             if (parameters != null)
