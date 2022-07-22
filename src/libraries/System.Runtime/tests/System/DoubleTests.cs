@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO;
 using System.IO.Tests;
 using System.Linq;
-using System.Numerics;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
