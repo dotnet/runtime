@@ -111,6 +111,9 @@
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
   </data>
+  <data name="Argument_InvalidSerialNumberBytes" xml:space="preserve">
+    <value>The provided serial number is invalid. Ensure the input is in big-endian byte order and that all redundant leading bytes have been removed.</value>
+  </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>

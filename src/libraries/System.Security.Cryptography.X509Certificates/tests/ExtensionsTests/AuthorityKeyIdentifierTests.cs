@@ -174,6 +174,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CreateFullWithNegativeSerialNumber(bool fromArray)
+        {
+            X509AuthorityKeyIdentifierExtension akid;
+            ReadOnlySpan<byte> skid = new byte[] { 0x01, 0x02, 0x04 };
+            X500DistinguishedName issuerName = new X500DistinguishedName("CN=Negative");
+            ReadOnlySpan<byte> serial = new byte[] { 0x80, 0x02 };
+
+            if (fromArray)
+            {
+                akid = X509AuthorityKeyIdentifierExtension.Create(
+                    skid.ToArray(),
+                    issuerName,
+                    serial.ToArray());
+            }
+            else
+            {
+                akid = X509AuthorityKeyIdentifierExtension.Create(skid, issuerName, serial);
+            }
+
+            Assert.False(akid.Critical, "akid.Critical");
+            Assert.NotNull(akid.NamedIssuer);
+            AssertExtensions.SequenceEqual(issuerName.RawData, akid.NamedIssuer.RawData);
+            Assert.True(akid.SerialNumber.HasValue, "akid.SerialNumber.HasValue");
+            AssertExtensions.SequenceEqual(serial, akid.SerialNumber.GetValueOrDefault().Span);
+            Assert.True(akid.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
+            AssertExtensions.SequenceEqual(skid, akid.KeyIdentifier.GetValueOrDefault().Span);
+
+            const string ExpectedHex =
+                "30228003010204A117A41530133111300F060355040313084E65676174697665" +
+                "82028002";
+
+            Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
+        }
+
         [Fact]
         public static void CreateFromKeyIdentifierPreservesLeadingZeros()
         {
@@ -458,7 +495,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
                 serial = cert.SerialNumberBytes;
             }
 
-            // ROSpan
             if (fromArray)
             {
                 akid = X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
@@ -486,7 +522,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
                 "6F7482100F14965F202069994FD5C7AC788941E2";
 
             Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
+        }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CreateIssuerAndNegativeSerial(bool fromArray)
+        {
+            X509AuthorityKeyIdentifierExtension akid;
+            X500DistinguishedName issuerName = new X500DistinguishedName("CN=Negative");
+            ReadOnlySpan<byte> serial = new byte[] { 0x80, 0x02 };
+
+            if (fromArray)
+            {
+                akid = X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
+                    issuerName,
+                    serial.ToArray());
+            }
+            else
+            {
+                akid = X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
+                    issuerName,
+                    serial);
+            }
+
+            Assert.False(akid.Critical, "akid.Critical");
+            Assert.NotNull(akid.NamedIssuer);
+            AssertExtensions.SequenceEqual(issuerName.RawData, akid.NamedIssuer.RawData);
+            Assert.True(akid.SerialNumber.HasValue, "akid.SerialNumber.HasValue");
+            AssertExtensions.SequenceEqual(serial, akid.SerialNumber.GetValueOrDefault().Span);
+            Assert.False(akid.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
+
+            const string ExpectedHex = "301DA117A41530133111300F060355040313084E6567617469766582028002";
+
+            Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
         }
 
         [Fact]
@@ -635,6 +704,64 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             ReadOnlyMemory<byte>? serial = ext.SerialNumber;
             Assert.Equal("00EE7B", serial.GetValueOrDefault().ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void CreateWithInvalidSerialNumber()
+        {
+            // This value has 9 leading zero bits, making it an invalid encoding for a BER/DER INTEGER.
+            byte[] tooManyZeros = { 0x00, 0x7F };
+            byte[] invalidValue = tooManyZeros;
+            
+            X500DistinguishedName dn = new X500DistinguishedName("CN=Bad Serial");
+
+            // Array
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.Create(invalidValue, dn, invalidValue));
+
+            // Span
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.Create(
+                    new ReadOnlySpan<byte>(invalidValue), dn, new ReadOnlySpan<byte>(invalidValue)));
+
+            // Array
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(dn, invalidValue));
+
+            // Span
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
+                    dn, new ReadOnlySpan<byte>(invalidValue)));
+
+            // THe leading 9 bits are all one, also invalid.
+            byte[] tooManyOnes = { 0xFF, 0x80 };
+            invalidValue = tooManyOnes;
+
+            // Array
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.Create(invalidValue, dn, invalidValue));
+
+            // Span
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.Create(
+                    new ReadOnlySpan<byte>(invalidValue), dn, new ReadOnlySpan<byte>(invalidValue)));
+
+            // Array
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(dn, invalidValue));
+
+            // Span
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
+                    dn, new ReadOnlySpan<byte>(invalidValue)));
         }
 
         private static X509Extension GetFullyValuedExtension()

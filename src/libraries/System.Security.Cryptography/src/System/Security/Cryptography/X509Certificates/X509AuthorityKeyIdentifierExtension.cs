@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   class.
         /// </summary>
         public X509AuthorityKeyIdentifierExtension()
-            : base(Oids.AuthorityKeyIdentifier)
+            : base(Oids.AuthorityKeyIdentifierOid)
         {
             _decoded = true;
         }
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="rawData" /> did not decode as an Authority Key Identifier extension.
         /// </exception>
         public X509AuthorityKeyIdentifierExtension(byte[] rawData, bool critical = false)
-            : base(Oids.AuthorityKeyIdentifier, rawData, critical)
+            : base(Oids.AuthorityKeyIdentifierOid, rawData, critical)
         {
             Decode(RawData);
         }
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="rawData" /> did not decode as an Authority Key Identifier extension.
         /// </exception>
         public X509AuthorityKeyIdentifierExtension(ReadOnlySpan<byte> rawData, bool critical = false)
-            : base(Oids.AuthorityKeyIdentifier, rawData, critical)
+            : base(Oids.AuthorityKeyIdentifierOid, rawData, critical)
         {
             Decode(RawData);
         }
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.X509Certificates
             // value for this extension.
             // Let's go ahead and be really generous before moving to redundant array allocation.
             Span<byte> stackSpan = stackalloc byte[64];
-            ReadOnlySpan<byte> encoded = stackSpan;
+            scoped ReadOnlySpan<byte> encoded;
 
             if (writer.TryEncode(stackSpan, out int written))
             {
@@ -309,6 +309,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="issuerName"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="serialNumber"/> is invalid because the leading 9 bits are either
+        ///   all zero or all one.
+        /// </exception>
         public static X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(
             X500DistinguishedName issuerName,
             ReadOnlySpan<byte> serialNumber)
@@ -325,7 +329,14 @@ namespace System.Security.Cryptography.X509Certificates
                     writer.WriteEncodedValue(issuerName.RawData);
                 }
 
-                writer.WriteIntegerUnsigned(serialNumber, new Asn1Tag(TagClass.ContextSpecific, 2));
+                try
+                {
+                    writer.WriteInteger(serialNumber, new Asn1Tag(TagClass.ContextSpecific, 2));
+                }
+                catch (ArgumentException)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidSerialNumberBytes, nameof(serialNumber));
+                }
             }
 
             return new X509AuthorityKeyIdentifierExtension(writer.Encode());
@@ -411,7 +422,14 @@ namespace System.Security.Cryptography.X509Certificates
                     writer.WriteEncodedValue(issuerName.RawData);
                 }
 
-                writer.WriteIntegerUnsigned(serialNumber, new Asn1Tag(TagClass.ContextSpecific, 2));
+                try
+                {
+                    writer.WriteInteger(serialNumber, new Asn1Tag(TagClass.ContextSpecific, 2));
+                }
+                catch (ArgumentException)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidSerialNumberBytes, nameof(serialNumber));
+                }
             }
 
             return new X509AuthorityKeyIdentifierExtension(writer.Encode());
@@ -478,7 +496,7 @@ namespace System.Security.Cryptography.X509Certificates
                     certificate.SerialNumberBytes.Span);
             }
 
-            Span<byte> emptyExtension = new byte[] { 0x30, 0x00 };
+            ReadOnlySpan<byte> emptyExtension = new byte[] { 0x30, 0x00 };
             return new X509AuthorityKeyIdentifierExtension(emptyExtension);
         }
 
