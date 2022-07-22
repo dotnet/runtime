@@ -527,7 +527,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
-            if (!Options.IsLockedInstance)
+            if (!Options.IsImmutable)
             {
                 Options.InitializeForMetadataGeneration();
             }
@@ -1053,7 +1053,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
-            protected override bool IsLockedInstance => _jsonTypeInfo.IsConfigured || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
+            protected override bool IsImmutable => _jsonTypeInfo.IsConfigured || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
             protected override void VerifyMutable()
             {
                 _jsonTypeInfo.VerifyMutable();
@@ -1071,6 +1071,6 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Type:{Type.Name}, TypeInfoKind:{Kind}";
+        private string DebuggerDisplay => $"Type = {Type.Name}, Kind = {Kind}";
     }
 }

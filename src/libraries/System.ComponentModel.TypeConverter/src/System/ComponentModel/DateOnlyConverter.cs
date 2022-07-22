@@ -75,8 +75,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Converts the given value object to a <see cref='System.DateOnly'/>
-        /// object using the arguments.
+        /// Converts the given value object from a <see cref='System.DateOnly'/> object using the arguments.
         /// </summary>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {

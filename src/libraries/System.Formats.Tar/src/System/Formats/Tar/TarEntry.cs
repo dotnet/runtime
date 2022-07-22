@@ -529,7 +529,7 @@ namespace System.Formats.Tar
 
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: true));
-            await using (fs)
+            await using (fs.ConfigureAwait(false))
             {
                 if (DataStream != null)
                 {

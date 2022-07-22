@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,25 +12,31 @@ namespace System.Threading.RateLimiting.Tests
 {
     internal static class Utils
     {
-        internal static Func<Task> StopTimerAndGetTimerFunc<T>(PartitionedRateLimiter<T> limiter)
+        // Creates a DefaultPartitionedRateLimiter with the timer effectively disabled
+        internal static PartitionedRateLimiter<TResource> CreatePartitionedLimiterWithoutTimer<TResource, TKey>(Func<TResource, RateLimitPartition<TKey>> partitioner)
         {
-            var innerTimer = limiter.GetType().GetField("_timer", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            var limiterType = Assembly.GetAssembly(typeof(PartitionedRateLimiter<>)).GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2");
+            Assert.NotNull(limiterType);
+
+            var genericLimiterType = limiterType.MakeGenericType(typeof(TResource), typeof(TKey));
+            Assert.NotNull(genericLimiterType);
+
+            var limiterCtor = genericLimiterType.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)[0];
+            Assert.NotNull(limiterCtor);
+
+            return (PartitionedRateLimiter<TResource>)limiterCtor.Invoke(new object[] { partitioner, null, TimeSpan.FromMinutes(10) });
+        }
+
+        // Gets and runs the Heartbeat function on the DefaultPartitionedRateLimiter
+        internal static Task RunTimerFunc<T>(PartitionedRateLimiter<T> limiter)
+        {
+            var innerTimer = limiter.GetType().GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(innerTimer);
-            var timerStopMethod = innerTimer.FieldType.GetMethod("Stop");
-            Assert.NotNull(timerStopMethod);
-            // Stop the current Timer so it doesn't fire unexpectedly
-            timerStopMethod.Invoke(innerTimer.GetValue(limiter), Array.Empty<object>());
 
-            // Create a new Timer object so that disposing the PartitionedRateLimiter doesn't fail with an ODE, but this new Timer wont actually do anything
-            var timerCtor = innerTimer.FieldType.GetConstructor(new Type[] { typeof(TimeSpan), typeof(TimeSpan) });
-            Assert.NotNull(timerCtor);
-            var newTimer = timerCtor.Invoke(new object[] { TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(10) });
-            Assert.NotNull(newTimer);
-            innerTimer.SetValue(limiter, newTimer);
-
-            var timerLoopMethod = limiter.GetType().GetMethod("Heartbeat", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            var timerLoopMethod = limiter.GetType().GetMethod("Heartbeat", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(timerLoopMethod);
-            return () => (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());
+
+            return (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());
         }
     }
 

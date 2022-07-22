@@ -289,7 +289,6 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     // The options were formatted as an int, which means the runtime couldn't
                     // produce a textual representation.  So just output casting the value as an int.
-                    Debug.Fail("This shouldn't happen, as we should only get to the point of emitting code if RegexOptions was valid.");
                     return $"(RegexOptions)({(int)options})";
                 }
 
