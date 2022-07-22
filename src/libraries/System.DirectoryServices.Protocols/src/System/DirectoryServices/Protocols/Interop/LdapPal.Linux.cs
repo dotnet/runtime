@@ -97,6 +97,11 @@ namespace System.DirectoryServices.Protocols
                 tv_sec = timelimit
             };
 
+            //zero must not be passed otherwise libldap runtime returns LDAP_PARAM_ERROR
+            if (searchTimeout.tv_sec < 1)
+                //-1 means no time limit
+                searchTimeout.tv_sec = -1;
+
             return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
         }
         internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value);
