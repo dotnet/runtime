@@ -1,0 +1,143 @@
+parameters:
+  buildConfig: ''
+  nameSuffix: ''
+  buildArgs: ''
+  archType: ''
+  hostedOs: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  crossBuild: false
+  crossrootfsDir: ''
+  variables: []
+  targetRid: ''
+  timeoutInMinutes: ''
+  dependsOn: []
+  pool: ''
+  platform: ''
+  pgoType: ''
+  condition: true
+  useContinueOnErrorDuringBuild: false
+  shouldContinueOnError: false
+  dependOnEvaluatePaths: false
+  isOfficialBuild: false
+  buildingOnSourceBuildImage: false
+  runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
+  helixQueues: ''
+  enablePublishTestResults: false
+  testResultsFormat: ''
+  extraStepsTemplate: ''
+  extraStepsParameters: {}
+  enableRichCodeNavigation: false
+  richCodeNavigationLanguage: 'csharp'
+  richCodeNavigationEnvironment: 'production'
+  suffix: 'libtests'
+
+jobs:
+- template: /eng/common/templates/job/job.yml
+  parameters:
+    ${{ if eq(parameters.hostedOs, '') }}:
+      name: ${{ format('tests_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+      displayName: ${{ format('Tests {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    ${{ if ne(parameters.hostedOs, '') }}:
+      name: ${{ format('tests_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
+      displayName: ${{ format('Tests {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
+    pool: ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    condition: and(succeeded(), ${{ parameters.condition }})
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
+    testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
+
+    workspace:
+      clean: all
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
+    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
+    richCodeNavigationEnvironment: ${{ parameters.richCodeNavigationEnvironment }}
+
+    dependsOn:
+    #${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
+      #- ${{ parameters.dependsOn }}
+
+    - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+      - evaluate_paths
+      #- ${{ if ne(parameters.dependsOn,'') }}:
+        #- ${{ parameters.dependsOn }}
+
+    # The build job doesn't use a nameSuffix
+    - ${{ if eq(parameters.hostedOs, '') }}:
+      - ${{ format('build_{0}{1}_{2}_{3}_', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.hostedOs, '') }}:
+      - ${{ format('build_{0}{1}_{2}_{3}_{4}_', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig) }}
+
+    variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+
+      - name: _osParameter
+        value: -os ${{ parameters.osGroup }}
+
+      - name: _officialBuildParameter
+        ${{ if eq(parameters.isOfficialBuild, true) }}:
+          value: /p:OfficialBuildId=$(Build.BuildNumber)
+        ${{ if ne(parameters.isOfficialBuild, true) }}:
+          value: ''
+
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
+
+    steps:
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
+
+    - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
+      # Update machine certs
+      - task: PowerShell@2
+        displayName: Update machine certs
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
+
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(librariesDownloadDir)/BrowserWasm
+        artifactFileName: BrowserWasm-${{ parameters.suffix }}.zip
+        artifactName: BrowserWasm-${{ parameters.suffix }}
+        displayName: BrowserWasm-${{ parameters.suffix }}
+
+    - script: >-
+          find $(librariesDownloadDir)/BrowserWasm -type d
+
+    # If intended to send extra steps after regular build add them here.
+    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
+      - template: ${{ parameters.extraStepsTemplate }}
+        parameters:
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
+          archType: ${{ parameters.archType }}
+          buildConfig: ${{ parameters.buildConfig }}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          runtimeVariant: ${{ parameters.runtimeVariant }}
+          helixQueues: ${{ parameters.helixQueues }}
+          targetRid: ${{ parameters.targetRid }}
+          nameSuffix: ${{ parameters.nameSuffix }}
+          platform: ${{ parameters.platform }}
+          pgoType: ${{ parameters.pgoType }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+          ${{ insert }}: ${{ parameters.extraStepsParameters }}
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+        PublishLocation: Container
+        ${{ if ne(parameters.osGroup, 'Browser') }}:
+          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+        ${{ if eq(parameters.osGroup, 'Browser') }}:
+          ArtifactName: Logs_Build_Browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+      continueOnError: true

@@ -8,49 +8,84 @@ parameters:
   runSmokeOnlyArg: ''
   scenarios: ['normal']
   shouldContinueOnError: false
+  suffix: 'libtests'
 
 jobs:
 
 #
 # Build for Browser/wasm and test it
 #
+#- template: /eng/pipelines/common/platform-matrix.yml
+  #parameters:
+    #platforms: ${{ parameters.platforms }}
+    #jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    #jobParameters:
+      #buildConfig: Release
+      #runtimeDisplayName: wasm_libtests
+      #dependsOn:
+        #build_Browser_wasm_Linux_Release_
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    jobTemplate: /eng/pipelines/common/templates/wasm-run-tests.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    platforms: ${{ parameters.platforms }}
     buildConfig: Release
     runtimeFlavor: mono
-    platforms: ${{ parameters.platforms }}
-    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-      - name: alwaysRunVar
-        value: ${{ parameters.alwaysRun }}
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
     jobParameters:
-      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      testGroup: innerloop
-      nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
-      timeoutInMinutes: 240
-      # always run for runtime-wasm builds (triggered manually)
-      # Always run for rolling builds
-      # Else run on path changes
-      condition: >-
-        or(
-          eq(variables['alwaysRunVar'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArgs }}
-        scenarios: ${{ parameters.scenarios }}
+      nameSuffix: ${{ parameters.suffix }}
+    extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+    extraStepsParameters:
+      creator: dotnet-bot
+      testRunNamePrefixSuffix: Mono_libtests_$(_BuildConfig)
+      extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+      scenarios: ${{ parameters.scenarios }}
+
+
+  #steps:
+    #- template: /eng/pipelines/common/download-artifact-step.yml
+      #parameters:
+        #unpackFolder: $(librariesDownloadDir)/BrowserWasm
+        #artifactFileName: BrowserWasm-${{ parameters.suffix }}.zip
+        #artifactName: BrowserWasm-${{ parameters.suffix }}
+        #displayName: BrowserWasm-${{ parameters.suffix }}
+
+    #- script: >-
+        #find $(librariesDownloadDir)/BrowserWasm -type d
+
+    #jobTemplate: /eng/pipelines/common/global-build-job.yml
+    #helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    #buildConfig: Release
+    #runtimeFlavor: mono
+    #shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    #variables:
+      ## map dependencies variables to local variables
+      #- name: librariesContainsChange
+        #value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      #- name: monoContainsChange
+        #value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      #- name: alwaysRunVar
+        #value: ${{ parameters.alwaysRun }}
+      #- name: allWasmContainsChange
+        #value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
+    #jobParameters:
+      #isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      #testGroup: innerloop
+      #nameSuffix: LibraryTests${{ parameters.nameSuffix }}
+      #buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
+      #timeoutInMinutes: 240
+      ## always run for runtime-wasm builds (triggered manually)
+      ## Always run for rolling builds
+      ## Else run on path changes
+      #condition: >-
+        #or(
+          #eq(variables['alwaysRunVar'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
+      ## extra steps, run tests
+      #extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      #extraStepsParameters:
+        #creator: dotnet-bot
+        #testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        #extraHelixArguments: /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArgs }}
+        #scenarios: ${{ parameters.scenarios }}

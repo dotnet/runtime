@@ -1,0 +1,37 @@
+parameters:
+  configForBuild: 'Release'
+  buildArgs: ''
+  buildTypes: ['libtests']
+
+steps:
+  #- script: >-
+      #./dotnet.sh build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+      #/p:Configuration=${{ parameters.configForBuild }}
+      #/p:ContinuousIntegrationBuild=true
+      #/t:InstallWorkloadUsingArtifacts
+      #$(Build.SourcesDirectory)/src/tests/BuildWasmApps/Wasm.Build.Tests/Wasm.Build.Tests.csproj
+    #displayName: "Install workload using artifacts"
+
+  # Library tests
+  - ${{ if containsValue(parameters.buildTypes, 'libtests') }}:
+    - template: /eng/pipelines/common/templates/runtime-wasm-upload-tests.yml
+      parameters:
+        artifactNameSuffix: libtests
+
+  - script: >-
+      rm -Rf $(Build.SourcesDirectory)/artifacts/*/*Tests*
+    displayName: "Clean up test artifacts"
+
+  - ${{ if containsValue(parameters.buildTypes, 'libtests-eat') }}:
+    - script: >-
+        ./build.sh -s mono+libs+host+packs+libs.tests -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+        /p:Configuration=${{ parameters.configForBuild }}
+        /p:ContinuousIntegrationBuild=true
+        ${{ parameters.buildArgs }}
+        /p:EnableAggressiveTrimming=true
+        /p:ArchiveTests=true
+      displayName: "Build EAT tests"
+
+    - template: /eng/pipelines/common/templates/runtime-wasm-upload-tests.yml
+      parameters:
+        artifactNameSuffix: libtests_eat

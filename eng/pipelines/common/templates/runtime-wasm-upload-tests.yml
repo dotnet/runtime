@@ -1,0 +1,26 @@
+parameters:
+  configForBuild: 'Release'
+  artifactNameSuffix: ''
+
+steps:
+  - task: CopyFiles@2
+    displayName: "Prepare artifacts staging directory for ${{ parameters.artifactNameSuffix }}"
+    #condition: and(succeeded(), ${{ parameters.publishPackagesCondition }})
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/artifacts/helix'
+      TargetFolder: '$(Build.StagingDirectory)/${{ parameters.artifactNameSuffix }}'
+      CleanTargetFolder: true
+
+  #- script: >-
+      #mkdir -p $(Build.SourcesDirectory)/artifacts/staging/${{ parameters.artifactNameSuffix }} &&
+      #cp -r $(Build.SourcesDirectory)/artifacts/helix/tests $(Build.SourcesDirectory)/artifacts/staging/${{ parameters.artifactNameSuffix }}
+    #displayName: "Prepare artifacts staging directory for ${{ parameters.artifactNameSuffix }}"
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      rootFolder: '$(Build.StagingDirectory)/${{ parameters.artifactNameSuffix }}'
+      includeRootFolder: true
+      displayName: Browser Wasm Artifacts ${{ parameters.artifactNameSuffix }}
+      artifactName: BrowserWasm-${{ parameters.artifactNameSuffix }}
+      archiveType: zip
+      archiveExtension: .zip

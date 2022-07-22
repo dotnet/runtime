@@ -1,0 +1,52 @@
+parameters:
+  alwaysRun: true
+  extraBuildArgs: ''
+  isExtraPlatformsBuild: false
+  nameSuffix: ''
+  platforms: []
+  runSmokeOnlyArg: ''
+  shouldContinueOnError: false
+
+jobs:
+
+#
+# Build for Browser/wasm and test it
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 240
+      nameSuffix: ${{ parameters.nameSuffix }}
+      # always run for runtime-wasm builds (triggered manually)
+      # Always run for rolling builds
+      # Else run on path changes
+      #condition: >-
+        #or(
+          #eq(variables['alwaysRunVar'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
+          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtime-wasm-prepare-build-artifacts.yml
+      extraStepsParameters:
+        buildArgs: -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
+        buildTypes:
+          - libtests
+          - libtests-eat
