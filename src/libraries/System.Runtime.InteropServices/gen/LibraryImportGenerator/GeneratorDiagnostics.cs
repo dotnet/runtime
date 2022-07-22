@@ -17,7 +17,7 @@ namespace Microsoft.Interop
     {
         public class Ids
         {
-            // SYSLIB1050-SYSLIB1059 are reserved for LibraryImportGenerator
+            // SYSLIB1050-SYSLIB1069 are reserved for LibraryImportGenerator
             public const string Prefix = "SYSLIB";
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
