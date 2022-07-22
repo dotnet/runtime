@@ -699,8 +699,8 @@
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
   </data>
-  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
-    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  <data name="Arg_RegValueTooLarge" xml:space="preserve">
+    <value>RegistryKey.GetValue does not support values with more than Int32.MaxValue bytes.</value>
   </data>
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
