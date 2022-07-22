@@ -17685,6 +17685,17 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
+    if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        CORINFO_CLASS_HANDLE exactClass;
+        if ((info.compCompHnd->getExactClasses(objClass, 1, &exactClass) == 1) &&
+            (info.compCompHnd->compareTypesForCast(exactClass, objClass) == TypeCompareState::Must))
+        {
+            *pIsExact = true;
+            objClass  = exactClass;
+        }
+    }
+
     return objClass;
 }
 

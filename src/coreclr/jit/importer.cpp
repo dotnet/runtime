@@ -21691,43 +21691,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
 
-    DWORD objClassAttribs = 0;
-    bool  objClassIsFinal = false;
-    if (objClass != NO_CLASS_HANDLE)
-    {
-        objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
-        objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
-
-        // Ask VM if it's able to tell us if this class has a unique impl/subclass
-        if (!isExact && !objClassIsFinal && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-        {
-            CORINFO_CLASS_HANDLE exactClass;
-            if (info.compCompHnd->getExactClasses(objClass, 1, &exactClass) == 1)
-            {
-                assert(exactClass != NO_CLASS_HANDLE);
-                assert((info.compCompHnd->compareTypesForCast(exactClass, objClass) == TypeCompareState::Must));
-
-                if (objClass != exactClass)
-                {
-                    // update flags
-                    objClassAttribs = info.compCompHnd->getClassAttribs(exactClass);
-                    objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
-                }
-                objClass = exactClass;
-                isExact  = true;
-
-                // TODO: Enable GDV for exact classes without fallbacks, e.g. objClass is IDisposable
-                // and vm returns just two exact clases: ClassA and ClassB and so we can devirtualize it as follows:
-                //
-                // IDisposable d = ...
-                // if (d is ClassA)
-                //    ((ClassA)d).Dispose()
-                // else
-                //    ((ClassB)d).Dispose()
-            }
-        }
-    }
-
     // Bail if we know nothing.
     if (objClass == NO_CLASS_HANDLE)
     {
@@ -21745,6 +21708,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         return;
     }
+
+    // If the objClass is sealed (final), then we may be able to devirtualize.
+    const DWORD objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
+    const bool  objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
 #if defined(DEBUG)
     const char* callKind       = isInterface ? "interface" : "virtual";
