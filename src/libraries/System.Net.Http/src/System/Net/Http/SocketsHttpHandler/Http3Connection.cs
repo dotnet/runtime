@@ -77,8 +77,6 @@ namespace System.Net.Http
             _authority = authority;
             _connection = connection;
 
-
-
             if (includeAltUsedHeader)
             {
                 bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
