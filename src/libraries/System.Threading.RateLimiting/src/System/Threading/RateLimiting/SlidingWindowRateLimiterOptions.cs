@@ -45,7 +45,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Maximum cumulative permit count of queued acquisition requests.
-        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
+        /// Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
         public int QueueLimit { get; set; }
     }
