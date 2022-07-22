@@ -47,7 +47,7 @@ namespace System.Net.Http
         /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blocklist to be ignored
         /// for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
         /// </summary>
-        private volatile HashSet<HttpAuthority>? _altSvcBlocklist;
+        private volatile Dictionary<HttpAuthority, Exception?>? _altSvcBlocklist;
         private CancellationTokenSource? _altSvcBlocklistTimerCancellation;
         private volatile bool _altSvcEnabled = true;
 
@@ -419,11 +419,11 @@ namespace System.Net.Http
         // If not, then it must be unavailable at the moment; we will detect this and ensure it is not added back to the available pool.
 
         [DoesNotReturn]
-        private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion)
+        private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion, Exception? inner = null)
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion));
+            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
@@ -889,7 +889,7 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {e}");
 
                     // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
-                    BlocklistAuthority(authority);
+                    BlocklistAuthority(authority, e);
                     throw;
                 }
 
@@ -940,9 +940,10 @@ namespace System.Net.Http
                     return null;
                 }
 
-                if (IsAltSvcBlocked(authority))
+                Exception? reasonException;
+                if (IsAltSvcBlocked(authority, out reasonException))
                 {
-                    ThrowGetVersionException(request, 3);
+                    ThrowGetVersionException(request, 3, reasonException);
                 }
 
                 long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
@@ -1148,8 +1149,7 @@ namespace System.Net.Http
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
                         var authority = new HttpAuthority(value.Host ?? _originAuthority!.IdnHost, value.Port);
-
-                        if (IsAltSvcBlocked(authority))
+                        if (IsAltSvcBlocked(authority, out _))
                         {
                             // Skip authorities in our blocklist.
                             continue;
@@ -1246,19 +1246,22 @@ namespace System.Net.Http
 
         /// <summary>
         /// Checks whether the given <paramref name="authority"/> is on the currext Alt-Svc blocklist.
+        /// If it is, then it places the cause in the <paramref name="reasonException"/>
         /// </summary>
         /// <seealso cref="BlocklistAuthority" />
-        private bool IsAltSvcBlocked(HttpAuthority authority)
+        private bool IsAltSvcBlocked(HttpAuthority authority, out Exception? reasonException)
         {
             if (_altSvcBlocklist != null)
             {
                 lock (_altSvcBlocklist)
                 {
-                    return _altSvcBlocklist.Contains(authority);
+                    return _altSvcBlocklist.TryGetValue(authority, out reasonException);
                 }
             }
+            reasonException = null;
             return false;
         }
+
 
         /// <summary>
         /// Blocklists an authority and resets the current authority back to origin.
@@ -1273,11 +1276,11 @@ namespace System.Net.Http
         /// For now, the spec states alternate authorities should be able to handle ALL requests, so this
         /// is treated as an exceptional error by immediately blocklisting the authority.
         /// </remarks>
-        internal void BlocklistAuthority(HttpAuthority badAuthority)
+        internal void BlocklistAuthority(HttpAuthority badAuthority, Exception? exception = null)
         {
             Debug.Assert(badAuthority != null);
 
-            HashSet<HttpAuthority>? altSvcBlocklist = _altSvcBlocklist;
+            Dictionary<HttpAuthority, Exception?>? altSvcBlocklist = _altSvcBlocklist;
 
             if (altSvcBlocklist == null)
             {
@@ -1292,7 +1295,7 @@ namespace System.Net.Http
                     altSvcBlocklist = _altSvcBlocklist;
                     if (altSvcBlocklist == null)
                     {
-                        altSvcBlocklist = new HashSet<HttpAuthority>();
+                        altSvcBlocklist = new Dictionary<HttpAuthority, Exception?>();
                         _altSvcBlocklistTimerCancellation = new CancellationTokenSource();
                         _altSvcBlocklist = altSvcBlocklist;
                     }
@@ -1303,7 +1306,7 @@ namespace System.Net.Http
 
             lock (altSvcBlocklist)
             {
-                added = altSvcBlocklist.Add(badAuthority);
+                added = altSvcBlocklist.TryAdd(badAuthority, exception);
 
                 if (added && altSvcBlocklist.Count >= MaxAltSvcIgnoreListSize && _altSvcEnabled)
                 {
