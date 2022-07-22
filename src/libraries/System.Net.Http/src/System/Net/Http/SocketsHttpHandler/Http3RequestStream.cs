@@ -1064,6 +1064,7 @@ namespace System.Net.Http
                     if (_responseDataPayloadRemaining <= 0 && !ReadNextDataFrameAsync(response, CancellationToken.None).AsTask().GetAwaiter().GetResult())
                     {
                         // End of stream.
+                        _connection.RemoveStream(_stream);
                         break;
                     }
 
@@ -1134,6 +1135,7 @@ namespace System.Net.Http
                     if (_responseDataPayloadRemaining <= 0 && !await ReadNextDataFrameAsync(response, cancellationToken).ConfigureAwait(false))
                     {
                         // End of stream.
+                        _connection.RemoveStream(_stream);
                         break;
                     }
 
@@ -1192,6 +1194,10 @@ namespace System.Net.Http
         [DoesNotReturn]
         private void HandleReadResponseContentException(Exception ex, CancellationToken cancellationToken)
         {
+            // The stream is, or is going to be aborted, we no longer need to
+            // consider the request active and keep the connection alive.
+            _connection.RemoveStream(_stream);
+
             switch (ex)
             {
                 case QuicException e when (e.QuicError == QuicError.StreamAborted):
