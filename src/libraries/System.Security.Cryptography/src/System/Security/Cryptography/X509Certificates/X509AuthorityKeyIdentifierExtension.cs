@@ -281,6 +281,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="issuerName"/> or <paramref name="serialNumber"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="serialNumber"/> is invalid because the leading 9 bits are either
+        ///   all zero or all one.
+        /// </exception>
         public static X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(
             X500DistinguishedName issuerName,
             byte[] serialNumber)
@@ -366,6 +370,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="keyIdentifier" />, <paramref name="issuerName"/> or
         ///   <paramref name="serialNumber"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="serialNumber"/> is invalid because the leading 9 bits are either
+        ///   all zero or all one.
+        /// </exception>
         public static X509AuthorityKeyIdentifierExtension Create(
             byte[] keyIdentifier,
             X500DistinguishedName issuerName,
@@ -402,6 +410,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="issuerName"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="serialNumber"/> is invalid because the leading 9 bits are either
+        ///   all zero or all one.
         /// </exception>
         public static X509AuthorityKeyIdentifierExtension Create(
             ReadOnlySpan<byte> keyIdentifier,

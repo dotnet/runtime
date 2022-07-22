@@ -737,7 +737,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
                 () => X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
                     dn, new ReadOnlySpan<byte>(invalidValue)));
 
-            // THe leading 9 bits are all one, also invalid.
+            // The leading 9 bits are all one, also invalid.
             byte[] tooManyOnes = { 0xFF, 0x80 };
             invalidValue = tooManyOnes;
 
