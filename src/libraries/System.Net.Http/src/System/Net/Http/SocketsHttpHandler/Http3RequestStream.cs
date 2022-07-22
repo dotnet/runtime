@@ -56,6 +56,9 @@ namespace System.Net.Http
         // For the precomputed length case, we need to add the DATA framing for the first write only.
         private bool _singleDataFrameWritten;
 
+        private bool _requestSendCompleted;
+        private bool _responseRecvCompleted;
+
         public long StreamId
         {
             get => Volatile.Read(ref _streamId);
@@ -74,6 +77,9 @@ namespace System.Net.Http
             _headerDecoder = new QPackDecoder(maxHeadersLength: (int)Math.Min(int.MaxValue, _headerBudgetRemaining));
 
             _requestBodyCancellationSource = new CancellationTokenSource();
+
+            _requestSendCompleted = _request.Content == null;
+            _responseRecvCompleted = false;
         }
 
         public void Dispose()
@@ -84,6 +90,14 @@ namespace System.Net.Http
                 AbortStream();
                 _stream.Dispose();
                 DisposeSyncHelper();
+            }
+        }
+
+        private void RemoveFromConnectionIfDone()
+        {
+            if (_responseRecvCompleted && _requestSendCompleted)
+            {
+                _connection.RemoveStream(_stream);
             }
         }
 
@@ -405,6 +419,8 @@ namespace System.Net.Http
                 _stream.CompleteWrites();
             }
 
+            _requestSendCompleted = true;
+            RemoveFromConnectionIfDone();
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
         }
 
@@ -1064,7 +1080,8 @@ namespace System.Net.Http
                     if (_responseDataPayloadRemaining <= 0 && !ReadNextDataFrameAsync(response, CancellationToken.None).AsTask().GetAwaiter().GetResult())
                     {
                         // End of stream.
-                        _connection.RemoveStream(_stream);
+                        _responseRecvCompleted = true;
+                        RemoveFromConnectionIfDone();
                         break;
                     }
 
@@ -1135,7 +1152,8 @@ namespace System.Net.Http
                     if (_responseDataPayloadRemaining <= 0 && !await ReadNextDataFrameAsync(response, cancellationToken).ConfigureAwait(false))
                     {
                         // End of stream.
-                        _connection.RemoveStream(_stream);
+                        _responseRecvCompleted = true;
+                        RemoveFromConnectionIfDone();
                         break;
                     }
 
@@ -1194,9 +1212,9 @@ namespace System.Net.Http
         [DoesNotReturn]
         private void HandleReadResponseContentException(Exception ex, CancellationToken cancellationToken)
         {
-            // The stream is, or is going to be aborted, we no longer need to
-            // consider the request active and keep the connection alive.
-            _connection.RemoveStream(_stream);
+            // The stream is, or is going to be aborted
+            _responseRecvCompleted = true;
+            RemoveFromConnectionIfDone();
 
             switch (ex)
             {
@@ -1447,6 +1465,13 @@ namespace System.Net.Http
             SkipExpect100Headers,
             ResponseHeaders,
             TrailingHeaders
+        }
+
+        private enum StreamCompletionState : byte
+        {
+            InProgress,
+            Completed,
+            Failed
         }
     }
 }
