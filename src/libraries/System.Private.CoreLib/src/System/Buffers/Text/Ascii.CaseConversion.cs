@@ -106,7 +106,7 @@ namespace System.Buffers.Text
             // widening or narrowing. In this case, fall back to a naive element-by-element
             // loop.
 
-            if (!ConversionIsWidthPreserving && Vector128.IsHardwareAccelerated)
+            if (!ConversionIsWidthPreserving && !Vector128.IsHardwareAccelerated)
             {
                 goto DrainRemaining;
             }
@@ -333,14 +333,14 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsAnyNonAsciiData<T>(Vector128<T> vector)
+        private static unsafe bool VectorContainsAnyNonAsciiData<T>(Vector128<T> vector)
             where T : unmanaged
         {
-            if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
+            if (sizeof(T) == 1)
             {
                 if (vector.ExtractMostSignificantBits() != 0) { return true; }
             }
-            else if (typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
+            else if (sizeof(T) == 2)
             {
                 if (ASCIIUtility.VectorContainsNonAsciiChar(vector.AsUInt16())) { return true; }
             }
@@ -392,11 +392,11 @@ namespace System.Buffers.Text
         private static unsafe Vector128<T> SignedLessThan<T>(Vector128<T> left, Vector128<T> right)
             where T : unmanaged
         {
-            if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
+            if (sizeof(T) == 1)
             {
                 return Vector128.LessThan(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
             }
-            else if (typeof(T) == typeof(ushort) || typeof(T) == typeof(short))
+            else if (sizeof(T) == 2)
             {
                 return Vector128.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
             }
@@ -407,15 +407,15 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<TTo> NarrowOrWidenLowerVector<TFrom, TTo>(Vector128<TFrom> vector)
+        private static unsafe Vector128<TTo> NarrowOrWidenLowerVectorUnsigned<TFrom, TTo>(Vector128<TFrom> vector)
             where TFrom : unmanaged
             where TTo : unmanaged
         {
-            if (typeof(TFrom) == typeof(byte) && typeof(TTo) == typeof(ushort))
+            if (sizeof(TFrom) == 1 && sizeof(TTo) == 2)
             {
                 return Vector128.WidenLower(vector.AsByte()).As<ushort, TTo>();
             }
-            else if (typeof(TFrom) == typeof(ushort) && typeof(TTo) == typeof(byte))
+            else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
                 return Vector128.Narrow(vector.AsUInt16(), vector.AsUInt16()).As<byte, TTo>();
             }
