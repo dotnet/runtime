@@ -44,11 +44,11 @@ namespace System.Threading.RateLimiting
             }
             if (options.PermitLimit <= 0)
             {
-                throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.");
+                throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.", nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.");
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
 
             _options = new ConcurrencyLimiterOptions

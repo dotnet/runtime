@@ -51,11 +51,11 @@ namespace System.Threading.RateLimiting
             }
             if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.");
+                throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.", nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.");
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
 
             _options = new TokenBucketRateLimiterOptions

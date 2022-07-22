@@ -53,11 +53,11 @@ namespace System.Threading.RateLimiting
             }
             if (options.PermitLimit <= 0 || options.SegmentsPerWindow <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.SegmentsPerWindow)} must be set to values greater than 0.");
+                throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.SegmentsPerWindow)} must be set to values greater than 0.", nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.");
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
 
             _options = new SlidingWindowRateLimiterOptions
