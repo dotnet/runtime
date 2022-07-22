@@ -128,6 +128,7 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
                 plugins
             },
         ],
+        external: externalDependencies,
         plugins: outputCodePlugins,
     };
     return workerConfig;
