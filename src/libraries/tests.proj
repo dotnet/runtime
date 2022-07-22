@@ -359,6 +359,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnableThreads)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/72101 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
   </ItemGroup>
