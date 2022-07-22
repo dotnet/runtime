@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices.Tests
     public class PtrToStructureTests
     {
         [Fact]
+        [ActiveIssue("", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_NonGenericType_ReturnsExpected()
         {
             var structure = new SequentialClass
@@ -63,7 +64,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public void StructureToPtr_NonGenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -89,7 +90,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public void StructureToPtr_GenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -145,7 +146,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, new NonGenericClass()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public unsafe void PtrToStructure_GenericLayoutClass_Generic()
         {
             int i = 42;
@@ -155,7 +156,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(i, obj.field);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public unsafe void PtrToStructure_GenericLayoutClass()
         {
             int i = 42;

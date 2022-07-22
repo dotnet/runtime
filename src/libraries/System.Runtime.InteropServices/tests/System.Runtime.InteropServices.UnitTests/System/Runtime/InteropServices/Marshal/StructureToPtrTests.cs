@@ -256,7 +256,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(*opaqueData, *marshaledOpaqueData);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public void StructureToPtr_Flat_And_Nested_NonBlittableStructure_Success()
         {
             MarshalAndDestroy(new NonBlittableStruct_Flat
