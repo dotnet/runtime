@@ -70,19 +70,21 @@ namespace System.Net.Http
             }
         }
 
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection, bool altUsedEncode = true)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection, bool altUsedEncode)
         {
             _pool = pool;
             _origin = origin;
             _authority = authority;
             _connection = connection;
 
-            bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
 
-            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
 
             if (altUsedEncode)
+            {
+                bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
+                string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
                 _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
+            }
 
 
             if (HttpTelemetry.Log.IsEnabled())

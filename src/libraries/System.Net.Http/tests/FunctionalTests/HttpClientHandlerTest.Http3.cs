@@ -997,7 +997,7 @@ namespace System.Net.Http.Functional.Tests
                 VersionPolicy = HttpVersionPolicy.RequestVersionExact
             };
 
-           HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
             response.EnsureSuccessStatusCode();
             Assert.Equal(HttpVersion.Version30, response.Version);
 
