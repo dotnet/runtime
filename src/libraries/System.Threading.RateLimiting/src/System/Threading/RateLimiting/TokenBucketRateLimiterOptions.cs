@@ -16,7 +16,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Specifies the maximum number of tokens to restore each replenishment.
-        /// Must be set to a value >= 0 by the team these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
         public int TokensPerPeriod { get; set; }
 
