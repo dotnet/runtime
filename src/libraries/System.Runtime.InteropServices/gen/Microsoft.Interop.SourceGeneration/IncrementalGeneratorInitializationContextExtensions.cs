@@ -30,24 +30,6 @@ namespace Microsoft.Interop
                             data.targetFrameworkVersion,
                             data.compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
                 );
-
-            static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
-            {
-                IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-                version = systemAssembly.Identity.Version;
-
-                return systemAssembly.Identity.Name switch
-                {
-                    // .NET Framework
-                    "mscorlib" => TargetFramework.Framework,
-                    // .NET Standard
-                    "netstandard" => TargetFramework.Standard,
-                    // .NET Core (when version < 5.0) or .NET
-                    "System.Runtime" or "System.Private.CoreLib" =>
-                        (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
-                    _ => TargetFramework.Unknown,
-                };
-            }
         }
 
         public static void CheckForAllowUnsafeBlocks(this IncrementalGeneratorInitializationContext context, Func<Diagnostic> diagnosticFunc)
@@ -56,6 +38,12 @@ namespace Microsoft.Interop
             {
                 if (compilation.Options is CSharpCompilationOptions { AllowUnsafe: true })
                 {
+                    return ImmutableArray<Diagnostic>.Empty;
+                }
+                else if (DetermineTargetFramework(compilation, out _) != TargetFramework.Net)
+                {
+                    // Compilations targeting frameworks earlier than .NET 5 always revert
+                    // to DllImport forwarders so no unsafe code blocks are necessary.
                     return ImmutableArray<Diagnostic>.Empty;
                 }
 
@@ -97,6 +85,24 @@ namespace Microsoft.Interop
                 {
                     context.AddSource(fileName, source);
                 });
+        }
+
+        private static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
+        {
+            IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+            version = systemAssembly.Identity.Version;
+
+            return systemAssembly.Identity.Name switch
+            {
+                // .NET Framework
+                "mscorlib" => TargetFramework.Framework,
+                // .NET Standard
+                "netstandard" => TargetFramework.Standard,
+                // .NET Core (when version < 5.0) or .NET
+                "System.Runtime" or "System.Private.CoreLib" =>
+                    (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
+                _ => TargetFramework.Unknown,
+            };
         }
     }
 }

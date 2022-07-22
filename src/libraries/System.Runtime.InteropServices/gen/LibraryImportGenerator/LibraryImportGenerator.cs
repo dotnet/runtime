@@ -61,8 +61,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            context.CheckForAllowUnsafeBlocks(static () => Diagnostic.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
-
+            bool anyLibraryImport = false;
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     context,
@@ -72,7 +71,20 @@ namespace Microsoft.Interop
                         ? new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
                         : null)
                 .Where(
-                    static modelData => modelData is not null);
+                    modelData =>
+                    {
+                        bool hasAttr = modelData is not null;
+                        anyLibraryImport |= hasAttr;
+                        return hasAttr;
+                    });
+
+            // If any methods are found to have the LibraryImportAttribute, we check
+            // to ensure necessary properties are set on the compilation context.
+            if (anyLibraryImport)
+            {
+                context.CheckForAllowUnsafeBlocks(
+                    static () => Diagnostic.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
+            }
 
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
