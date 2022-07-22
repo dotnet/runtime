@@ -109,34 +109,28 @@ CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
 // Constructor for the PinnedHeapHandleBucket class.
-PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
+PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain)
 : m_pNext(pNext)
-, m_ArraySize(Size)
+, m_ArraySize(size)
 , m_CurrentPos(0)
 , m_CurrentEmbeddedFreePos(0) // hint for where to start a search for an embedded free item
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    PTRARRAYREF HandleArrayObj;
-
-    // Allocate the array in the large object heap.
-    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
-
     // Retrieve the pointer to the data inside the array. This is legal since the array
-    // is located in the large object heap and is guaranteed not to move.
-    m_pArrayDataPtr = (OBJECTREF *)HandleArrayObj->GetDataPtr();
+    // is located in the pinned object heap and is guaranteed not to move.
+    m_pArrayDataPtr = (OBJECTREF *)pinnedHandleArrayObj->GetDataPtr();
 
     // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
+    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)pinnedHandleArrayObj);
 }
 
 
@@ -243,9 +237,7 @@ PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialB
     }
     CONTRACTL_END;
 
-#ifdef _DEBUG
-    m_pCrstDebug = NULL;
-#endif
+    m_Crst.Init(CrstPinnedHeapHandleTable, CRST_UNSAFE_COOPGC);
 }
 
 
@@ -268,101 +260,9 @@ PinnedHeapHandleTable::~PinnedHeapHandleTable()
     }
 }
 
-//*****************************************************************************
-//
-// LOCKING RULES FOR AllocateHandles() and ReleaseHandles()  12/08/2004
-//
-//
-// These functions are not protected by any locking in this location but rather the callers are
-// assumed to be doing suitable locking  for the handle table.  The handle table itself is
-// behaving rather like a thread-agnostic collection class -- it doesn't want to know
-// much about the outside world and so it is just doing its job with no awareness of
-// thread notions.
-//
-// The instance in question is
-// There are two locations you can find a PinnedHeapHandleTable
-// 1) there is one in every BaseDomain, it is used to keep track of the static members
-//     in that domain
-// 2) there is one in the System Domain that is used for the GlobalStringLiteralMap
-//
-// the one in (2) is not the same as the one that is in the BaseDomain object that corresponds
-// to the SystemDomain -- that one is basically stilborn because the string literals don't go
-// there and of course the System Domain has no code loaded into it -- only regular
-// AppDomains (like Domain 0) actually execute code.  As a result handle tables are in
-// practice used either for string literals or for static members but never for both.
-// At least not at this writing.
-//
-// Now it's useful to consider what the locking discipline is for these classes.
-//
-// ---------
-//
-// First case: (easiest) is the statics members
-//
-// Each BaseDomain has its own critical section
-//
-// BaseDomain::AllocateObjRefPtrsInLargeTable takes a lock with
-//        CrstHolder ch(&m_PinnedHeapHandleTableCrst);
-//
-// it does this before it calls AllocateHandles which suffices.  It does not call ReleaseHandles
-// at any time (although ReleaseHandles may be called via AllocateHandles if the request
-// doesn't fit in the current block, the remaining handles at the end of the block are released
-// automatically as part of allocation/recycling)
-//
-// note: Recycled handles are only used during String Literal allocation because we only try
-// to recycle handles if the allocation request is for exactly one handle.
-//
-// The handles in the BaseDomain handle table are released when the Domain is unloaded
-// as the GC objects become rootless at that time.
-//
-// This dispenses with all of the Handle tables except the one that is used for string literals
-//
-// ---------
-//
-// Second case:  Allocation for use in a string literal
-//
-// AppDomainStringLiteralMap::GetStringLiteral
-// leads to calls to
-//     PinnedHeapHandleBlockHolder constructor
-//     leads to calls to
-//          m_Data = pOwner->AllocateHandles(nCount);
-//
-// before doing this  AppDomainStringLiteralMap::GetStringLiteral takes this lock
-//
-//    CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
-//
-// which is the lock for the hash table that it owns
-//
-// STRINGREF *AppDomainStringLiteralMap::GetInternedString
-//
-// has a similar call path and uses the same approach and  the same lock
-// this covers all the paths which allocate
-//
-// ---------
-//
-// Third case:  Releases for use in a string literal entry
-//
-// CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
-// taken in the AppDomainStringLiteralMap functions below protects the 3 ways that this can happen
-//
-// case 3a)
-//
-// AppDomainStringLiteralMap::GetStringLiteral() can call StringLiteralEntry::Release in some
-// error cases, leading to the same stack as above
-//
-// case 3b)
-//
-// AppDomainStringLiteralMap::GetInternedString() can call StringLiteralEntry::Release in some
-// error cases, leading to the same stack as above
-//
-// case 3c)
-//
-// The same code paths in 3b and 3c and also end up releasing if an exception is thrown
-// during their processing.  Both these paths use a StringLiteralEntryHolder to assist in cleanup,
-// the StaticRelease method of the StringLiteralEntry gets called, which in turn calls the
-// Release method.
-
 
 // Allocate handles from the large heap handle table.
+// This function is thread-safe for concurrent invocation by multiple callers
 OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
 {
     CONTRACTL
@@ -375,13 +275,12 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
     }
     CONTRACTL_END;
 
-    // SEE "LOCKING RULES FOR AllocateHandles() and ReleaseHandles()" above
-
-    // the lock must be registered and already held by the caller per contract
 #ifdef _DEBUG
-    _ASSERTE(m_pCrstDebug != NULL);
-    _ASSERTE(m_pCrstDebug->OwnedByCurrentThread());
+    _ASSERTE(!m_Crst.OwnedByCurrentThread());
 #endif
+
+    // beware: we leave and re-enter this lock below in this method
+    CrstHolderWithState lockHolder(&m_Crst);
 
     if (nRequested == 1 && m_cEmbeddedFree != 0)
     {
@@ -414,28 +313,70 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
 
 
     // Retrieve the remaining number of handles in the bucket.
-    DWORD NumRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
+    DWORD numRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
+    PTRARRAYREF pinnedHandleArrayObj = NULL;
+    DWORD nextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
 
     // create a new block if this request doesn't fit in the current block
-    if (nRequested > NumRemainingHandlesInBucket)
+    if (nRequested > numRemainingHandlesInBucket)
     {
-        if (m_pHead != NULL)
-        {
-            // mark the handles in that remaining region as available for re-use
-            ReleaseHandles(m_pHead->CurrentPos(), NumRemainingHandlesInBucket);
-
-            // mark what's left as having been used
-            m_pHead->ConsumeRemaining();
-        }
-
         // create a new bucket for this allocation
-
         // We need a block big enough to hold the requested handles
-        DWORD NewBucketSize = max(m_NextBucketSize, nRequested);
+        DWORD newBucketSize = max(m_NextBucketSize, nRequested);
 
-        m_pHead = new PinnedHeapHandleBucket(m_pHead, NewBucketSize, m_pDomain);
+        // Leave the lock temporarily to do the GC allocation
+        // 
+        // Why do we need to do certain work outside the lock? Because if we didn't this can happen:
+        // 1. AllocateHandles needs the GC to allocate
+        // 2. Anything which invokes the GC might also get suspended by the managed debugger which
+        //    will block the thread inside the lock
+        // 3. The managed debugger can run function-evaluation on any thread
+        // 4. Those func-evals might need to allocate handles
+        // 5. The func-eval can't acquire the lock to allocate handles because the thread in
+        //    step (3) still holds the lock. The thread in step (3) won't release the lock until the
+        //    debugger allows it to resume. The debugger won't resume until the funceval completes.
+        // 6. This either creates a deadlock or forces the debugger to abort the func-eval with a bad
+        //    user experience.
+        //
+        // This is only a partial fix to the func-eval problem. Some of the callers to AllocateHandles()
+        // are holding their own different locks farther up the stack. To address this more completely
+        // we probably need to change the fundamental invariant that all GC suspend points are also valid
+        // debugger suspend points. Changes in that area have proven to be error-prone in the past and we
+        // don't yet have the appropriate testing to validate that a future attempt gets it correct.
+        lockHolder.Release();
+        {
+            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+            pinnedHandleArrayObj = (PTRARRAYREF)AllocateObjectArray(newBucketSize, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
+        }
+        lockHolder.Acquire();
 
-        m_NextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+        // after leaving and re-entering the lock anything we verified or computed above using internal state could
+        // have changed. We need to retest if we still need the new allocation.
+        numRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
+        if (nRequested > numRemainingHandlesInBucket)
+        {
+            if (m_pHead != NULL)
+            {
+                // mark the handles in that remaining region as available for re-use
+                ReleaseHandlesLocked(m_pHead->CurrentPos(), numRemainingHandlesInBucket);
+
+                // mark what's left as having been used
+                m_pHead->ConsumeRemaining();
+            }
+
+            m_pHead = new PinnedHeapHandleBucket(m_pHead, pinnedHandleArrayObj, newBucketSize, m_pDomain);
+
+            // we already computed nextBucketSize to be double the previous size above, but it is possible that
+            // other threads increased m_NextBucketSize while the lock was unheld. We want to ensure
+            // m_NextBucketSize never shrinks even if nextBucketSize is no longer m_NextBucketSize*2.
+            m_NextBucketSize = max(m_NextBucketSize, nextBucketSize);
+        }
+        else
+        {
+            // we didn't need the allocation after all
+            // no handle has been created to root this so the GC may be able to reclaim and reuse it
+            pinnedHandleArrayObj = NULL;
+        }
     }
 
     return m_pHead->AllocateHandles(nRequested);
@@ -443,6 +384,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
 
 //*****************************************************************************
 // Release object handles allocated using AllocateHandles().
+// This function is thread-safe for concurrent invocation by multiple callers
 void PinnedHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
 {
     CONTRACTL
@@ -454,12 +396,27 @@ void PinnedHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
     }
     CONTRACTL_END;
 
-    // SEE "LOCKING RULES FOR AllocateHandles() and ReleaseHandles()" above
-
-    // the lock must be registered and already held by the caller per contract
 #ifdef _DEBUG
-    _ASSERTE(m_pCrstDebug != NULL);
-    _ASSERTE(m_pCrstDebug->OwnedByCurrentThread());
+    _ASSERTE(!m_Crst.OwnedByCurrentThread());
+#endif
+
+    CrstHolder ch(&m_Crst);
+    ReleaseHandlesLocked(pObjRef, nReleased);
+}
+
+void PinnedHeapHandleTable::ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pObjRef));
+    }
+    CONTRACTL_END;
+
+#ifdef _DEBUG
+    _ASSERTE(m_Crst.OwnedByCurrentThread());
 #endif
 
     OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
@@ -681,9 +638,6 @@ void BaseDomain::Init()
     m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
-    // Pinned heap handle table CRST.
-    m_PinnedHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
-
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
@@ -851,31 +805,27 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
         return *ppLazyAllocate;
     }
 
-    // Enter preemptive state, take the lock and go back to cooperative mode.
+    GCX_COOP();
+
+    // Make sure the large heap handle table is initialized.
+    if (!m_pPinnedHeapHandleTable)
+        InitPinnedHeapHandleTable();
+
+    // Allocate the handles.
+    OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
+    if (ppLazyAllocate)
     {
-        CrstHolder ch(&m_PinnedHeapHandleTableCrst);
-        GCX_COOP();
-
-        if (ppLazyAllocate && *ppLazyAllocate)
+        // race with other threads that might be doing the same concurrent allocation
+        if (InterlockedCompareExchangeT<OBJECTREF*>(ppLazyAllocate, result, NULL) != NULL)
         {
-            // Allocation already happened
-            return *ppLazyAllocate;
+            // we lost the race, release our handles and use the handles from the
+            // winning thread
+            m_pPinnedHeapHandleTable->ReleaseHandles(result, nRequested);
+            result = *ppLazyAllocate;
         }
-
-        // Make sure the large heap handle table is initialized.
-        if (!m_pPinnedHeapHandleTable)
-            InitPinnedHeapHandleTable();
-
-        // Allocate the handles.
-        OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
-
-        if (ppLazyAllocate)
-        {
-            *ppLazyAllocate = result;
-        }
-
-        return result;
     }
+
+    return result;
 }
 
 #endif // !DACCESS_COMPILE
@@ -955,17 +905,17 @@ void BaseDomain::InitPinnedHeapHandleTable()
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(m_pPinnedHeapHandleTable==NULL);
+        MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    m_pPinnedHeapHandleTable = new PinnedHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
-
-#ifdef _DEBUG
-    m_pPinnedHeapHandleTable->RegisterCrstDebug(&m_PinnedHeapHandleTableCrst);
-#endif
+    PinnedHeapHandleTable* pTable = new PinnedHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
+    if(InterlockedCompareExchangeT<PinnedHeapHandleTable*>(&m_pPinnedHeapHandleTable, pTable, NULL) != NULL)
+    {
+        // another thread beat us to initializing the field, delete our copy
+        delete pTable;
+    }
 }
 
 
