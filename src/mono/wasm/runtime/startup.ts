@@ -794,6 +794,6 @@ export type DownloadAssetsContext = {
 async function mono_wasm_pthread_worker_init(): Promise<void> {
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        console.debug("pthread created", ev.pthread_self.pthread_id);
+        console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
 }

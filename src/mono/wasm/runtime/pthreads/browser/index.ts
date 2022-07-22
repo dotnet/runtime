@@ -78,7 +78,7 @@ export const getThreadIds = (): IterableIterator<pthread_ptr> => threads.keys();
 
 function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
     // TODO: add callbacks that will be called from here
-    console.debug("got message from worker on the dedicated channel", event.data, thread);
+    console.debug("MONO_WASM: got message from worker on the dedicated channel", event.data, thread);
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
@@ -86,7 +86,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
     const data = ev.data;
     if (isMonoWorkerMessageChannelCreated(data)) {
-        console.debug("received the channel created message", data, worker);
+        console.debug("ONO_WASM: received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthread_id = data[monoSymbol].thread_id;
         const thread = addThread(pthread_id, worker, port);
@@ -100,7 +100,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function afterLoadWasmModuleToWorker(worker: Worker): void {
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    console.debug("afterLoadWasmModuleToWorker added message event handler", worker);
+    console.debug("MONO_WASM: afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
 /// These utility functions dig into Emscripten internals

@@ -91,7 +91,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     private attachToRuntimeController = createPromiseController<void>().promise_control;
 
     start(): void {
-        console.log(`starting diagnostic server with url: ${this.websocketUrl}`);
+        console.log(`MONO_WASM: starting diagnostic server with url: ${this.websocketUrl}`);
         this.startRequestedController.resolve();
     }
     stop(): void {
