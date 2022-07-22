@@ -205,6 +205,18 @@ Bumping Emscripten version involves these steps:
 * update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
 * update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
 
+## Upgrading NPM packages
+In folder `src\mono\wasm\runtime\`
+```sh
+rm -rf node_modules
+rm package-lock.json
+npm install -g vsts-npm-aut`
+vsts-npm-auth -config .npmrc
+npm npm cache clean --force
+npm outdated
+npm update
+```
+
 ## Code style
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
 * You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory

@@ -24,9 +24,33 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void VariousGenericsAreSupported()
         {
-            Assert.NotNull(GenericContext<object>.Default);
-            Assert.NotNull(ContextGenericContainer<object>.NestedInGenericContainerContext.Default);
+            AssertGenericContext(GenericContext<int>.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedInGenericContainerContext.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericInGenericContainerContext<int>.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedInNestedGenericContainerContext.Default);
+            AssertGenericContext(ContextGenericContainer<int>.NestedGenericContainer<int>.NestedGenericInNestedGenericContainerContext<int>.Default);
+
             Assert.NotNull(NestedGenericTypesContext.Default);
+            var original = new MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>()
+            {
+                DataT = 1,
+                DataT1 = 10,
+                DataT2 = 100
+            };
+            Type type = typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>);
+            string json = JsonSerializer.Serialize(original, type, NestedGenericTypesContext.Default);
+            var deserialized = (MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>)JsonSerializer.Deserialize(json, type, NestedGenericTypesContext.Default);
+            Assert.Equal(1, deserialized.DataT);
+            Assert.Equal(10, deserialized.DataT1);
+            Assert.Equal(100, deserialized.DataT2);
+
+            static void AssertGenericContext(JsonSerializerContext context)
+            {
+                Assert.NotNull(context);
+                string json = JsonSerializer.Serialize(new JsonMessage { Message = "Hi" }, typeof(JsonMessage), context);
+                JsonMessage deserialized = (JsonMessage)JsonSerializer.Deserialize(json, typeof(JsonMessage), context);
+                Assert.Equal("Hi", deserialized.Message);
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

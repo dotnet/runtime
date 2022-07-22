@@ -63,15 +63,15 @@ namespace System.Text.Json.Serialization.Metadata
                 // If a JsonTypeInfo has already been cached for the property type,
                 // avoid reflection-based initialization by delegating construction
                 // of JsonPropertyInfo<T> construction to the property type metadata.
-                return jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+                jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
             }
             else
             {
                 // Metadata for `propertyType` has not been registered yet.
                 // Use reflection to instantiate the correct JsonPropertyInfo<T>
                 s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-                MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
-                jsonPropertyInfo = (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
+                jsonPropertyInfo = (JsonPropertyInfo)s_createJsonPropertyInfo.MakeGenericMethod(propertyType)
+                    .InvokeNoWrapExceptions(null, new object[] { this, Options })!;
             }
 
             Debug.Assert(jsonPropertyInfo.PropertyType == propertyType);

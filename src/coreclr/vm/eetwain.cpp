@@ -4282,7 +4282,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  First, handle the epilog
          */
 
-        PTR_CBYTE epilogBase = (PTR_CBYTE) (breakPC - info->epilogOffs);
+        PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
         UnwindEpilog(pContext, info, epilogBase, flags);
     }
     else if (!info->ebpFrame && !info->doubleAlign)
