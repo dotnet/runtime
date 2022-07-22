@@ -7076,6 +7076,7 @@ public:
                 IntegralRange u2;
             };
         } op2;
+        bool vnBased : 1;
 
         bool IsCheckedBoundArithBound()
         {
@@ -7154,7 +7155,7 @@ public:
             return false;
         }
 
-        bool HasSameOp1(AssertionDsc* that, bool vnBased)
+        bool HasSameOp1(AssertionDsc* that)
         {
             if (op1.kind != that->op1.kind)
             {
@@ -7172,7 +7173,7 @@ public:
             }
         }
 
-        bool HasSameOp2(AssertionDsc* that, bool vnBased)
+        bool HasSameOp2(AssertionDsc* that)
         {
             if (op2.kind != that->op2.kind)
             {
@@ -7214,13 +7215,13 @@ public:
             return false;
         }
 
-        bool Complementary(AssertionDsc* that, bool vnBased)
+        bool Complementary(AssertionDsc* that)
         {
-            return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that, vnBased) &&
-                   HasSameOp2(that, vnBased);
+            return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that) &&
+                   HasSameOp2(that);
         }
 
-        bool Equals(AssertionDsc* that, bool vnBased)
+        bool Equals(AssertionDsc* that)
         {
             if (assertionKind != that->assertionKind)
             {
@@ -7229,16 +7230,16 @@ public:
             else if (assertionKind == OAK_NO_THROW)
             {
                 assert(op2.kind == O2K_INVALID);
-                return HasSameOp1(that, vnBased);
+                return HasSameOp1(that);
             }
             else
             {
-                return HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
+                return HasSameOp1(that) && HasSameOp2(that);
             }
         }
 
     public:
-        unsigned GetHashCode(bool vnBased)
+        unsigned GetHashCode()
         {
             assert(assertionKind != OAK_INVALID);
             unsigned op2Valid = op2.kind ^ O2K_INVALID;
@@ -7313,6 +7314,14 @@ public:
             }
             //return assertionHashCodeFn(dsc);
         }
+
+        AssertionDsc(bool isLocalProp = false)
+        {
+            assertionKind = OAK_INVALID;
+            op1     = AssertionDscOp1();
+            op2     = AssertionDscOp2();
+            vnBased = !isLocalProp;
+        }
     };
 
 protected:
@@ -7341,32 +7350,14 @@ protected:
 
     struct AssertionDscKeyFuncs
     {
-        typedef unsigned (*HashCodeFn)(AssertionDsc*);
-
-        static bool vnBased;
-        static HashCodeFn assertionHashCodeFn;
-
-        static void InitAssertionDscKey(bool isLocalProp)
-        {
-            vnBased = !isLocalProp;
-            if (isLocalProp)
-            {
-                assertionHashCodeFn = &GetHashCodeLocal;
-            }
-            else
-            {
-                assertionHashCodeFn = &GetHashCodeGlobal;
-            }
-        }
-
         static bool Equals(AssertionDsc x, AssertionDsc y)
         {
-            return (&x)->Equals(&y, vnBased);
+            return (&x)->Equals(&y);
         }
 
         static unsigned GetHashCode(AssertionDsc dsc)
         {
-            return dsc.GetHashCode(vnBased);
+            return dsc.GetHashCode();
             //if (vnBased)
             //{
             //    //return GetHashCodeGlobal(&dsc);
