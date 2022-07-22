@@ -550,11 +550,11 @@ EXTERN_C void FASTCALL RhpGcStressHijack();
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-        if (&RhpGcProbeHijack == address)
-            return true;
+    if (&RhpGcProbeHijack == address)
+        return true;
 #ifdef FEATURE_GC_STRESS
-        if (&RhpGcStressHijack == address)
-            return true;
+    if (&RhpGcStressHijack == address)
+        return true;
 #endif // FEATURE_GC_STRESS
     return false;
 }
