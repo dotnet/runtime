@@ -66,6 +66,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             if (StreamingSerializer is null)

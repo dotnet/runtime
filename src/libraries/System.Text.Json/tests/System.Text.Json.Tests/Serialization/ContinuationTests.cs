@@ -124,6 +124,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static async Task ShouldWorkAtAnyPosition_Stream(
             string json,
             int bufferSize,
