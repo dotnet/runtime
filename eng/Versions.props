@@ -173,7 +173,7 @@
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22368.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
-    <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22366.1</SystemNetMsQuicTransportVersion>
+    <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22371.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.22368.4</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.22368.4</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
