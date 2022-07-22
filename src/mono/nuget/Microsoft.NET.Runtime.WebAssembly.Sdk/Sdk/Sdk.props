@@ -5,6 +5,5 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <OutputType>Exe</OutputType>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
   </PropertyGroup>
 </Project>

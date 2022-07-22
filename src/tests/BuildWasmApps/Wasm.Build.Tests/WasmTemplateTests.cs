@@ -178,7 +178,7 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             updateProgramCS();
-            
+
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
@@ -197,7 +197,15 @@ namespace Wasm.Build.Tests
                             TargetFramework: "net7.0",
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            if (!aot)
+            {
+                // These are disabled for AOT explicitly
+                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            }
+            else
+            {
+                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
+            }
 
             // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";
