@@ -694,7 +694,6 @@ namespace System.Reflection.Emit
             m_ca ??= new List<TypeBuilder.CustAttr>();
             m_ca.Add(ca);
         }
-
         #endregion
 
         #region Object Overrides

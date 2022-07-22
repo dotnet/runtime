@@ -24,11 +24,11 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(attributes);
             Type createdType = type.CreateType();
+            Assert.NotNull(createdType);
             Assert.Equal(type.Name, createdType.Name);
 
             TypeInfo typeInfo = type.CreateTypeInfo();
             Assert.Equal(typeInfo, createdType.GetTypeInfo());
-            Assert.NotNull(createdType);
 
             // Verify MetadataToken
             Assert.Equal(type.MetadataToken, typeInfo.MetadataToken);
