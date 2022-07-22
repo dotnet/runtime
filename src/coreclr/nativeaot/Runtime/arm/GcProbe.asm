@@ -204,7 +204,7 @@ __PPF_ThreadReg SETS "r2"
         bx          lr
 0
         mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
-        b           RhpGcProbe
+        b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
 
 #ifdef FEATURE_GC_STRESS
@@ -245,7 +245,7 @@ __PPF_ThreadReg SETS "r2"
 
     EXTERN RhpThrowHwEx
 
-    NESTED_ENTRY RhpGcProbe
+    NESTED_ENTRY RhpWaitForGC
         PROLOG_PROBE_FRAME r2, r3, r12
 
         ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame] 
@@ -263,7 +263,7 @@ __PPF_ThreadReg SETS "r2"
         EPILOG_NOP mov         r1, lr ;; return address as exception PC
         EPILOG_BRANCH RhpThrowHwEx
 
-    NESTED_END RhpGcProbe
+    NESTED_END RhpWaitForGC
 
     LEAF_ENTRY RhpGcPoll
         ldr         r0, =RhpTrapThreads

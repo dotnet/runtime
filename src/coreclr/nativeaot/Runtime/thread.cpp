@@ -571,7 +571,7 @@ void Thread::Hijack()
     }
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    // TODO: RhpGcProbe and related asm helpers NYI for ARM64/UNIX.
+    // TODO: RhpGcProbeHijack and related asm helpers NYI for ARM64/UNIX.
     //       disabling hijacking for now.
     return;
 #endif

@@ -111,12 +111,12 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         ret
 @@:
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
-        jmp         RhpGcProbe
+        jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 
 EXTERN RhpThrowHwEx : PROC
 
-NESTED_ENTRY RhpGcProbe, _TEXT
+NESTED_ENTRY RhpWaitForGC, _TEXT
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
@@ -135,7 +135,7 @@ Abort:
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
-NESTED_END RhpGcProbe, _TEXT
+NESTED_END RhpWaitForGC, _TEXT
 
 LEAF_ENTRY RhpGcPoll, _TEXT
         cmp         [RhpTrapThreads], TrapThreadsFlags_None

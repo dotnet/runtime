@@ -113,15 +113,15 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         FixupHijackedCallstack
 
         test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
-        jnz         LOCAL_LABEL(DoRhpGcProbe)
+        jnz         LOCAL_LABEL(WaitForGC)
         ret
 
-LOCAL_LABEL(DoRhpGcProbe):
+LOCAL_LABEL(WaitForGC):
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX
-        jmp         C_FUNC(RhpGcProbe)
+        jmp         C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack, _TEXT
 
-NESTED_ENTRY RhpGcProbe, _TEXT, NoHandler
+NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
         PUSH_PROBE_FRAME r11, rax, rcx
         END_PROLOGUE
 
@@ -140,7 +140,7 @@ LOCAL_LABEL(Abort):
         pop         rdx         // return address as exception RIP
         jmp         C_FUNC(RhpThrowHwEx) // Throw the ThreadAbortException as a special kind of hardware exception
 
-NESTED_END RhpGcProbe, _TEXT
+NESTED_END RhpWaitForGC, _TEXT
 
 
 LEAF_ENTRY RhpGcPoll, _TEXT

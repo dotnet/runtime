@@ -153,7 +153,7 @@ extern RhpThrowHwEx : proc
 ;; Register state on exit:
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
-RhpGcProbe  proc
+RhpWaitForGC  proc
         PushProbeFrame ecx      ; bitmask in ECX
 
         mov         ecx, esp
@@ -177,7 +177,7 @@ Abort:
         pop         edx         ;; return address as exception RIP
         jmp         RhpThrowHwEx
 
-RhpGcProbe  endp
+RhpWaitForGC  endp
 
 ifdef FEATURE_GC_STRESS
 ;;
@@ -233,12 +233,12 @@ endif ;; FEATURE_GC_STRESS
 FASTCALL_FUNC RhpGcProbeHijack, 0
         HijackFixupProlog
         test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
-        jnz         DoRhpGcProbe
+        jnz         WaitForGC
         HijackFixupEpilog
 
-DoRhpGcProbe:
+WaitForGC:
         mov         ecx, DEFAULT_PROBE_SAVE_FLAGS + PTFF_SAVE_RAX
-        jmp         RhpGcProbe
+        jmp         RhpWaitForGC
 
 FASTCALL_ENDFUNC
 

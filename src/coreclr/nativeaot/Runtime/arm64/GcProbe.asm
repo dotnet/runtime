@@ -156,17 +156,17 @@ PROBE_FRAME_SIZE    field 0
 
         ldr         x3, =RhpTrapThreads
         ldr         w3, [x3]
-        tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, DoRhpGcProbe
+        tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, WaitForGC
         ret
 
-DoRhpGcProbe
+WaitForGC
         orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
-        b           RhpGcProbe
+        b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
 
     EXTERN RhpThrowHwEx
 
-    NESTED_ENTRY RhpGcProbe
+    NESTED_ENTRY RhpWaitForGC
         PUSH_PROBE_FRAME x2, x3, x12
 
         ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
@@ -182,7 +182,7 @@ DoRhpGcProbe
         EPILOG_NOP mov w0, #STATUS_REDHAWK_THREAD_ABORT
         EPILOG_NOP mov x1, lr ;; return address as exception PC
         EPILOG_NOP b RhpThrowHwEx
-    NESTED_END RhpGcProbe
+    NESTED_END RhpWaitForGC
 
     LEAF_ENTRY RhpGcPoll
         ldr         x0, =RhpTrapThreads
