@@ -406,15 +406,7 @@ void * ReturnFromCallDescrThunk;
 // Return address hijacking
 //
 #if !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
+COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
