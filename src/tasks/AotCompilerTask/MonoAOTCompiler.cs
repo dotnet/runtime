@@ -603,7 +603,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
                 if (!reader.HasMetadata)
                 {
-                    Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
+                    Log.LogMessage(MessageImportance.Low, $"Skipping unmanaged {assemblyPath} for AOT");
                     continue;
                 }
             }
