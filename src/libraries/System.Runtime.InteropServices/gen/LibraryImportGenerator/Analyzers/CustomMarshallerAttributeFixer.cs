@@ -10,11 +10,15 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
+using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
 
 namespace Microsoft.Interop.Analyzers
 {
@@ -23,50 +27,83 @@ namespace Microsoft.Interop.Analyzers
     {
         private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);
 
-        private sealed class CustomFixAllProvider : DocumentBasedFixAllProvider
+        private sealed class CustomFixAllProvider : FixAllProvider
         {
-            protected override async Task<Document> FixAllAsync(FixAllContext fixAllContext, Document document, ImmutableArray<Diagnostic> diagnostics)
+            public static FixAllProvider Instance { get; } = new CustomFixAllProvider();
+
+            public override async Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
             {
-                SyntaxNode? root = await document.GetSyntaxRootAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
-                if (root == null)
-                    return document;
-
-                DocumentEditor editor = await DocumentEditor.CreateAsync(document, fixAllContext.CancellationToken).ConfigureAwait(false);
-
-                switch (fixAllContext.CodeActionEquivalenceKey)
+                ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnosticsInScope(fixAllContext).ConfigureAwait(false);
+                Dictionary<(ITypeSymbol marshallerType, ITypeSymbol managedType, bool isLinearCollectionMarshaller), List<string>> uniqueMarshallersToFix = new();
+                foreach (Diagnostic diagnostic in diagnostics)
                 {
-                    case AddMissingCustomTypeMarshallerMembersKey:
-                        foreach (IGrouping<TextSpan, Diagnostic> diagnosticsBySpan in diagnostics.GroupBy(d => d.Location.SourceSpan))
-                        {
-                            SyntaxNode node = root.FindNode(diagnosticsBySpan.Key);
+                    Document doc = fixAllContext.Solution.GetDocument(diagnostic.Location.SourceTree);
+                    SemanticModel model = await doc.GetSemanticModelAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
 
-                            AddMissingMembers(editor, diagnosticsBySpan, node);
-                        }
-                        break;
-                    default:
-                        break;
+                    var entryPointTypeSymbol = (INamedTypeSymbol)model.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, fixAllContext.CancellationToken);
+                    ITypeSymbol? managedType = GetManagedTypeInAttributeSyntax(diagnostic.Location, entryPointTypeSymbol);
+
+                    SyntaxNode node = (await diagnostic.Location.SourceTree.GetRootAsync(fixAllContext.CancellationToken).ConfigureAwait(false)).FindNode(diagnostic.Location.SourceSpan);
+                    var marshallerType = (INamedTypeSymbol)model.GetSymbolInfo(node, fixAllContext.CancellationToken).Symbol;
+                    var uniqueMarshallerFixKey = (marshallerType, managedType, ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointTypeSymbol));
+                    if (uniqueMarshallersToFix.TryGetValue(uniqueMarshallerFixKey, out List<string> membersToAdd))
+                    {
+                        membersToAdd.AddRange(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter));
+                    }
+                    else
+                    {
+                        uniqueMarshallersToFix.Add(uniqueMarshallerFixKey, new List<string>(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter)));
+                    }
                 }
 
-                return editor.GetChangedDocument();
+                Dictionary<ITypeSymbol, ITypeSymbol> partiallyUpdatedSymbols = new(SymbolEqualityComparer.Default);
+
+                SymbolEditor symbolEditor = SymbolEditor.Create(fixAllContext.Solution);
+
+                foreach (var marshallerInfo in uniqueMarshallersToFix)
+                {
+                    var (marshallerType, managedType, isLinearCollectionMarshaller) = marshallerInfo.Key;
+                    HashSet<string> missingMembers = new(marshallerInfo.Value);
+
+                    if (!partiallyUpdatedSymbols.TryGetValue(marshallerType, out ITypeSymbol newMarshallerType))
+                    {
+                        newMarshallerType = marshallerType;
+                    }
+
+                    newMarshallerType = (ITypeSymbol)await symbolEditor.EditOneDeclarationAsync(
+                        marshallerType,
+                        (editor, decl) => AddMissingMembers(
+                            editor,
+                            decl,
+                            marshallerType,
+                            managedType,
+                            missingMembers,
+                            isLinearCollectionMarshaller),
+                        fixAllContext.CancellationToken).ConfigureAwait(false);
+
+                    partiallyUpdatedSymbols[marshallerType] = newMarshallerType;
+                }
+
+                return CodeAction.Create(SR.AddMissingCustomTypeMarshallerMembers, ct => Task.FromResult(symbolEditor.ChangedSolution));
             }
 
-            private static void AddMissingMembers(DocumentEditor editor, IEnumerable<Diagnostic> diagnostics, SyntaxNode node)
+            private static async Task<ImmutableArray<Diagnostic>> GetAllDiagnosticsInScope(FixAllContext context)
             {
-                var (missingMemberNames, _) = GetRequiredShapeMissingMemberNames(diagnostics);
-                ITypeSymbol marshallerType = (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node);
-                editor.ReplaceNode(
-                    node,
-                    (node, gen) =>
-                        CustomMarshallerAttributeFixer.AddMissingMembers(
-                            node,
-                            marshallerType,
-                            missingMemberNames,
-                            editor.SemanticModel.Compilation,
-                            gen));
+                switch (context.Scope)
+                {
+                    case FixAllScope.Document:
+                        return await context.GetDocumentDiagnosticsAsync(context.Document).ConfigureAwait(false);
+                    case FixAllScope.Project:
+                        return await context.GetAllDiagnosticsAsync(context.Project).ConfigureAwait(false);
+                    case FixAllScope.Solution:
+                        return ImmutableArray.CreateRange((await Task.WhenAll(context.Solution.Projects.Select(context.GetAllDiagnosticsAsync)).ConfigureAwait(false)).SelectMany(arr => arr));
+                    default:
+                        throw new UnreachableException();
+                }
             }
         }
 
-        public override FixAllProvider? GetFixAllProvider() => new CustomFixAllProvider();
+        public override FixAllProvider? GetFixAllProvider() => CustomFixAllProvider.Instance;
 
         public override ImmutableArray<string> FixableDiagnosticIds { get; } =
             ImmutableArray.Create(
@@ -93,7 +130,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private static (List<string> missingMembers, List<Diagnostic> fixedDiagnostics) GetRequiredShapeMissingMemberNames(IEnumerable<Diagnostic> diagnostics)
+        private static (HashSet<string> missingMembers, List<Diagnostic> fixedDiagnostics) GetRequiredShapeMissingMemberNames(IEnumerable<Diagnostic> diagnostics)
         {
             List<string> missingMemberNames = new();
             List<Diagnostic> requiredShapeDiagnostics = new();
@@ -102,33 +139,137 @@ namespace Microsoft.Interop.Analyzers
                 if (diagnostic.Id == AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape)
                 {
                     requiredShapeDiagnostics.Add(diagnostic);
-                    if (diagnostic.Properties.TryGetValue(CustomMarshallerAttributeAnalyzer.MissingMemberNames.Key, out string missingMembers))
+                    if (diagnostic.Properties.TryGetValue(MissingMemberNames.Key, out string missingMembers))
                     {
-                        missingMemberNames.AddRange(missingMembers.Split(CustomMarshallerAttributeAnalyzer.MissingMemberNames.Delimiter));
+                        missingMemberNames.AddRange(missingMembers.Split(MissingMemberNames.Delimiter));
                     }
                 }
             }
 
-            return (missingMemberNames, requiredShapeDiagnostics);
+            return (new HashSet<string>(missingMemberNames), requiredShapeDiagnostics);
         }
 
-        private static async Task<Document> AddMissingMembers(Document doc, SyntaxNode node, List<string> missingMemberNames, CancellationToken ct)
+        private static async Task<Solution> AddMissingMembers(Document doc, SyntaxNode node, HashSet<string> missingMemberNames, CancellationToken ct)
         {
-            var editor = await DocumentEditor.CreateAsync(doc, ct).ConfigureAwait(false);
-            var gen = editor.Generator;
+            var model = await doc.GetSemanticModelAsync(ct).ConfigureAwait(false);
 
-            SyntaxNode updatedDeclaration = AddMissingMembers(node, (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node, ct), missingMemberNames, editor.SemanticModel.Compilation, gen);
+            var entryPointTypeSymbol = (INamedTypeSymbol)model.GetEnclosingSymbol(node.SpanStart, ct);
 
-            editor.ReplaceNode(node, updatedDeclaration);
+            // TODO: Convert to use the IOperation tree once IAttributeOperation is available
+            var managedTypeSymbolInAttribute = GetManagedTypeInAttributeSyntax(node.GetLocation(), entryPointTypeSymbol);
 
-            return editor.GetChangedDocument();
+            bool isLinearCollectionMarshaller = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointTypeSymbol);
+
+            ManualTypeMarshallingHelper.TryResolveManagedType(entryPointTypeSymbol, ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeSymbolInAttribute, entryPointTypeSymbol, model.Compilation), isLinearCollectionMarshaller, (_, _) => { }, out ITypeSymbol managedType);
+
+            SymbolEditor editor = SymbolEditor.Create(doc.Project.Solution);
+
+            ITypeSymbol marshallerType = (ITypeSymbol)model.GetSymbolInfo(node, ct).Symbol;
+
+            await editor.EditOneDeclarationAsync(marshallerType, (editor, decl) => AddMissingMembers(editor, decl, marshallerType, managedType, missingMemberNames, isLinearCollectionMarshaller), ct).ConfigureAwait(false);
+
+            return editor.ChangedSolution;
         }
 
-        private static SyntaxNode AddMissingMembers(SyntaxNode node, ITypeSymbol
-            marshallerType, List<string> missingMemberNames, Compilation compilation, SyntaxGenerator gen)
+        private static ITypeSymbol? GetManagedTypeInAttributeSyntax(Location locationInAttribute, INamedTypeSymbol? attributedTypeSymbol)
+            => (ITypeSymbol)attributedTypeSymbol.GetAttributes().First(attr =>
+                    attr.ApplicationSyntaxReference.SyntaxTree == locationInAttribute.SourceTree
+                    && attr.ApplicationSyntaxReference.Span.Contains(locationInAttribute.SourceSpan)).ConstructorArguments[0].Value;
+
+        private static void AddMissingMembers(
+            DocumentEditor editor,
+            SyntaxNode declaringSyntax,
+            ITypeSymbol marshallerType,
+            ITypeSymbol managedType,
+            HashSet<string> missingMemberNames,
+            bool isLinearCollectionMarshaller)
         {
-            // TODO: Implement adding the missing members for the V2 shapes
-            return node;
+            if (marshallerType.IsStatic && marshallerType.IsReferenceType)
+            {
+                AddMissingMembersToStatelessMarshaller(editor, declaringSyntax, marshallerType, managedType, missingMemberNames, isLinearCollectionMarshaller);
+            }
+        }
+
+        private static void AddMissingMembersToStatelessMarshaller(DocumentEditor editor, SyntaxNode declaringSyntax, ITypeSymbol marshallerType, ITypeSymbol managedType, HashSet<string> missingMemberNames, bool isLinearCollectionMarshaller)
+        {
+            SyntaxGenerator gen = editor.Generator;
+            Lazy<SyntaxNode> unmanagedTypeSyntax = new(() =>
+                {
+                    ITypeSymbol? unmanagedType = FindUnmanagedTypeFromExistingShape();
+                    if (unmanagedType is not null)
+                    {
+                        return gen.TypeExpression(unmanagedType);
+                    }
+                    return gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_IntPtr)).WithAdditionalAnnotations(RenameAnnotation.Create());
+                });
+
+            List<SyntaxNode> newMembers = new();
+
+            if (missingMemberNames.Contains(ShapeMemberNames.Value.Stateless.ConvertToUnmanaged))
+            {
+                newMembers.Add(
+                    gen.MethodDeclaration(
+                        ShapeMemberNames.Value.Stateless.ConvertToUnmanaged,
+                        parameters: new[] { gen.ParameterDeclaration("managed", gen.TypeExpression(managedType)) },
+                        returnType: unmanagedTypeSyntax.Value,
+                        accessibility: Accessibility.Public,
+                        modifiers: DeclarationModifiers.Static,
+                        statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
+            }
+
+            if (missingMemberNames.Contains(ShapeMemberNames.Value.Stateless.ConvertToManaged))
+            {
+                newMembers.Add(
+                    gen.MethodDeclaration(
+                        ShapeMemberNames.Value.Stateless.ConvertToManaged,
+                        parameters: new[] { gen.ParameterDeclaration("unmanaged", unmanagedTypeSyntax.Value) },
+                        returnType: gen.TypeExpression(managedType),
+                        accessibility: Accessibility.Public,
+                        modifiers: DeclarationModifiers.Static,
+                        statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
+            }
+
+            editor.ReplaceNode(declaringSyntax, (declaringSyntax, gen) => gen.AddMembers(declaringSyntax, newMembers));
+
+            ITypeSymbol? FindUnmanagedTypeFromExistingShape()
+            {
+                // Check for the presence of any method that has the unmanaged type in its signature.
+                // If one is present, return the unmanaged type from that method.
+                var (_, methods) = StatelessMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, editor.SemanticModel.Compilation);
+
+                if (methods.ToUnmanaged is not null)
+                {
+                    return methods.ToUnmanaged.ReturnType;
+                }
+                if (methods.ToUnmanagedWithBuffer is not null)
+                {
+                    return methods.ToUnmanagedWithBuffer.ReturnType;
+                }
+                if (methods.ToManaged is not null)
+                {
+                    return methods.ToManaged.Parameters[0].Type;
+                }
+                if (methods.ToManagedFinally is not null)
+                {
+                    return methods.ToManagedFinally.Parameters[0].Type;
+                }
+                if (methods.UnmanagedValuesSource is not null)
+                {
+                    return methods.UnmanagedValuesSource.Parameters[0].Type;
+                }
+                if (methods.UnmanagedValuesDestination is not null)
+                {
+                    return methods.UnmanagedValuesDestination.Parameters[0].Type;
+                }
+                return null;
+            }
+        }
+
+        private static SyntaxNode DefaultMethodStatement(SyntaxGenerator generator, Compilation compilation)
+        {
+            return generator.ThrowStatement(generator.ObjectCreationExpression(
+                generator.TypeExpression(
+                    compilation.GetTypeByMetadataName("System.NotImplementedException"))));
         }
     }
 }
