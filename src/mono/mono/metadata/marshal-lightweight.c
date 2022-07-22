@@ -402,16 +402,9 @@ handle_enum:
 
 	if (m_type_is_byref (sig->ret)) {
 		/* perform indirect load and return by value */
-		int pos;
-		mono_mb_emit_byte (mb, CEE_DUP);
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
-		mono_mb_patch_branch (mb, pos);
-
 		guint8 ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 		g_assert (!m_type_is_byref (ret_byval));
-		// TODO: Handle null references
 		ldind_op = mono_type_to_ldind (ret_byval);
 		/* taken from similar code in mini-generic-sharing.c
 		 * we need to use mono_mb_emit_op to add method data when loading
