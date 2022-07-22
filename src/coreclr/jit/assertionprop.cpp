@@ -947,7 +947,6 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 
 void Compiler::optAssertionInit(bool isLocalProp)
 {
-    printf("*** vnBased= %d\n", !isLocalProp);
     // Use a function countFunc to determine a proper maximum assertion count for the
     // method being compiled. The function is linear to the IL size for small and
     // moderate methods. For large methods, considering throughput impact, we track no
@@ -967,22 +966,10 @@ void Compiler::optAssertionInit(bool isLocalProp)
         optAssertionTabPrivate[i].vnBased = !isLocalProp;
     }
 
-    //memset(optAssertionTabPrivate, 0, optMaxAssertionCount * (sizeof()))
     optComplementaryAssertionMap =
         new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
 
     optAssertionDscMap = new (getAllocator()) AssertionDscMap(getAllocator());
-
-//#ifdef DEBUG
-//    if (isLocalProp)
-//    {
-//        optAssertionDscMap = new (getAllocator()) AssertionDscMap();
-//    }
-//    else
-//    {
-//        optAssertionDscMap = new (getAllocator()) AssertionDscHashTable_Global();
-//    }
-//#endif
 
     assert(NO_ASSERTION_INDEX == 0);
 
@@ -2034,7 +2021,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         {
             if (found)
             {
-                printf("HashCode= %u not found in map.\n", AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
+                JITDUMP("HashCode= %u not found in map.\n", AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
                 assert(false);
             }
             return NO_ASSERTION_INDEX;
@@ -2053,25 +2040,11 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     {
         if (found)
         {
-            printf("HashCode=%u not found in map and we added it.\n", AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
+            JITDUMP("HashCode=%u not found in map and we added it.\n",
+                    AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
             assert(false);
         }
     }
-
-    //if (optAssertionDscMap->Lookup(*newAssertion, &fastAnswer))
-    //{
-    //    assert(slowAnswer == fastAnswer);
-    //    return slowAnswer;
-    //}
-    //else
-    //{
-    //    if (found)
-    //    {
-    //        printf("%u not found.\n", AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
-    //        assert(false);
-    //    }
-    //    //printf("%u not found\n", AssertionDscKeyFuncs::GetHashCode(*newAssertion));
-    //}
 #else
     // Check if we are within max count.
     if (optAssertionCount >= optMaxAssertionCount)
@@ -2080,10 +2053,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif // DEBUG
 
-//#ifdef DEBUG
-//    optAssertionDscMap->Set(*newAssertion, optAssertionCount + 1);
-//#endif
-    printf("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
+    JITDUMP("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
     optAssertionCount++;
 
