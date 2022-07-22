@@ -826,13 +826,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (UseAotDataFile)
         {
-            // For .aotdata, iOS expects the file to be next to the original
-            // assembly. So, generate it there when we might have moved the
-            // assemblies to a `aot-in` dir
-            string? originalAsmPath = assemblyItem.GetMetadata(s_originalFullPathMetadataName);
-            string asmPathToUse = string.IsNullOrEmpty(originalAsmPath) ? assembly : originalAsmPath;
-
-            string aotDataFile = Path.ChangeExtension(asmPathToUse, ".aotdata");
+            string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
             ProxyFile proxyFile = _cache.NewFile(aotDataFile);
             proxyFiles.Add(proxyFile);
             aotArgs.Add($"data-outfile={proxyFile.TempFile}");
