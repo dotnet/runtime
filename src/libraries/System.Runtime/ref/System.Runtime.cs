@@ -9379,6 +9379,7 @@ namespace System.IO
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
+        public static System.IO.DirectoryInfo CreateTempSubdirectory(string? prefix = null) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
