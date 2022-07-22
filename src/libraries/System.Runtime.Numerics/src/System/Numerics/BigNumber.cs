@@ -854,7 +854,6 @@ namespace System.Numerics
             }
         }
 
-        // This function is consistent with VM\COMNumber.cpp!COMNumber::ParseFormatSpecifier
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             digits = -1;
@@ -867,22 +866,23 @@ namespace System.Numerics
             char ch = format[i];
             if (char.IsAsciiLetter(ch))
             {
+                // The digits value must be >= 0 && <= 999_999_999,
+                // but it can begin with any number of 0s, and thus we may need to check more than 9
+                // digits.  Further, for compat, we need to stop when we hit a null char.
                 i++;
-                int n = -1;
-
-                if (i < format.Length && char.IsAsciiDigit(format[i]))
+                int n = 0;
+                while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                 {
-                    n = format[i++] - '0';
-                    while (i < format.Length && char.IsAsciiDigit(format[i]))
+                    // Check if we are about to overflow past our limit of 9 digits
+                    if (n >= 100_000_000)
                     {
-                        int temp = n * 10 + (format[i++] - '0');
-                        if (temp < n)
-                        {
-                            throw new FormatException(SR.Argument_BadFormatSpecifier);
-                        }
-                        n = temp;
+                        throw new FormatException(SR.Argument_BadFormatSpecifier);
                     }
+                    n = ((n * 10) + format[i++] - '0');
                 }
+
+                // If we're at the end of the digits rather than having stopped because we hit something
+                // other than a digit or overflowed, return the standard format info.
                 if (i >= format.Length || format[i] == '\0')
                 {
                     digits = n;

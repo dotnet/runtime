@@ -2331,7 +2331,6 @@ namespace System
                             throw new FormatException(SR.Argument_BadFormatSpecifier);
                         }
                         n = ((n * 10) + format[i++] - '0');
-
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Tests;
 using System.Linq;
+using System.Numerics;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -834,10 +835,19 @@ namespace System.Tests
             string intMaxPlus1String = intMaxPlus1.ToString();
             Assert.Throws<FormatException>(() => d.ToString("E" + intMaxPlus1String));
             Assert.Throws<FormatException>(() => d.ToString("E4772185890"));
-            d.ToString("E999999999"); // Should not throw
-            d.ToString("E00000999999999"); // Should not throw
             Assert.Throws<FormatException>(() => d.ToString("E1000000000"));
             Assert.Throws<FormatException>(() => d.ToString("E000001000000000"));
+        }
+
+        [Fact]
+        public static void ToString_ValidLargeFormat()
+        {
+            double d = 123.0;
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            d.ToString("E999999999"); // Should not throw
+            d.ToString("E00000999999999"); // Should not throw
+
         }
 
         [Theory]
