@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace MemoryMarshalGetArrayDataReferenceTest
 {
@@ -61,7 +62,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
                 return MemoryMarshal.GetArrayDataReference(a).Byte;
             }
 
-            Equals(Problem(new StructWithByte[] { new StructWithByte { Byte = 1 } }), 2);
+            Equals(Problem1(new StructWithByte[] { new StructWithByte { Byte = 1 } }), 2);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static int Problem2(byte[] a)
