@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
+
+
 public class BringUpTest
 {
     const int Pass = 100;
@@ -29,6 +31,8 @@ public class BringUpTest
             // Just something to make sure we generate reflection metadata for the type
             new BringUpTest().ToString();
         }
+
+        GenericExceptions.RunTests();
 
         int counter = 0;
         AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionEventHandler;

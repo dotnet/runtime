@@ -2553,6 +2553,7 @@ bool Compiler::fgNormalizeEHCase_NativeAot()
             filterBb->bbCatchTyp  = BBCT_FILTER;
             filterBb->bbCodeOffs  = handlerBb->bbCodeOffs; // Technically, we're in the handler
             filterBb->bbHndIndex  = handlerBb->bbHndIndex;
+            filterBb->bbTryIndex  = handlerBb->bbTryIndex;
             filterBb->bbJumpDest  = handlerBb;
             filterBb->bbSetRunRarely();
             filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
