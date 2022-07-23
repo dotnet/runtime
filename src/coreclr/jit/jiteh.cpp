@@ -2524,10 +2524,10 @@ bool Compiler::fgNormalizeEHCase2()
 bool Compiler::fgCreateFiltersForGenericExceptions()
 {
     bool modified = false;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (unsigned ehNum = 0; ehNum < compHndBBtabCount; ehNum++)
     {
-        EHblkDsc* eh = ehGetDsc(XTnum);
-        if ((eh->ebdHandlerType == EH_HANDLER_CATCH) && !eh->HasFilter())
+        EHblkDsc* eh = ehGetDsc(ehNum);
+        if (eh->ebdHandlerType == EH_HANDLER_CATCH)
         {
             CORINFO_RESOLVED_TOKEN resolvedToken;
             resolvedToken.tokenContext = impTokenLookupContextHandle;
