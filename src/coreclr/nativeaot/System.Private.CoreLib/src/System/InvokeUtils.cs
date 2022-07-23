@@ -1,23 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Runtime;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
-
-using Internal.Reflection.Core.NonPortable;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-
-using EETypeElementType = Internal.Runtime.EETypeElementType;
-using Interlocked = System.Threading.Interlocked;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
-    public static class InvokeUtils
+    internal static class InvokeUtils
     {
         //
         // Various reflection scenarios (Array.SetValue(), reflection Invoke, delegate DynamicInvoke and FieldInfo.Set()) perform
@@ -37,14 +29,6 @@ namespace System
         // There is also another transform of T -> Nullable<T>. This method acknowledges that rule but does not actually transform the T.
         // Rather, the transformation happens naturally when the caller unboxes the value to its final destination.
         //
-        // This method is targeted by the Delegate ILTransformer.
-        //
-        //
-        public static object? CheckArgument(object? srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle)
-        {
-            EETypePtr dstEEType = dstType.ToEETypePtr();
-            return CheckArgument(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, binderBundle, ref Unsafe.NullRef<ArgSetupState>());
-        }
 
         // This option tweaks the coercion rules to match classic inconsistencies.
         internal enum CheckArgumentSemantics
@@ -55,11 +39,6 @@ namespace System
         }
 
         internal static object? CheckArgument(object? srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
-        {
-            return CheckArgument(srcObject, dstEEType, semantics, binderBundle, ref Unsafe.NullRef<ArgSetupState>());
-        }
-
-        internal static object? CheckArgument(object? srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle, ref ArgSetupState argSetupState)
         {
             // Methods with ByRefLike types in signatures should be filtered out by the compiler
             Debug.Assert(!dstEEType.IsByRefLike);
@@ -105,23 +84,12 @@ namespace System
                     throw exception;
 
                 // Our normal coercion rules could not convert the passed in argument but we were supplied a custom binder. See if it can do it.
-                Type exactDstType;
-                if (Unsafe.IsNullRef(ref argSetupState))
-                {
-                    // We were called by someone other than DynamicInvokeParamHelperCore(). Those callers pass the correct dstEEType.
-                    exactDstType = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))!;
-                }
-                else
-                {
-                    // We were called by DynamicInvokeParamHelperCore(). He passes a dstEEType that enums folded to int and possibly other adjustments. A custom binder
-                    // is app code however and needs the exact type.
-                    exactDstType = GetExactTypeForCustomBinder(argSetupState);
-                }
+                Type exactDstType = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))!;
 
                 srcObject = binderBundle.ChangeType(srcObject, exactDstType);
 
                 // For compat with desktop, the result of the binder call gets processed through the default rules again.
-                dstObject = CheckArgument(srcObject, dstEEType, semantics, binderBundle: null, ref Unsafe.NullRef<ArgSetupState>());
+                dstObject = CheckArgument(srcObject, dstEEType, semantics, binderBundle: null);
                 return dstObject;
             }
         }
@@ -290,380 +258,354 @@ namespace System
             return new InvalidCastException(SR.InvalidCast_StoreArrayElement);
         }
 
-        // -----------------------------------------------
-        // Infrastructure and logic for Dynamic Invocation
-        // -----------------------------------------------
-        public enum DynamicInvokeParamType
-        {
-            In = 0,
-            Ref = 1
-        }
-
-        public enum DynamicInvokeParamLookupType
-        {
-            ValuetypeObjectReturned = 0,
-            IndexIntoObjectArrayReturned = 1,
-        }
-
-        public struct ArgSetupState
-        {
-            public bool fComplete;
-            public object?[]? parameters;
-            public object[] nullableCopyBackObjects;
-            public int curIndex;
-            public MethodBase targetMethod;
-            public BinderBundle? binderBundle;
-            public object?[] customBinderProvidedParameters;
-        }
-
-        private static object GetDefaultValue(MethodBase targetMethod, int argIndex)
-        {
-            ParameterInfo parameterInfo = targetMethod.GetParametersNoCopy()[argIndex];
-            if (!parameterInfo.HasDefaultValue)
-            {
-                // If the parameter is optional, with no default value and we're asked for its default value,
-                // it means the caller specified Missing.Value as the value for the parameter. In this case the behavior
-                // is defined as passing in the Missing.Value, regardless of the parameter type.
-                // If Missing.Value is convertible to the parameter type, it will just work, otherwise we will fail
-                // due to type mismatch.
-                if (!parameterInfo.IsOptional)
-                    throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
-
-                return Missing.Value;
-            }
-
-            return parameterInfo.DefaultValue;
-        }
-
-        // This is only called if we have to invoke a custom binder to coerce a parameter type. It leverages s_targetMethodOrDelegate to retrieve
-        // the unaltered parameter type to pass to the binder.
-        private static Type GetExactTypeForCustomBinder(in ArgSetupState argSetupState)
-        {
-            // DynamicInvokeParamHelperCore() increments s_curIndex before calling us - that's why we have to subtract 1.
-            return argSetupState.targetMethod.GetParametersNoCopy()[argSetupState.curIndex - 1].ParameterType;
-        }
-
         [DebuggerGuidedStepThroughAttribute]
-        internal static unsafe object CallDynamicInvokeMethod(
+        internal static unsafe object? CallDynamicInvokeMethod(
             object? thisPtr,
             IntPtr methodToCall,
-            IntPtr dynamicInvokeHelperMethod,
-            IntPtr dynamicInvokeHelperGenericDictionary,
-            MethodBase targetMethod,
+            DynamicInvokeInfo dynamicInvokeInfo,
             object?[]? parameters,
             BinderBundle? binderBundle,
-            bool wrapInTargetInvocationException,
-            bool methodToCallIsThisCall = true)
+            bool wrapInTargetInvocationException)
         {
-            ArgSetupState argSetupState = new ArgSetupState
+            int argCount = parameters?.Length ?? 0;
+            if (argCount != dynamicInvokeInfo.Arguments.Length)
             {
-                binderBundle = binderBundle,
-                targetMethod = targetMethod
-            };
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+            }
 
+            object? returnObject = null;
+
+            ref byte thisArg = ref Unsafe.NullRef<byte>();
+            if (!dynamicInvokeInfo.IsStatic)
             {
-                // If the passed in array is not an actual object[] instance, we need to copy it over to an actual object[]
-                // instance so that the rest of the code can safely create managed object references to individual elements.
-                if (parameters != null && EETypePtr.EETypePtrOf<object[]>() != parameters.GetEETypePtr())
+                // The caller is expected to validate this
+                Debug.Assert(thisPtr != null);
+
+                // thisArg is a raw data byref for valuetype instance methods
+                thisArg = dynamicInvokeInfo.IsValueTypeInstanceMethod ? ref thisPtr.GetRawData()
+                    : ref Unsafe.As<object?, byte>(ref thisPtr);
+            }
+
+            ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
+            if ((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.AllocateBox) != 0)
+            {
+                returnObject = RuntimeImports.RhNewObject(
+                    (dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.Pointer) != 0 ?
+                        EETypePtr.EETypePtrOf<IntPtr>() : dynamicInvokeInfo.ReturnType);
+                ret = ref returnObject.GetRawData();
+            }
+
+            if (argCount == 0)
+            {
+                if (wrapInTargetInvocationException)
                 {
-                    argSetupState.parameters = new object[parameters.Length];
-                    Array.Copy(parameters, argSetupState.parameters, parameters.Length);
+                    try
+                    {
+                        ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, null);
+                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new TargetInvocationException(e);
+                    }
                 }
                 else
                 {
-                    argSetupState.parameters = parameters;
+                    ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, null);
+                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 }
-
-                object result;
-                try
-                {
-                    {
-                        if (dynamicInvokeHelperGenericDictionary != IntPtr.Zero)
-                        {
-                            result = ((delegate*<IntPtr, object, IntPtr, ref ArgSetupState, bool, object>)dynamicInvokeHelperMethod)
-                                (dynamicInvokeHelperGenericDictionary, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
-                            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                        }
-                        else
-                        {
-                            result = ((delegate*<object, IntPtr, ref ArgSetupState, bool, object>)dynamicInvokeHelperMethod)
-                                (thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
-                            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                        }
-                    }
-                }
-                catch (Exception e) when (wrapInTargetInvocationException && argSetupState.fComplete)
-                {
-                    throw new TargetInvocationException(e);
-                }
-                finally
-                {
-                    if (argSetupState.parameters != parameters)
-                    {
-                        Array.Copy(argSetupState.parameters, parameters, parameters.Length);
-                    }
-
-                    if (argSetupState.fComplete)
-                    {
-                        // Nullable objects can't take advantage of the ability to update the boxed value on the heap directly, so perform
-                        // an update of the parameters array now.
-                        if (argSetupState.nullableCopyBackObjects != null)
-                        {
-                            for (int i = 0; i < argSetupState.nullableCopyBackObjects.Length; i++)
-                            {
-                                if (argSetupState.nullableCopyBackObjects[i] != null)
-                                {
-                                    parameters[i] = DynamicInvokeBoxIntoNonNullable(argSetupState.nullableCopyBackObjects[i]);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return result;
             }
-        }
-
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        internal static void DynamicInvokeArgSetupComplete(ref ArgSetupState argSetupState)
-        {
-            int parametersLength = argSetupState.parameters != null ? argSetupState.parameters.Length : 0;
-
-            if (argSetupState.curIndex != parametersLength)
+            else if (argCount > MaxStackAllocArgCount)
             {
-                throw new System.Reflection.TargetParameterCountException();
-            }
-            argSetupState.fComplete = true;
-        }
-
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        public static unsafe void DynamicInvokeArgSetupPtrComplete(IntPtr argSetupStatePtr)
-        {
-            // argSetupStatePtr is a pointer to a *pinned* ArgSetupState object
-            DynamicInvokeArgSetupComplete(ref Unsafe.As<byte, ArgSetupState>(ref *(byte*)argSetupStatePtr));
-        }
-
-        private static void DynamicInvokeUnboxIntoActualNullable(object actualBoxedNullable, object boxedFillObject, EETypePtr nullableType)
-        {
-            // get a byref to the data within the actual boxed nullable, and then call RhUnBox with the boxedFillObject as the boxed object, and nullableType as the unbox type, and unbox into the actualBoxedNullable
-            RuntimeImports.RhUnbox(boxedFillObject, ref actualBoxedNullable.GetRawData(), nullableType);
-        }
-
-        private static object DynamicInvokeBoxIntoNonNullable(object actualBoxedNullable)
-        {
-            // grab the pointer to data, box using the MethodTable of the actualBoxedNullable, and then return the boxed object
-            return RuntimeImports.RhBox(actualBoxedNullable.GetEETypePtr(), ref actualBoxedNullable.GetRawData());
-        }
-
-        [DebuggerStepThrough]
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        internal static ref IntPtr DynamicInvokeParamHelperIn(ref ArgSetupState argSetupState, RuntimeTypeHandle rth)
-        {
-            //
-            // Call DynamicInvokeParamHelperCore as an in parameter, and return a managed byref to the interesting bit.
-            //
-            // This function exactly matches DynamicInvokeParamHelperRef except for the value of the enum passed to DynamicInvokeParamHelperCore
-            //
-
-            object obj = DynamicInvokeParamHelperCore(ref argSetupState, rth, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType.In);
-
-            if (paramLookupType == DynamicInvokeParamLookupType.ValuetypeObjectReturned)
-            {
-                return ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData());
+                ret = ref InvokeWithManyArguments(dynamicInvokeInfo, methodToCall, ref thisArg, ref ret,
+                    parameters, binderBundle, wrapInTargetInvocationException);
             }
             else
             {
-                return ref Unsafe.As<object, IntPtr>(ref Unsafe.As<object[]>(obj)[index]);
-            }
-        }
+                StackAllocedArguments argStorage = default;
+                StackAllocatedByRefs byrefStorage = default;
 
-        [DebuggerStepThrough]
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        internal static ref IntPtr DynamicInvokeParamHelperRef(ref ArgSetupState argSetupState, RuntimeTypeHandle rth)
-        {
-            //
-            // Call DynamicInvokeParamHelperCore as a ref parameter, and return a managed byref to the interesting bit. As this can't actually be defined in C# there is an IL transform that fills this in.
-            //
-            // This function exactly matches DynamicInvokeParamHelperIn except for the value of the enum passed to DynamicInvokeParamHelperCore
-            //
+                CheckArguments(
+                    dynamicInvokeInfo,
+                    ref argStorage._arg0!,
+                    (ByReference*)&byrefStorage,
+                    parameters,
+                    binderBundle);
 
-            object obj = DynamicInvokeParamHelperCore(ref argSetupState, rth, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType.Ref);
-
-            if (paramLookupType == DynamicInvokeParamLookupType.ValuetypeObjectReturned)
-            {
-                return ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData());
-            }
-            else
-            {
-                return ref Unsafe.As<object, IntPtr>(ref Unsafe.As<object[]>(obj)[index]);
-            }
-        }
-
-        internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedValuetype, object?[] parameters, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType, ref object[] nullableCopyBackObjects)
-        {
-            object? finalObjectToReturn = boxedValuetype;
-            EETypePtr eeType = type.ToEETypePtr();
-            bool nullable = eeType.IsNullable;
-
-            if (finalObjectToReturn == null || nullable || paramType == DynamicInvokeParamType.Ref)
-            {
-                finalObjectToReturn = RuntimeImports.RhNewObject(eeType);
-                if (boxedValuetype != null)
+                if (wrapInTargetInvocationException)
                 {
-                    DynamicInvokeUnboxIntoActualNullable(finalObjectToReturn, boxedValuetype, eeType);
-                }
-            }
-
-            if (nullable)
-            {
-                if (paramType == DynamicInvokeParamType.Ref)
-                {
-                    nullableCopyBackObjects ??= new object[parameters.Length];
-
-                    nullableCopyBackObjects[index] = finalObjectToReturn;
-                    parameters[index] = null;
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(finalObjectToReturn != null);
-                if (paramType == DynamicInvokeParamType.Ref)
-                    parameters[index] = finalObjectToReturn;
-            }
-
-            paramLookupType = DynamicInvokeParamLookupType.ValuetypeObjectReturned;
-            return finalObjectToReturn;
-        }
-
-        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
-        {
-            object finalObjectToReturn = boxedPointerType;
-
-            Debug.Assert(finalObjectToReturn is IntPtr);
-            paramLookupType = DynamicInvokeParamLookupType.ValuetypeObjectReturned;
-            return finalObjectToReturn;
-        }
-
-        public static unsafe object DynamicInvokeParamHelperCore(IntPtr argSetupState, RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
-        {
-            return DynamicInvokeParamHelperCore(ref Unsafe.AsRef<ArgSetupState>((void*)argSetupState), type, out paramLookupType, out index, paramType);
-        }
-
-        public static object DynamicInvokeParamHelperCore(ref ArgSetupState argSetupState, RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
-        {
-            index = argSetupState.curIndex++;
-            int parametersLength = argSetupState.parameters != null ? argSetupState.parameters.Length : 0;
-
-            if (index >= parametersLength)
-                throw new System.Reflection.TargetParameterCountException();
-
-            Debug.Assert(argSetupState.parameters != null);
-            object? incomingParam = argSetupState.parameters[index];
-            bool nullable = type.ToEETypePtr().IsNullable;
-
-            // Handle default parameters
-            if ((incomingParam == System.Reflection.Missing.Value) && paramType == DynamicInvokeParamType.In)
-            {
-                incomingParam = GetDefaultValue(argSetupState.targetMethod, index);
-                if (incomingParam != null && nullable)
-                {
-                    // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
-                    // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
-                    EETypePtr nullableType = type.ToEETypePtr().NullableType;
-                    if (nullableType.IsEnum)
+                    try
                     {
-                        incomingParam = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), incomingParam);
+                        ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
+                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                     }
-                }
-
-                // The default value is captured into the parameters array
-                argSetupState.parameters[index] = incomingParam;
-            }
-
-            RuntimeTypeHandle widenAndCompareType = type;
-            if (nullable)
-            {
-                widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);
-            }
-
-            if (widenAndCompareType.ToEETypePtr().IsPrimitive || type.ToEETypePtr().IsEnum)
-            {
-                // Nullable requires exact matching
-                if (incomingParam != null)
-                {
-                    if (nullable || paramType == DynamicInvokeParamType.Ref)
+                    catch (Exception e)
                     {
-                        if (widenAndCompareType.ToEETypePtr() != incomingParam.GetEETypePtr())
-                        {
-                            if (argSetupState.binderBundle == null)
-                                throw CreateChangeTypeArgumentException(incomingParam.GetEETypePtr(), type.ToEETypePtr());
-                            Type exactDstType = GetExactTypeForCustomBinder(argSetupState);
-                            incomingParam = argSetupState.binderBundle.ChangeType(incomingParam, exactDstType);
-                            if (incomingParam != null && widenAndCompareType.ToEETypePtr() != incomingParam.GetEETypePtr())
-                                throw CreateChangeTypeArgumentException(incomingParam.GetEETypePtr(), type.ToEETypePtr());
-                        }
+                        throw new TargetInvocationException(e);
                     }
-                    else
-                    {
-                        if (widenAndCompareType.ToEETypePtr().ElementType != incomingParam.GetEETypePtr().ElementType)
-                        {
-                            System.Diagnostics.Debug.Assert(paramType == DynamicInvokeParamType.In);
-                            incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, argSetupState.binderBundle, ref argSetupState);
-                        }
-                    }
-                }
-
-                return DynamicInvokeBoxedValuetypeReturn(out paramLookupType, incomingParam, argSetupState.parameters, index, type, paramType, ref argSetupState.nullableCopyBackObjects);
-            }
-            else if (type.ToEETypePtr().IsValueType)
-            {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, argSetupState.binderBundle, ref argSetupState);
-                if (argSetupState.binderBundle == null)
-                {
-                    System.Diagnostics.Debug.Assert(argSetupState.parameters[index] == null || object.ReferenceEquals(incomingParam, argSetupState.parameters[index]));
-                }
-                return DynamicInvokeBoxedValuetypeReturn(out paramLookupType, incomingParam, argSetupState.parameters, index, type, paramType, ref argSetupState.nullableCopyBackObjects);
-            }
-            else if (type.ToEETypePtr().IsPointer)
-            {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, argSetupState.binderBundle, ref argSetupState);
-                return DynamicInvokeUnmanagedPointerReturn(out paramLookupType, incomingParam, index, type, paramType);
-            }
-            else
-            {
-                incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, argSetupState.binderBundle, ref argSetupState);
-                paramLookupType = DynamicInvokeParamLookupType.IndexIntoObjectArrayReturned;
-                if (argSetupState.binderBundle == null)
-                {
-                    System.Diagnostics.Debug.Assert(object.ReferenceEquals(incomingParam, argSetupState.parameters[index]));
-                    return argSetupState.parameters;
                 }
                 else
                 {
-                    if (object.ReferenceEquals(incomingParam, argSetupState.parameters[index]))
-                    {
-                        return argSetupState.parameters;
-                    }
-                    else
-                    {
-                        // If we got here, the original argument object was superseded by invoking the custom binder.
+                    ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
+                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                }
 
-                        if (paramType == DynamicInvokeParamType.Ref)
+                if (dynamicInvokeInfo.NeedsCopyBack)
+                {
+                    CopyBack(dynamicInvokeInfo, (ByReference*)&byrefStorage, parameters);
+                }
+            }
+
+            return ((dynamicInvokeInfo.ReturnTransform & (DynamicInvokeTransform.Nullable | DynamicInvokeTransform.Pointer | DynamicInvokeTransform.ByRef)) != 0) ?
+                ReturnTranform(dynamicInvokeInfo, ref ret) : returnObject;
+        }
+
+        private static unsafe ref byte InvokeWithManyArguments(
+            DynamicInvokeInfo dynamicInvokeInfo, IntPtr methodToCall, ref byte thisArg, ref byte ret,
+            object?[] parameters, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            int argCount = dynamicInvokeInfo.Arguments.Length;
+
+            // We don't check a max stack size since we are invoking a method which
+            // naturally requires a stack size that is dependent on the arg count\size.
+            IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
+            NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
+
+            ByReference* pByRefStorage = (ByReference*)(pStorage + argCount);
+
+            RuntimeImports.GCFrameRegistration regArgStorage = new(pStorage, (uint)argCount, areByRefs: false);
+            RuntimeImports.GCFrameRegistration regByRefStorage = new(pByRefStorage, (uint)argCount, areByRefs: true);
+
+            try
+            {
+                RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
+                RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
+
+                CheckArguments(
+                    dynamicInvokeInfo,
+                    ref Unsafe.As<IntPtr, object>(ref *pStorage),
+                    (ByReference*)pByRefStorage,
+                    parameters,
+                    binderBundle);
+
+                if (wrapInTargetInvocationException)
+                {
+                    try
+                    {
+                        ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new TargetInvocationException(e);
+                    }
+                }
+                else
+                {
+                    ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                }
+
+                if (dynamicInvokeInfo.NeedsCopyBack)
+                {
+                    CopyBack(dynamicInvokeInfo, pByRefStorage, parameters);
+                }
+            }
+            finally
+            {
+                RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
+                RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+            }
+
+            return ref ret;
+        }
+
+        private static object? GetCoercedDefaultValue(DynamicInvokeInfo dynamicInvokeInfo, int index, in ArgumentInfo argumentInfo)
+        {
+            object? defaultValue = dynamicInvokeInfo.Method.GetParametersNoCopy()[index].DefaultValue;
+            if (defaultValue == DBNull.Value)
+                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+
+            if (defaultValue != null && (argumentInfo.Transform & DynamicInvokeTransform.Nullable) != 0)
+            {
+                // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
+                // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                EETypePtr nullableType = argumentInfo.Type.NullableType;
+                if (nullableType.IsEnum)
+                {
+                    defaultValue = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), defaultValue);
+                }
+            }
+
+            return defaultValue;
+        }
+
+        private static unsafe void CheckArguments(
+            DynamicInvokeInfo dynamicInvokeInfo,
+            ref object copyOfParameters,
+            ByReference* byrefParameters,
+            object?[] parameters,
+            BinderBundle binderBundle)
+        {
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                object? arg = parameters[i];
+
+                ref readonly ArgumentInfo argumentInfo = ref dynamicInvokeInfo.Arguments[i];
+
+            Again:
+                if (arg is null)
+                {
+                    // null is substituded by zero-initialized value for non-reference type
+                    if ((argumentInfo.Transform & DynamicInvokeTransform.Reference) == 0)
+                        arg = RuntimeImports.RhNewObject(
+                            (argumentInfo.Transform & DynamicInvokeTransform.Pointer) != 0 ?
+                                EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type);
+                }
+                else
+                {
+                    // Check for Missing by comparing the type. It will save us from allocating the Missing instance
+                    // unless it is needed.
+                    if (arg.GetType() == typeof(Missing))
+                    {
+                        // Missing is substited by metadata default value
+                        arg = GetCoercedDefaultValue(dynamicInvokeInfo, i, argumentInfo);
+
+                        // The metadata default value is written back into the parameters array
+                        parameters[i] = arg;
+                        if (arg is null)
+                            goto Again; // Redo the argument handling to deal with null
+                    }
+
+                    EETypePtr srcEEType = arg.GetEETypePtr();
+                    EETypePtr dstEEType = argumentInfo.Type;
+
+                    // Quick check for exact match
+                    if (srcEEType.RawValue != dstEEType.RawValue)
+                    {
+                        if (!RuntimeImports.AreTypesAssignable(srcEEType, dstEEType))
                         {
-                            argSetupState.parameters[index] = incomingParam;
-                            return argSetupState.parameters;
+                            // Slow path that supports type conversions.
+                            arg = CheckArgument(arg, argumentInfo.Type, CheckArgumentSemantics.DynamicInvoke, binderBundle);
                         }
-                        else
+
+                        if ((argumentInfo.Transform & (DynamicInvokeTransform.ByRef | DynamicInvokeTransform.Nullable)) != 0)
                         {
-                            // Since this not a by-ref parameter, we don't want to bash the original user-owned argument array but the rules of DynamicInvokeParamHelperCore() require
-                            // that we return non-value types as the "index"th element in an array. Thus, create an on-demand throwaway array just for this purpose.
-                            argSetupState.customBinderProvidedParameters ??= new object[argSetupState.parameters.Length];
-                            argSetupState.customBinderProvidedParameters[index] = incomingParam;
-                            return argSetupState.customBinderProvidedParameters;
+                            // Rebox the value to allow mutating the original box. This also takes care of
+                            // T -> Nullable<T> transformation as side-effect.
+                            object box = Runtime.RuntimeImports.RhNewObject(dstEEType);
+                            RuntimeImports.RhUnbox(arg, ref box.GetRawData(), dstEEType);
+                            arg = box;
                         }
                     }
                 }
+
+                // We need to perform type safety validation against the incoming arguments, but we also need
+                // to be resilient against the possibility that some other thread (or even the binder itself!)
+                // may mutate the array after we've validated the arguments but before we've properly invoked
+                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+                // as we validate them. This separate array is also used to hold default values when 'null'
+                // is specified for value types, and also used to hold the results from conversions such as
+                // from Int16 to Int32.
+
+                Unsafe.Add(ref copyOfParameters, i) = arg!;
+
+                byrefParameters[i] = new ByReference(ref (argumentInfo.Transform & DynamicInvokeTransform.Reference) != 0 ?
+                    ref Unsafe.As<object, byte>(ref Unsafe.Add(ref copyOfParameters, i)) : ref arg.GetRawData());
             }
+        }
+
+        private static unsafe void CopyBack(DynamicInvokeInfo dynamicInvokeInfo, ByReference* byrefParameters, object?[] parameters)
+        {
+            ArgumentInfo[] arguments = dynamicInvokeInfo.Arguments;
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                ArgumentInfo argumentInfo = arguments[i];
+                DynamicInvokeTransform transform = argumentInfo.Transform;
+
+                if ((transform & DynamicInvokeTransform.ByRef) == 0)
+                    continue;
+
+                ref byte byref = ref byrefParameters[i].Value;
+
+                object obj;
+                if ((transform & DynamicInvokeTransform.Pointer) != 0)
+                {
+                    Type type = Type.GetTypeFromEETypePtr(argumentInfo.Type);
+                    Debug.Assert(type.IsPointer);
+                    obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
+                }
+                else if ((transform & DynamicInvokeTransform.Nullable) != 0)
+                {
+                    obj = RuntimeImports.RhBox(argumentInfo.Type, ref byref);
+                }
+                else
+                {
+                    // This must be either object reference or we have allocated a value type box earlier
+                    Debug.Assert((transform & (DynamicInvokeTransform.Reference | DynamicInvokeTransform.AllocateBox)) != 0);
+                    obj = Unsafe.As<byte, object>(ref byref);
+                }
+                parameters[i] = obj;
+            }
+        }
+
+        private static unsafe object ReturnTranform(DynamicInvokeInfo dynamicInvokeInfo, ref byte byref)
+        {
+            if (Unsafe.IsNullRef(ref byref))
+            {
+                Debug.Assert((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.ByRef) != 0);
+                throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
+            }
+
+            object obj;
+            if ((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.Pointer) != 0)
+            {
+                Type type = Type.GetTypeFromEETypePtr(dynamicInvokeInfo.ReturnType);
+                Debug.Assert(type.IsPointer);
+                obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
+            }
+            else if ((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.Reference) != 0)
+            {
+                Debug.Assert((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.ByRef) != 0);
+                obj = Unsafe.As<byte, object>(ref byref);
+            }
+            else
+            {
+                Debug.Assert((dynamicInvokeInfo.ReturnTransform & (DynamicInvokeTransform.ByRef | DynamicInvokeTransform.Nullable)) != 0);
+                obj = RuntimeImports.RhBox(dynamicInvokeInfo.ReturnType, ref byref);
+            }
+            return obj;
+        }
+
+        private const int MaxStackAllocArgCount = 4;
+
+        // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
+        // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
+        // and pass it to CheckArguments().
+        // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
+        // GCReportingRegistration to safely track references.
+        [StructLayout(LayoutKind.Sequential)]
+        private ref struct StackAllocedArguments
+        {
+            internal object? _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private object? _arg1;
+            private object? _arg2;
+            private object? _arg3;
+#pragma warning restore CA1823, CS0169, IDE0051
+        }
+
+        // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
+        [StructLayout(LayoutKind.Sequential)]
+        private ref struct StackAllocatedByRefs
+        {
+            internal ref byte _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private ref byte _arg1;
+            private ref byte _arg2;
+            private ref byte _arg3;
+#pragma warning restore CA1823, CS0169, IDE0051
         }
     }
 }

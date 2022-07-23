@@ -276,11 +276,10 @@ namespace System
             }
             else
             {
-                DelegateDynamicInvokeInfo invokeInfo = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateDynamicInvokeInfo(GetType());
+                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateDynamicInvokeInfo(GetType());
 
                 object? result = InvokeUtils.CallDynamicInvokeMethod(m_firstParameter, m_functionPointer,
-                    invokeInfo.InvokeThunk, invokeInfo.GenericDictionary, invokeInfo.InvokeMethod,
-                    args, binderBundle: null, wrapInTargetInvocationException: true);
+                    dynamicInvokeInfo, args, binderBundle: null, wrapInTargetInvocationException: true);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }

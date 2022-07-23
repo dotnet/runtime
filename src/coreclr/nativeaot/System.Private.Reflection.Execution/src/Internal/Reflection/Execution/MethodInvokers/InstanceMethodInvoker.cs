@@ -33,13 +33,10 @@ namespace Internal.Reflection.Execution.MethodInvokers
             object? result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,
-                MethodInvokeInfo.DynamicInvokeMethod,
-                MethodInvokeInfo.DynamicInvokeGenericDictionary,
-                MethodInvokeInfo.MethodInfo,
+                MethodInvokeInfo,
                 arguments,
                 binderBundle,
-                wrapInTargetInvocationException: wrapInTargetInvocationException,
-                methodToCallIsThisCall: true);
+                wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -48,7 +45,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (isOpen)
             {
-                MethodInfo methodInfo = (MethodInfo)MethodInvokeInfo.MethodInfo;
+                MethodInfo methodInfo = (MethodInfo)MethodInvokeInfo.Method;
 
                 short resolveType = OpenMethodResolver.OpenNonVirtualResolve;
 

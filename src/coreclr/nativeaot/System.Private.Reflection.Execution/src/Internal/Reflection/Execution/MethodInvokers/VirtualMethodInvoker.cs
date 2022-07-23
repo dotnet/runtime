@@ -60,13 +60,10 @@ namespace Internal.Reflection.Execution.MethodInvokers
             object? result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject,
                 resolvedVirtual,
-                MethodInvokeInfo.DynamicInvokeMethod,
-                MethodInvokeInfo.DynamicInvokeGenericDictionary,
-                MethodInvokeInfo.MethodInfo,
+                MethodInvokeInfo,
                 arguments,
                 binderBundle,
-                wrapInTargetInvocationException: wrapInTargetInvocationException,
-                methodToCallIsThisCall: true);
+                wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

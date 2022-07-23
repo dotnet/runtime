@@ -364,24 +364,18 @@ namespace Internal.Runtime.Augments
         public static object? CallDynamicInvokeMethod(
             object? thisPtr,
             IntPtr methodToCall,
-            IntPtr dynamicInvokeHelperMethod,
-            IntPtr dynamicInvokeHelperGenericDictionary,
-            MethodBase targetMethod,
+            DynamicInvokeInfo dynamicInvokeInfo,
             object?[]? parameters,
             BinderBundle binderBundle,
-            bool wrapInTargetInvocationException,
-            bool methodToCallIsThisCall)
+            bool wrapInTargetInvocationException)
         {
             object? result = InvokeUtils.CallDynamicInvokeMethod(
                 thisPtr,
                 methodToCall,
-                dynamicInvokeHelperMethod,
-                dynamicInvokeHelperGenericDictionary,
-                targetMethod,
+                dynamicInvokeInfo,
                 parameters,
                 binderBundle,
-                wrapInTargetInvocationException,
-                methodToCallIsThisCall);
+                wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -712,7 +706,7 @@ namespace Internal.Runtime.Augments
 
         public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
 
         // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from

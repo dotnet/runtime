@@ -27,15 +27,12 @@ namespace Internal.Reflection.Execution.MethodInvokers
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             object? result = RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject,
+                null, // this pointer is ignored for static methods
                 MethodInvokeInfo.LdFtnResult,
-                MethodInvokeInfo.DynamicInvokeMethod,
-                MethodInvokeInfo.DynamicInvokeGenericDictionary,
-                MethodInvokeInfo.MethodInfo,
+                MethodInvokeInfo,
                 arguments,
                 binderBundle,
-                wrapInTargetInvocationException: wrapInTargetInvocationException,
-                methodToCallIsThisCall: false);
+                wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

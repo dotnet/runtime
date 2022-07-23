@@ -58,24 +58,36 @@ namespace ILCompiler.DependencyAnalysis
 
             if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
             {
-                MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
-                if (canonInvokeStub.IsSharedByGenericInstantiations)
+                MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
+                dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+
+                var signature = method.Signature;
+                AddSignatureDependency(ref dependencies, factory, signature.ReturnType);
+                foreach (var parameterType in signature)
+                    AddSignatureDependency(ref dependencies, factory, parameterType);
+
+                static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
                 {
-                    dependencies.Add(new DependencyListEntry(factory.DynamicInvokeTemplate(canonInvokeStub), "Reflection invoke"));
+                    if (type.IsByRef)
+                        type = ((ParameterizedType)type).ParameterType;
+
+                    // Skip tracking dependencies for primitive types. Assume that they are always present.
+                    if (type.IsPrimitive || type.IsVoid)
+                        return;
+
+                    dependencies.Add(factory.MaximallyConstructableType(type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Reflection invoke");
                 }
-                else
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
-                dependencies.Add(new DependencyListEntry(factory.ExactCallableAddress(method, isUnboxingStub: true), "Reflection unboxing stub"));
+                dependencies.Add(factory.ExactCallableAddress(method, isUnboxingStub: true), "Reflection unboxing stub");
 
             // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
             // Use a name/sig reference instead.
             if (!factory.MetadataManager.WillUseMetadataTokenToReferenceMethod(method))
             {
-                dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
-                    "Non metadata-local method reference"));
+                dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
+                    "Non metadata-local method reference");
             }
 
             if (method.HasInstantiation)
@@ -84,8 +96,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
                 {
-                    dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)),
-                        "UniversalCanon signature of method"));
+                    dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)),
+                        "UniversalCanon signature of method");
                 }
                 else if (!method.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg() || method.IsAbstract)
                 {
@@ -189,17 +201,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 {
-                    MethodDesc canonInvokeStubMethod = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
-                    if (canonInvokeStubMethod.IsSharedByGenericInstantiations)
-                    {
-                        vertex = writer.GetTuple(vertex,
-                            writer.GetUnsignedConstant(((uint)factory.MetadataManager.DynamicInvokeTemplateData.GetIdForMethod(canonInvokeStubMethod, factory) << 1) | 1));
-                    }
-                    else
-                    {
-                        vertex = writer.GetTuple(vertex,
-                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(canonInvokeStubMethod)) << 1));
-                    }
+                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
+                    vertex = writer.GetTuple(vertex,
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(invokeStub))));
                 }
 
                 if ((flags & InvokeTableFlags.IsGenericMethod) != 0)
