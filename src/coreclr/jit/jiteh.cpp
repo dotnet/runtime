@@ -2566,7 +2566,19 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg));
 
             // Create "catchArg is TException" tree
-            GenTree* runtimeLookup = getTokenHandleTree(&resolvedToken, true);
+            GenTree* lookupTree;
+            GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
+            if (opts.IsReadyToRun())
+            {
+                lookupTree = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                       TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+            }
+            else
+            {
+                lookupTree = gtNewRuntimeLookupHelperCallNode(&embedInfo.lookup.runtimeLookup, ctxTree,
+                                                              embedInfo.compileTimeHandle);
+            }
+            GenTree* runtimeLookup = gtNewRuntimeLookup(embedInfo.compileTimeHandle, embedInfo.handleType, lookupTree);
             GenTree* isInstOfT     = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
             GenTree* cmp           = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
             GenTree* retFilt       = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
