@@ -3886,7 +3886,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*             array    = impPopStack().val;
                 CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.classInst[0];
                 CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
-                var_type             elemType = JITtype2varType(jitType);
+                var_types            elemType = JITtype2varType(jitType);
 
                 GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
                 GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, elemType, elemHnd);
