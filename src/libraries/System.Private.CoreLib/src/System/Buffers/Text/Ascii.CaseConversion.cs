@@ -91,8 +91,8 @@ namespace System.Buffers.Text
             Debug.Assert(typeof(TTo) == typeof(byte) || typeof(TTo) == typeof(ushort));
             Debug.Assert(typeof(TCasing) == typeof(ToUpperConversion) || typeof(TCasing) == typeof(ToLowerConversion));
 
-            bool SourceIsAscii = (typeof(TFrom) == typeof(byte)); // JIT turns this into a const
-            bool DestIsAscii = (typeof(TTo) == typeof(byte)); // JIT turns this into a const
+            bool SourceIsAscii = (sizeof(TFrom) == 1); // JIT turns this into a const
+            bool DestIsAscii = (sizeof(TTo) == 1); // JIT turns this into a const
             bool ConversionIsWidening = SourceIsAscii && !DestIsAscii; // JIT turns this into a const
             bool ConversionIsNarrowing = !SourceIsAscii && DestIsAscii; // JIT turns this into a const
             bool ConversionIsWidthPreserving = typeof(TFrom) == typeof(TTo); // JIT turns this into a const
@@ -126,8 +126,9 @@ namespace System.Buffers.Text
                 // Basically, the (A <= value && value <= Z) check is converted to:
                 // (value - CONST) <= (Z - A), but using signed instead of unsigned arithmetic.
 
-                Vector128<TFrom> subtractionVector = Vector128.Create(TFrom.CreateTruncating(ConversionIsToUpper ? ('a' + 0x80) : ('A' + 0x80)));
-                Vector128<TFrom> comparisionVector = Vector128.Create(TFrom.CreateTruncating(26 /* a..z or A..Z */ - 0x80));
+                TFrom SourceSignedMinValue = TFrom.CreateTruncating(1 << (8 * sizeof(TFrom) - 1));
+                Vector128<TFrom> subtractionVector = Vector128.Create(ConversionIsToUpper ? (SourceSignedMinValue + TFrom.CreateTruncating('a')) : (SourceSignedMinValue + TFrom.CreateTruncating('A')));
+                Vector128<TFrom> comparisionVector = Vector128.Create(SourceSignedMinValue + TFrom.CreateTruncating(26 /* A..Z or a..z */));
                 Vector128<TFrom> caseConversionVector = Vector128.Create(TFrom.CreateTruncating(0x20)); // works both directions
 
                 Vector128<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
@@ -141,19 +142,31 @@ namespace System.Buffers.Text
                 // many elements we should skip in order to have future writes be
                 // aligned.
 
-                uint expectedWriteAlignment = ConversionIsNarrowing ? 8u : 16u; // JIT turns this into a const
-                i = expectedWriteAlignment - ((uint)pDest & 0xFu) / (uint)sizeof(TTo);
+                uint expectedWriteAlignment = NumInputElementsToConsumeEachVectorizedLoopIteration * (uint)sizeof(TTo); // JIT turns this into a const
+                i = NumInputElementsToConsumeEachVectorizedLoopIteration - ((uint)pDest % expectedWriteAlignment) / (uint)sizeof(TTo);
                 Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment == 0, "Destination buffer wasn't properly aligned!");
 
                 // Future iterations of this loop will be aligned,
                 // except for the last iteration.
 
-                bool finalIteration = false;
-
-            RunLoopAgain:
-
-                for (; finalIteration || (elementCount - i) >= NumInputElementsToConsumeEachVectorizedLoopIteration; i += NumInputElementsToConsumeEachVectorizedLoopIteration)
+                while (true)
                 {
+                    Debug.Assert(i <= elementCount, "We overran a buffer somewhere.");
+
+                    if ((elementCount - i) < NumInputElementsToConsumeEachVectorizedLoopIteration)
+                    {
+                        // If we're about to enter the final iteration of the loop, back up so that
+                        // we can read one unaligned block. If we've already consumed all the data,
+                        // jump straight to the end.
+
+                        if (i == elementCount)
+                        {
+                            goto Return;
+                        }
+
+                        i = elementCount - NumInputElementsToConsumeEachVectorizedLoopIteration;
+                    }
+
                     // Unaligned read & check for non-ASCII data.
 
                     srcVector = Vector128.LoadUnsafe(ref *pSrc, i);
@@ -168,21 +181,11 @@ namespace System.Buffers.Text
                     srcVector ^= (matches & caseConversionVector);
 
                     // Now write to the destination.
-                    // We expect this write to be aligned except for the last iteration.
+                    // We expect this write to be aligned except for the last run through the loop.
 
-                    ChangeWidthAndWriteTo(srcVector, pDest, 0);
+                    ChangeWidthAndWriteTo(srcVector, pDest, i);
+                    i += NumInputElementsToConsumeEachVectorizedLoopIteration;
                 }
-
-                Debug.Assert(i <= elementCount, "We overran a buffer.");
-                if (i == elementCount)
-                {
-                    goto Return;
-                }
-
-                Debug.Assert(!finalIteration, "We already ran the final iteration but didn't consume all elements?");
-                i = elementCount - NumInputElementsToConsumeEachVectorizedLoopIteration; // we know there's enough data in the buffer to support this
-                finalIteration = true;
-                goto RunLoopAgain;
             }
 
         Drain64:
@@ -406,7 +409,10 @@ namespace System.Buffers.Text
             else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
                 // narrowing operation required
-                Vector128<byte> narrow = Vector128.Narrow(vector.AsUInt16(), vector.AsUInt16());
+                // since we know data is all-ASCII, special-case SSE2 to avoid unneeded PAND in Narrow call
+                Vector128<byte> narrow = (Sse2.IsSupported)
+                    ? Sse2.PackUnsignedSaturate(vector.AsInt16(), vector.AsInt16())
+                    : Vector128.Narrow(vector.AsUInt16(), vector.AsUInt16());
                 Vector128.StoreUnsafe(narrow, ref *(byte*)pDest, elementOffset);
             }
             else
