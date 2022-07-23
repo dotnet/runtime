@@ -1601,7 +1601,7 @@ public:
     PortablePdbMiniMdTables();
 #endif
     // macro misspells some names.
-    ULONG getCountProperties() {return getCountProperties();}
+    ULONG getCountProperties() {return getCountPropertys();}
     ULONG getCountMethodSemantics() {return getCountMethodSemanticss();}
 
     // Functions for getting a row by rid.  Look like:
