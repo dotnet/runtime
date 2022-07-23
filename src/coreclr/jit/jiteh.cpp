@@ -2566,22 +2566,21 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg));
 
             // Create "catchArg is TException" tree
-            GenTree* lookupTree;
-            GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
+            GenTree* runtimeLookup;
             if (opts.IsReadyToRun())
             {
-                lookupTree = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
-                                                       TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+                GenTree* ctxTree    = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
+                GenTree* lookupTree = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                                TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+                runtimeLookup = gtNewRuntimeLookup(embedInfo.compileTimeHandle, embedInfo.handleType, lookupTree);
             }
             else
             {
-                lookupTree = gtNewRuntimeLookupHelperCallNode(&embedInfo.lookup.runtimeLookup, ctxTree,
-                                                              embedInfo.compileTimeHandle);
+                runtimeLookup = getTokenHandleTree(&resolvedToken, true);
             }
-            GenTree* runtimeLookup = gtNewRuntimeLookup(embedInfo.compileTimeHandle, embedInfo.handleType, lookupTree);
-            GenTree* isInstOfT     = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
-            GenTree* cmp           = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
-            GenTree* retFilt       = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
+            GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
+            GenTree* cmp       = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
+            GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
 
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);
