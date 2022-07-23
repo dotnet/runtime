@@ -3660,7 +3660,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = mustExpand || (gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL));
+        mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
 
         ni = lookupNamedIntrinsic(method);
 
@@ -3693,12 +3693,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #ifdef FEATURE_HW_INTRINSICS
         if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
         {
-            if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
-            {
-                *pIntrinsicName = NI_Illegal;
-                return nullptr;
-            }
-
             GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
             if (mustExpand && (hwintrinsic == nullptr))
@@ -4952,6 +4946,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig)
 {
+    // NextCallRetAddr requires a call, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     assert(sig->sigInst.classInstCount == 0);
 
     switch (intrinsic)

@@ -4459,14 +4459,6 @@ AGAIN:
 
     for (jmp = emitJumpList; jmp; jmp = jmp->idjNext)
     {
-#if defined(DEBUG) && defined(TARGET_XARCH)
-        if (jmp->idInsFmt() == IF_RWR_LABEL && (jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL) &&
-            jmp->idAddr()->iiaBBlabel->bbJumpKind == BBJ_NONE && !jmp->idIsBound())
-        {
-            assert(jmp->idAddr()->iiaBBlabel->bbEmitCookie);
-        }
-#endif
-
         insGroup* jmpIG;
         insGroup* tgtIG;
 
