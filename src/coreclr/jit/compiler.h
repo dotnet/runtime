@@ -4131,7 +4131,6 @@ private:
 
     void FreeBlockListNode(BlockListNode* node);
 
-    bool impIsValueType(typeInfo* pTypeInfo);
     var_types mangleVarArgsType(var_types type);
 
     regNumber getCallArgIntRegister(regNumber floatReg);
@@ -10226,8 +10225,7 @@ public:
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
     typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
-    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd,
-                             bool bashStructToRef = false); // converts from jit type representation to typeInfo
+    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
@@ -10240,12 +10238,7 @@ public:
                                              DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, // Is this a "constrained." call
-                                                                                       // on a type parameter?
-                                    bool speculative // If true, won't throw if verificatoin fails. Instead it will
-                                                     // return false to the caller.
-                                                     // If false, it will throw.
-                                    );
+                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
 
 #ifdef DEBUG
 

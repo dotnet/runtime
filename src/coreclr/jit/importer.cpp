@@ -28,36 +28,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         }                                                                                                              \
     } while (0)
 
-#define VerifyOrReturn(cond, msg)                                                                                      \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(cond))                                                                                                   \
-        {                                                                                                              \
-            verRaiseVerifyExceptionIfNeeded(INDEBUG(msg) DEBUGARG(__FILE__) DEBUGARG(__LINE__));                       \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
-
-#define VerifyOrReturnSpeculative(cond, msg, speculative)                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (speculative)                                                                                               \
-        {                                                                                                              \
-            if (!(cond))                                                                                               \
-            {                                                                                                          \
-                return false;                                                                                          \
-            }                                                                                                          \
-        }                                                                                                              \
-        else                                                                                                           \
-        {                                                                                                              \
-            if (!(cond))                                                                                               \
-            {                                                                                                          \
-                verRaiseVerifyExceptionIfNeeded(INDEBUG(msg) DEBUGARG(__FILE__) DEBUGARG(__LINE__));                   \
-                return false;                                                                                          \
-            }                                                                                                          \
-        }                                                                                                              \
-    } while (0)
-
 /*****************************************************************************/
 
 void Compiler::impInit()
@@ -6571,21 +6541,6 @@ typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsH
             }
             break;
 
-#ifdef TARGET_64BIT
-        case CORINFO_TYPE_NATIVEINT:
-        case CORINFO_TYPE_NATIVEUINT:
-            if (clsHnd)
-            {
-                // If we have more precise information, use it
-                return verMakeTypeInfo(clsHnd);
-            }
-            else
-            {
-                return typeInfo::nativeInt();
-            }
-            break;
-#endif // TARGET_64BIT
-
         case CORINFO_TYPE_VALUECLASS:
         case CORINFO_TYPE_REFANY:
             tiResult = verMakeTypeInfo(clsHnd);
@@ -6626,9 +6581,9 @@ typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsH
 
 /******************************************************************************/
 
-typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd, bool bashStructToRef /* = false */)
+typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
 {
-    if (clsHnd == nullptr)
+    if (clsHnd == NO_CLASS_HANDLE)
     {
         return typeInfo();
     }
@@ -6656,30 +6611,14 @@ typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd, bool bashStructT
             return typeInfo();
         }
 
-#ifdef TARGET_64BIT
-        if (t == CORINFO_TYPE_NATIVEINT || t == CORINFO_TYPE_NATIVEUINT)
-        {
-            return typeInfo::nativeInt();
-        }
-#endif // TARGET_64BIT
-
         if (t != CORINFO_TYPE_UNDEF)
         {
             return (typeInfo(JITtype2tiType(t)));
-        }
-        else if (bashStructToRef)
-        {
-            return (typeInfo(TI_REF, clsHnd));
         }
         else
         {
             return (typeInfo(TI_STRUCT, clsHnd));
         }
-    }
-    else if (attribs & CORINFO_FLG_GENERIC_TYPE_VARIABLE)
-    {
-        // See comment in _typeInfo.h for why we do it this way.
-        return (typeInfo(TI_REF, clsHnd, true));
     }
     else
     {
@@ -6728,14 +6667,9 @@ bool Compiler::verIsByRefLike(const typeInfo& ti)
  *  Check if a TailCall is legal.
  */
 
-bool Compiler::verCheckTailCallConstraint(
-    OPCODE                  opcode,
-    CORINFO_RESOLVED_TOKEN* pResolvedToken,
-    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, // Is this a "constrained." call on a type parameter?
-    bool                    speculative                // If true, won't throw if verificatoin fails. Instead it will
-                                                       // return false to the caller.
-                                                       // If false, it will throw.
-    )
+bool Compiler::verCheckTailCallConstraint(OPCODE                  opcode,
+                                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken)
 {
     DWORD            mflags;
     CORINFO_SIG_INFO sig;
@@ -6754,7 +6688,7 @@ bool Compiler::verCheckTailCallConstraint(
         return false;
     }
 
-    // for calli, VerifyOrReturn that this is not a virtual method
+    // For calli, check that this is not a virtual method.
     if (opcode == CEE_CALLI)
     {
         /* Get the call sig */
@@ -6770,10 +6704,9 @@ bool Compiler::verCheckTailCallConstraint(
 
         mflags = info.compCompHnd->getMethodAttribs(methodHnd);
 
-        // When verifying generic code we pair the method handle with its
-        // owning class to get the exact method signature.
+        // In generic code we pair the method handle with its owning class to get the exact method signature.
         methodClassHnd = pResolvedToken->hClass;
-        assert(methodClassHnd);
+        assert(methodClassHnd != NO_CLASS_HANDLE);
 
         eeGetMethodSig(methodHnd, &sig, methodClassHnd);
 
@@ -6782,42 +6715,46 @@ bool Compiler::verCheckTailCallConstraint(
     }
 
     // We must have got the methodClassHnd if opcode is not CEE_CALLI
-    assert((methodHnd != nullptr && methodClassHnd != nullptr) || opcode == CEE_CALLI);
+    assert((methodHnd != nullptr && methodClassHnd != NO_CLASS_HANDLE) || opcode == CEE_CALLI);
 
     if ((sig.callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
         eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &sig);
     }
 
-    // check compatibility of the arguments
-    unsigned int argCount;
-    argCount = sig.numArgs;
+    // Check compatibility of the arguments.
+    unsigned int            argCount = sig.numArgs;
     CORINFO_ARG_LIST_HANDLE args;
     args = sig.args;
     while (argCount--)
     {
         typeInfo tiDeclared = verParseArgSigToTypeInfo(&sig, args).NormaliseForStack();
 
-        // check that the argument is not a byref for tailcalls
-        VerifyOrReturnSpeculative(!verIsByRefLike(tiDeclared), "tailcall on byrefs", speculative);
+        // Check that the argument is not a byref for tailcalls.
+        if (verIsByRefLike(tiDeclared))
+        {
+            return false;
+        }
 
         // For unsafe code, we might have parameters containing pointer to the stack location.
         // Disallow the tailcall for this kind.
         CORINFO_CLASS_HANDLE classHandle;
         CorInfoType          ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
-        VerifyOrReturnSpeculative(ciType != CORINFO_TYPE_PTR, "tailcall on CORINFO_TYPE_PTR", speculative);
+        if (ciType == CORINFO_TYPE_PTR)
+        {
+            return false;
+        }
 
         args = info.compCompHnd->getArgNext(args);
     }
 
-    // update popCount
+    // Update popCount.
     popCount += sig.numArgs;
 
-    // check for 'this' which is on non-static methods, not called via NEWOBJ
+    // Check for 'this' which is on non-static methods, not called via NEWOBJ
     if (!(mflags & CORINFO_FLG_STATIC))
     {
-        // Always update the popCount.
-        // This is crucial for the stack calculation to be correct.
+        // Always update the popCount. This is crucial for the stack calculation to be correct.
         typeInfo tiThis = impStackTop(popCount).seTypeInfo;
         popCount++;
 
@@ -6829,7 +6766,11 @@ bool Compiler::verCheckTailCallConstraint(
             {
                 tiThis.MakeByRef();
             }
-            VerifyOrReturnSpeculative(!verIsByRefLike(tiThis), "byref in tailcall", speculative);
+
+            if (verIsByRefLike(tiThis))
+            {
+                return false;
+            }
         }
         else
         {
@@ -6840,13 +6781,19 @@ bool Compiler::verCheckTailCallConstraint(
                 tiDeclaredThis.MakeByRef();
             }
 
-            VerifyOrReturnSpeculative(!verIsByRefLike(tiDeclaredThis), "byref in tailcall", speculative);
+            if (verIsByRefLike(tiDeclaredThis))
+            {
+                return false;
+            }
         }
     }
 
     // Tail calls on constrained calls should be illegal too:
     // when instantiated at a value type, a constrained call may pass the address of a stack allocated value
-    VerifyOrReturnSpeculative(!pConstrainedResolvedToken, "byref in constrained tailcall", speculative);
+    if (pConstrainedResolvedToken != nullptr)
+    {
+        return false;
+    }
 
     // Get the exact view of the signature for an array method
     if (sig.retType != CORINFO_TYPE_VOID)
@@ -6858,25 +6805,28 @@ bool Compiler::verCheckTailCallConstraint(
         }
     }
 
-    typeInfo tiCalleeRetType = verMakeTypeInfo(sig.retType, sig.retTypeClass);
-    typeInfo tiCallerRetType =
-        verMakeTypeInfo(info.compMethodInfo->args.retType, info.compMethodInfo->args.retTypeClass);
+    var_types calleeRetType = genActualType(JITtype2varType(sig.retType));
+    var_types callerRetType = genActualType(JITtype2varType(info.compMethodInfo->args.retType));
 
-    // void return type gets morphed into the error type, so we have to treat them specially here
-    if (sig.retType == CORINFO_TYPE_VOID)
+    // Normalize TYP_FLOAT to TYP_DOUBLE (it is ok to return one as the other and vice versa).
+    calleeRetType = (calleeRetType == TYP_FLOAT) ? TYP_DOUBLE : calleeRetType;
+    callerRetType = (callerRetType == TYP_FLOAT) ? TYP_DOUBLE : callerRetType;
+
+    // Make sure the types match.
+    if (calleeRetType != callerRetType)
     {
-        VerifyOrReturnSpeculative(info.compMethodInfo->args.retType == CORINFO_TYPE_VOID, "tailcall return mismatch",
-                                  speculative);
+        return false;
     }
-    else
+    else if ((callerRetType == TYP_STRUCT) && (sig.retTypeClass != info.compMethodInfo->args.retTypeClass))
     {
-        VerifyOrReturnSpeculative(typeInfo::tiCompatibleWith(info.compCompHnd, NormaliseForStack(tiCalleeRetType),
-                                                             NormaliseForStack(tiCallerRetType), true),
-                                  "tailcall return mismatch", speculative);
+        return false;
     }
 
-    // for tailcall, stack must be empty
-    VerifyOrReturnSpeculative(verCurrentState.esStackDepth == popCount, "stack non-empty on tailcall", speculative);
+    // For tailcall, stack must be empty.
+    if (verCurrentState.esStackDepth != popCount)
+    {
+        return false;
+    }
 
     return true; // Yes, tailcall is legal
 }
@@ -10045,13 +9995,6 @@ DONE_CALL:
 
         typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
         tiRetVal.NormaliseForStack();
-
-        // The CEE_READONLY prefix modifies the verification semantics of an Address
-        // operation on an array type.
-        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall && tiRetVal.IsByRef())
-        {
-            tiRetVal.SetIsReadonlyByRef();
-        }
 
         if (call->IsCall())
         {
@@ -15040,11 +14983,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (newBBcreatedForTailcallStress && !hasTailPrefix)
                         {
                             // Do a more detailed evaluation of legality
-                            const bool returnFalseIfInvalid = true;
                             const bool passedConstraintCheck =
                                 verCheckTailCallConstraint(opcode, &resolvedToken,
-                                                           constraintCall ? &constrainedResolvedToken : nullptr,
-                                                           returnFalseIfInvalid);
+                                                           constraintCall ? &constrainedResolvedToken : nullptr);
 
                             // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
                             // patchpoints.
@@ -15285,7 +15226,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         // If the object is a struct, what we really want is
                         // for the field to operate on the address of the struct.
-                        if (!varTypeGCtype(obj->TypeGet()) && impIsValueType(tiObj))
+                        if (varTypeIsStruct(obj))
                         {
                             assert(opcode == CEE_LDFLD && objType != nullptr);
 
@@ -18795,21 +18736,6 @@ void Compiler::impImport()
         block->bbFlags &= ~BBF_VISITED;
     }
 #endif
-}
-
-// Checks if a typeinfo (usually stored in the type stack) is a struct.
-// The invariant here is that if it's not a ref or a method and has a class handle
-// it's a valuetype
-bool Compiler::impIsValueType(typeInfo* pTypeInfo)
-{
-    if (pTypeInfo && pTypeInfo->IsValueClassWithClsHnd())
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
 }
 
 //------------------------------------------------------------------------
