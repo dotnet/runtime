@@ -432,10 +432,10 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void GetTdsValue()
         {
-            Assert.Equal(SqlMoney.MaxValue.GetTdsValue(), long.MaxValue);
-            Assert.Equal(SqlMoney.MinValue.GetTdsValue(), long.MinValue);
-            Assert.Equal(new SqlMoney(0).GetTdsValue(), (long)0);
-            Assert.Throws<SqlNullValueException>(SqlMoney.Null.GetTdsValue());
+            Assert.Equal(long.MaxValue,SqlMoney.MaxValue.GetTdsValue());
+            Assert.Equal(long.MinValue, SqlMoney.MinValue.GetTdsValue());
+            Assert.Equal((long)0, new SqlMoney(0).GetTdsValue());
+            Assert.Throws<SqlNullValueException>(() => SqlMoney.Null.GetTdsValue());
         }
 
         [Fact]
