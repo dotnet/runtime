@@ -1363,7 +1363,8 @@ namespace System
             ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
             ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
             var n3 = 2141 * daySinceMarch1 + 197913;
-            switch (part) {
+            switch (part)
+            {
                 case DatePartDay:
                     return (ushort)n3 / 2141 + 1;
                 case DatePartMonth:
@@ -1371,7 +1372,8 @@ namespace System
             }
 
             var year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= 306 ? 1 : 0);
-            switch (part) {
+            switch (part)
+            {
                 case DatePartYear:
                     return year;
                 default:        // DatePartDayOfYear
@@ -1397,7 +1399,8 @@ namespace System
             day = (ushort)n3 / 2141 + 1;
 
             // rollover December 31
-            if (daySinceMarch1 >= 306) {
+            if (daySinceMarch1 >= 306)
+            {
                 ++year;
                 month -= 12;
             }
