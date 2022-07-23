@@ -2796,6 +2796,7 @@ namespace System.Data.SqlTypes
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
         public System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
         public override string ToString() { throw null; }
+        public static SqlBinary WrapBytes(byte[] bytes) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBoolean>
