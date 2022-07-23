@@ -250,9 +250,9 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
     bool        substitutionRequired;
     const char* pChar;
 
-    lengthOut           = 1;
+    lengthOut            = 1;
     substitutionRequired = false;
-    pChar               = nameIn;
+    pChar                = nameIn;
     while (*pChar != '\0')
     {
         match = false;
