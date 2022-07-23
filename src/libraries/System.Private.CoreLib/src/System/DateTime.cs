@@ -62,6 +62,7 @@ namespace System
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
+        private const ulong TicksPer6Hours = TicksPerHour * 6;
         private const long TicksPerDay = TicksPerHour * 24;
 
         // Number of milliseconds per time unit
@@ -1351,49 +1352,33 @@ namespace System
 
         // Returns a given date part of this DateTime. This method is used
         // to compute the year, day-of-year, month, or day part.
+        //
+        // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
+        //   Cassio Neri, Lorenz Schneiderhttps - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
         private int GetDatePart(int part)
         {
-            // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            uint y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            uint y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            uint y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            uint y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // If year was requested, compute and return it
-            if (part == DatePartYear)
-            {
-                return (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
+            // y400 = number of whole 400-year periods since 3/1/0000
+            // r1 = day number within 400-year period
+            (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+            ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
+            ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+            var n3 = 2141 * daySinceMarch1 + 197913;
+            switch (part) {
+                case DatePartDay:
+                    return (ushort)n3 / 2141 + 1;
+                case DatePartMonth:
+                    return (ushort)(n3 >> 16) - (daySinceMarch1 >= 306 ? 12 : 0);
             }
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // If day-of-year was requested, return it
-            if (part == DatePartDayOfYear) return (int)n + 1;
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            uint[] days = y1 == 3 && (y4 != 24 || y100 == 3) ? s_daysToMonth366 : s_daysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            uint m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
-            // If month was requested, return it
-            if (part == DatePartMonth) return (int)m;
-            // Return 1-based day-of-month
-            return (int)(n - days[m - 1] + 1);
+
+            var year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= 306 ? 1 : 0);
+            switch (part) {
+                case DatePartYear:
+                    return year;
+                default:        // DatePartDayOfYear
+                    return daySinceMarch1 >= 306
+                        ? daySinceMarch1 - 305          // rollover December 31
+                        : daySinceMarch1 + 60 + (IsLeapYear(year) ? 1 : 0);
+            }
         }
 
         // Exactly the same as GetDatePart, except computing all of
@@ -1401,42 +1386,21 @@ namespace System
         // are needed rather than redoing the computations for each.
         internal void GetDate(out int year, out int month, out int day)
         {
-            // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            uint y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            uint y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            uint y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            uint y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // compute year
-            year = (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // dayOfYear = n + 1;
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            uint[] days = y1 == 3 && (y4 != 24 || y100 == 3) ? s_daysToMonth366 : s_daysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            uint m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
-            // compute month and day
-            month = (int)m;
-            day = (int)(n - days[m - 1] + 1);
+            // y400 = number of whole 400-year periods since 3/1/0000
+            // r1 = day number within 400-year period
+            (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+            ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
+            ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+            var n3 = 2141 * daySinceMarch1 + 197913;
+            year = (int)(100 * y400 + (uint)(u2 >> 32));
+            month = (ushort)(n3 >> 16);
+            day = (ushort)n3 / 2141 + 1;
+
+            // rollover December 31
+            if (daySinceMarch1 >= 306) {
+                ++year;
+                month -= 12;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
