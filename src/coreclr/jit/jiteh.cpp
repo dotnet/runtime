@@ -2128,7 +2128,7 @@ void Compiler::fgNormalizeEH()
 #endif // 0
 
     // For NativeAOT we need to create a fake exception filter for generic handlers
-    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && fgNormalizeEHCase_NativeAot())
+    if (/*IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&*/ fgNormalizeEHCase_NativeAot())
     {
         modified = true;
     }
@@ -2524,7 +2524,8 @@ bool Compiler::fgNormalizeEHCase2()
 
 bool Compiler::fgNormalizeEHCase_NativeAot()
 {
-    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    // CI test, let's run the logic for JIT
+    //assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
     bool modified = false;
     for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
