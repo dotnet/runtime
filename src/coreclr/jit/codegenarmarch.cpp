@@ -3901,22 +3901,22 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //    The cast node is not a contained node and must have an assigned register.
 //    Neither the source nor target type can be a floating point type.
 //
-// TODO-ARM64-CQ: Allow castOp to be a contained node without an assigned register.
-//
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    genConsumeRegs(cast->gtGetOp1());
+    genConsumeRegs(cast->CastOp());
 
-    const regNumber srcReg = cast->gtGetOp1()->GetRegNum();
+    GenTree* const  src    = cast->CastOp();
+    const regNumber srcReg = src->isUsedFromReg() ? src->GetRegNum() : REG_NA;
     const regNumber dstReg = cast->GetRegNum();
+    emitter* const  emit   = GetEmitter();
 
-    assert(genIsValidIntReg(srcReg));
     assert(genIsValidIntReg(dstReg));
 
     GenIntCastDesc desc(cast);
 
     if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
+        assert(genIsValidIntReg(srcReg));
         genIntCastOverflowCheck(cast, desc, srcReg);
     }
 
@@ -3944,15 +3944,70 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 ins     = INS_sxtw;
                 insSize = 8;
                 break;
-#endif
-            default:
-                assert(desc.ExtendKind() == GenIntCastDesc::COPY);
+#endif // TARGET_64BIT
+            case GenIntCastDesc::COPY:
                 ins     = INS_mov;
                 insSize = desc.ExtendSrcSize();
                 break;
+            case GenIntCastDesc::LOAD_ZERO_EXTEND_SMALL_INT:
+                ins     = (desc.ExtendSrcSize() == 1) ? INS_ldrb : INS_ldrh;
+                insSize = TARGET_POINTER_SIZE;
+                break;
+            case GenIntCastDesc::LOAD_SIGN_EXTEND_SMALL_INT:
+                ins     = (desc.ExtendSrcSize() == 1) ? INS_ldrsb : INS_ldrsh;
+                insSize = TARGET_POINTER_SIZE;
+                break;
+#ifdef TARGET_64BIT
+            case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
+                ins     = INS_ldr;
+                insSize = 4;
+                break;
+            case GenIntCastDesc::LOAD_SIGN_EXTEND_INT:
+                ins     = INS_ldrsw;
+                insSize = 8;
+                break;
+#endif // TARGET_64BIT
+            case GenIntCastDesc::LOAD_SOURCE:
+                ins     = ins_Load(src->TypeGet());
+                insSize = emitActualTypeSize(src);
+                break;
+
+            default:
+                unreached();
         }
 
-        GetEmitter()->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, /* canSkip */ false);
+        if (srcReg != REG_NA)
+        {
+            emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, /* canSkip */ false);
+        }
+        else
+        {
+            assert(src->isUsedFromMemory());
+
+            unsigned varNum = BAD_VAR_NUM;
+            unsigned offset = BAD_LCL_OFFSET;
+            if (src->isUsedFromSpillTemp())
+            {
+                assert(src->IsRegOptional());
+
+                TempDsc* tmpDsc = getSpillTempDsc(src);
+                unsigned tmpNum = tmpDsc->tdTempNum();
+                regSet.tmpRlsTemp(tmpDsc);
+
+                emit->emitIns_R_S(ins, EA_ATTR(insSize), dstReg, tmpNum, 0);
+            }
+            else if (src->OperIsLocal())
+            {
+                emit->emitIns_R_S(ins, EA_ATTR(insSize), dstReg, src->AsLclVarCommon()->GetLclNum(),
+                                  src->AsLclVarCommon()->GetLclOffs());
+            }
+            else
+            {
+                assert(src->OperIs(GT_IND) && !src->AsIndir()->IsVolatile() && !src->AsIndir()->IsUnaligned());
+                emit->emitIns_R_R_I(ins, EA_ATTR(insSize), dstReg, src->AsIndir()->Base()->GetRegNum(),
+                                    static_cast<int>(src->AsIndir()->Offset()));
+            }
+        }
     }
 
     genProduceReg(cast);
