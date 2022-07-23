@@ -1152,6 +1152,7 @@ namespace System.Data.SqlTypes
             }
         }
 
+        [CLSCompliant(false)]
         public int WriteTdsValue(Span<uint> destination)
         {
             if (IsNull)

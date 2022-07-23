@@ -3148,6 +3148,7 @@ namespace System.Data.SqlTypes
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Truncate(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public int WriteTdsValue(System.Span<uint> destination) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
