@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting
             {
                 return Timeout.InfiniteTimeSpan;
             }
-            
+
             if (uint.TryParse(Environment.GetEnvironmentVariable(TimeoutEnvironmentKey), out uint timeoutInSeconds))
             {
                 return TimeSpan.FromSeconds((int)timeoutInSeconds);

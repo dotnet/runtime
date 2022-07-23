@@ -78,7 +78,7 @@ struct is_type_template_instantiation<U<T>, U>
 // This allows us to not have to change how any of the "friend struct" relationships with the DAC table work
 // while also still statically initializing the dac table.
 #pragma comment(linker, "/EXPORT:g_dacTable=?s_dacGlobals@_DacGlobals@@0U1@B")
-const DacGlobals _DacGlobals::s_dacGlobals = 
+const DacGlobals _DacGlobals::s_dacGlobals =
 {
 #define DEFINE_DACVAR(size, id, var)                   PTR_TO_TADDR(&var),
 #define DEFINE_DACVAR_VOLATILE(size, id, var)          PTR_TO_TADDR(&var.m_val),
@@ -116,7 +116,7 @@ DLLEXPORT DacGlobals g_dacTable;
 
 void DacGlobals::InitializeEntries()
 {
-    
+
 #define DEFINE_DACVAR(size, id, var) static_assert(!is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR must not be instantiations of Volatile<T>.");
 #define DEFINE_DACVAR_NODUMP(size, id, var) static_assert(!is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR_NODUMP must not be instantiations of Volatile<T>.");
 #define DEFINE_DACVAR_VOLATILE(size, id, var) static_assert(is_type_template_instantiation<decltype(var), Volatile>::m_value, "DAC variables defined with DEFINE_DACVAR_VOLATILE must be instantiations of Volatile<T>.");

@@ -28,7 +28,7 @@ public class Ex {
 		} finally {
 			fin += 1;
 		}
-		
+
 		return res;
 	}
 	public static int Main () {
@@ -43,7 +43,7 @@ public class Ex {
 
 		if (fin != 2)
 			return 3;
-		
+
 		if (test(0) != 34)
 			return 4;
 		return 0;

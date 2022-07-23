@@ -26,7 +26,7 @@ For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMu
 
 Run individual test:
 ```
-bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root 
+bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root
 ```
 
 Run all built tests:

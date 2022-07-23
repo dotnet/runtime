@@ -29,7 +29,7 @@
 
 .class interface private abstract auto ansi Interface
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  InterfaceMethodWithStackArgs(int32 a,
                                                        int32 b,
                                                        int32 c,
@@ -48,7 +48,7 @@
        extends [System.Runtime]System.Object
        implements Interface
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance int32  InterfaceMethodWithStackArgs(int32 a,
                                                        int32 b,
                                                        int32 c,
@@ -65,7 +65,7 @@
     IL_0001:  ret
   } // end of method InterfaceImplementation::InterfaceMethodWithStackArgs
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -131,7 +131,7 @@
       IL_001b:  leave.s    IL_0020
 
     }  // end .try
-    catch [System.Runtime]System.NullReferenceException 
+    catch [System.Runtime]System.NullReferenceException
     {
       IL_001d:  pop
       IL_001e:  leave.s    IL_0020
@@ -141,7 +141,7 @@
     IL_0022:  ret
   } // end of method Test::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

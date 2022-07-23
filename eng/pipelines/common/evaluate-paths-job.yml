@@ -40,7 +40,7 @@ jobs:
       - ${{ each path in parameters.paths }}:
         - template: evaluate-changed-paths.yml
           parameters:
-            subsetName: ${{ path.subset }} 
+            subsetName: ${{ path.subset }}
             arguments:
             # The commit that we're building is always a merge commit that is merging into the target branch.
             # So the first parent of the commit is on the target branch and the second parent is on the source branch.

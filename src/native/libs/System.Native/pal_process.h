@@ -240,7 +240,7 @@ PALEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
 PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 
 /**
- * Returns the path of the executable that started the currently executing process, 
+ * Returns the path of the executable that started the currently executing process,
  * resolving symbolic links. The caller is responsible for releasing the buffer.
  */
 PALEXPORT char* SystemNative_GetProcessPath(void);

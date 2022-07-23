@@ -1654,14 +1654,14 @@ CorUnix::InternalSetThreadDescription(
     {
         nameBuf[MAX_THREAD_NAME_SIZE] = '\0';
     }
-    
+
     #if defined(__linux__) || defined(__FreeBSD__)
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
     #endif
 
     #if defined(__APPLE__)
     // on macOS, pthread_setname_np only works for the calling thread.
-    if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
+    if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId())
     {
         error = pthread_setname_np(nameBuf);
     }

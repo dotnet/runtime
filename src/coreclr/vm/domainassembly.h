@@ -334,7 +334,7 @@ public:
     void AddDependencies();
     void PreLoadLibrary();
     void LoadLibrary();
-    void PostLoadLibrary(); 
+    void PostLoadLibrary();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();

@@ -454,7 +454,7 @@ namespace ILCompiler.Dataflow
 
                 //
                 // System.Object
-                // 
+                //
                 // GetType()
                 //
                 case IntrinsicId.Object_GetType:

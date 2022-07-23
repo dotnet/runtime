@@ -32,7 +32,7 @@ ResultBuffer:: ResultBuffer(int ThreadCount, int ThreadLogSize)
 	{
 		// Declare an internal status flad
 		int	status = 0;
-		
+
 		// Declare an object to store the offset address into the buffer
 		int	Offset;
 
@@ -49,15 +49,15 @@ ResultBuffer:: ResultBuffer(int ThreadCount, int ThreadLogSize)
 
 		// Write the passed in data to the reserved buffer
 		memcpy(buffer+Offset,Data,ThreadOffset);
-        
+
 		return(status);
 	}
 
 
         char* ResultBuffer::getResultBuffer(int threadId)
         {
-        
-            return (buffer + threadId*ThreadOffset);    
-        
+
+            return (buffer + threadId*ThreadOffset);
+
         }
 

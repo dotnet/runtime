@@ -511,12 +511,12 @@ node, which builds `RefPositions` according to the liveness model described abov
 ```
 N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3
 N039 t127 = ┌──▌  PUTARG_REG ref    REG rcx
-N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)     
-N043 t129 = │              ┌──▌  LEA(b+0)  byref 
-N045 t130 = │           ┌──▌  IND       long  
-N047 t131 = │        ┌──▌  LEA(b+72) long  
-N049 t132 = │     ┌──▌  IND       long  
-N051 t133 = │  ┌──▌  LEA(b+40) long  
+N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)
+N043 t129 = │              ┌──▌  LEA(b+0)  byref
+N045 t130 = │           ┌──▌  IND       long
+N047 t131 = │        ┌──▌  LEA(b+72) long
+N049 t132 = │     ┌──▌  IND       long
+N051 t133 = │  ┌──▌  LEA(b+40) long
 N053 t134 = ├──▌  IND       long   REG NA
 N055  t17 = ▌  CALLV ind int    System.Globalization.CultureInfo.get_LCID $242
 ```

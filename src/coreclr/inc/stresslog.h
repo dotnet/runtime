@@ -61,8 +61,8 @@
 
 /*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
     in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
-     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on 
-    how many arguments are getting passed in and using va_args would require parsing the format 
+     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
     string during the GC
 */
 #define STRESS_LOG_VA(dprintfLevel,msg) do {                                                        \
@@ -357,13 +357,13 @@ public:
 
 #ifdef MEMORY_MAPPED_STRESSLOG
 
-    // 
-    // Intentionally avoid unmapping the file during destructor to avoid a race 
+    //
+    // Intentionally avoid unmapping the file during destructor to avoid a race
     // condition between additional logging in other thread and the destructor.
-    // 
+    //
     // The operating system will make sure the file get unmapped during process shutdown
-    // 
-    LPVOID hMapView; 
+    //
+    LPVOID hMapView;
     static void* AllocMemoryMapped(size_t n);
 
     struct StressLogHeader

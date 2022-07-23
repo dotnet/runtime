@@ -8,7 +8,7 @@ class Program
     {
         return ((Object) val).ToString();
     }
-    
+
     static int Main(string[] args)
     {
         int exitStatus = -1;

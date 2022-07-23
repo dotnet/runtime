@@ -100,7 +100,7 @@ Namespace Microsoft.VisualBasic
         Private Function FilterDefaultMessage(ByVal Msg As String) As String
             Dim NewMsg As String
 
-            'This is one of the default messages, 
+            'This is one of the default messages,
             If m_curException Is Nothing Then
                 'Leave message as is
                 Return Msg

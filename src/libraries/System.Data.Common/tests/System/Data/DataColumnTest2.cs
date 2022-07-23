@@ -194,7 +194,7 @@ namespace System.Data.Tests
             dc = new DataColumn();
 
             pc = dc.ExtendedProperties;
-            // Checking ExtendedProperties default 
+            // Checking ExtendedProperties default
             Assert.NotNull(pc);
 
             // Checking ExtendedProperties count

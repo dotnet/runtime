@@ -21,7 +21,7 @@
     ldarg.0
     call       instance void [mscorlib]System.Object::.ctor()
     ret
-  } 
+  }
 }
 
 .class auto ansi Consume
@@ -295,38 +295,38 @@ AA_3:
 
     ldc.i4 55
     stloc 5
-    ldloc 2 
+    ldloc 2
     ldloc 5
     stfld      int32 Consume::yucko
- 
+
     ldloc 2
     conv.i
     ldflda      int32 Consume::yucko
     ldc.i4 66
     call       void Pin1_Test::Set_Val(void*,int32)
-    ldloc 2 
+    ldloc 2
     ldfld      int32 Consume::yucko
     ldc.i4 66
     beq Yippie1
     ldc.i4 1
-    ret    
+    ret
 Yippie1:
     call       void [mscorlib]System.GC::Collect()
-    ldloc 2 
+    ldloc 2
     ldloc 5
     stfld      int32 Consume::yucko
- 
+
     ldloc 2
     conv.i
     ldflda      int32 Consume::yucko
     ldc.i4 88
     call       void Pin1_Test::Set_Val(void*,int32)
-    ldloc 2 
+    ldloc 2
     ldfld      int32 Consume::yucko
     ldc.i4 88
     beq Yippie2
     ldc.i4 1
-    ret    
+    ret
 Yippie2:
     call       void [mscorlib]System.GC::Collect()
     ldloc 1

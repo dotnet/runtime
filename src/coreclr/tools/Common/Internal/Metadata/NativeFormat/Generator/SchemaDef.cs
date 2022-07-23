@@ -82,7 +82,7 @@ public class MemberDef
             }
             else
             {
-                typeName = (kind == MemberTypeKind.WriterField) ? 
+                typeName = (kind == MemberTypeKind.WriterField) ?
                     (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{TypeName}Handle";
             }
         }
@@ -342,7 +342,7 @@ class SchemaDef
         )
         .ToArray();
 
-    private static readonly RecordDef[] ConstantRecordSchema = 
+    private static readonly RecordDef[] ConstantRecordSchema =
         ConstantValueRecordSchema.Concat(ConstantArrayRecordSchema)
         .OrderBy(record => record.Name, StringComparer.Ordinal)
         .ToArray();

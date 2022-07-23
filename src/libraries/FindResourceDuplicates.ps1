@@ -15,32 +15,32 @@ foreach ($resourceFile in Get-ChildItem $currentPath  -recurse -include Strings.
 
     #Write-Host "Analyzing  $($resourceFile)"
 
-    [xml]$XDocument = Get-Content -Path $resourceFile    
+    [xml]$XDocument = Get-Content -Path $resourceFile
     foreach($resource in $XDocument.SelectNodes("//root/data"))
     {
         if(!$resources.ContainsKey($resource.name))
         {
-            $resourceList = New-Object Collections.Generic.List[ResourceRecord]            
+            $resourceList = New-Object Collections.Generic.List[ResourceRecord]
             $resources.Add($resource.name,$resourceList)
-        }    
-            
+        }
+
         $record = New-Object ResourceRecord
         $record.value = $resource.value
         $record.fileName = $resourceFile
 
         $resources[$resource.name].Add($record);
-    }                       
+    }
 }
 
 $duplicates = New-Object 'Collections.Generic.List[string]'
 
 foreach($resource in $resources.GetEnumerator())
 {
-    $values = New-Object Collections.Generic.List[string]       
+    $values = New-Object Collections.Generic.List[string]
 
     foreach($value in $resource.Value)
     {
-        $values.Add($value.value);        
+        $values.Add($value.value);
     }
 
     $count = ($values | Get-Unique).count
@@ -53,7 +53,7 @@ foreach($resource in $resources.GetEnumerator())
         }
     }
 }
-     
+
 if($duplicates.Count -gt 0)
 {
     foreach($dup in $duplicates.GetEnumerator())
@@ -64,8 +64,8 @@ if($duplicates.Count -gt 0)
 else
 {
     Write-Host "No duplicates found."
-}          
-   
+}
+
 class ResourceRecord
 {
     [String]$value

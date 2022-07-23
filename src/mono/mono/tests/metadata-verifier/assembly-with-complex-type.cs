@@ -77,7 +77,7 @@ public class Generic<T> {
 
 public class NonGeneric {
 
-	public static object Bla () 
+	public static object Bla ()
 	{
 		Generic<int> f = new Generic<int> ();
 		return f;

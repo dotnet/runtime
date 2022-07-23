@@ -31,7 +31,7 @@ direction TB
     [*] --> Starting
 
     Starting --> GC_Unsafe : attach
-    
+
     state GC_Unsafe_out <<choice>>
 
     state GC_Unsafe {
@@ -73,7 +73,7 @@ direction TB
     }
 
     state GC_Safe_out <<choice>>
-    
+
     GC_Safe --> GC_Safe_out
     GC_Safe_out --> GC_Unsafe : done_Blocking
     GC_Safe_out --> GC_Unsafe : abort_Blocking
@@ -92,7 +92,7 @@ direction TB
     [*] --> Starting
 
     Starting --> Running : attach
-    
+
     Running --> Async_Suspend_Requested : request_suspend
 
     Async_Suspend_Requested --> Async_Suspended : finish_async_suspend
@@ -153,7 +153,7 @@ direction TB
     [*] --> Starting
 
     Starting --> GC_Unsafe : attach
-    
+
     state GC_Unsafe_out <<choice>>
 
     state GC_Unsafe {
@@ -191,7 +191,7 @@ direction TB
     }
 
     state GC_Safe_out <<choice>>
-    
+
     GC_Safe --> GC_Safe_out
     GC_Safe_out --> GC_Unsafe : done_Blocking
     GC_Safe_out --> GC_Unsafe : abort_Blocking
@@ -315,7 +315,7 @@ direction TB
     [*] --> Starting
 
     Starting --> GC_Unsafe : attach
-    
+
     state GC_Unsafe_out <<choice>>
 
     state GC_Unsafe {
@@ -355,7 +355,7 @@ direction TB
     }
 
     state GC_Safe_out <<choice>>
-    
+
     GC_Safe --> GC_Safe_out
     GC_Safe_out --> GC_Unsafe : done_Blocking
     GC_Safe_out --> GC_Unsafe : abort_Blocking

@@ -511,7 +511,7 @@ namespace Internal.IL.Stubs
             {
                 returnCodeStream.EmitLabel(lByRefReturnNull);
                 MethodDesc nullReferencedExceptionHelper = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvokeNullRefReturned");
-                returnCodeStream.EmitCallThrowHelper(emitter, nullReferencedExceptionHelper);                
+                returnCodeStream.EmitCallThrowHelper(emitter, nullReferencedExceptionHelper);
             }
 
             return emitter.Link(this);
@@ -672,7 +672,7 @@ namespace Internal.IL.Stubs
 
             if (GetNumerOfReturnTypePointerIndirections() != other.GetNumerOfReturnTypePointerIndirections())
                 return false;
-            
+
             if (Length != other.Length)
                 return false;
 

@@ -3165,14 +3165,14 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     else if (hasReversePInvoke)
     {
         // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
-        // frame, that means that the method was called from managed code without any native frames in between. 
+        // frame, that means that the method was called from managed code without any native frames in between.
         // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
         // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
         // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
         _ASSERTE(InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame));
         m_crawl.isFrameless = false;
     }
-#endif    
+#endif
 } // StackFrameIterator::PostProcessingForManagedFrames()
 
 //---------------------------------------------------------------------------------------

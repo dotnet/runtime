@@ -71,12 +71,12 @@ public sealed class FinalizerTest {
     public FinalizerTest(uint size) {
         this.size = size;
     }
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void CreateLargeObject() {
         TempObject = new LargeObject2(size);
     }
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void DestroyLargeObject() {
         TempObject = null;

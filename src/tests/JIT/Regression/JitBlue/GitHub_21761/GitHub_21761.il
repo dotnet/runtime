@@ -310,7 +310,7 @@ FAIL:
 
     call bool ObjRefInitBlk()
     brfalse FAIL
-    
+
     call bool SimdInitBlk()
     brfalse FAIL
 

@@ -555,7 +555,7 @@ public class Tests
 				return 153;
 
 			object com_obj2 = Marshal.GetObjectForIUnknown (pUnk2);
-			
+
 			if (com_obj != com_obj2)
 				return 154;
 
@@ -836,7 +836,7 @@ public class Tests
 			IntPtr pDisp = Marshal.GetIDispatchForObject(test_vis);
 			if (pDisp == IntPtr.Zero)
 				return 300;
-			#endregion 
+			#endregion
 		}
 
         return 0;

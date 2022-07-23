@@ -1421,7 +1421,7 @@ fail:
 
 /*
  * free_decoded_custom_attr:
- * 
+ *
  * Handles freeing of MonoCustomAttrValue type properly.
  * Strings and MonoType* are not freed since they come from the metadata.
  */
@@ -1445,7 +1445,7 @@ free_decoded_custom_attr(MonoCustomAttrValue* cattr_val)
 
 /*
  * mono_reflection_free_custom_attr_data_args_noalloc:
- * 
+ *
  * Frees up MonoDecodeCustomAttr type.
  * Must be called after mono_reflection_create_custom_attr_data_args_noalloc to properly free up allocated struct.
  */

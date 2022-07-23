@@ -106,7 +106,7 @@ namespace System.Tests
         private class SomeCustomConstantAttribute : CustomConstantAttribute
         {
             public static object Do(object o) => o;
-          
+
             public override object Value => "SomeValue";
         }
 

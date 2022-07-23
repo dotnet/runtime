@@ -106,8 +106,8 @@ public class class1
         //m = new double[size, size, size];
         //refm = new double[size][];
 
-        //for (int k=0; k<refm.Length; k++) 
-        //refm[k] = new double[size];		
+        //for (int k=0; k<refm.Length; k++)
+        //refm[k] = new double[size];
 
         while (i < size)
         {

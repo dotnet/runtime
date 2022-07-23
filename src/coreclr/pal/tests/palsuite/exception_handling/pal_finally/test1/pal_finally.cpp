@@ -32,7 +32,7 @@ const int nValidator = 12321;
 
 LONG ContSearchFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
 {
-    
+
     /* let the main know we've hit the filter function */
     bFilterCS = TRUE;
 
@@ -72,15 +72,15 @@ LONG ExecExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-void NestedFunc1 (void) 
+void NestedFunc1 (void)
 {
     int* p = 0x00000000;   /* pointer to NULL */
-    
-    PAL_TRY 
+
+    PAL_TRY
     {
-        PAL_TRY 
+        PAL_TRY
         {
-        
+
             if (bExcept1 || bExcept2)
             {
                 Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
@@ -88,7 +88,7 @@ void NestedFunc1 (void)
             }
             bTry2 = TRUE; /* indicate we hit the inner PAL_TRY block */
             *p = 13;        /* causes an access violation exception */
-            
+
             Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
                  " We executed beyond the trapping code.\n");
         }
@@ -133,7 +133,7 @@ void NestedFunc1 (void)
 
 }
 
-void NestedFunc2 (void) 
+void NestedFunc2 (void)
 {
     PAL_TRY
     {
@@ -164,12 +164,12 @@ PALTEST(exception_handling_pal_finally_test1_paltest_pal_finally_test1, "excepti
     ** test to make sure we get into the second exception block only based
     ** on the return codes of the filters
     */
-    
-    PAL_TRY 
+
+    PAL_TRY
     {
-        PAL_TRY 
+        PAL_TRY
         {
-            PAL_TRY 
+            PAL_TRY
             {
                 if (bExcept1 || bExcept2)
                 {
@@ -177,7 +177,7 @@ PALTEST(exception_handling_pal_finally_test1_paltest_pal_finally_test1, "excepti
                         " on. PAL_EXCEPT_FILTER was hit before PAL_TRY.\n");
                 }
                 bTry1 = TRUE;    /* indicate we hit the outer PAL_TRY block */
-        
+
                 NestedFunc2();
 
                 Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
@@ -284,7 +284,7 @@ PALTEST(exception_handling_pal_finally_test1_paltest_pal_finally_test1, "excepti
     }
 
     /* did we hit all the code blocks? */
-    if (!bFinally1 || !bFinally2 || !bFinally3 || !bFinally4) 
+    if (!bFinally1 || !bFinally2 || !bFinally3 || !bFinally4)
     {
         Fail("");
     }
@@ -294,7 +294,7 @@ PALTEST(exception_handling_pal_finally_test1_paltest_pal_finally_test1, "excepti
     }
 
 
-    PAL_Terminate();  
+    PAL_Terminate();
     return PASS;
 
 }

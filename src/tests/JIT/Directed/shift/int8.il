@@ -17,7 +17,7 @@
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
-  //                                                                                bool) = ( 01 00 00 01 00 00 ) 
+  //                                                                                bool) = ( 01 00 00 01 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
@@ -69,7 +69,7 @@
          extends [mscorlib]System.Object
   {
     .field public int8 clm_data
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       18 (0x12)
@@ -94,7 +94,7 @@
          extends [mscorlib]System.Object
   {
     .field private static int8 s_data
-    .method public hidebysig static int8 
+    .method public hidebysig static int8
             f1(int8 arg_data) cil managed
     {
       // Code size       12 (0xc)
@@ -113,7 +113,7 @@
       IL_000b:  ret
     } // end of method byte32Test::f1
 
-    .method public hidebysig static int8 
+    .method public hidebysig static int8
             f2(int8 arg_data) cil managed
     {
       // Code size       12 (0xc)
@@ -132,7 +132,7 @@
       IL_000b:  ret
     } // end of method byte32Test::f2
 
-    .method public hidebysig static int32 
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -476,7 +476,7 @@
       IL_0346:  ret
     } // end of method byte32Test::Main
 
-    .method private hidebysig specialname rtspecialname static 
+    .method private hidebysig specialname rtspecialname static
             void  .cctor() cil managed
     {
       // Code size       11 (0xb)
@@ -486,7 +486,7 @@
       IL_000a:  ret
     } // end of method byte32Test::.cctor
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       7 (0x7)

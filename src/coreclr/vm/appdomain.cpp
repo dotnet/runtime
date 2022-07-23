@@ -325,7 +325,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
         DWORD newBucketSize = max(m_NextBucketSize, nRequested);
 
         // Leave the lock temporarily to do the GC allocation
-        // 
+        //
         // Why do we need to do certain work outside the lock? Because if we didn't this can happen:
         // 1. AllocateHandles needs the GC to allocate
         // 2. Anything which invokes the GC might also get suspended by the managed debugger which

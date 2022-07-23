@@ -1209,7 +1209,7 @@ public:
         size_t *taggedMemorySizeInBytes);
 
     // ISOSDacInterface12
-    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext(
         CLRDATA_ADDRESS *allocPtr,
         CLRDATA_ADDRESS *allocLimit);
 

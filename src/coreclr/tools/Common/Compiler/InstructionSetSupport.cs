@@ -19,7 +19,7 @@ namespace ILCompiler
         private readonly InstructionSetFlags _unsupportedInstructionSets;
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) : 
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
             this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
         {
         }
@@ -190,7 +190,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Add a supported instruction set to the specified list. 
+        /// Add a supported instruction set to the specified list.
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool AddSupportedInstructionSet(string instructionSet)
@@ -225,7 +225,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Removes a supported instruction set to the specified list. 
+        /// Removes a supported instruction set to the specified list.
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool RemoveInstructionSetSupport(string instructionSet)

@@ -23,7 +23,7 @@ PALTEST(c_runtime_strcpy_test1_paltest_strcpy_test1, "c_runtime/strcpy/test1/pal
     char str[] = {'f','o','o',0,'b','a','r',0};
     char *ret;
 
-    
+
     if (PAL_Initialize(argc, argv))
     {
         return FAIL;
@@ -35,7 +35,7 @@ PALTEST(c_runtime_strcpy_test1_paltest_strcpy_test1, "c_runtime/strcpy/test1/pal
     if (ret != dest)
     {
         Fail("Expected strcpy to return %p, got %p!\n", dest, ret);
-            
+
     }
 
     if (strcmp(dest, result) != 0)

@@ -272,7 +272,7 @@ public static class VectorMgdMgd
             hva128_04_s.v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
             hva128_04_s.v3 = Unsafe.As<T, Vector128<T>>(ref values[i]);
- 
+
             i = 0;
             hva128_05_s.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;

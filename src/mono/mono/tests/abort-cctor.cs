@@ -46,7 +46,7 @@ class Driver
 			Environment.Exit (1);
 		if (StaticConstructor1.caughtException)
 			Environment.Exit (2);
-			
+
 	}
 
 	static void Test1 ()
@@ -253,7 +253,7 @@ class Driver
 			} catch (Exception e) {
 				caughtException = true;
 				throw;
-			}	
+			}
 		}
 
 		public static void Init ()
@@ -310,7 +310,7 @@ class Driver
 
 		thread.Join ();
 
-		if (!got_to_the_end_of_the_finally) { 
+		if (!got_to_the_end_of_the_finally) {
 			Console.WriteLine ("Did not get to the end of test 4 cctor");
 			Environment.Exit (12);
 		}

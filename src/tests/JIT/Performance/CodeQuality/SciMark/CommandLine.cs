@@ -3,9 +3,9 @@
 /// <license>
 /// This is a port of the SciMark2a Java Benchmark to C# by
 /// Chris Re (cmr28@cornell.edu) and Werner Vogels (vogels@cs.cornell.edu)
-/// 
+///
 /// For details on the original authors see http://math.nist.gov/scimark2
-/// 
+///
 /// This software is likely to burn your processor, bitflip your memory chips
 /// anihilate your screen and corrupt all your disks, so you it at your
 /// own risk.
@@ -20,7 +20,7 @@ namespace SciMark2
     /// SciMark2: A Java numerical benchmark measuring performance
     /// of computational kernels for FFTs, Monte Carlo simulation,
     /// sparse matrix computations, Jacobi SOR, and dense LU matrix
-    /// factorizations.  
+    /// factorizations.
     /// </summary>
 
     public class CommandLine

@@ -1111,7 +1111,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
                     // Request process info.
                     IpcMessage message = new IpcMessage(DiagnosticsServerCommandSet.Process, (byte)ProcessCommandId.GetProcessInfo);
-                
+
                     byte[] buffer = message.Serialize();
                     tcpClientStream.Write(buffer, 0, buffer.Length);
 

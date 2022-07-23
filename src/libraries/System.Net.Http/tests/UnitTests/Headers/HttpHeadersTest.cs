@@ -226,7 +226,7 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, headers.First().Value.Count());
 
             Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
-            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));            
+            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
             string expected = headers.Descriptor.Name + ": " + invalidHeaderValue + ", " + parsedPrefix + Environment.NewLine;

@@ -265,7 +265,7 @@ export const instance = {}
 globalThis.javaScriptTestHelper = instance;
 globalThis.data = new JSData("i-n-s-t-a-n-c-e");
 globalThis.rebound = {
-    // our JSImport will try to bind it to `globalThis.rebound` 
+    // our JSImport will try to bind it to `globalThis.rebound`
     // but it would stay bound to globalThis.data
     // because once the function is bound, it would stay bound to the first object and can't be re-bound subsequently
     // this line is actually the first binding, not the fact it's part of the class JSData

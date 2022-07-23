@@ -64,7 +64,7 @@ ldc.i4 100
     IL_0004:  ret
   } // end of method ctest::f
 
-  .method public specialname rtspecialname 
+  .method public specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
