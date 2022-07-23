@@ -6609,7 +6609,27 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
 #endif                   // DEBUG
 }
 
-/******************************************************************************/
+typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+    if ((varDsc->TypeGet() == TYP_BLK) || (varDsc->TypeGet() == TYP_LCLBLK))
+    {
+        return typeInfo();
+    }
+    if (varDsc->TypeGet() == TYP_BYREF)
+    {
+        // Pretend all byrefs are pointing to bytes.
+        return typeInfo(TI_BYTE).MakeByRef();
+    }
+    if (varTypeIsStruct(varDsc))
+    {
+        return typeInfo(TI_STRUCT, varDsc->GetStructHnd());
+    }
+
+    return typeInfo(varDsc->TypeGet());
+}
+
 typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(ciType < CORINFO_TYPE_COUNT);
@@ -10770,9 +10790,9 @@ DONE_CALL:
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
                     {
-                        unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
-                        LclVarDsc* varDsc     = lvaGetDesc(calliSlot);
-                        varDsc->lvVerTypeInfo = tiRetVal;
+                        unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
+                        LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
+
                         impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
@@ -13610,8 +13630,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
                 assert((op1->gtFlags & GTF_GLOB_REF) == 0);
 
-                tiRetVal = lvaTable[lclNum].lvVerTypeInfo;
-
+                tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -17665,9 +17684,9 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET o
 
 // Load a local/argument on the operand stack
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
-void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
+void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 {
-    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), tiRetVal);
+    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
 }
 
 // Load an argument on the operand stack
@@ -20743,11 +20762,6 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
             {
                 lvaSetStruct(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
             }
-            else
-            {
-                // This is a wrapped primitive.  Make sure the verstate knows that
-                lvaTable[tmpNum].lvVerTypeInfo = inlineeLocal.lclVerTypeInfo;
-            }
         }
 
 #ifdef DEBUG
@@ -20959,11 +20973,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                     {
                         lvaSetStructUsedAsVarArg(tmpNum);
                     }
-                }
-                else
-                {
-                    // This is a wrapped primitive.  Make sure the verstate knows that
-                    lvaTable[tmpNum].lvVerTypeInfo = lclInfo.lclVerTypeInfo;
                 }
             }
 

@@ -509,11 +509,6 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
             lvaSetClass(varDscInfo->varNum, info.compClassHnd);
         }
 
-        varDsc->lvVerTypeInfo = typeInfo();
-
-        // Mark the 'this' pointer for the method
-        varDsc->lvVerTypeInfo.SetIsThisPtr();
-
         varDsc->lvIsRegArg = 1;
         noway_assert(varDscInfo->intRegArgNum == 0);
 
@@ -1479,19 +1474,9 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         compFloatingPointUsed = true;
     }
 
-    if (typeHnd)
+    if (typeHnd != NO_CLASS_HANDLE)
     {
-        unsigned cFlags = info.compCompHnd->getClassAttribs(typeHnd);
-
-        // We can get typeHnds for primitive types, these are value types which only contain
-        // a primitive. We will need the typeHnd to distinguish them, so we store it here.
-        if ((cFlags & CORINFO_FLG_VALUECLASS) && !varTypeIsStruct(type))
-        {
-            // printf("This is a struct that the JIT will treat as a primitive\n");
-            varDsc->lvVerTypeInfo = verMakeTypeInfo(typeHnd);
-        }
-
-        varDsc->lvOverlappingFields = StructHasOverlappingFields(cFlags);
+        varDsc->lvOverlappingFields = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(typeHnd));
     }
 
 #if FEATURE_IMPLICIT_BYREFS
@@ -1511,7 +1496,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
     if ((varTypeIsStruct(type)))
     {
-        lvaSetStruct(varNum, typeHnd, typeHnd != nullptr, true);
+        lvaSetStruct(varNum, typeHnd, typeHnd != NO_CLASS_HANDLE);
         if (info.compIsVarArgs)
         {
             lvaSetStructUsedAsVarArg(varNum);
@@ -2596,7 +2581,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         {
             // Set size to zero so that lvaSetStruct will appropriately set the SIMD-relevant fields.
             fieldVarDsc->lvExactSize = 0;
-            compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false, true);
+            compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false);
             // We will not recursively promote this, so mark it as 'lvRegStruct' (note that we wouldn't
             // be promoting this if we didn't think it could be enregistered.
             fieldVarDsc->lvRegStruct = true;
@@ -2977,13 +2962,9 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 /*****************************************************************************
  * Set the lvClass for a local variable of a struct type */
 
-void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo)
+void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    if (setTypeInfo)
-    {
-        varDsc->lvVerTypeInfo = typeInfo(TI_STRUCT, typeHnd);
-    }
 
     // Set the type and associated info if we haven't already set it.
     if (varDsc->lvType == TYP_UNDEF)
@@ -7890,7 +7871,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" ld-addr-op");
     }
-    if (varDsc->lvVerTypeInfo.IsThisPtr())
+    if (lvaIsOriginalThisArg(lclNum))
     {
         printf(" this");
     }
