@@ -428,5 +428,22 @@ namespace System.Data.Tests.SqlTypes
             XmlQualifiedName qualifiedName = SqlMoney.GetXsdType(null);
             Assert.Equal("decimal", qualifiedName.Name);
         }
+
+        [Fact]
+        public void GetTdsValue()
+        {
+            Assert.Equal(SqlMoney.MaxValue.GetTdsValue(), long.MaxValue);
+            Assert.Equal(SqlMoney.MinValue.GetTdsValue(), long.MinValue);
+            Assert.Equal(new SqlMoney(0).GetTdsValue(), (long)0);
+            Assert.Throws<SqlNullValueException>(SqlMoney.Null.GetTdsValue());
+        }
+
+        [Fact]
+        public void FromTdsValue()
+        {
+            Assert.Equal(SqlMoney.FromTdsValue(long.MaxValue), SqlMoney.MaxValue);
+            Assert.Equal(SqlMoney.FromTdsValue(long.MinValue), SqlMoney.MinValue);
+            Assert.Equal(SqlMoney.FromTdsValue(0), new SqlMoney(0));
+        }
     }
 }
