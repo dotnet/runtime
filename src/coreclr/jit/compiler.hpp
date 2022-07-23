@@ -3249,14 +3249,20 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline void Compiler::optAssertionReset(AssertionIndex limit)
 {
     PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    if (limit == 0)
+    {
+        optAssertionDscMap->RemoveAll();
+    }
 
     while (optAssertionCount > limit)
     {
         AssertionIndex index        = optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
-#ifdef DEBUG
-        optAssertionDscMap->Remove(*curAssertion);
-#endif
+
+        if (limit > 0)
+        {
+            optAssertionDscMap->Remove(*curAssertion);
+        }
         
         optAssertionCount--;
         JITDUMP("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs::GetHashCode(*curAssertion));
@@ -3283,9 +3289,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionIndex index        = ++optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
 
-#ifdef DEBUG
         optAssertionDscMap->Set(*curAssertion, optAssertionCount);
-#endif
         JITDUMP("++ Added map[%d] = %u\n", optAssertionCount - 1,
                AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*curAssertion));
 
@@ -3348,9 +3352,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
 
-#ifdef DEBUG
         optAssertionDscMap->Remove(*curAssertion);
-#endif
         optAssertionCount--;
         JITDUMP("-- Removed map[%d] = %u\n", optAssertionCount,
                    AssertionDscKeyFuncs/*<true>*/::GetHashCode(*curAssertion));

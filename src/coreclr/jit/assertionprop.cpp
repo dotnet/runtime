@@ -1977,12 +1977,10 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
-    bool found = false;
-
 #ifdef DEBUG
+    bool           found      = false;
     AssertionIndex slowAnswer = NO_ASSERTION_INDEX;
     AssertionIndex fastAnswer = NO_ASSERTION_INDEX;
-#endif
 
     // Check if exists already, so we can skip adding new one. Search backwards.
     for (AssertionIndex index = optAssertionCount; index >= 1; index--)
@@ -1990,17 +1988,12 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         AssertionDsc* curAssertion = optGetAssertion(index);
         if (curAssertion->Equals(newAssertion))
         {
-#ifdef DEBUG
             found      = true;
             slowAnswer = index;
             break;
-#else
-            return index;
-#endif
         }
     }
-
-#ifdef DEBUG
+#endif
 
     // Check if we are within max count.
     if (optAssertionCount >= optMaxAssertionCount)
@@ -2010,7 +2003,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         if (optAssertionDscMap->Lookup(*newAssertion, &fastAnswer))
         {
             assert(slowAnswer == fastAnswer);
-            return slowAnswer;
+            return fastAnswer;
         }
         else
         {
@@ -2029,24 +2022,19 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
                                  &fastAnswer))
     {
         assert(slowAnswer == fastAnswer);
-        return slowAnswer;
+        return fastAnswer;
     }
+#ifdef DEBUG
     else
     {
         if (found)
         {
-            JITDUMP("HashCode=%u not found in map and we added it.\n",
+            JITDUMP("HashCode=%u was not found in map and we added it.\n",
                     AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
             assert(false);
         }
     }
-#else
-    // Check if we are within max count.
-    if (optAssertionCount >= optMaxAssertionCount)
-    {
-        return NO_ASSERTION_INDEX;
-    }
-#endif // DEBUG
+#endif
 
     JITDUMP("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
