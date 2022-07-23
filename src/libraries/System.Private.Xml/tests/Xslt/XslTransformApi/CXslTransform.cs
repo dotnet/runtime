@@ -894,7 +894,7 @@ namespace System.Xml.Tests
   </xsl:template>
 </xsl:stylesheet>");
 
-            using XmlReader reader = XmlReader.Create(xslFile);
+            using XmlReader reader = XmlReader.Create(xslFile); 
             XslTransform xslt = new XslTransform();
             XsltCompileException compilationException = Assert.Throws<XsltCompileException>(() => xslt.Load(reader));
             Assert.True(compilationException.InnerException != null && compilationException.InnerException is PlatformNotSupportedException);
@@ -2694,7 +2694,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?>
 		Node Count: {3}
 
-
+		
 		Correct Output: (1)(2)(3)
 		Incorrect Output: [1][2][3]";
 
