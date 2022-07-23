@@ -2127,6 +2127,12 @@ void Compiler::fgNormalizeEH()
 
 #endif // 0
 
+    // For NativeAOT we need to create a fake exception filter for generic handlers
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && fgNormalizeEHCase_NativeAot())
+    {
+        modified = true;
+    }
+
     INDEBUG(fgNormalizeEHDone = true;)
 
     if (modified)
@@ -2503,6 +2509,80 @@ bool Compiler::fgNormalizeEHCase2()
         }
     }
 
+    return modified;
+}
+
+//------------------------------------------------------------------------
+// fgNormalizeEHCase_NativeAot:
+//     For Exception types which require runtime lookup it creates a "fake" single-block
+//     EH filter that performs "catchArg isinst T!!" and in case of success forwards to the
+//     original EH handler.
+//
+// Return Value:
+//    true if basic block layout was changed
+//
+
+bool Compiler::fgNormalizeEHCase_NativeAot()
+{
+    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+    bool modified = false;
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        EHblkDsc* eh = ehGetDsc(XTnum);
+        if ((eh->ebdHandlerType == EH_HANDLER_CATCH) && !eh->HasFilter())
+        {
+            CORINFO_RESOLVED_TOKEN resolvedToken;
+            resolvedToken.tokenContext = impTokenLookupContextHandle;
+            resolvedToken.tokenScope   = info.compScopeHnd;
+            resolvedToken.token        = eh->ebdTyp;
+            resolvedToken.tokenType    = CORINFO_TOKENKIND_Casting;
+            info.compCompHnd->resolveToken(&resolvedToken);
+
+            bool     runtimeLookupNeeded = false;
+            GenTree* runtimeLookup       = impTokenToHandle(&resolvedToken, &runtimeLookupNeeded, false);
+            if (!runtimeLookupNeeded)
+            {
+                // Exception type does not need runtime lookup
+                continue;
+            }
+
+            // Create a new bb for the fake filter
+            BasicBlock* handlerBb = eh->ebdHndBeg;
+            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
+            filterBb->bbCatchTyp  = BBCT_FILTER;
+            filterBb->bbCodeOffs  = handlerBb->bbCodeOffs; // Technically, we're in the handler
+            filterBb->bbHndIndex  = handlerBb->bbHndIndex;
+            filterBb->bbJumpDest  = handlerBb;
+            filterBb->bbSetRunRarely();
+            filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
+
+            // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
+            GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
+            arg->gtFlags |= GTF_ORDER_SIDEEFF;
+            unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
+            lvaTable[tempNum].lvType = TYP_REF;
+            GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
+            arg                      = gtNewLclvNode(tempNum, TYP_REF);
+            filterBb->bbStkTempsIn   = tempNum;
+            fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg));
+
+            // Create "catchArg is TException" tree
+            GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
+            GenTree* cmp       = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
+            GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
+
+            // Insert it right before the handler (and make it a pred of the handler)
+            fgInsertBBbefore(handlerBb, filterBb);
+            fgAddRefPred(handlerBb, filterBb);
+            fgNewStmtAtEnd(filterBb, retFilt);
+
+            handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
+            eh->ebdHandlerType    = EH_HANDLER_FILTER;
+            eh->ebdFilter         = filterBb;
+            modified              = true;
+        }
+    }
     return modified;
 }
 

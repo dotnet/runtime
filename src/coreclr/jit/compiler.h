@@ -2217,6 +2217,7 @@ public:
     bool fgNormalizeEHCase1();
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
+    bool fgNormalizeEHCase_NativeAot();
 
     void fgCheckForLoopsInHandlers();
 
