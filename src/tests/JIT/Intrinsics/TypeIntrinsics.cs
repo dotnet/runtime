@@ -220,6 +220,7 @@ public partial class Program
             Console.WriteLine($"{file}:L{line} {exc}");
         }
         Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
+        _errors++;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
