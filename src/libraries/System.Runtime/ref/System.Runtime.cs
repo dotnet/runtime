@@ -8299,6 +8299,11 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class UnscopedRefAttribute : System.Attribute
+    {
+        public UnscopedRefAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute
     {
@@ -12870,7 +12875,7 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
         public static ref T AsRef<T>(scoped in T source) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref T target) { throw null; }

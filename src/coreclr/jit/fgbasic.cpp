@@ -889,8 +889,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
     unsigned    varNum;
-    var_types   varType = DUMMY_INIT(TYP_UNDEF); // TYP_ type
-    typeInfo    ti;                              // Verifier type.
+    var_types   varType      = DUMMY_INIT(TYP_UNDEF); // TYP_ type
     bool        typeIsNormed = false;
     FgStack     pushedStack;
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -1901,7 +1900,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (opcode == CEE_LDLOCA || opcode == CEE_LDLOCA_S)
                     {
                         varType = impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclTypeInfo;
-                        ti      = impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclVerTypeInfo;
 
                         impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclHasLdlocaOp = true;
                     }
@@ -1910,7 +1908,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         noway_assert(opcode == CEE_LDARGA || opcode == CEE_LDARGA_S);
 
                         varType = impInlineInfo->lclVarInfo[varNum].lclTypeInfo;
-                        ti      = impInlineInfo->lclVarInfo[varNum].lclVerTypeInfo;
 
                         impInlineInfo->inlArgInfo[varNum].argHasLdargaOp = true;
 
@@ -1942,7 +1939,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
 
                     varType = (var_types)lvaTable[varNum].lvType;
-                    ti      = lvaTable[varNum].lvVerTypeInfo;
 
                     // Determine if the next instruction will consume
                     // the address. If so we won't mark this var as
@@ -1982,7 +1978,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 } // isInlining
 
-                typeIsNormed = ti.IsValueClass() && !varTypeIsStruct(varType);
+                typeIsNormed = !varTypeIsGC(varType) && !varTypeIsStruct(varType);
             }
             break;
 
@@ -2241,13 +2237,8 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
         arg0varDsc->SetDoNotEnregReason(thisVarDsc->GetDoNotEnregReason());
 #endif
         arg0varDsc->lvHasILStoreOp = thisVarDsc->lvHasILStoreOp;
-        arg0varDsc->lvVerTypeInfo  = thisVarDsc->lvVerTypeInfo;
 
-        // Clear the TI_FLAG_THIS_PTR in the original 'this' pointer.
-        noway_assert(arg0varDsc->lvVerTypeInfo.IsThisPtr());
-        thisVarDsc->lvVerTypeInfo.ClearThisPtr();
-        // Note that here we don't clear `m_doNotEnregReason` and it stays
-        // `doNotEnreg` with `AddrExposed` reason.
+        // Note that here we don't clear `m_doNotEnregReason` and it stays `doNotEnreg` with `AddrExposed` reason.
         thisVarDsc->CleanAddressExposed();
         thisVarDsc->lvHasILStoreOp = false;
     }

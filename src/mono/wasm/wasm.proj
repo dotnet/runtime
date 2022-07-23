@@ -350,24 +350,46 @@
   </Target>
 
   <ItemGroup>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/*.ts"
+           Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/tsconfig.*"
+           Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.ts"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>
   </ItemGroup>
 
+  <Target Name="SetMonoRollupEnvironment">
+    <PropertyGroup>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads)</MonoRollupEnvironment>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_RollupEnvIntermediateFile>$(WasmObjDir)\.rollup.env</_RollupEnvIntermediateFile>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="WriteRollupEnvToFile" DependsOnTargets="SetMonoRollupEnvironment">
+    <!-- the purpose of this file is to be an input to the BuildWithRollup target.  That way if any
+         of the environment values change, we will do a new rollup build.  For example if the
+         `MonoWasmThreads` property is changed between builds by a developer. -->
+    <WriteLinesToFile File="$(_RollupEnvIntermediateFile)"
+		      Lines="$(MonoRollupEnvironment)"
+		      WriteOnlyWhenDifferent="true"
+		      Overwrite="true" />
+  </Target>
+
   <Target Name="BuildWithRollup"
-          Inputs="@(_RollupInputs)"
+          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
           Outputs="$(NativeBinDir).rollup-stamp"
+	  DependsOnTargets="WriteRollupEnvToFile"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <!-- compile typescript -->
-    <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run rollup -- --environment $(MonoRollupEnvironment)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <Copy SourceFiles="runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"

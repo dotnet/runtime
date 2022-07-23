@@ -422,7 +422,7 @@ void Compiler::gsParamsToShadows()
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
-        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
+
         if (varTypeIsStruct(type))
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag

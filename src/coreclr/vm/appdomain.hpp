@@ -469,7 +469,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -536,43 +536,25 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
+    void ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased);
+
     // The buckets of object handles.
+    // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
+    // synchronized by m_Crst
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
+    // these fields are synchronized by m_Crst
     PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
-#ifdef _DEBUG
-
-    // these functions are present to enforce that there is a locking mechanism in place
-    // for each PinnedHeapHandleTable even though the code itself does not do the locking
-    // you must tell the table which lock you intend to use and it will verify that it has
-    // in fact been taken before performing any operations
-
-public:
-    void RegisterCrstDebug(CrstBase *pCrst)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // this function must be called exactly once
-        _ASSERTE(pCrst != NULL);
-        _ASSERTE(m_pCrstDebug == NULL);
-        m_pCrstDebug = pCrst;
-    }
-
-private:
-    // we will assert that this Crst is held before using the object
-    CrstBase *m_pCrstDebug;
-
-#endif
-
+    CrstExplicitInit m_Crst;
 };
 
 class PinnedHeapHandleBlockHolder;
@@ -588,7 +570,14 @@ class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoN
 public:
     FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
-        WRAPPER_NO_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
         m_Data = pOwner->AllocateHandles(nCount);
         m_Count=nCount;
         m_pTable=pOwner;
@@ -1133,9 +1122,6 @@ protected:
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-    // The pinned heap handle table critical section.
-    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
 
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.

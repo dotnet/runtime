@@ -1,4 +1,4 @@
-//===------------------------- AddressSpace.hpp ---------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -17,6 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libunwind.h"
+#include "config.h"
+#include "dwarf2.h"
+#include "EHHeaderParser.hpp"
+#include "Registers.hpp"
+
 #ifndef _LIBUNWIND_USE_DLADDR
   #if !defined(_LIBUNWIND_IS_BAREMETAL) && !defined(_WIN32)
     #define _LIBUNWIND_USE_DLADDR 1
@@ -27,23 +33,17 @@
 
 #if _LIBUNWIND_USE_DLADDR
 #include <dlfcn.h>
-#if defined(__unix__) &&  defined(__ELF__) && defined(_LIBUNWIND_HAS_COMMENT_LIB_PRAGMA)
+#if defined(__ELF__) && defined(_LIBUNWIND_LINK_DL_LIB)
 #pragma comment(lib, "dl")
 #endif
 #endif
 
-#ifdef __APPLE__
-#include <mach-o/getsect.h>
-namespace libunwind {
-   bool checkKeyMgrRegisteredFDEs(uintptr_t targetAddr, void *&fde);
-}
+#if defined(_LIBUNWIND_ARM_EHABI)
+struct EHABIIndexEntry {
+  uint32_t functionOffset;
+  uint32_t data;
+};
 #endif
-
-#include "libunwind.h"
-#include "config.h"
-#include "dwarf2.h"
-#include "EHHeaderParser.hpp"
-#include "Registers.hpp"
 
 #ifdef __APPLE__
 
@@ -55,43 +55,9 @@ namespace libunwind {
     const void*                 compact_unwind_section;
     uintptr_t                   compact_unwind_section_length;
   };
-  #if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) \
-                                 && (__MAC_OS_X_VERSION_MIN_REQUIRED >= 1070)) \
-      || defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-    // In 10.7.0 or later, libSystem.dylib implements this function.
-    extern "C" bool _dyld_find_unwind_sections(void *, dyld_unwind_sections *);
-  #else
-    // In 10.6.x and earlier, we need to implement this functionality. Note
-    // that this requires a newer version of libmacho (from cctools) than is
-    // present in libSystem on 10.6.x (for getsectiondata).
-    static inline bool _dyld_find_unwind_sections(void* addr,
-                                                    dyld_unwind_sections* info) {
-      // Find mach-o image containing address.
-      Dl_info dlinfo;
-      if (!dladdr(addr, &dlinfo))
-        return false;
-#if __LP64__
-      const struct mach_header_64 *mh = (const struct mach_header_64 *)dlinfo.dli_fbase;
-#else
-      const struct mach_header *mh = (const struct mach_header *)dlinfo.dli_fbase;
-#endif
 
-      // Initialize the return struct
-      info->mh = (const struct mach_header *)mh;
-      info->dwarf_section = getsectiondata(mh, "__TEXT", "__eh_frame", &info->dwarf_section_length);
-      info->compact_unwind_section = getsectiondata(mh, "__TEXT", "__unwind_info", &info->compact_unwind_section_length);
-
-      if (!info->dwarf_section) {
-        info->dwarf_section_length = 0;
-      }
-
-      if (!info->compact_unwind_section) {
-        info->compact_unwind_section_length = 0;
-      }
-
-      return true;
-    }
-  #endif
+  // In 10.7.0 or later, libSystem.dylib implements this function.
+  extern "C" bool _dyld_find_unwind_sections(void *, dyld_unwind_sections *);
 
 #elif defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && defined(_LIBUNWIND_IS_BAREMETAL)
 
@@ -117,23 +83,12 @@ namespace libunwind {
 //   __eh_frame_hdr_start = SIZEOF(.eh_frame_hdr) > 0 ? ADDR(.eh_frame_hdr) : 0;
 //   __eh_frame_hdr_end = SIZEOF(.eh_frame_hdr) > 0 ? . : 0;
 
-#ifndef _LIBUNWIND_USE_ONLY_DWARF_INDEX
 extern char __eh_frame_start;
 extern char __eh_frame_end;
-#endif
 
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-
-#ifndef _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_START
-#define _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_START __eh_frame_hdr_start
-#endif
-
-#ifndef _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_END
-#define _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_END __eh_frame_hdr_end
-#endif
-
-extern char _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_START;
-extern char _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_END;
+extern char __eh_frame_hdr_start;
+extern char __eh_frame_hdr_end;
 #endif
 
 #elif defined(_LIBUNWIND_ARM_EHABI) && defined(_LIBUNWIND_IS_BAREMETAL)
@@ -143,22 +98,15 @@ extern char _LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_END;
 extern char __exidx_start;
 extern char __exidx_end;
 
-#elif defined(_LIBUNWIND_ARM_EHABI) || defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+#elif defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && defined(_WIN32)
 
-// ELF-based systems may use dl_iterate_phdr() to access sections
-// containing unwinding information. The ElfW() macro for pointer-size
-// independent ELF header traversal is not provided by <link.h> on some
-// systems (e.g., FreeBSD). On these systems the data structures are
-// just called Elf_XXX. Define ElfW() locally.
-#ifndef _WIN32
-#include <link.h>
-#else
 #include <windows.h>
 #include <psapi.h>
-#endif
-#if !defined(ElfW)
-#define ElfW(type) Elf_##type
-#endif
+
+#elif defined(_LIBUNWIND_USE_DL_ITERATE_PHDR) ||                               \
+      defined(_LIBUNWIND_USE_DL_UNWIND_FIND_EXIDX)
+
+#include <link.h>
 
 #endif
 
@@ -166,28 +114,30 @@ namespace libunwind {
 
 /// Used by findUnwindSections() to return info about needed sections.
 struct UnwindInfoSections {
-#if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) || defined(_LIBUNWIND_SUPPORT_DWARF_INDEX) ||       \
-    defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
-  // No dso_base for SEH or ARM EHABI.
+#if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) ||                                \
+    defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND) ||                              \
+    defined(_LIBUNWIND_USE_DL_ITERATE_PHDR)
+  // No dso_base for SEH.
   uintptr_t       dso_base;
 #endif
-#if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
-#ifndef _LIBUNWIND_USE_ONLY_DWARF_INDEX
-  uintptr_t       dwarf_section;
-  uintptr_t       dwarf_section_length;
+#if defined(_LIBUNWIND_USE_DL_ITERATE_PHDR)
+  size_t          text_segment_length;
 #endif
+#if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+  uintptr_t       dwarf_section;
+  size_t          dwarf_section_length;
 #endif
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
   uintptr_t       dwarf_index_section;
-  uintptr_t       dwarf_index_section_length;
+  size_t          dwarf_index_section_length;
 #endif
 #if defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
   uintptr_t       compact_unwind_section;
-  uintptr_t       compact_unwind_section_length;
+  size_t          compact_unwind_section_length;
 #endif
 #if defined(_LIBUNWIND_ARM_EHABI)
   uintptr_t       arm_section;
-  uintptr_t       arm_section_length;
+  size_t          arm_section_length;
 #endif
 };
 
@@ -296,11 +246,11 @@ inline int64_t LocalAddressSpace::getSLEB128(pint_t &addr, pint_t end) {
     if (p == pend)
       _LIBUNWIND_ABORT("truncated sleb128 expression");
     byte = *p++;
-    result |= ((byte & 0x7f) << bit);
+    result |= (uint64_t)(byte & 0x7f) << bit;
     bit += 7;
   } while (byte & 0x80);
   // sign extend negative numbers
-  if ((byte & 0x40) != 0)
+  if ((byte & 0x40) != 0 && bit < 64)
     result |= (-1ULL) << bit;
   addr = (pint_t) p;
   return result;
@@ -398,6 +348,156 @@ LocalAddressSpace::getEncodedP(pint_t &addr, pint_t end, uint8_t encoding,
   return result;
 }
 
+#if defined(_LIBUNWIND_USE_DL_ITERATE_PHDR)
+
+// The ElfW() macro for pointer-size independent ELF header traversal is not
+// provided by <link.h> on some systems (e.g., FreeBSD). On these systems the
+// data structures are just called Elf_XXX. Define ElfW() locally.
+#if !defined(ElfW)
+  #define ElfW(type) Elf_##type
+#endif
+#if !defined(Elf_Half)
+  typedef ElfW(Half) Elf_Half;
+#endif
+#if !defined(Elf_Phdr)
+  typedef ElfW(Phdr) Elf_Phdr;
+#endif
+#if !defined(Elf_Addr)
+  typedef ElfW(Addr) Elf_Addr;
+#endif
+
+static Elf_Addr calculateImageBase(struct dl_phdr_info *pinfo) {
+  Elf_Addr image_base = pinfo->dlpi_addr;
+#if defined(__ANDROID__) && __ANDROID_API__ < 18
+  if (image_base == 0) {
+    // Normally, an image base of 0 indicates a non-PIE executable. On
+    // versions of Android prior to API 18, the dynamic linker reported a
+    // dlpi_addr of 0 for PIE executables. Compute the true image base
+    // using the PT_PHDR segment.
+    // See https://github.com/android/ndk/issues/505.
+    for (Elf_Half i = 0; i < pinfo->dlpi_phnum; i++) {
+      const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i];
+      if (phdr->p_type == PT_PHDR) {
+        image_base = reinterpret_cast<Elf_Addr>(pinfo->dlpi_phdr) -
+          phdr->p_vaddr;
+        break;
+      }
+    }
+  }
+#endif
+  return image_base;
+}
+
+struct _LIBUNWIND_HIDDEN dl_iterate_cb_data {
+  LocalAddressSpace *addressSpace;
+  UnwindInfoSections *sects;
+  uintptr_t targetAddr;
+};
+
+#if defined(_LIBUNWIND_USE_FRAME_HEADER_CACHE)
+#include "FrameHeaderCache.hpp"
+
+// Typically there is one cache per process, but when libunwind is built as a
+// hermetic static library, then each shared object may have its own cache.
+static FrameHeaderCache TheFrameHeaderCache;
+#endif
+
+static bool checkAddrInSegment(const Elf_Phdr *phdr, size_t image_base,
+                               dl_iterate_cb_data *cbdata) {
+  if (phdr->p_type == PT_LOAD) {
+    uintptr_t begin = image_base + phdr->p_vaddr;
+    uintptr_t end = begin + phdr->p_memsz;
+    if (cbdata->targetAddr >= begin && cbdata->targetAddr < end) {
+      cbdata->sects->dso_base = begin;
+      cbdata->sects->text_segment_length = phdr->p_memsz;
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool checkForUnwindInfoSegment(const Elf_Phdr *phdr, size_t image_base,
+                                      dl_iterate_cb_data *cbdata) {
+#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+  if (phdr->p_type == PT_GNU_EH_FRAME) {
+    EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
+    uintptr_t eh_frame_hdr_start = image_base + phdr->p_vaddr;
+    cbdata->sects->dwarf_index_section = eh_frame_hdr_start;
+    cbdata->sects->dwarf_index_section_length = phdr->p_memsz;
+    if (EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
+            *cbdata->addressSpace, eh_frame_hdr_start, phdr->p_memsz,
+            hdrInfo)) {
+      // .eh_frame_hdr records the start of .eh_frame, but not its size.
+      // Rely on a zero terminator to find the end of the section.
+      cbdata->sects->dwarf_section = hdrInfo.eh_frame_ptr;
+      cbdata->sects->dwarf_section_length = SIZE_MAX;
+      return true;
+    }
+  }
+  return false;
+#elif defined(_LIBUNWIND_ARM_EHABI)
+  if (phdr->p_type == PT_ARM_EXIDX) {
+    uintptr_t exidx_start = image_base + phdr->p_vaddr;
+    cbdata->sects->arm_section = exidx_start;
+    cbdata->sects->arm_section_length = phdr->p_memsz;
+    return true;
+  }
+  return false;
+#else
+#error Need one of _LIBUNWIND_SUPPORT_DWARF_INDEX or _LIBUNWIND_ARM_EHABI
+#endif
+}
+
+static int findUnwindSectionsByPhdr(struct dl_phdr_info *pinfo,
+                                    size_t pinfo_size, void *data) {
+  auto cbdata = static_cast<dl_iterate_cb_data *>(data);
+  if (pinfo->dlpi_phnum == 0 || cbdata->targetAddr < pinfo->dlpi_addr)
+    return 0;
+#if defined(_LIBUNWIND_USE_FRAME_HEADER_CACHE)
+  if (TheFrameHeaderCache.find(pinfo, pinfo_size, data))
+    return 1;
+#else
+  // Avoid warning about unused variable.
+  (void)pinfo_size;
+#endif
+
+  Elf_Addr image_base = calculateImageBase(pinfo);
+
+  // Most shared objects seen in this callback function likely don't contain the
+  // target address, so optimize for that. Scan for a matching PT_LOAD segment
+  // first and bail when it isn't found.
+  bool found_text = false;
+  for (Elf_Half i = 0; i < pinfo->dlpi_phnum; ++i) {
+    if (checkAddrInSegment(&pinfo->dlpi_phdr[i], image_base, cbdata)) {
+      found_text = true;
+      break;
+    }
+  }
+  if (!found_text)
+    return 0;
+
+  // PT_GNU_EH_FRAME and PT_ARM_EXIDX are usually near the end. Iterate
+  // backward.
+  bool found_unwind = false;
+  for (Elf_Half i = pinfo->dlpi_phnum; i > 0; i--) {
+    const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i - 1];
+    if (checkForUnwindInfoSegment(phdr, image_base, cbdata)) {
+      found_unwind = true;
+      break;
+    }
+  }
+  if (!found_unwind)
+    return 0;
+
+#if defined(_LIBUNWIND_USE_FRAME_HEADER_CACHE)
+  TheFrameHeaderCache.add(cbdata->sects);
+#endif
+  return 1;
+}
+
+#endif  // defined(_LIBUNWIND_USE_DL_ITERATE_PHDR)
+
+
 inline bool LocalAddressSpace::findUnwindSections(pint_t targetAddr,
                                                   UnwindInfoSections &info) {
 #ifdef __APPLE__
@@ -406,43 +506,31 @@ inline bool LocalAddressSpace::findUnwindSections(pint_t targetAddr,
     info.dso_base                      = (uintptr_t)dyldInfo.mh;
  #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
     info.dwarf_section                 = (uintptr_t)dyldInfo.dwarf_section;
-    info.dwarf_section_length          = dyldInfo.dwarf_section_length;
+    info.dwarf_section_length          = (size_t)dyldInfo.dwarf_section_length;
  #endif
     info.compact_unwind_section        = (uintptr_t)dyldInfo.compact_unwind_section;
-    info.compact_unwind_section_length = dyldInfo.compact_unwind_section_length;
+    info.compact_unwind_section_length = (size_t)dyldInfo.compact_unwind_section_length;
     return true;
   }
 #elif defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND) && defined(_LIBUNWIND_IS_BAREMETAL)
+  info.dso_base = 0;
   // Bare metal is statically linked, so no need to ask the dynamic loader
-#ifndef _LIBUNWIND_USE_ONLY_DWARF_INDEX
-  info.dwarf_section_length = (uintptr_t)(&__eh_frame_end - &__eh_frame_start);
-  info.dwarf_section = (uintptr_t)(&__eh_frame_start);
+  info.dwarf_section_length = (size_t)(&__eh_frame_end - &__eh_frame_start);
+  info.dwarf_section =        (uintptr_t)(&__eh_frame_start);
   _LIBUNWIND_TRACE_UNWINDING("findUnwindSections: section %p length %p",
-                             (void *)info.dwarf_section,
-                             (void *)info.dwarf_section_length);
-#endif
+                             (void *)info.dwarf_section, (void *)info.dwarf_section_length);
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-  info.dwarf_index_section =
-      (uintptr_t)(&(_LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_START));
-  info.dwarf_index_section_length =
-      (uintptr_t)(&(_LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_END) -
-                  &(_LIBUNWIND_BAREMETAL_DWARF_INDEX_SEC_START));
+  info.dwarf_index_section =        (uintptr_t)(&__eh_frame_hdr_start);
+  info.dwarf_index_section_length = (size_t)(&__eh_frame_hdr_end - &__eh_frame_hdr_start);
   _LIBUNWIND_TRACE_UNWINDING("findUnwindSections: index section %p length %p",
-                             (void *)info.dwarf_index_section,
-                             (void *)info.dwarf_index_section_length);
+                             (void *)info.dwarf_index_section, (void *)info.dwarf_index_section_length);
 #endif
-
-#ifndef _LIBUNWIND_USE_ONLY_DWARF_INDEX
   if (info.dwarf_section_length)
     return true;
-#else
-  if (info.dwarf_index_section_length > 0)
-    return true;
-#endif
 #elif defined(_LIBUNWIND_ARM_EHABI) && defined(_LIBUNWIND_IS_BAREMETAL)
   // Bare metal is statically linked, so no need to ask the dynamic loader
   info.arm_section =        (uintptr_t)(&__exidx_start);
-  info.arm_section_length = (uintptr_t)(&__exidx_end - &__exidx_start);
+  info.arm_section_length = (size_t)(&__exidx_end - &__exidx_start);
   _LIBUNWIND_TRACE_UNWINDING("findUnwindSections: section %p length %p",
                              (void *)info.arm_section, (void *)info.arm_section_length);
   if (info.arm_section && info.arm_section_length)
@@ -452,8 +540,12 @@ inline bool LocalAddressSpace::findUnwindSections(pint_t targetAddr,
   HANDLE process = GetCurrentProcess();
   DWORD needed;
 
-  if (!EnumProcessModules(process, mods, sizeof(mods), &needed))
+  if (!EnumProcessModules(process, mods, sizeof(mods), &needed)) {
+    DWORD err = GetLastError();
+    _LIBUNWIND_TRACE_UNWINDING("findUnwindSections: EnumProcessModules failed, "
+                               "returned error %d", (int)err);
     return false;
+  }
 
   for (unsigned i = 0; i < (needed / sizeof(HMODULE)); i++) {
     PIMAGE_DOS_HEADER pidh = (PIMAGE_DOS_HEADER)mods[i];
@@ -488,115 +580,16 @@ inline bool LocalAddressSpace::findUnwindSections(pint_t targetAddr,
   (void)targetAddr;
   (void)info;
   return true;
-#elif defined(_LIBUNWIND_ARM_EHABI) && defined(__BIONIC__) &&                  \
-    (__ANDROID_API__ < 21)
+#elif defined(_LIBUNWIND_USE_DL_UNWIND_FIND_EXIDX)
   int length = 0;
   info.arm_section =
       (uintptr_t)dl_unwind_find_exidx((_Unwind_Ptr)targetAddr, &length);
-  info.arm_section_length = (uintptr_t)length;
+  info.arm_section_length = (size_t)length * sizeof(EHABIIndexEntry);
   if (info.arm_section && info.arm_section_length)
     return true;
-#elif defined(_LIBUNWIND_ARM_EHABI) || defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
-  struct dl_iterate_cb_data {
-    LocalAddressSpace *addressSpace;
-    UnwindInfoSections *sects;
-    uintptr_t targetAddr;
-  };
-
+#elif defined(_LIBUNWIND_USE_DL_ITERATE_PHDR)
   dl_iterate_cb_data cb_data = {this, &info, targetAddr};
-  int found = dl_iterate_phdr(
-      [](struct dl_phdr_info *pinfo, size_t, void *data) -> int {
-        auto cbdata = static_cast<dl_iterate_cb_data *>(data);
-        bool found_obj = false;
-        bool found_hdr = false;
-
-        assert(cbdata);
-        assert(cbdata->sects);
-
-        if (cbdata->targetAddr < pinfo->dlpi_addr) {
-          return false;
-        }
-
-#if !defined(Elf_Half)
-        typedef ElfW(Half) Elf_Half;
-#endif
-#if !defined(Elf_Phdr)
-        typedef ElfW(Phdr) Elf_Phdr;
-#endif
-#if !defined(Elf_Addr) && defined(__ANDROID__)
-        typedef ElfW(Addr) Elf_Addr;
-#endif
-
- #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
-  #if !defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
-   #error "_LIBUNWIND_SUPPORT_DWARF_UNWIND requires _LIBUNWIND_SUPPORT_DWARF_INDEX on this platform."
-  #endif
-        size_t object_length;
-#if defined(__ANDROID__)
-        Elf_Addr image_base =
-            pinfo->dlpi_phnum
-                ? reinterpret_cast<Elf_Addr>(pinfo->dlpi_phdr) -
-                      reinterpret_cast<const Elf_Phdr *>(pinfo->dlpi_phdr)
-                          ->p_offset
-                : 0;
-#endif
-
-        for (Elf_Half i = 0; i < pinfo->dlpi_phnum; i++) {
-          const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i];
-          if (phdr->p_type == PT_LOAD) {
-            uintptr_t begin = pinfo->dlpi_addr + phdr->p_vaddr;
-#if defined(__ANDROID__)
-            if (pinfo->dlpi_addr == 0 && phdr->p_vaddr < image_base)
-              begin = begin + image_base;
-#endif
-            uintptr_t end = begin + phdr->p_memsz;
-            if (cbdata->targetAddr >= begin && cbdata->targetAddr < end) {
-              cbdata->sects->dso_base = begin;
-              object_length = phdr->p_memsz;
-              found_obj = true;
-            }
-          } else if (phdr->p_type == PT_GNU_EH_FRAME) {
-            EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
-            uintptr_t eh_frame_hdr_start = pinfo->dlpi_addr + phdr->p_vaddr;
-#if defined(__ANDROID__)
-            if (pinfo->dlpi_addr == 0 && phdr->p_vaddr < image_base)
-              eh_frame_hdr_start = eh_frame_hdr_start + image_base;
-#endif
-            cbdata->sects->dwarf_index_section = eh_frame_hdr_start;
-            cbdata->sects->dwarf_index_section_length = phdr->p_memsz;
-            found_hdr = EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
-                *cbdata->addressSpace, eh_frame_hdr_start, phdr->p_memsz,
-                hdrInfo);
-            if (found_hdr)
-              cbdata->sects->dwarf_section = hdrInfo.eh_frame_ptr;
-          }
-        }
-
-        if (found_obj && found_hdr) {
-          cbdata->sects->dwarf_section_length = object_length;
-          return true;
-        } else {
-          return false;
-        }
- #else // defined(_LIBUNWIND_ARM_EHABI)
-        for (Elf_Half i = 0; i < pinfo->dlpi_phnum; i++) {
-          const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i];
-          if (phdr->p_type == PT_LOAD) {
-            uintptr_t begin = pinfo->dlpi_addr + phdr->p_vaddr;
-            uintptr_t end = begin + phdr->p_memsz;
-            if (cbdata->targetAddr >= begin && cbdata->targetAddr < end)
-              found_obj = true;
-          } else if (phdr->p_type == PT_ARM_EXIDX) {
-            uintptr_t exidx_start = pinfo->dlpi_addr + phdr->p_vaddr;
-            cbdata->sects->arm_section = exidx_start;
-            cbdata->sects->arm_section_length = phdr->p_memsz;
-            found_hdr = true;
-          }
-        }
-        return found_obj && found_hdr;
- #endif
-      },
-      &cb_data);
+  int found = dl_iterate_phdr(findUnwindSectionsByPhdr, &cb_data);
   return static_cast<bool>(found);
 #endif
 
@@ -605,14 +598,10 @@ inline bool LocalAddressSpace::findUnwindSections(pint_t targetAddr,
 
 
 inline bool LocalAddressSpace::findOtherFDE(pint_t targetAddr, pint_t &fde) {
-#ifdef __APPLE__
-  return checkKeyMgrRegisteredFDEs(targetAddr, *((void**)&fde));
-#else
   // TO DO: if OS has way to dynamically register FDEs, check that.
   (void)targetAddr;
   (void)fde;
   return false;
-#endif
 }
 
 inline bool LocalAddressSpace::findFunctionName(pint_t addr, char *buf,

@@ -4043,8 +4043,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
         FOREACH_HBV_BIT_SET(lclNum, fgOutgoingArgTemps)
         {
             LclVarDsc* varDsc = lvaGetDesc((unsigned)lclNum);
-            if (typeInfo::AreEquivalent(varDsc->lvVerTypeInfo, typeInfo(TI_STRUCT, copyBlkClass)) &&
-                !fgCurrentlyInUseArgTemps->testBit(lclNum))
+            if ((varDsc->GetStructHnd() == copyBlkClass) && !fgCurrentlyInUseArgTemps->testBit(lclNum))
             {
                 tmp   = (unsigned)lclNum;
                 found = true;

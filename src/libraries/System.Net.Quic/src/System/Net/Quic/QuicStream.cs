@@ -509,7 +509,7 @@ public sealed partial class QuicStream
         _receiveTcs.TrySetResult();
 
         data.TotalBufferLength = totalCopied;
-        return QUIC_STATUS_SUCCESS;
+        return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE data)
     {

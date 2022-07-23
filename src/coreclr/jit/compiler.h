@@ -1001,8 +1001,6 @@ public:
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
-    typeInfo lvVerTypeInfo; // type info needed for verification
-
     // class handle for the local or null if not known or not a class,
     // for a struct handle use `GetStructHnd()`.
     CORINFO_CLASS_HANDLE lvClassHnd;
@@ -3297,7 +3295,7 @@ public:
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
     CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
-    void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo = true);
+    void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
 
     // If the local is TYP_REF, set or update the associated class information.
@@ -3799,11 +3797,8 @@ protected:
     Statement* impLastStmt; // The last statement for the current BB.
 
 public:
-    enum
-    {
-        CHECK_SPILL_ALL  = -1,
-        CHECK_SPILL_NONE = -2
-    };
+    static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
+    static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
@@ -4003,7 +3998,7 @@ private:
     void impSpillSpecialSideEff();
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
-    void impSpillLclRefs(unsigned lclNum);
+    void impSpillLclRefs(unsigned lclNum, unsigned chkLevel);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
@@ -4112,11 +4107,7 @@ private:
 
     void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
-    void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
-    void impLoadVar(unsigned lclNum, IL_OFFSET offset)
-    {
-        impLoadVar(lclNum, offset, lvaGetDesc(lclNum)->lvVerTypeInfo);
-    }
+    void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
@@ -10227,6 +10218,7 @@ public:
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
+    typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
     typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd,
                              bool bashStructToRef = false); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
