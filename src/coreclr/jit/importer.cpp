@@ -3884,7 +3884,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 1);
 
                 GenTree*             array    = impPopStack().val;
-                CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.classInst[0];
+                CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.methInst[0];
                 CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
                 var_types            elemType = JITtype2varType(jitType);
 
