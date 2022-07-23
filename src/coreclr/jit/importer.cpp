@@ -3891,6 +3891,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
                 GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, elemType, elemHnd);
                 indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
+                retNode = indexAddr;
                 break;
             }
 
