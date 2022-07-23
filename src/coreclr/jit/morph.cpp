@@ -7315,7 +7315,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
         retValArg = gtNewZeroConNode(TYP_I_IMPL);
     }
 
-    // Args are (void** callersReturnAddressSlot, void* callTarget, void* retVal)
+    // Args are (void** callersReturnAddressSlot, void* callTarget, ref byte retVal)
     GenTree* callTarget = new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, callTargetStubHnd);
 
     // Add the caller's return address slot.

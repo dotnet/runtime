@@ -249,7 +249,7 @@ transforms the code into the equivalent of
 ```csharp
 IL_STUB_StoreTailCallArgs(x - 1);
 bool result;
-DispatchTailCalls(&IL_STUB_CallTailCallTarget, ref result, _AddressOfReturnAddress());
+DispatchTailCalls(_AddressOfReturnAddress(), &IL_STUB_CallTailCallTarget, ref result);
 return result;
 ```
 
