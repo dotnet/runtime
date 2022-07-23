@@ -7188,8 +7188,7 @@ public:
 
         bool Complementary(AssertionDsc* that)
         {
-            return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that) &&
-                   HasSameOp2(that);
+            return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that) && HasSameOp2(that);
         }
 
         bool Equals(AssertionDsc* that)
@@ -7224,26 +7223,22 @@ public:
                     /* op2.lcl's lclNum combined 9-bits will take care of 9-bits of other members
                        of union like u1.iconVal, lconVal, dconVal.
                      */
-                    hashCode |=
-                        ((op2.lcl.lclNum & 0x1FF) << 23) | /* 31 ~ 23 : op2.lcl.lclNum    (low 9-bits) */
-                        (op2.kind << 18);                  /* 22 ~ 18 : op2Kind           (5-bits) */
+                    hashCode |= ((op2.lcl.lclNum & 0x1FF) << 23) | /* 31 ~ 23 : op2.lcl.lclNum    (low 9-bits) */
+                                (op2.kind << 18);                  /* 22 ~ 18 : op2Kind           (5-bits) */
                 }
 
                 if (op1.kind == O1K_ARR_BND)
                 {
-                    hashCode |=
-                        ((op1.lcl.lclNum & 0x7FF) << 7) |  /* 17 ~ 07 : op1.lcl.lclNum    (low 11-bits) */
-                        (op1.kind << 3);                   /* 06 ~ 03 : op1Kind           (4-bits) */
+                    hashCode |= ((op1.lcl.lclNum & 0x7FF) << 7) | /* 17 ~ 07 : op1.lcl.lclNum    (low 11-bits) */
+                                (op1.kind << 3);                  /* 06 ~ 03 : op1Kind           (4-bits) */
                 }
                 else if (op1Valid)
                 {
-                    hashCode |=
-                        ((op1.vn & 0x7FF) << 7)       |    /* 17 ~ 07 : op1.vn            (low 11-bits) */
-                        (op1.kind << 3);                   /* 06 ~ 03 : op1Kind           (4-bits) */
+                    hashCode |= ((op1.vn & 0x7FF) << 7) | /* 17 ~ 07 : op1.vn            (low 11-bits) */
+                                (op1.kind << 3);          /* 06 ~ 03 : op1Kind           (4-bits) */
                 }
 
-                return hashCode |
-                       (assertionKind);                     /* 02 ~ 00 : assertionKind     (3-bits)*/
+                return hashCode | (assertionKind); /* 02 ~ 00 : assertionKind     (3-bits)*/
             }
             else
             {
@@ -7252,29 +7247,26 @@ public:
                     /* op2.lcl's lclNum combined 15-bits will take care of 15-bits of other members
                        of union like u1.iconVal, lconVal, dconVal.
                      */
-                    hashCode |=
-                        ((op2.lcl.lclNum & 0x7FFF) << 17)  |  /* 31 ~ 17 : op2.lcl.lclNum    (low 15-bits) */
-                        (op2.kind << 12);                     /* 16 ~ 12 : op2Kind           (5-bits) */
+                    hashCode |= ((op2.lcl.lclNum & 0x7FFF) << 17) | /* 31 ~ 17 : op2.lcl.lclNum    (low 15-bits) */
+                                (op2.kind << 12);                   /* 16 ~ 12 : op2Kind           (5-bits) */
                 }
 
                 if (op1Valid)
                 {
-                    hashCode |=
-                        ((op1.lcl.lclNum & 0x1F) << 7)    |  /* 11 ~ 07 : op1.lcl.lclNum    (low 5-bits) */
-                        (op1.kind << 3);                     /* 06 ~ 03 : op1Kind           (4-bits) */
+                    hashCode |= ((op1.lcl.lclNum & 0x1F) << 7) | /* 11 ~ 07 : op1.lcl.lclNum    (low 5-bits) */
+                                (op1.kind << 3);                 /* 06 ~ 03 : op1Kind           (4-bits) */
                 }
 
-                return hashCode |
-                    (assertionKind);                         /* 02 ~ 00 : assertionKind     (3-bits)*/
+                return hashCode | (assertionKind); /* 02 ~ 00 : assertionKind     (3-bits)*/
             }
         }
 
         AssertionDsc(bool isLocalProp = false)
         {
             assertionKind = OAK_INVALID;
-            op1     = AssertionDscOp1();
-            op2     = AssertionDscOp2();
-            vnBased = !isLocalProp;
+            op1           = AssertionDscOp1();
+            op2           = AssertionDscOp2();
+            vnBased       = !isLocalProp;
         }
     };
 

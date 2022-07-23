@@ -944,7 +944,6 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
  *  Initialize the assertion prop tracking logic.
  */
 
-
 void Compiler::optAssertionInit(bool isLocalProp)
 {
     // Use a function countFunc to determine a proper maximum assertion count for the
@@ -958,7 +957,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
     const unsigned              codeSize    = info.compILCodeSize / 512;
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
 
-    optLocalAssertionProp = isLocalProp;
+    optLocalAssertionProp  = isLocalProp;
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
 
     for (int i = 0; i < optMaxAssertionCount; i++)
@@ -2009,7 +2008,8 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         {
             if (found)
             {
-                JITDUMP("HashCode= %u not found in map.\n", AssertionDscKeyFuncs/*<true>*/::GetHashCode(*newAssertion));
+                JITDUMP("HashCode= %u not found in map.\n",
+                        AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
                 assert(false);
             }
             return NO_ASSERTION_INDEX;
@@ -2019,7 +2019,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     // Check if newAssertion already exists and return the corresponding assertionIndex
     // Otherwise, set it in the map.
     if (optAssertionDscMap->Set(*newAssertion, optAssertionCount + 1, AssertionDscMap::SetKind::SkipIfExist,
-                                 &fastAnswer))
+                                &fastAnswer))
     {
         assert(slowAnswer == fastAnswer);
         return fastAnswer;
@@ -2333,9 +2333,9 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     GenTree* op1 = relop->gtGetOp1();
     GenTree* op2 = relop->gtGetOp2();
 
-    ValueNum op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-    ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+    ValueNum     op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum     op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+    ValueNum     relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
     AssertionDsc dsc(optLocalAssertionProp);
 
     bool hasTestAgainstZero =

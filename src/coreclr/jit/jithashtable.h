@@ -222,12 +222,12 @@ public:
         None,
         Overwrite,
 
-         //Skip setting if it exists. Useful to find node just once instead of
-         //Lookup() and Set         
+        // Skip setting if it exists. Useful to find node just once instead of
+        // Lookup() and Set
         SkipIfExist
     };
 
-    bool Set(Key k, Value v, SetKind kind = None, Value *pVal = nullptr)
+    bool Set(Key k, Value v, SetKind kind = None, Value* pVal = nullptr)
     {
         CheckGrowth();
 
