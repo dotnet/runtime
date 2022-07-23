@@ -375,4 +375,13 @@
   <data name="MarshallerTypeMustBeNonNullMessage" xml:space="preserve">
     <value>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</value>
   </data>
+  <data name="RequiresAllowUnsafeBlocksDescription" xml:space="preserve">
+    <value>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksMessage" xml:space="preserve">
+    <value>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+  </data>
+  <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
+    <value>LibraryImportAttribute requires unsafe code.</value>
+  </data>
 </root>
