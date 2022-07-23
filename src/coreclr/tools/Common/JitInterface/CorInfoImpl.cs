@@ -737,24 +737,6 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
-#if READYTORUN
-            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
-            {
-                foreach (var region in exceptionRegions)
-                {
-                    if (region.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
-                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
-                            break;
-                        }
-                    }
-                }
-            }
-#endif
-
             return true;
         }
 

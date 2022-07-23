@@ -2127,8 +2127,7 @@ void Compiler::fgNormalizeEH()
 
 #endif // 0
 
-    // For NativeAOT we need to create a fake exception filter for generic handlers
-    if (/*IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&*/ fgNormalizeEHCase_NativeAot())
+    if (fgCreateFiltersForGenericExceptions())
     {
         modified = true;
     }
@@ -2513,7 +2512,7 @@ bool Compiler::fgNormalizeEHCase2()
 }
 
 //------------------------------------------------------------------------
-// fgNormalizeEHCase_NativeAot:
+// fgCreateFiltersForGenericExceptions:
 //     For Exception types which require runtime lookup it creates a "fake" single-block
 //     EH filter that performs "catchArg isinst T!!" and in case of success forwards to the
 //     original EH handler.
@@ -2522,11 +2521,8 @@ bool Compiler::fgNormalizeEHCase2()
 //    true if basic block layout was changed
 //
 
-bool Compiler::fgNormalizeEHCase_NativeAot()
+bool Compiler::fgCreateFiltersForGenericExceptions()
 {
-    // CI test, let's run the logic for JIT
-    //assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
     bool modified = false;
     for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
     {
@@ -2540,9 +2536,9 @@ bool Compiler::fgNormalizeEHCase_NativeAot()
             resolvedToken.tokenType    = CORINFO_TOKENKIND_Casting;
             info.compCompHnd->resolveToken(&resolvedToken);
 
-            bool     runtimeLookupNeeded = false;
-            GenTree* runtimeLookup       = impTokenToHandle(&resolvedToken, &runtimeLookupNeeded, false);
-            if (!runtimeLookupNeeded)
+            CORINFO_GENERICHANDLE_RESULT embedInfo;
+            info.compCompHnd->embedGenericHandle(&resolvedToken, true, &embedInfo);
+            if (!embedInfo.lookup.lookupKind.needsRuntimeLookup)
             {
                 // Exception type does not need runtime lookup
                 continue;
@@ -2570,9 +2566,10 @@ bool Compiler::fgNormalizeEHCase_NativeAot()
             fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg));
 
             // Create "catchArg is TException" tree
-            GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
-            GenTree* cmp       = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
-            GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
+            GenTree* runtimeLookup = getTokenHandleTree(&resolvedToken, true);
+            GenTree* isInstOfT     = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
+            GenTree* cmp           = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
+            GenTree* retFilt       = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
 
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);
