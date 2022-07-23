@@ -17,7 +17,7 @@ public class GenericExceptions
         AssertEqual(GenericExceptions_Case2<string, Array>(() => throw new MyException<string>()), 111);
         AssertEqual(GenericExceptions_Case2<string, Array>(() => throw new MyException<Array>()), 222);
         AssertEqual(GenericExceptions_Case2<string, Array>(() => throw new MyException<List<int>>()), 42);
-        AssertEqual(GenericExceptions_Case2<string, Array>(() => throw new MyException<Program>()), 42);
+        AssertEqual(GenericExceptions_Case2<string, Array>(() => throw new MyException<GenericExceptions>()), 42);
         AssertEqual(GenericExceptions_Case2<string, Array>(() => throw new InvalidOperationException()), 42);
         AssertEqual(_counter, 24);
     }
