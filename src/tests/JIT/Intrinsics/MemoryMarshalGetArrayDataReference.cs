@@ -51,7 +51,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             ThrowsNRE(() => { _ = ref ptrString(null); });
 
             // from https://github.com/dotnet/runtime/issues/58312#issuecomment-993491291
-            [MethodImpl(MethodImplOption.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static int Problem1(StructWithByte[] a)
             {
                 MemoryMarshal.GetArrayDataReference(a).Byte = 1;
@@ -63,7 +63,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
 
             Equals(Problem(new StructWithByte[] { new StructWithByte { Byte = 1 } }), 2);
 
-            [MethodImpl(MethodImplOption.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static int Problem2(byte[] a)
             {
                 if (MemoryMarshal.GetArrayDataReference(a) == 1)
@@ -83,7 +83,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             return 100 + _errors;
         }
 
-        [MethodImpl(MethodImplOption.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void Equals<T>(T left, T right, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
         {
             if (EqualityComparer<T>.Default.Equals(left, right))
@@ -93,7 +93,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             }
         }
 
-        [MethodImpl(MethodImplOption.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
         {
             if (!expression)
@@ -103,7 +103,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             }
         }
 
-        [MethodImpl(MethodImplOption.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void IsFalse(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
         {
             if (expression)
@@ -113,7 +113,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             }
         }
 
-        [MethodImpl(MethodImplOption.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ThrowsNRE(Action action, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
         {
             try
