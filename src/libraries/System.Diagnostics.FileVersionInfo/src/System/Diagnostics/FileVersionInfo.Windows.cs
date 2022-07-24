@@ -18,21 +18,20 @@ namespace System.Diagnostics
                 void* memPtr = NativeMemory.Alloc(infoSize);
                 try
                 {
-                    IntPtr memIntPtr = new IntPtr(memPtr);
                     if (Interop.Version.GetFileVersionInfoEx(
                         Interop.Version.FileVersionInfoType.FILE_VER_GET_LOCALISED | Interop.Version.FileVersionInfoType.FILE_VER_GET_NEUTRAL,
                         _fileName,
                         0U,
                         infoSize,
-                        memIntPtr))
+                        memPtr))
                     {
                         // Some dlls might not contain correct codepage information, in which case the lookup will fail. Explorer will take
                         // a few shots in dark. We'll simulate similar behavior by falling back to the following lang-codepages.
-                        uint langid = GetVarEntry(memIntPtr);
-                        _ = GetVersionInfoForCodePage(memIntPtr, langid.ToString("X8")) ||
-                            (langid != 0x040904B0 && GetVersionInfoForCodePage(memIntPtr, "040904B0")) || // US English + CP_UNICODE
-                            (langid != 0x040904E4 && GetVersionInfoForCodePage(memIntPtr, "040904E4")) || // US English + CP_USASCII
-                            (langid != 0x04090000 && GetVersionInfoForCodePage(memIntPtr, "04090000"));   // US English + unknown codepage
+                        uint langid = GetVarEntry(memPtr);
+                        _ = GetVersionInfoForCodePage(memPtr, langid.ToString("X8")) ||
+                            (langid != 0x040904B0 && GetVersionInfoForCodePage(memPtr, "040904B0")) || // US English + CP_UNICODE
+                            (langid != 0x040904E4 && GetVersionInfoForCodePage(memPtr, "040904E4")) || // US English + CP_USASCII
+                            (langid != 0x04090000 && GetVersionInfoForCodePage(memPtr, "04090000"));   // US English + unknown codepage
                     }
                 }
                 finally
@@ -42,7 +41,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static unsafe Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
+        private static unsafe Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(void* memPtr)
         {
             if (Interop.Version.VerQueryValue(memPtr, "\\", out IntPtr memRef, out _))
             {
@@ -52,7 +51,7 @@ namespace System.Diagnostics
             return default;
         }
 
-        private static unsafe string GetFileVersionLanguage(IntPtr memPtr)
+        private static unsafe string GetFileVersionLanguage(void* memPtr)
         {
             uint langid = GetVarEntry(memPtr) >> 16;
 
@@ -62,7 +61,7 @@ namespace System.Diagnostics
             return new string(lang, 0, charsWritten);
         }
 
-        private static string GetFileVersionString(IntPtr memPtr, string name)
+        private static unsafe string GetFileVersionString(void* memPtr, string name)
         {
             if (Interop.Version.VerQueryValue(memPtr, name, out IntPtr memRef, out _))
             {
@@ -75,7 +74,7 @@ namespace System.Diagnostics
             return string.Empty;
         }
 
-        private static uint GetVarEntry(IntPtr memPtr)
+        private static unsafe uint GetVarEntry(void* memPtr)
         {
             if (Interop.Version.VerQueryValue(memPtr, "\\VarFileInfo\\Translation", out IntPtr memRef, out _))
             {
@@ -89,7 +88,7 @@ namespace System.Diagnostics
         // This function tries to find version information for a specific codepage.
         // Returns true when version information is found.
         //
-        private bool GetVersionInfoForCodePage(IntPtr memIntPtr, string codepage)
+        private unsafe bool GetVersionInfoForCodePage(void* memIntPtr, string codepage)
         {
             Span<char> stackBuffer = stackalloc char[256];
 
@@ -118,24 +117,18 @@ namespace System.Diagnostics
             _productBuild = (int)HIWORD(ffi.dwProductVersionLS);
             _productPrivate = (int)LOWORD(ffi.dwProductVersionLS);
 
-            _isDebug = (ffi.dwFileFlags & (uint)Interop.Version.FileVersionInfo.VS_FF_DEBUG) != 0;
-            _isPatched = (ffi.dwFileFlags & (uint)Interop.Version.FileVersionInfo.VS_FF_PATCHED) != 0;
-            _isPrivateBuild = (ffi.dwFileFlags & (uint)Interop.Version.FileVersionInfo.VS_FF_PRIVATEBUILD) != 0;
-            _isPreRelease = (ffi.dwFileFlags & (uint)Interop.Version.FileVersionInfo.VS_FF_PRERELEASE) != 0;
-            _isSpecialBuild = (ffi.dwFileFlags & (uint)Interop.Version.FileVersionInfo.VS_FF_SPECIALBUILD) != 0;
+            _isDebug = (ffi.dwFileFlags & Interop.Version.FileVersionInfo.VS_FF_DEBUG) != 0;
+            _isPatched = (ffi.dwFileFlags & Interop.Version.FileVersionInfo.VS_FF_PATCHED) != 0;
+            _isPrivateBuild = (ffi.dwFileFlags & Interop.Version.FileVersionInfo.VS_FF_PRIVATEBUILD) != 0;
+            _isPreRelease = (ffi.dwFileFlags & Interop.Version.FileVersionInfo.VS_FF_PRERELEASE) != 0;
+            _isSpecialBuild = (ffi.dwFileFlags & Interop.Version.FileVersionInfo.VS_FF_SPECIALBUILD) != 0;
 
             // fileVersion is chosen based on best guess. Other fields can be used if appropriate.
             return (_fileVersion != string.Empty);
         }
 
-        private static uint HIWORD(uint dword)
-        {
-            return (dword >> 16) & 0xffff;
-        }
+        private static uint HIWORD(uint dword) => (dword >> 16) & 0xffff;
 
-        private static uint LOWORD(uint dword)
-        {
-            return dword & 0xffff;
-        }
+        private static uint LOWORD(uint dword) => dword & 0xffff;
     }
 }
