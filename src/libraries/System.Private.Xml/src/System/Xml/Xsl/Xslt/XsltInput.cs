@@ -607,7 +607,7 @@ namespace System.Xml.Xsl.Xslt
         //  ForwardCompatibility  -- this flag is set when compiler.version==2 && xsl:version>1 or compiler.version==1 && xsl:version!=1
         //  CanHaveApplyImports  -- we allow xsl:apply-templates instruction to apear in any template with match!=null, but not inside xsl:for-each
         //                          so it can't be inside global variable and has initial value = false
-        //  ExtentionNamespace   -- is defined by extension-element-prefixes attribute on LRE or xsl:stylesheet
+        //  ExtensionNamespace   -- is defined by extension-element-prefixes attribute on LRE or xsl:stylesheet
 
         public bool CanHaveApplyImports
         {

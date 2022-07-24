@@ -767,7 +767,7 @@ namespace Microsoft.Win32
         {
             if (0 != (rights & ~RegistryRights.FullControl))
             {
-                // We need to throw SecurityException here for compatiblity reason,
+                // We need to throw SecurityException here for compatibility reason,
                 // although UnauthorizedAccessException will make more sense.
                 throw new SecurityException(SR.Security_RegistryPermission);
             }

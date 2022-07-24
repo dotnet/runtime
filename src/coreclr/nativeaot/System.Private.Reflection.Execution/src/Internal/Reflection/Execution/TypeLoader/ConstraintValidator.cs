@@ -53,7 +53,7 @@ namespace Internal.Reflection.Execution
                 if (instantiatedTypeConstraint.IsSystemObject())
                     continue;
 
-                // if a concrete type can be cast to the constraint, then this constraint will be satisifed
+                // if a concrete type can be cast to the constraint, then this constraint will be satisfied
                 if (!AreTypesAssignable(typeArg, instantiatedTypeConstraint))
                     return false;
             }

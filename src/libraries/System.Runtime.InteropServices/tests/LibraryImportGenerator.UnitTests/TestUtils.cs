@@ -133,7 +133,7 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="source">Source to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
         /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
@@ -148,7 +148,7 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
         /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
@@ -169,7 +169,7 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
         public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, bool allowUnsafe = true)

@@ -1393,8 +1393,8 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	// to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
 	// sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
 	// buffer at the same time.
-	ep_timestamp_t stop_timetamp = ep_perf_timestamp_get ();
-	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timetamp);
+	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
+	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timestamp);
 	return buffer_manager->current_event;
 }
 

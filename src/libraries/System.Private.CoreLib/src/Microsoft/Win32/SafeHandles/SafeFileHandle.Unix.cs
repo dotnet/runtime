@@ -405,7 +405,7 @@ namespace Microsoft.Win32.SafeHandles
                     return false;
                 }
             }
-            // Enable DeleteOnClose when we've succesfully locked the file.
+            // Enable DeleteOnClose when we've successfully locked the file.
             // On Windows, the locking happens atomically as part of opening the file.
             _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 

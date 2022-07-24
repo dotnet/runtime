@@ -77,8 +77,8 @@
 //     * The CPU is running code elsewhere (which should only be in mscorwks.dll, because everywhere else a
 //         transition to preemptive mode should have happened first)
 //
-// * #PartiallyInteruptibleCode
-// * #FullyInteruptibleCode
+// * #PartiallyInterruptibleCode
+// * #FullyInterruptibleCode
 //
 // If the Instruction pointer (x86/x64: EIP, ARM: R15/PC) is in JIT compiled code, we can detect this because we have tables that
 // map the ranges of every method back to their code:MethodDesc (this the code:ICodeManager interface). In
@@ -1034,7 +1034,7 @@ public:
         TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
 #endif // FEATURE_COMINTEROP
 
-        TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechansim during
+        TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
         TSNC_CallingManagedCodeDisabled = 0x20000000, // Use by multicore JIT feature to asert on calling managed code/loading module in background thread
@@ -3934,7 +3934,7 @@ public:
 
 private:
     //-----------------------------------------------------------------------------
-    // AVInRuntimeImplOkay : its okay to have an AV in Runtime implemetation while
+    // AVInRuntimeImplOkay : its okay to have an AV in Runtime implementation while
     // this holder is in effect.
     //
     //  {

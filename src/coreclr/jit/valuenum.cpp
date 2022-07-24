@@ -6536,8 +6536,8 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     printf("}");
 }
 
-// Requires "valWithExc" to be a value with an exeception set VNFuncApp.
-// Prints a representation of the exeception set on standard out.
+// Requires "valWithExc" to be a value with an exception set VNFuncApp.
+// Prints a representation of the exception set on standard out.
 void ValueNumStore::vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc)
 {
     assert(valWithExc->m_func == VNF_ValWithExc); // Precondition.
@@ -9020,7 +9020,7 @@ void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
 
     if (arr == nullptr)
     {
-        JITDUMP("    *** ARR_ADDR -- an unparseable array expression, assigning a new, unique VN\n");
+        JITDUMP("    *** ARR_ADDR -- an unparsable array expression, assigning a new, unique VN\n");
         arrAddr->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(arrAddr->Addr()->gtVNPair));
         return;
     }
@@ -10206,7 +10206,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     assert(tree->OperIsUnary() || tree->OperIsImplicitIndir());
 
     // We evaluate the baseAddr ValueNumber further in order
-    // to obtain a better value to use for the null check exeception.
+    // to obtain a better value to use for the null check exception.
     //
     ValueNumPair baseVNP = baseAddr->gtVNPair;
     ValueNum     baseLVN = baseVNP.GetLiberal();

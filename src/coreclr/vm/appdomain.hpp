@@ -2188,7 +2188,7 @@ private:
     // General purpose flags.
     DWORD           m_dwFlags;
 
-    // When an application domain is created the ref count is artifically incremented
+    // When an application domain is created the ref count is artificially incremented
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
 

@@ -206,7 +206,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
 //   Returns true if this intrinsic requires value numbering to add an
 //   extra SimdType argument that encodes the resulting type.
 //   If we don't do this overloaded versions can return the same VN
-//   leading to incorrect CSE subsitutions.
+//   leading to incorrect CSE substitutions.
 //
 /* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
 {

@@ -4,14 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class ValueNumberingCheckedIntegerArithemticWithConstants
+public class ValueNumberingCheckedIntegerArithmeticWithConstants
 {
     private static int _global = 0;
     private static int _counter = 100;
 
     public static int Main()
     {
-        RuntimeHelpers.RunClassConstructor(typeof(ValueNumberingCheckedIntegerArithemticWithConstants).TypeHandle);
+        RuntimeHelpers.RunClassConstructor(typeof(ValueNumberingCheckedIntegerArithmeticWithConstants).TypeHandle);
         TestInt32();
         TestUInt32();
         TestInt64();
