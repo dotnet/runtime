@@ -77,17 +77,17 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             ThrowsNRE(() => { _ = ref ptrByte(null); });
             ThrowsNRE(() => { _ = ref ptrString(null); });
 
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<byte>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<string>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<Half>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<Vector128<byte>>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<StructWithByte>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<SimpleEnum>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<GenericStruct<byte>>(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference<GenericStruct<string>>(NoInline(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<byte[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<string[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<Half[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<Vector128<byte>[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<StructWithByte[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<SimpleEnum[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<GenericStruct<byte>[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<GenericStruct<string>[]>(null)); });
 
-            ThrowsNRE(() => { _ = ref ptrByte(NoInline(null)); });
-            ThrowsNRE(() => { _ = ref ptrString(NoInline(null)); });
+            ThrowsNRE(() => { _ = ref ptrByte(NoInline<byte[]>(null)); });
+            ThrowsNRE(() => { _ = ref ptrString(NoInline<string[]>(null)); });
 
             // from https://github.com/dotnet/runtime/issues/58312#issuecomment-993491291
             [MethodImpl(MethodImplOptions.NoInlining)]
