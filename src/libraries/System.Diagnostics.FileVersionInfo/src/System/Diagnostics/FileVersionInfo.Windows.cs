@@ -27,11 +27,11 @@ namespace System.Diagnostics
                     {
                         // Some dlls might not contain correct codepage information, in which case the lookup will fail. Explorer will take
                         // a few shots in dark. We'll simulate similar behavior by falling back to the following lang-codepages.
-                        uint langid = GetVarEntry(memPtr);
-                        _ = GetVersionInfoForCodePage(memPtr, langid.ToString("X8")) ||
-                            (langid != 0x040904B0 && GetVersionInfoForCodePage(memPtr, "040904B0")) || // US English + CP_UNICODE
-                            (langid != 0x040904E4 && GetVersionInfoForCodePage(memPtr, "040904E4")) || // US English + CP_USASCII
-                            (langid != 0x04090000 && GetVersionInfoForCodePage(memPtr, "04090000"));   // US English + unknown codepage
+                        uint lcp = GetLanguageAndCodePage(memPtr);
+                        _ = GetVersionInfoForCodePage(memPtr, lcp.ToString("X8")) ||
+                            (lcp != 0x040904B0 && GetVersionInfoForCodePage(memPtr, "040904B0")) || // US English + CP_UNICODE
+                            (lcp != 0x040904E4 && GetVersionInfoForCodePage(memPtr, "040904E4")) || // US English + CP_USASCII
+                            (lcp != 0x04090000 && GetVersionInfoForCodePage(memPtr, "04090000"));   // US English + unknown codepage
                     }
                 }
                 finally
@@ -43,7 +43,7 @@ namespace System.Diagnostics
 
         private static unsafe Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(void* memPtr)
         {
-            if (Interop.Version.VerQueryValue(memPtr, "\\", out IntPtr memRef, out _))
+            if (Interop.Version.VerQueryValue(memPtr, "\\", out void* memRef, out _))
             {
                 return *(Interop.Version.VS_FIXEDFILEINFO*)memRef;
             }
@@ -53,7 +53,7 @@ namespace System.Diagnostics
 
         private static unsafe string GetFileVersionLanguage(void* memPtr)
         {
-            uint langid = GetVarEntry(memPtr) >> 16;
+            uint langid = GetLanguageAndCodePage(memPtr) >> 16;
 
             const int MaxLength = 256;
             char* lang = stackalloc char[MaxLength];
@@ -63,25 +63,25 @@ namespace System.Diagnostics
 
         private static unsafe string GetFileVersionString(void* memPtr, string name)
         {
-            if (Interop.Version.VerQueryValue(memPtr, name, out IntPtr memRef, out _))
+            if (Interop.Version.VerQueryValue(memPtr, name, out void* memRef, out _) &&
+                memRef is not null)
             {
-                if (memRef != IntPtr.Zero)
-                {
-                    return Marshal.PtrToStringUni(memRef)!;
-                }
+                return Marshal.PtrToStringUni((IntPtr)memRef)!;
             }
 
             return string.Empty;
         }
 
-        private static unsafe uint GetVarEntry(void* memPtr)
+        private static unsafe uint GetLanguageAndCodePage(void* memPtr)
         {
-            if (Interop.Version.VerQueryValue(memPtr, "\\VarFileInfo\\Translation", out IntPtr memRef, out _))
+            if (Interop.Version.VerQueryValue(memPtr, "\\VarFileInfo\\Translation", out void* memRef, out _))
             {
-                return (uint)((Marshal.ReadInt16(memRef) << 16) + Marshal.ReadInt16((IntPtr)((long)memRef + 2)));
+                return
+                    (uint)((*(ushort*)memRef << 16) +
+                    *((ushort*)memRef + 1));
             }
 
-            return 0x040904E4;
+            return 0x040904E4; // US English + CP_USASCII
         }
 
         //
