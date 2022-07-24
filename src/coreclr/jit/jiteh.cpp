@@ -2127,7 +2127,6 @@ void Compiler::fgNormalizeEH()
 
 #endif // 0
 
-
     INDEBUG(fgNormalizeEHDone = true;)
 
     if (modified)
@@ -2513,13 +2512,9 @@ bool Compiler::fgNormalizeEHCase2()
 //     EH filter that performs "catchArg isinst T!!" and in case of success forwards to the
 //     original EH handler.
 //
-// Return Value:
-//    true if basic block layout was changed
-//
 
-bool Compiler::fgCreateFiltersForGenericExceptions()
+void Compiler::fgCreateFiltersForGenericExceptions()
 {
-    bool modified = false;
     for (unsigned ehNum = 0; ehNum < compHndBBtabCount; ehNum++)
     {
         EHblkDsc* eh = ehGetDsc(ehNum);
@@ -2541,7 +2536,8 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             }
 
             // Create a new bb for the fake filter
-            BasicBlock* filterBb = bbNewBasicBlock(BBJ_EHFILTERRET);
+            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
+            BasicBlock* handlerBb = eh->ebdHndBeg;
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2551,29 +2547,28 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
             arg                      = gtNewLclvNode(tempNum, TYP_REF);
             filterBb->bbStkTempsIn   = tempNum;
-            fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg));
+            fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg, handlerBb->firstStmt()->GetDebugInfo()));
 
             // Create "catchArg is TException" tree
             GenTree* runtimeLookup;
-            if (opts.IsReadyToRun())
+            if (embedInfo.lookup.runtimeLookup.indirections == CORINFO_USEHELPER)
             {
-                compCurBB     = filterBb;
-                runtimeLookup = impRuntimeLookupToTree(&resolvedToken, &embedInfo.lookup, embedInfo.compileTimeHandle);
+                GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
+                runtimeLookup    = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                          TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
             }
             else
             {
                 runtimeLookup = getTokenHandleTree(&resolvedToken, true);
             }
-
             GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
             GenTree* cmp       = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
             GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
 
             // Insert it right before the handler (and make it a pred of the handler)
-            BasicBlock* handlerBb = eh->ebdHndBeg;
             fgInsertBBbefore(handlerBb, filterBb);
             fgAddRefPred(handlerBb, filterBb);
-            fgNewStmtAtEnd(filterBb, retFilt);
+            fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
             filterBb->bbCatchTyp = BBCT_FILTER;
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs; // Technically, we're in the handler
@@ -2586,10 +2581,8 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
             eh->ebdHandlerType    = EH_HANDLER_FILTER;
             eh->ebdFilter         = filterBb;
-            modified              = true;
         }
     }
-    return modified;
 }
 
 bool Compiler::fgNormalizeEHCase3()
