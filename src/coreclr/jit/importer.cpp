@@ -3888,10 +3888,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
                 var_types            elemType = JITtype2varType(jitType);
 
+                GenTree* arrayClone;
+                array = impCloneExpr(array, &arrayClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                     nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
+
                 GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
                 GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, elemType, elemHnd);
                 indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
-                retNode = indexAddr;
+                indexAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
+
+                GenTree* nullcheck = gtNewNullCheck(arrayClone, compCurBB);
+                retNode            = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, indexAddr);
                 break;
             }
 
