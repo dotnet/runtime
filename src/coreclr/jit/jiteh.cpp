@@ -2127,10 +2127,6 @@ void Compiler::fgNormalizeEH()
 
 #endif // 0
 
-    if (fgCreateFiltersForGenericExceptions())
-    {
-        modified = true;
-    }
 
     INDEBUG(fgNormalizeEHDone = true;)
 
@@ -2545,8 +2541,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             }
 
             // Create a new bb for the fake filter
-            BasicBlock* handlerBb = eh->ebdHndBeg;
-            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
+            BasicBlock* filterBb = bbNewBasicBlock(BBJ_EHFILTERRET);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2575,6 +2570,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
 
             // Insert it right before the handler (and make it a pred of the handler)
+            BasicBlock* handlerBb = eh->ebdHndBeg;
             fgInsertBBbefore(handlerBb, filterBb);
             fgAddRefPred(handlerBb, filterBb);
             fgNewStmtAtEnd(filterBb, retFilt);
