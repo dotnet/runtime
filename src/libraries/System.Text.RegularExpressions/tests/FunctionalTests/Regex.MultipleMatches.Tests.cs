@@ -506,5 +506,47 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Same(Match.Empty, Match.Empty.NextMatch());
         }
+
+        public static IEnumerable<object[]> Matches_NonZeroStartAtOrBeginning_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"\.", @"a.b.c.d.e.f", 4, new (int, int)[] { (5, 1), (7, 1), (9, 1) } };
+                yield return new object[] { engine, @"\b\w+\b", @"ab cdef ghijk l mn opqr", 3, new (int, int)[] { (3, 4), (8, 5), (14, 1), (16, 2), (19, 4) } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Matches_NonZeroStartAtOrBeginning_MemberData))]
+        public async Task Matches_NonZeroStartAtOrBeginning(RegexEngine engine, string pattern, string input, int offset, (int Index, int Length)[] expected)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            int i;
+
+            MatchCollection matches = r.Matches(input, offset); // this overload takes startat, but none of the patterns used as input behave differently based on startat vs beginning
+            Assert.Equal(expected.Length, matches.Count);
+            for (i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i].Index, matches[i].Index);
+                Assert.Equal(expected[i].Length, matches[i].Length);
+            }
+
+            foreach (bool startat in new[] { true, false })
+            {
+                i = 0;
+                Match m = startat ?
+                    r.Match(input, offset) : // startat
+                    r.Match(input, offset, input.Length - offset); // beginning + length
+                while (m.Success)
+                {
+                    Assert.InRange(i, 0, expected.Length - 1);
+                    Assert.Equal(expected[i].Index, m.Index);
+                    Assert.Equal(expected[i].Length, m.Length);
+                    m = m.NextMatch();
+                    i++;
+                }
+                Assert.Equal(expected.Length, i);
+            }
+        }
     }
 }
