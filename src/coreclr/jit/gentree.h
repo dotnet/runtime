@@ -6530,7 +6530,8 @@ struct GenTreeIndexAddr : public GenTreeOp
                      CORINFO_CLASS_HANDLE structElemClass,
                      unsigned             elemSize,
                      unsigned             lenOffset,
-                     unsigned             elemOffset)
+                     unsigned             elemOffset,
+                     bool                 boundsCheck)
         : GenTreeOp(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
         , gtStructElemClass(structElemClass)
         , gtIndRngFailBB(nullptr)
@@ -6540,13 +6541,8 @@ struct GenTreeIndexAddr : public GenTreeOp
         , gtElemOffset(elemOffset)
     {
         assert(!varTypeIsStruct(elemType) || (structElemClass != NO_CLASS_HANDLE));
-#ifdef DEBUG
-        if (JitConfig.JitSkipArrayBoundCheck() == 1)
-        {
-            // Skip bounds check
-        }
-        else
-#endif
+
+        if (boundsCheck)
         {
             // Do bounds check
             gtFlags |= GTF_INX_RNGCHK;

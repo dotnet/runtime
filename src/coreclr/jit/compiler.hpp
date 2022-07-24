@@ -1099,8 +1099,14 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
     unsigned elemSize =
         (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
 
+#ifdef DEBUG
+    bool boundsCheck = JitConfig.JitSkipArrayBoundCheck() != 1;
+#else
+    bool boundsCheck = true;
+#endif
+
     GenTreeIndexAddr* indexAddr = new (this, GT_INDEX_ADDR)
-        GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset);
+        GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset, boundsCheck);
 
     return indexAddr;
 }
