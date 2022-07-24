@@ -302,7 +302,7 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
     }
     mono_assert(value && value instanceof Function, "Value is not a Function");
 
-    // TODO: we could try to cache value -> exising JSHandle
+    // TODO: we could try to cache value -> existing JSHandle
     const marshal_function_to_cs_wrapper: any = (args: JSMarshalerArguments) => {
         const exc = get_arg(args, 0);
         const res = get_arg(args, 1);
@@ -545,7 +545,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
 }
 
 function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, sig?: JSMarshalerType): void {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
     const element_type = get_signature_arg1_type(sig);
     _marshal_array_to_cs_impl(arg, value, element_type);
 }
@@ -612,7 +612,7 @@ function _marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> |
 }
 
 function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, sig?: JSMarshalerType): void {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
     mono_assert(!value.isDisposed, "ObjectDisposedException");
     checkViewType(sig, value._viewType);
 
@@ -623,7 +623,7 @@ function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, sig?: JSMars
 
 // this only supports round-trip
 function _marshal_array_segment_to_cs(arg: JSMarshalerArgument, value: ArraySegment, sig?: JSMarshalerType): void {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
     const gc_handle = assert_not_disposed(value);
     mono_assert(gc_handle, "Only roundtrip of ArraySegment instance created by C#");
     checkViewType(sig, value._viewType);

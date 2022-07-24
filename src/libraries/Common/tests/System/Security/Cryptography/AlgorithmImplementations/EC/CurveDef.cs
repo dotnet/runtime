@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Tests
             if (CurveType == actual)
                 return true;
 
-            // Montgomery and Weierstrass are interchangable depending on the platform
+            // Montgomery and Weierstrass are interchangeable depending on the platform
             if (CurveType == ECCurve.ECCurveType.PrimeMontgomery && actual == ECCurve.ECCurveType.PrimeShortWeierstrass ||
                 CurveType == ECCurve.ECCurveType.PrimeShortWeierstrass && actual == ECCurve.ECCurveType.PrimeMontgomery)
             {

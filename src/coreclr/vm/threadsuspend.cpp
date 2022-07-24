@@ -5073,7 +5073,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pRetur
 //
 // Race #1: failure to hijack a thread in HandledJITCase.
 //
-// In HandledJITCase, if we see that a thread's Eip is in managed code at an interruptable point, we will attempt
+// In HandledJITCase, if we see that a thread's Eip is in managed code at an interruptible point, we will attempt
 // to move the thread to a hijack in order to stop it's execution for a variety of reasons (GC, debugger, user-mode
 // supension, etc.) We do this by suspending the thread, inspecting Eip, changing Eip to the address of the hijack
 // routine, and resuming the thread.

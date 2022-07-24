@@ -284,7 +284,7 @@ namespace System.IO.Pipelines.Tests
         {
             var pipeReader = new BuggyAndNotCompletedPipeReader();
             Stream stream = pipeReader.AsStream();
-            AssertExtensions.Throws<InvalidOperationException>(() => stream.Read(new byte[3], 0, 3), "error occured during reading");
+            AssertExtensions.Throws<InvalidOperationException>(() => stream.Read(new byte[3], 0, 3), "error occurred during reading");
         }
 
         [Fact]
@@ -422,7 +422,7 @@ namespace System.IO.Pipelines.Tests
         public class BuggyAndNotCompletedPipeReader : BuggyPipeReader
         {
             public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) =>
-                new ValueTask<ReadResult>(Task.FromException<ReadResult>(new InvalidOperationException("error occured during reading")));
+                new ValueTask<ReadResult>(Task.FromException<ReadResult>(new InvalidOperationException("error occurred during reading")));
         }
     }
 }

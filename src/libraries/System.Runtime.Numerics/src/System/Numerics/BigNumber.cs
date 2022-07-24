@@ -696,7 +696,7 @@ namespace System.Numerics
                         // |  A + B * multiplier   |  C + D * multiplier   |
                         for (int i = 0; i < bufferSize; i += blockSize * 2)
                         {
-                            Span<uint> curBufffer = buffer.Slice(i);
+                            Span<uint> curBuffer = buffer.Slice(i);
                             Span<uint> curNewBuffer = newBuffer.Slice(i);
 
                             int len = Math.Min(bufferSize - i, blockSize * 2);
@@ -707,14 +707,14 @@ namespace System.Numerics
                                 Debug.Assert(blockSize == lowerLen);
                                 Debug.Assert(blockSize == multiplier.Length);
                                 Debug.Assert(multiplier.Length == lowerLen);
-                                BigIntegerCalculator.Multiply(multiplier, curBufffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
+                                BigIntegerCalculator.Multiply(multiplier, curBuffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
                             }
 
                             long carry = 0;
                             int j = 0;
                             for (; j < lowerLen; j++)
                             {
-                                long digit = (curBufffer[j] + carry) + curNewBuffer[j];
+                                long digit = (curBuffer[j] + carry) + curNewBuffer[j];
                                 curNewBuffer[j] = unchecked((uint)digit);
                                 carry = digit >> 32;
                             }

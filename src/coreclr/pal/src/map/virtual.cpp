@@ -751,7 +751,7 @@ static BOOL VIRTUALStoreAllocationInfo(
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
-        /* Set the intial allocation state, and initial allocation protection. */
+        /* Set the initial allocation state, and initial allocation protection. */
         VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
         memset(pNewEntry->pProtectionState,
                VIRTUALConvertWinFlags(flProtection),

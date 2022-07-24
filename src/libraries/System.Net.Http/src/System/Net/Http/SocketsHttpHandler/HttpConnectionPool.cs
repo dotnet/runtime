@@ -608,7 +608,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Downgrading queued HTTP2 request to HTTP/1.1");
 
-                // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
+                // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
                 waiter.TrySetResult(null);
 
                 lock (SyncObj)
@@ -1613,7 +1613,7 @@ namespace System.Net.Http
                 // Note, SetupAsync will dispose the connection if there is an exception.
                 if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
                 {
-                    // Note, AddHttp2ConnectionAsync handles this OCE separatly so don't wrap it.
+                    // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
                     throw;
                 }
 
@@ -1680,7 +1680,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/1.1 connection failed: {e}");
 
             // If this is happening as part of an HTTP/2 => HTTP/1.1 downgrade, we won't have an HTTP/1.1 waiter associated with this request
-            // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
+            // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
             requestWaiter?.TrySetException(e);
 
             lock (SyncObj)
@@ -1699,7 +1699,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP2 connection failed: {e}");
 
-            // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
+            // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
             requestWaiter.TrySetException(e);
 
             lock (SyncObj)
@@ -1789,7 +1789,7 @@ namespace System.Net.Http
                 return;
             }
 
-            // Loop in case we get a request that has already been canceled or handeled by a different connection.
+            // Loop in case we get a request that has already been canceled or handled by a different connection.
             while (true)
             {
                 TaskCompletionSourceWithCancellation<HttpConnection>? waiter = null;
@@ -1817,7 +1817,7 @@ namespace System.Net.Http
 
                         // If this method found a request to service, that request must be removed from the queue if it was at the head to avoid rooting it forever.
                         // Normally, TryDequeueWaiter would handle the removal. TryDequeueSpecificWaiter matches this behavior for the initial request case.
-                        // We don't care if this fails; that means the request was previously canceled, handeled by a different connection, or not at the head of the queue.
+                        // We don't care if this fails; that means the request was previously canceled, handled by a different connection, or not at the head of the queue.
                         _http11RequestQueue.TryDequeueSpecificWaiter(waiter);
                     }
                     else if (_http11RequestQueue.TryDequeueWaiter(this, out waiter))
@@ -1891,7 +1891,7 @@ namespace System.Net.Http
 
             while (connection.TryReserveStream())
             {
-                // Loop in case we get a request that has already been canceled or handeled by a different connection.
+                // Loop in case we get a request that has already been canceled or handled by a different connection.
                 while (true)
                 {
                     TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
@@ -1917,7 +1917,7 @@ namespace System.Net.Http
 
                             // If this method found a request to service, that request must be removed from the queue if it was at the head to avoid rooting it forever.
                             // Normally, TryDequeueWaiter would handle the removal. TryDequeueSpecificWaiter matches this behavior for the initial request case.
-                            // We don't care if this fails; that means the request was previously canceled, handeled by a different connection, or not at the head of the queue.
+                            // We don't care if this fails; that means the request was previously canceled, handled by a different connection, or not at the head of the queue.
                             _http2RequestQueue.TryDequeueSpecificWaiter(waiter);
                         }
                         else if (_http2RequestQueue.TryDequeueWaiter(this, out waiter))

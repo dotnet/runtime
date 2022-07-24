@@ -301,7 +301,7 @@ BOOL LaunchJITDebugger()
 // failed hresult.  But this code will check what environment you are running
 // in and give an assert for running in a debug build environment.  Usually
 // out of memory on a dev machine is a bogus allocation, and this allows you
-// to catch such errors.  But when run in a stress envrionment where you are
+// to catch such errors.  But when run in a stress environment where you are
 // trying to get out of memory, assert behavior stops the tests.
 //*****************************************************************************
 HRESULT _OutOfMemory(LPCSTR szFile, int iLine)

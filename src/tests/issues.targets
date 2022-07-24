@@ -879,7 +879,7 @@
             <Issue>By Test Infrastructure design</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/nested/*">
-            <!-- Data refered from static field is dropped -->
+            <!-- Data referred from static field is dropped -->
             <Issue>Bug</Issue>
         </ExcludeList>
     </ItemGroup>

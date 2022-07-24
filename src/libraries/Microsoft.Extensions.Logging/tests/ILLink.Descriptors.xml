@@ -1,7 +1,7 @@
 <linker>
   <assembly fullname="System.Diagnostics.TraceSource">
       <!--
-      fail: [FAIL] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.Log_Shoud_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(shouldFormatterBeNull: True)
+      fail: [FAIL] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.Log_Should_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(shouldFormatterBeNull: True)
         info: Castle.DynamicProxy.InvalidProxyConstructorArgumentsException : Can not instantiate proxy of class: System.Diagnostics.TraceListener.
         info: Could not find a parameterless constructor.
         info:    at Castle.DynamicProxy.ProxyGenerator.CreateClassProxyInstance(Type proxyType, List`1 proxyArguments, Type classToProxy, Object[] constructorArguments)
@@ -11,10 +11,10 @@
         info:    at Moq.Mock`1[[System.Diagnostics.TraceListener, System.Diagnostics.TraceSource, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].OnGetObject()
         info:    at Moq.Mock.get_Object()
         info:    at Moq.Mock`1[[System.Diagnostics.TraceListener, System.Diagnostics.TraceSource, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].get_Object()
-        info:    at Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.<>c__DisplayClass2_0.<Log_Shoud_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not>b__0(ILoggingBuilder builder)
+        info:    at Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.<>c__DisplayClass2_0.<Log_Should_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not>b__0(ILoggingBuilder builder)
         info:    at Microsoft.Extensions.DependencyInjection.LoggingServiceCollectionExtensions.AddLogging(IServiceCollection services, Action`1 configure)
         info:    at Microsoft.Extensions.Logging.Test.TestLoggerBuilder.Create(Action`1 configure)
-        info:    at Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.Log_Shoud_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(Boolean shouldFormatterBeNull)
+        info:    at Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.Log_Should_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(Boolean shouldFormatterBeNull)
         info:    at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
       -->
     <type fullname="System.Diagnostics.TraceListener">
