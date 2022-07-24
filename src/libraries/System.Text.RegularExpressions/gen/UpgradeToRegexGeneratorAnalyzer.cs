@@ -30,9 +30,6 @@ namespace System.Text.RegularExpressions.Generator
         internal const string PatternArgumentName = "pattern";
         internal const string OptionsArgumentName = "options";
 
-        internal const string PatternKeyName = "Pattern";
-        internal const string RegexOptionsKeyName = "RegexOption";
-
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration);
 
@@ -111,22 +108,15 @@ namespace System.Text.RegularExpressions.Generator
             if (staticMethodsToDetect.Contains(method))
             {
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!TryValidateParametersAndExtractArgumentIndices(invocationOperation.Arguments, out string? patternArgument, out string? optionsArgument))
+                if (!TryValidateParametersAndExtractArgumentIndices(invocationOperation.Arguments))
                 {
                     return;
                 }
 
-                // Create the property bag.
-                ImmutableDictionary<string, string?> properties = ImmutableDictionary.CreateRange(new[]
-                {
-                    new KeyValuePair<string, string?>(PatternKeyName, patternArgument),
-                    new KeyValuePair<string, string?>(RegexOptionsKeyName, optionsArgument)
-                });
-
                 // Report the diagnostic.
                 SyntaxNode? syntaxNodeForDiagnostic = invocationOperation.Syntax;
                 Debug.Assert(syntaxNodeForDiagnostic != null);
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation(), properties));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
             }
         }
 
@@ -150,35 +140,25 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            if (!TryValidateParametersAndExtractArgumentIndices(operation.Arguments, out string? patternArgument, out string? optionsArgument))
+            if (!TryValidateParametersAndExtractArgumentIndices(operation.Arguments))
             {
                 return;
             }
 
-            // Create the property bag.
-            ImmutableDictionary<string, string?> properties = ImmutableDictionary.CreateRange(new[]
-            {
-                new KeyValuePair<string, string?>(PatternKeyName, patternArgument),
-                new KeyValuePair<string, string?>(RegexOptionsKeyName, optionsArgument)
-            });
-
             // Report the diagnostic.
             SyntaxNode? syntaxNodeForDiagnostic = operation.Syntax;
             Debug.Assert(syntaxNodeForDiagnostic is not null);
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation(), properties));
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
         }
 
         /// <summary>
         /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
         /// indices for the pattern and options. If timeout argument was used, then this returns false.
         /// </summary>
-        private static bool TryValidateParametersAndExtractArgumentIndices(ImmutableArray<IArgumentOperation> arguments, out string? patternArgument, out string? optionsArgument)
+        private static bool TryValidateParametersAndExtractArgumentIndices(ImmutableArray<IArgumentOperation> arguments)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";
-
-            patternArgument = null;
-            optionsArgument = null;
 
             if (arguments == null)
             {
@@ -205,7 +185,6 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
-                    patternArgument = (string)argument.Value.ConstantValue.Value;
                     continue;
                 }
 
@@ -223,7 +202,6 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
-                    optionsArgument = value.ToString();
                     continue;
                 }
             }

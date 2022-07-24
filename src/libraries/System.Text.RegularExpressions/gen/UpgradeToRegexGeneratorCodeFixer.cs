@@ -156,25 +156,30 @@ namespace System.Text.RegularExpressions.Generator
             // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
             DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
             SyntaxGenerator generator = editor.Generator;
-            ImmutableDictionary<string, string?> properties = diagnostic.Properties;
 
             // Generate the modified type declaration depending on whether the callsite was a Regex constructor call
             // or a Regex static method invocation.
             SyntaxNode replacement = generator.InvocationExpression(generator.IdentifierName(methodName));
+            ImmutableArray<IArgumentOperation> operationArguments;
             if (operation is IInvocationOperation invocationOperation) // When using a Regex static method
             {
-                IEnumerable<SyntaxNode> arguments = invocationOperation.Arguments
+                operationArguments = invocationOperation.Arguments;
+                IEnumerable<SyntaxNode> arguments = operationArguments
                     .Where(arg => arg.Parameter.Name is not (UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName or UpgradeToRegexGeneratorAnalyzer.PatternArgumentName))
                     .Select(arg => arg.Syntax);
 
                 replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
             }
+            else
+            {
+                operationArguments = ((IObjectCreationOperation)operation).Arguments;
+            }
 
             newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(replacement, nodeToFix));
 
             // Initialize the inputs for the RegexGenerator attribute.
-            SyntaxNode? patternValue = GetNode(properties, UpgradeToRegexGeneratorAnalyzer.PatternKeyName, generator, useOptionsMemberExpression: false);
-            SyntaxNode? regexOptionsValue = GetNode(properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsKeyName, generator, useOptionsMemberExpression: true);
+            SyntaxNode? patternValue = GetNode(operationArguments, generator, UpgradeToRegexGeneratorAnalyzer.PatternArgumentName);
+            SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName);
 
             // Generate the new static partial method
             MethodDeclarationSyntax newMethod = (MethodDeclarationSyntax)generator.MethodDeclaration(
@@ -218,23 +223,24 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Helper method that looks int the properties bag for the index of the passed in propertyname, and then returns that index from the args parameter.
-            static SyntaxNode? GetNode(ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression)
+            // Helper method that looks generates the node for pattern argument or options argument.
+            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> arguments, SyntaxGenerator generator, string parameterName)
             {
-                string? propertyValue = properties[propertyName];
-                if (propertyValue is null)
+                var argument = arguments.SingleOrDefault(arg => arg.Parameter.Name == parameterName);
+                if (argument is null)
                 {
                     return null;
                 }
 
-                if (!useOptionsMemberExpression)
+                Debug.Assert(parameterName is UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName or UpgradeToRegexGeneratorAnalyzer.PatternArgumentName);
+                if (parameterName == UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName)
                 {
-                    return generator.LiteralExpression(propertyValue);
+                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
+                    return SyntaxFactory.ParseExpression(optionsLiteral);
                 }
                 else
                 {
-                    string optionsLiteral = Literal(propertyValue);
-                    return SyntaxFactory.ParseExpression(optionsLiteral);
+                    return generator.LiteralExpression(argument.Value.ConstantValue.Value);
                 }
             }
 
