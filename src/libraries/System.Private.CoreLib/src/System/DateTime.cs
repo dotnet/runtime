@@ -62,7 +62,6 @@ namespace System
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
-        private const ulong TicksPer6Hours = TicksPerHour * 6;
         private const long TicksPerDay = TicksPerHour * 24;
 
         // Number of milliseconds per time unit
@@ -109,6 +108,10 @@ namespace System
         private const int DatePartDayOfYear = 1;
         private const int DatePartMonth = 2;
         private const int DatePartDay = 3;
+
+        // Euclidean Affine Functions Algorithm constants
+        private const ulong TicksPer6Hours = TicksPerHour * 6;
+        private const uint March1BasedDayOfNewYear = 306;       // Days between March 1 and December 31
 
         private static readonly uint[] s_daysToMonth365 = {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
@@ -1362,25 +1365,18 @@ namespace System
             (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
             ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
             ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
-            var n3 = 2141 * daySinceMarch1 + 197913;
-            switch (part)
-            {
-                case DatePartDay:
-                    return (ushort)n3 / 2141 + 1;
-                case DatePartMonth:
-                    return (ushort)(n3 >> 16) - (daySinceMarch1 >= 306 ? 12 : 0);
-            }
+            int n3 = 2141 * daySinceMarch1 + 197913;
+            if (part == DatePartDay)
+                return (ushort)n3 / 2141 + 1;
+            if (part == DatePartMonth)
+                return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
 
-            var year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= 306 ? 1 : 0);
-            switch (part)
-            {
-                case DatePartYear:
-                    return year;
-                default:        // DatePartDayOfYear
-                    return daySinceMarch1 >= 306
-                        ? daySinceMarch1 - 305          // rollover December 31
-                        : daySinceMarch1 + 60 + (IsLeapYear(year) ? 1 : 0);
-            }
+            int year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
+            return part == DatePartYear
+                ? year
+                : daySinceMarch1 >= March1BasedDayOfNewYear                 // DatePartDayOfYear case
+                    ? daySinceMarch1 - March1BasedDayOfNewYear + 1          // rollover December 31
+                    : daySinceMarch1 + (366 - March1BasedDayOfNewYear) + (IsLeapYear(year) ? 1 : 0);
         }
 
         // Exactly the same as GetDatePart, except computing all of
@@ -1393,13 +1389,13 @@ namespace System
             (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
             ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
             ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
-            var n3 = 2141 * daySinceMarch1 + 197913;
+            int n3 = 2141 * daySinceMarch1 + 197913;
             year = (int)(100 * y400 + (uint)(u2 >> 32));
             month = (ushort)(n3 >> 16);
             day = (ushort)n3 / 2141 + 1;
 
             // rollover December 31
-            if (daySinceMarch1 >= 306)
+            if (daySinceMarch1 >= March1BasedDayOfNewYear)
             {
                 ++year;
                 month -= 12;
