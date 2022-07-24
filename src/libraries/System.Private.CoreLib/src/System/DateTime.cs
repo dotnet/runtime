@@ -111,7 +111,7 @@ namespace System
 
         // Euclidean Affine Functions Algorithm constants
         private const ulong TicksPer6Hours = TicksPerHour * 6;
-        private const uint March1BasedDayOfNewYear = 306;       // Days between March 1 and December 31
+        private const int March1BasedDayOfNewYear = 306;       // Days between March 1 and January 1
 
         private static readonly uint[] s_daysToMonth365 = {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
