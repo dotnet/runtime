@@ -107,8 +107,13 @@ namespace System.Text.Json.Serialization.Metadata
             JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
-                return null!;
+                if (SerializeHandler == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
+                }
+
+                array = Array.Empty<JsonParameterInfoValues>();
+                MetadataSerializationNotSupported = true;
             }
 
             return array;
@@ -139,13 +144,12 @@ namespace System.Text.Json.Serialization.Metadata
                     return;
                 }
 
-                if (SerializeHandler != null && context?.CanUseSerializationLogic == true)
+                if (SerializeHandler == null)
                 {
-                    ThrowOnDeserialize = true;
-                    return;
+                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
+                MetadataSerializationNotSupported = true;
                 return;
             }
 

@@ -1722,7 +1722,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
         // For simple Blittable types we still need to check if they have any overlapping
-        // fields and call the method SetHasOverLayedFields() when they are detected.
+        // fields and call the method SetHasOverlaidFields() when they are detected.
         //
         if (HasExplicitFieldOffsetLayout())
         {
@@ -1796,7 +1796,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (IsValueClass())
     {
-        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverLayedField())
+        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverlaidField())
             GetHalfBakedClass()->SetIsNotTightlyPacked();
 
 #ifdef FEATURE_HFA
@@ -8486,7 +8486,7 @@ MethodTableBuilder::HandleExplicitLayout(
         pFD = bmtMFDescs->ppFieldDescList[i];
         if (pFD == NULL || pFD->IsStatic())
         {
-            fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+            fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
             continue;
         }
 
@@ -8537,7 +8537,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // If we got here, this tag type is overlapping no other fields (yet).
                 // Record that these bytes now contain the current tag type.
                 memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], tag, tagBlockSize);
-                fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                 continue;
             }
 
@@ -8608,7 +8608,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 }
                 else
                 {
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                 }
                 memset((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], nonoref, fieldSize);
                 continue;
@@ -8642,9 +8642,9 @@ MethodTableBuilder::HandleExplicitLayout(
                               IDS_CLASSLOAD_EXPLICIT_LAYOUT);
     }
 
-    if (!explicitClassTrust.IsNonOverLayed())
+    if (!explicitClassTrust.IsNonOverlaid())
     {
-        SetHasOverLayedFields();
+        SetHasOverlaidFields();
     }
 
     FindPointerSeriesExplicit(instanceSliceSize, pFieldLayout);
@@ -8777,7 +8777,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // oref <--> empty
                 case empty:
                     pFieldLayout[i] = oref;
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                     break;
 
                 // oref <--> nonoref
@@ -8798,7 +8798,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // nonoref <--> empty
                 case empty:
                     pFieldLayout[i] = nonoref;
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                     break;
 
                 // nonoref <--> nonoref
@@ -9642,7 +9642,7 @@ MethodTableBuilder::ExpandExactInheritedInterfaces(
         pMTInterfaceMapOwner
         COMMA_INDEBUG(pMT));
 
-    // Restore type's subsitution chain for comparing interfaces
+    // Restore type's substitution chain for comparing interfaces
     *pSubstForComparing = substForComparingBackup;
 } // MethodTableBuilder::ExpandExactInheritedInterfaces
 
@@ -10176,7 +10176,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     _ASSERTE(IS_ALIGNED(pData, TARGET_POINTER_SIZE));
 
-    // There should be no overflows if we have allocated the memory succesfully
+    // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!cbTotalSize.IsOverflow());
 
     MethodTable* pMT = (MethodTable*)(pData + dwGCSize);
@@ -10199,7 +10199,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pClassLoader->m_dwVtableData += (dwVtableSlots * sizeof(PCODE));
 #endif // _DEBUG
 
-    // There should be no overflows if we have allocated the memory succesfully
+    // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!offsetOfUnsharedVtableChunks.IsOverflow());
     _ASSERTE(!offsetOfNonVirtualSlots.IsOverflow());
     _ASSERTE(!offsetOfInterfaceMap.IsOverflow());
@@ -10856,7 +10856,7 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
     // for ComObject types, i.e. if the class extends from a COM Imported
     // class
-    // make sure any interface implementated by the COM Imported class
+    // make sure any interface implemented by the COM Imported class
     // is overridden fully, (OR) not overridden at all..
     if (bmtProp->fIsComObjectType)
     {

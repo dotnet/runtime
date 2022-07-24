@@ -113,7 +113,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             MethodInfo method = this;
 
-            // For compat: Remove any instantation on generic methods.
+            // For compat: Remove any instantiation on generic methods.
             if (method.IsConstructedGenericMethod)
                 method = method.GetGenericMethodDefinition();
 

@@ -849,7 +849,7 @@ namespace System.Diagnostics.Tracing
                             data = (int)Convert.ToInt64(data);  // This handles all int/uint or below (we treat them like 32 bit ints)
                         goto Again;
                     }
-                    catch { }   // On wierd cases (e.g. enums of type double), give up and for compat simply tostring.
+                    catch { }   // On weird cases (e.g. enums of type double), give up and for compat simply tostring.
                 }
 
                 // To our eyes, everything else is a just a string

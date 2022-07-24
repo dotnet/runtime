@@ -111,6 +111,9 @@
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
   </data>
+  <data name="Argument_InvalidSerialNumberBytes" xml:space="preserve">
+    <value>The provided serial number is invalid. Ensure the input is in big-endian byte order and that all redundant leading bytes have been removed.</value>
+  </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
@@ -608,6 +611,9 @@
   </data>
   <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
     <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
+  </data>
+  <data name="Cryptography_X509_AKID_NoSKID" xml:space="preserve">
+    <value>The provided certificate does not have a Subject Key Identifier extension.</value>
   </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>

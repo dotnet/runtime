@@ -131,7 +131,7 @@ class Program
         return true;
     }
 
-    private unsafe void RenderTo(string fileName, bool wirteToFile)
+    private unsafe void RenderTo(string fileName, bool writeToFile)
     {
         var packetTracer = new Packet256Tracer(_width, _height);
         var scene = packetTracer.DefaultScene;
@@ -149,7 +149,7 @@ class Program
            ts.Milliseconds / 10);
         Console.WriteLine("RunTime " + elapsedTime);
 
-        if (wirteToFile)
+        if (writeToFile)
         {
             using (var file = new System.IO.StreamWriter(fileName))
             {

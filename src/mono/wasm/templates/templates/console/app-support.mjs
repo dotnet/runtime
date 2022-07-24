@@ -166,7 +166,7 @@ try {
             if (runArgs.runtimeArgs.length > 0)
                 INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
 
-            Object.assign(App, { MONO, BINDING, IMPORTS, Module, runArgs });
+            Object.assign(App, { MONO, INTERNAL, BINDING, IMPORTS, Module, runArgs });
 
             try {
                 if (App.main) {

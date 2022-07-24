@@ -12701,7 +12701,7 @@ add_intrinsics (LLVMModuleRef module)
 {
 	int i;
 
-	/* Emit declarations of instrinsics */
+	/* Emit declarations of intrinsics */
 	/*
 	 * It would be nicer to emit only the intrinsics actually used, but LLVM's Module
 	 * type doesn't seem to do any locking.
@@ -13437,7 +13437,7 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 	// We rely on being able to see all of the references in the graph.
 	// This is ensured by the function mono_aot_can_specialize. Everything in
 	// all_specializable is a function that can be specialized, and is the resulting
-	// node in the graph after all of the subsitutions are done.
+	// node in the graph after all of the substitutions are done.
 	//
 	// Anything disrupting the direct calls made with self-init will break this optimization.
 

@@ -3,7 +3,7 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 # arm cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
-# about the cpu instructions that may be used by the regsiter allocator, the scheduler
+# about the cpu instructions that may be used by the register allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
 #
 # An opcode name is followed by a colon and optional specifiers.

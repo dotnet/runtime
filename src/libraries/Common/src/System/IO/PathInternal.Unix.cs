@@ -33,7 +33,7 @@ namespace System.IO
         /// <summary>
         /// Normalize separators in the given path. Compresses forward slash runs.
         /// </summary>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         internal static string? NormalizeDirectorySeparators(string? path)
         {
             if (string.IsNullOrEmpty(path))

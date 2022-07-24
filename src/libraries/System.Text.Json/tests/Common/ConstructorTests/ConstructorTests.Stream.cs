@@ -12,6 +12,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task ReadSimpleObjectAsync()
         {
             if (StreamingSerializer is null)
@@ -65,6 +66,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72101", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             if (StreamingSerializer is null)

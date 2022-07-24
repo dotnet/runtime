@@ -37,7 +37,7 @@ namespace System.Runtime.CompilerServices
         // Of course, reference types are not cloned.
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("obj")]
+        [return: NotNullIfNotNull(nameof(obj))]
         public static extern object? GetObjectValue(object? obj);
 
         // RunClassConstructor causes the class constructor for the given type to be triggered

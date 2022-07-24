@@ -319,7 +319,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                 GetFinalizerThread()->EnablePreemptiveGC();
                 __SwitchToThread (0, ++dwSwitchCount);
                 GetFinalizerThread()->DisablePreemptiveGC();
-                // If no GCs happended, then we assume we are quiescent
+                // If no GCs happened, then we assume we are quiescent
                 GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
             } while (GCHeapUtilities::GetGCHeap()->CollectionCount(0) - last_gc_count > 0);
         }

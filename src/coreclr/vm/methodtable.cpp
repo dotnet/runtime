@@ -719,8 +719,8 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resulTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+        TypeHandle resultTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
 
         RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
@@ -7834,6 +7834,16 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     DWORD size = GetEndOffsetOfOptionalMembers();
     DacEnumMemoryRegion(dac_cast<TADDR>(this), size);
+
+    // Make sure the GCDescs are added to the dump
+    if (ContainsPointers())
+    {
+        PTR_CGCDesc gcdesc = CGCDesc::GetCGCDescFromMT(this);
+        size_t size = gcdesc->GetSize();
+        // Manually calculate the start of the GCDescs because CGCDesc::GetStartOfGCData() isn't DAC'ified.
+        TADDR gcdescStart = dac_cast<TADDR>(this) - size;
+        DacEnumMemoryRegion(gcdescStart, size);
+    }
 
     if (!IsCanonicalMethodTable())
     {

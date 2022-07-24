@@ -405,7 +405,7 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri([StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string uriString, UriKind uriKind)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri, nameof(uriKind))] string uriString, UriKind uriKind)
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
@@ -5217,7 +5217,7 @@ namespace System
         //
         // IsExcludedCharacter
         //
-        //  Determine if a character should be exluded from a URI and therefore be
+        //  Determine if a character should be excluded from a URI and therefore be
         //  escaped
         //
         // Returns:
