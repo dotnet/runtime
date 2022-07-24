@@ -2547,13 +2547,6 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             // Create a new bb for the fake filter
             BasicBlock* handlerBb = eh->ebdHndBeg;
             BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
-            filterBb->bbCatchTyp  = BBCT_FILTER;
-            filterBb->bbCodeOffs  = handlerBb->bbCodeOffs; // Technically, we're in the handler
-            filterBb->bbHndIndex  = handlerBb->bbHndIndex;
-            filterBb->bbTryIndex  = handlerBb->bbTryIndex;
-            filterBb->bbJumpDest  = handlerBb;
-            filterBb->bbSetRunRarely();
-            filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2569,15 +2562,14 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             GenTree* runtimeLookup;
             if (opts.IsReadyToRun())
             {
-                GenTree* ctxTree    = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
-                GenTree* lookupTree = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
-                                                                TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
-                runtimeLookup = gtNewRuntimeLookup(embedInfo.compileTimeHandle, embedInfo.handleType, lookupTree);
+                compCurBB     = filterBb;
+                runtimeLookup = impRuntimeLookupToTree(&resolvedToken, &embedInfo.lookup, embedInfo.compileTimeHandle);
             }
             else
             {
                 runtimeLookup = getTokenHandleTree(&resolvedToken, true);
             }
+
             GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
             GenTree* cmp       = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
             GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
@@ -2586,6 +2578,14 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             fgInsertBBbefore(handlerBb, filterBb);
             fgAddRefPred(handlerBb, filterBb);
             fgNewStmtAtEnd(filterBb, retFilt);
+
+            filterBb->bbCatchTyp = BBCT_FILTER;
+            filterBb->bbCodeOffs = handlerBb->bbCodeOffs; // Technically, we're in the handler
+            filterBb->bbHndIndex = handlerBb->bbHndIndex;
+            filterBb->bbTryIndex = handlerBb->bbTryIndex;
+            filterBb->bbJumpDest = handlerBb;
+            filterBb->bbSetRunRarely();
+            filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
 
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
             eh->ebdHandlerType    = EH_HANDLER_FILTER;
