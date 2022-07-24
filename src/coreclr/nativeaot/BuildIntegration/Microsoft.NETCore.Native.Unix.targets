@@ -64,7 +64,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
+      <NativeLibrary Include="$(NugetPackageRoot)/microsoft.dotnet.ilcompiler/7.0.0-dev/shim_source_code/libs/System.Globalization.Native/build/libSystem.Globalization.Native-Static.a" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
+      <StaticICULibs Include="/usr/lib/x86_64-linux-gnu/libicuio.a;/usr/lib/x86_64-linux-gnu/libicutu.a;/usr/lib/x86_64-linux-gnu/libicui18n.a;/usr/lib/x86_64-linux-gnu/libicuuc.a;/usr/lib/x86_64-linux-gnu/libicudata.a" Condition="'$(LocalSystemGlobalizationNative)' != '' And Exists('/usr/lib/x86_64-linux-gnu/libicuio.a')" />
+      <StaticICULibs Include="/usr/lib/libicuio.a;/usr/lib/libicutu.a;/usr/lib/libicui18n.a;/usr/lib/libicuuc.a;/usr/lib/libicudata.a" Condition="'$(LocalSystemGlobalizationNative)' != '' And Exists('/usr/lib/libicuio.a')" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
@@ -74,8 +77,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="GSS" />
     </ItemGroup>
 
+    <Exec Command="if [ -d $(NugetPackageRoot)/microsoft.dotnet.ilcompiler/7.0.0-dev/shim_source_code ]; then cd $(NugetPackageRoot)/microsoft.dotnet.ilcompiler/7.0.0-dev/shim_source_code/libs/System.Globalization.Native/  %26%26  cp CMakeLists-standalone.txt CMakeLists.txt %26%26 cp config-standalone.h config.h %26%26 mkdir -p build %26%26 cd build %26%26 cmake ../ %26%26 make -j; fi" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
+
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
+      <LinkerArg Include="@(StaticICULibs)" Condition="'$(LocalSystemGlobalizationNative)' != ''" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
       <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />

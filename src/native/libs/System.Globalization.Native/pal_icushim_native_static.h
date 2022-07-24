@@ -1,0 +1,2 @@
+
+void InitWithStaticLibICUFunctions(void);

@@ -19,6 +19,10 @@
 
 #include "pal_icushim.h"
 
+#if defined(USE_ICUSHIM_STATIC_BUILD)
+#include "pal_icushim_native_static.h"
+#endif
+
 // Define pointers to all the used ICU functions
 #define PER_FUNCTION_BLOCK(fn, lib, required) TYPEOF(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
@@ -481,6 +485,10 @@ int32_t GlobalizationNative_LoadICU()
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
+#if defined(USE_ICUSHIM_STATIC_BUILD)
+    InitWithStaticLibICUFunctions();
+#endif
+
     InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 
@@ -537,6 +545,10 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
+
+#if defined(USE_ICUSHIM_STATIC_BUILD)
+    InitWithStaticLibICUFunctions();
+#endif
 
     InitializeVariableMaxAndTopPointers(symbolVersion);
 }

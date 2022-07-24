@@ -1,0 +1,4 @@
+#pragma once
+
+#define HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS 1
+#define HAVE_SET_MAX_VARIABLE 1
