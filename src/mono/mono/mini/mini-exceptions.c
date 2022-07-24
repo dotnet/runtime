@@ -1119,7 +1119,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			method = jinfo_get_method (ji);
 		else
 			method = get_method_from_stack_frame (ji, generic_info);
-		if (jinfo_get_method (ji)->wrapper_type) {
+		int wrapper_type = jinfo_get_method (ji)->wrapper_type;
+		if (wrapper_type && wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD) {
 			char *s;
 
 			sf->method = NULL;
