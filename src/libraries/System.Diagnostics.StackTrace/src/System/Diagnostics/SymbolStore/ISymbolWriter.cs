@@ -113,7 +113,7 @@ namespace System.Diagnostics.SymbolStore
                              int addr3);
 
         // Define a single variable not within a method. This is used for
-        // certian fields in classes, bitfields, etc.
+        // certain fields in classes, bitfields, etc.
         void DefineField(SymbolToken parent,
                          string name,
                          FieldAttributes attributes,

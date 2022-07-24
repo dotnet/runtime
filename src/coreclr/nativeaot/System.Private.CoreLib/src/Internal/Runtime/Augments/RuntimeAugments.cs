@@ -516,7 +516,7 @@ namespace Internal.Runtime.Augments
         }
 
         //
-        // Return a type's transitive implemeted interface list using the runtime type system. If the underlying runtime type system does not support
+        // Return a type's transitive implemented interface list using the runtime type system. If the underlying runtime type system does not support
         // this operation, return null and TypeInfo.ImplementedInterfaces will fall back to metadata. Note that returning null is not the same thing
         // as returning a 0-length enumerable.
         //

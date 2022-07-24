@@ -696,7 +696,7 @@ _CRTIMP
 void __cdecl _invalid_parameter_noinfo(void);
 #endif  /* _DEBUG */
 
-/* Invoke Watson if _ExpressionError is not 0; otherwise simply return _EspressionError */
+/* Invoke Watson if _ExpressionError is not 0; otherwise simply return _ExpressionError */
 __forceinline
 void _invoke_watson_if_error(
     errno_t _ExpressionError,
@@ -714,7 +714,7 @@ void _invoke_watson_if_error(
     _invoke_watson(_Expression, _Function, _File, _Line, _Reserved);
 }
 
-/* Invoke Watson if _ExpressionError is not 0 and equal to _ErrorValue1 or _ErrorValue2; otherwise simply return _EspressionError */
+/* Invoke Watson if _ExpressionError is not 0 and equal to _ErrorValue1 or _ErrorValue2; otherwise simply return _ExpressionError */
 __forceinline
 errno_t _invoke_watson_if_oneof(
     errno_t _ExpressionError,

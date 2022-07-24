@@ -1054,7 +1054,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since xsl Scripts are " +
+                Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since xsl Scripts are " +
                 "not supported in .NET Core")]
             public XslFlags Function(string prefix, string name, IList<XslFlags> args)
             {

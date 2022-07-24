@@ -86,7 +86,7 @@ public unsafe static class ExceptionInterop
         }
         Assert.True(caughtException);
 
-        // Aggresively inline to make sure the call to NativeFunction is in the filter clause
+        // Aggressively inline to make sure the call to NativeFunction is in the filter clause
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool Filter()
         {

@@ -541,7 +541,7 @@ namespace System
 
             if (reliable)
             {
-                // ContrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
+                // ConstrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
                 if (sourceElementType != destElementType)
                     throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
             }

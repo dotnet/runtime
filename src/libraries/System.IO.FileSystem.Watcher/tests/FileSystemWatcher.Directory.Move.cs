@@ -162,15 +162,15 @@ namespace System.IO.Tests
             var dirs = Enumerable.Range(0, filesCount)
                             .Select(i => new
                             {
-                                DirecoryInWatchedDir = Path.Combine(watchedTestDirectory, $"dir{i}"),
-                                DirecoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"dir{i}")
+                                DirectoryInWatchedDir = Path.Combine(watchedTestDirectory, $"dir{i}"),
+                                DirectoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"dir{i}")
                             }).ToArray();
 
-            Array.ForEach(dirs, (dir) => Directory.CreateDirectory(dir.DirecoryInWatchedDir));
+            Array.ForEach(dirs, (dir) => Directory.CreateDirectory(dir.DirectoryInWatchedDir));
 
             using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
 
-            Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirecoryInWatchedDir, dir.DirecoryInUnwatchedDir));
+            Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInWatchedDir, dir.DirectoryInUnwatchedDir));
 
             // On macOS, for each file we receive two events as describe in comment below.
             int expectEvents = filesCount;
@@ -182,7 +182,7 @@ namespace System.IO.Tests
             if (skipOldEvents)
                 events = events.Where(x => x.EventType != WatcherChangeTypes.Created);
 
-            var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Deleted, dir.DirecoryInWatchedDir));
+            var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Deleted, dir.DirectoryInWatchedDir));
 
             // Remove Created events as there is racecondition when create dir and then observe parent folder. It receives Create event altought Watcher is not registered yet.
             Assert.Equal(expectedEvents, events.Where(x => x.EventType != WatcherChangeTypes.Created));
@@ -200,18 +200,18 @@ namespace System.IO.Tests
             var dirs = Enumerable.Range(0, filesCount)
                             .Select(i => new
                             {
-                                DirecoryInWatchedDir = Path.Combine(watchedTestDirectory, $"dir{i}"),
-                                DirecoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"dir{i}")
+                                DirectoryInWatchedDir = Path.Combine(watchedTestDirectory, $"dir{i}"),
+                                DirectoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"dir{i}")
                             }).ToArray();
 
-            Array.ForEach(dirs, (dir) => Directory.CreateDirectory(dir.DirecoryInUnwatchedDir));
+            Array.ForEach(dirs, (dir) => Directory.CreateDirectory(dir.DirectoryInUnwatchedDir));
 
             using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
 
-            Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirecoryInUnwatchedDir, dir.DirecoryInWatchedDir));
+            Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInUnwatchedDir, dir.DirectoryInWatchedDir));
 
             List<FiredEvent> events = ExpectEvents(watcher, filesCount, action);
-            var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Created, dir.DirecoryInWatchedDir));
+            var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Created, dir.DirectoryInWatchedDir));
 
             Assert.Equal(expectedEvents, events);
         }

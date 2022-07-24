@@ -117,7 +117,7 @@ protected:
 
     // Command parameters for create case.
     // Note that we must always physically call CreateProcess on the debuggee so that we get the proper out-parameters
-    // from create-process (eg, target's handle, startup info, etc). So we always attach the auxillary debugger
+    // from create-process (eg, target's handle, startup info, etc). So we always attach the auxiliary debugger
     // even in the create case. Use "-pr -pb" in Windbg to attach to a create-suspended process.
     //
     // Common Windbg options:

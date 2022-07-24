@@ -32,8 +32,8 @@ namespace System.Net
         private const int SspiSelectedCipherSuitId = UsingCachedCredentialId + 1;
         private const int RemoteCertificateErrorId = SspiSelectedCipherSuitId + 1;
         private const int RemoteVertificateValidId = RemoteCertificateErrorId + 1;
-        private const int RemoteCertificateSuccesId = RemoteVertificateValidId + 1;
-        private const int RemoteCertificateInvalidId = RemoteCertificateSuccesId + 1;
+        private const int RemoteCertificateSuccessId = RemoteVertificateValidId + 1;
+        private const int RemoteCertificateInvalidId = RemoteCertificateSuccessId + 1;
         private const int SslStreamCtorId = RemoteCertificateInvalidId + 1;
         private const int SentFrameId = SslStreamCtorId + 1;
         private const int ReceivedFrameId = SentFrameId + 1;
@@ -317,9 +317,9 @@ namespace System.Net
                 RemoteCertHasNoErrors(GetHashCode(SslStream));
             }
         }
-        [Event(RemoteCertificateSuccesId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(RemoteCertificateSuccessId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
         private void RemoteCertHasNoErrors(int sslStreamHash) =>
-            WriteEvent(RemoteCertificateSuccesId, sslStreamHash);
+            WriteEvent(RemoteCertificateSuccessId, sslStreamHash);
 
         [NonEvent]
         public void RemoteCertUserDeclaredInvalid(SslStream SslStream)

@@ -686,7 +686,7 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
 
 
 /*
- * GetRegsiterValueAndReturnAddress
+ * GetRegisterValueAndReturnAddress
  *
  * This routine takes out a value from a register, or set of registers, into one of
  * the given buffers (depending on size), and returns a pointer to the filled in
@@ -2168,7 +2168,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
             // object ref as the stack.
             //
             // Note that we are passing ELEMENT_TYPE_END in the last parameter because we want to
-            // supress the valid object ref check.
+            // suppress the valid object ref check.
             //
             GetFuncEvalArgValue(pDE,
                                 &(argData[0]),
@@ -3158,7 +3158,7 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
  * domain (steps 1a & 1b).  This has to be a separate function from GCProtectArgsAndDoNormalFuncEval
  * because otherwise we can't reliably find the right GCFrames to pop when unwinding the stack due to
  * an exception on 64-bit platforms (we have some GCFrames outside of the TRY, and some inside,
- * and they won't necesarily be layed out sequentially on the stack if they are all in the same function).
+ * and they won't necesarily be laid out sequentially on the stack if they are all in the same function).
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
@@ -3888,7 +3888,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
     if (pDE->m_thread->IsAbortRequested())
     {
-        // noone else shoud be requesting aborts,
+        // noone else should be requesting aborts,
         // so this must be our request that did not have a chance to run.
         _ASSERTE((pDE->m_aborting != DebuggerEval::FE_ABORT_NONE) && !pDE->m_aborted);
 

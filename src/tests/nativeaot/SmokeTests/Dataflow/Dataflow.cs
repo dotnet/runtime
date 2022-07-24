@@ -591,7 +591,7 @@ class Program
                 Justification = "That's the point")]
             static void SanityTest()
             {
-                // Sanity check that instrinsic detection is necessary
+                // Sanity check that intrinsic detection is necessary
                 bool thrown = false;
                 try
                 {

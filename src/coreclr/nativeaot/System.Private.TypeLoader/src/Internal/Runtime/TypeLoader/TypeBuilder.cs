@@ -162,7 +162,7 @@ namespace Internal.Runtime.TypeLoader
 
         /// <summary>
         /// Register the type for preparation. The preparation will be done once the current type is prepared.
-        /// This is the prefered way to get a dependent type prepared because of it avoids issues with cycles and recursion.
+        /// This is the preferred way to get a dependent type prepared because of it avoids issues with cycles and recursion.
         /// </summary>
         public void RegisterForPreparation(TypeDesc type)
         {
@@ -1970,7 +1970,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = typeBeingLoaded.RuntimeTypeHandle;
                 Debug.Assert(!runtimeTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -1996,7 +1996,7 @@ namespace Internal.Runtime.TypeLoader
                 arrayTypeHandle = arrayType.RuntimeTypeHandle;
                 Debug.Assert(!arrayTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -2021,7 +2021,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2041,7 +2041,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2057,7 +2057,7 @@ namespace Internal.Runtime.TypeLoader
 
             bool success = TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
 
-            // Recycle the context only if we succesfully built the method. The state may be partially initialized otherwise.
+            // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
             if (success)
                 TypeSystemContextFactory.Recycle(context);
 

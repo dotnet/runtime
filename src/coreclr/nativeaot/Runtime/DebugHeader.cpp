@@ -57,10 +57,10 @@ static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 //   - Removing a field from this structure
 //   - Reordering fields in the structure
 //   - Changing the data type of a field in this structure
-//   - Changing the data type of a field in another structure that is being refered to here with
+//   - Changing the data type of a field in another structure that is being referred to here with
 //       the offsetof() operator
 //   - Changing the data type of a global whose address is recorded in this structure
-//   - Changing the meaning of a field or global refered to in this structure so that it can no longer
+//   - Changing the meaning of a field or global referred to in this structure so that it can no longer
 //     be used in the manner the format specification describes.
 struct DotNetRuntimeDebugHeader
 {
