@@ -7,6 +7,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Exceptions.cs" />
-    <Compile Include="GenericExceptions.cs" />
   </ItemGroup>
 </Project>

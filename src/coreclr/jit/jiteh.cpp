@@ -2520,6 +2520,7 @@ void Compiler::fgCreateFiltersForGenericExceptions()
         EHblkDsc* eh = ehGetDsc(ehNum);
         if (eh->ebdHandlerType == EH_HANDLER_CATCH)
         {
+            // Resolve Exception type and check if it needs a runtime lookup
             CORINFO_RESOLVED_TOKEN resolvedToken;
             resolvedToken.tokenContext = impTokenLookupContextHandle;
             resolvedToken.tokenScope   = info.compScopeHnd;
@@ -2571,7 +2572,7 @@ void Compiler::fgCreateFiltersForGenericExceptions()
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
             filterBb->bbCatchTyp = BBCT_FILTER;
-            filterBb->bbCodeOffs = handlerBb->bbCodeOffs; // Technically, we're in the handler
+            filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
             filterBb->bbJumpDest = handlerBb;
@@ -2581,6 +2582,15 @@ void Compiler::fgCreateFiltersForGenericExceptions()
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
             eh->ebdHandlerType    = EH_HANDLER_FILTER;
             eh->ebdFilter         = filterBb;
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                JITDUMP("EH%d: Adding EH filter block " FMT_BB " in front of generic handler " FMT_BB ":\n", ehNum,
+                        filterBb->bbNum, handlerBb->bbNum);
+                fgDumpBlock(filterBb);
+            }
+#endif // DEBUG
         }
     }
 }
