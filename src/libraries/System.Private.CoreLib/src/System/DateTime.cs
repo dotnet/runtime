@@ -1358,6 +1358,7 @@ namespace System
         //
         // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
         //   Cassio Neri, Lorenz Schneiderhttps - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetDatePart(int part)
         {
             // y400 = number of whole 400-year periods since 3/1/0000
