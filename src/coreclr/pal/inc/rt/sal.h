@@ -260,7 +260,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
 // Only applicable with functions that have  _Success_ or _Return_type_succss_.
 #define _Always_(annos)                  _Always_impl_(annos _SAL_nop_impl_)
 
-// Usable on a function defintion. Asserts that a function declaration is
+// Usable on a function definition. Asserts that a function declaration is
 // in scope, and its annotations are to be used. There are no other annotations
 // allowed on the function definition.
 #define _Use_decl_annotations_         _Use_decl_anno_impl_

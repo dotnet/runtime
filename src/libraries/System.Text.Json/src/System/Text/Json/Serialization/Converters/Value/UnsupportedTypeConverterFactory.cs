@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
                 type == typeof(SerializationInfo) ||
                 type == typeof(IntPtr) ||
                 type == typeof(UIntPtr) ||
-                // Exlude delegates.
+                // Exclude delegates.
                 typeof(Delegate).IsAssignableFrom(type);
         }
 

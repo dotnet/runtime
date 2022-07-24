@@ -83,7 +83,7 @@ namespace System.Net
                     port = hostAndPort.Substring(colonIndex);
                 }
 
-                hostType = Uri.CheckHostName(host); // Revaidate the host
+                hostType = Uri.CheckHostName(host); // Revalidate the host
             }
 
             if (hostType != UriHostNameType.Dns)

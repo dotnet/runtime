@@ -981,10 +981,10 @@ namespace Internal.JitInterface
             for (int i = 0; i < cMap; i++)
             {
                 OffsetMapping nativeToILInfo = pMap[i];
-                int currectILOffset = (int)nativeToILInfo.ilOffset;
-                if (currectILOffset > largestILOffset) // Special offsets are negative.
+                int currentILOffset = (int)nativeToILInfo.ilOffset;
+                if (currentILOffset > largestILOffset) // Special offsets are negative.
                 {
-                    largestILOffset = currectILOffset;
+                    largestILOffset = currentILOffset;
                 }
             }
 

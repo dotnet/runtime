@@ -321,7 +321,7 @@ namespace Internal.TypeSystem
         /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to
         /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale
         /// for the particular orders other than to attempt to be consistent in virtual method override behavior
-        /// betweeen runtimes.</param>
+        /// between runtimes.</param>
         /// <param name="nameSigMatchMethodIsValidCandidate"></param>
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
@@ -408,7 +408,7 @@ namespace Internal.TypeSystem
         /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to
         /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale
         /// for the particular orders other than to attempt to be consistent in virtual method override behavior
-        /// betweeen runtimes.</param>
+        /// between runtimes.</param>
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType, bool reverseMethodSearch)
         {

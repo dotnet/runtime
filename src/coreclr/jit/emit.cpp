@@ -6477,7 +6477,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 else
                 {
                     /* If emitFullGCinfo==false, then we don't use any
-                       regPtrDsc's and so explictly note the location
+                       regPtrDsc's and so explicitly note the location
                        of "this" in GCEncode.cpp
                      */
                 }
@@ -9798,7 +9798,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
     }
 
-    // compHelperCallKillSet returns a superset of the registers which values are not guranteed to be the same
+    // compHelperCallKillSet returns a superset of the registers which values are not guaranteed to be the same
     // after the call, if a register loses its GC or byref it has to be in the compHelperCallKillSet set as well.
     assert((result & emitComp->compHelperCallKillSet(helper)) == result);
 
@@ -9806,7 +9806,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 }
 
 #if !defined(JIT32_GCENCODER)
-// Start a new instruction group that is not interruptable
+// Start a new instruction group that is not interruptible
 void emitter::emitDisableGC()
 {
     assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
@@ -9835,7 +9835,7 @@ void emitter::emitDisableGC()
     }
 }
 
-// Start a new instruction group that is interruptable
+// Start a new instruction group that is interruptible
 void emitter::emitEnableGC()
 {
     assert(emitNoGCRequestCount > 0);

@@ -398,7 +398,7 @@ namespace System.Diagnostics.Tests
 
             // In Debug builds of System.Diagnostics.DiagnosticSource, the child operation Id will be constructed as follows
             // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
-            // This is for debugging purposes to know which operation the child Id is comming from.
+            // This is for debugging purposes to know which operation the child Id is coming from.
             //
             // In Release builds of System.Diagnostics.DiagnosticSource, it will not contain the operation name to keep it simple and it will be as
             // "|parent.RootId.childCount.".
@@ -1210,11 +1210,11 @@ namespace System.Diagnostics.Tests
             activity.SetStartTime(DateTime.Now);    // Error Does nothing because it is not UTC
             Assert.Equal(default(DateTime), activity.StartTimeUtc);
 
-            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.
+            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our official start time.
             activity.SetStartTime(startTime);
 
             activity.Start();
-            Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.
+            Assert.Equal(startTime, activity.StartTimeUtc); // we use our official start time not the time now.
             Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             Thread.Sleep(35);

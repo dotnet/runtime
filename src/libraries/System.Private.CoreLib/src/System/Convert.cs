@@ -101,13 +101,9 @@ namespace System
         // Need to special case Enum because typecode will be underlying type, e.g. Int32
         private static readonly Type EnumType = typeof(Enum);
 
-        internal static readonly char[] base64Table = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-                                                        'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd',
-                                                        'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-                                                        't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7',
-                                                        '8', '9', '+', '/', '=' };
+        internal const string Base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-        private const int base64LineBreakPosition = 76;
+        private const int Base64LineBreakPosition = 76;
 
 #if DEBUG
         static Convert()
@@ -2473,14 +2469,14 @@ namespace System
             // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
             int i;
 
-            // get a pointer to the base64Table to avoid unnecessary range checking
-            fixed (char* base64 = &base64Table[0])
+            // get a pointer to the Base64Table to avoid unnecessary range checking
+            fixed (char* base64 = Base64Table)
             {
                 for (i = offset; i < calcLength; i += 3)
                 {
                     if (insertLineBreaks)
                     {
-                        if (charcount == base64LineBreakPosition)
+                        if (charcount == Base64LineBreakPosition)
                         {
                             outChars[j++] = '\r';
                             outChars[j++] = '\n';
@@ -2498,7 +2494,7 @@ namespace System
                 // Where we left off before
                 i = calcLength;
 
-                if (insertLineBreaks && (lengthmod3 != 0) && (charcount == base64LineBreakPosition))
+                if (insertLineBreaks && (lengthmod3 != 0) && (charcount == Base64LineBreakPosition))
                 {
                     outChars[j++] = '\r';
                     outChars[j++] = '\n';
@@ -2536,7 +2532,7 @@ namespace System
 
             if (insertLineBreaks)
             {
-                (uint newLines, uint remainder) = Math.DivRem(outlen, base64LineBreakPosition);
+                (uint newLines, uint remainder) = Math.DivRem(outlen, Base64LineBreakPosition);
                 if (remainder == 0)
                 {
                     --newLines;

@@ -341,7 +341,7 @@ namespace Internal.NativeFormat
                 }
 
                 // We are not able to shrink anymore. We cannot just return here. It is possible that we have rolledback
-                // above because of we shrinked too much.
+                // above because of we shrunk too much.
                 if (_offsetAdjustment == 0)
                     break;
 

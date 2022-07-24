@@ -324,7 +324,7 @@ void ProfilingAPIUtility::LogProfEventVA(
         FireEtwProfilerMessage(GetClrInstanceId(), messageToLogUtf16.GetUnicode());
     }
 
-    // Ouput debug strings for diagnostic messages.
+    // Output debug strings for diagnostic messages.
     OutputDebugStringUtf8(messageToLog.GetUTF8());
 }
 

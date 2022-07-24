@@ -219,7 +219,7 @@ namespace System
                             break;
                         case 0:     // ERROR_SUCCESS
                         case 122:   // ERROR_INSUFFICIENT_BUFFER
-                                    // Success is actually insufficent buffer as we're really only looking for
+                                    // Success is actually insufficient buffer as we're really only looking for
                                     // not NO_APPLICATION and we're not actually giving a buffer here. The
                                     // API will always return NO_APPLICATION if we're not running under a
                                     // WinRT process, no matter what size the buffer is.

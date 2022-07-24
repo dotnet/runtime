@@ -15,7 +15,7 @@ namespace Internal.TypeSystem
         /// if possible under the policy of '<paramref name="kind"/>'
         /// </summary>
         /// <param name="instantiation">Instantiation to canonicalize.</param>
-        /// <param name="kind">The type of cannonicalization to apply.</param>
+        /// <param name="kind">The type of canonicalization to apply.</param>
         /// <param name="changed">True if the returned instantiation is different from '<paramref name="instantiation"/>'.</param>
         public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {

@@ -1001,7 +1001,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		cindex = i;
 
 		/*
-		 * This is not neccessary true on x86 because frames have a different size at each
+		 * This is not necessary true on x86 because frames have a different size at each
 		 * call site.
 		 */
 		//g_assert (real_frame_start >= stack_limit);

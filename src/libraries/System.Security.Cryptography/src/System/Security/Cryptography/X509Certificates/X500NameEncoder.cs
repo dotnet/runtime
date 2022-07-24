@@ -12,20 +12,6 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private const string OidTagPrefix = "OID.";
 
-        private static readonly char[] s_quoteNeedingChars =
-        {
-            ',',
-            '+',
-            '=',
-            '\"',
-            '\n',
-            // \r is NOT in this list, because it isn't in Windows.
-            '<',
-            '>',
-            '#',
-            ';',
-        };
-
         private static readonly List<char> s_useSemicolonSeparators = new List<char>(1) { ';' };
         private static readonly List<char> s_useCommaSeparators = new List<char>(1) { ',' };
         private static readonly List<char> s_useNewlineSeparators = new List<char>(2) { '\r', '\n' };
@@ -132,22 +118,17 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static bool NeedsQuoting(string rdnValue)
+        private static bool NeedsQuoting(ReadOnlySpan<char> rdnValue)
         {
-            if (string.IsNullOrEmpty(rdnValue))
+            if (rdnValue.IsEmpty ||
+                IsQuotableWhitespace(rdnValue[0]) ||
+                IsQuotableWhitespace(rdnValue[^1]))
             {
                 return true;
             }
 
-            if (IsQuotableWhitespace(rdnValue[0]) ||
-                IsQuotableWhitespace(rdnValue[rdnValue.Length - 1]))
-            {
-                return true;
-            }
-
-            int index = rdnValue.IndexOfAny(s_quoteNeedingChars);
-
-            return index != -1;
+            const string QuoteNeedingChars = ",+=\"\n<>#;"; // \r is NOT in this list, because it isn't in Windows.
+            return rdnValue.IndexOfAny(QuoteNeedingChars) >= 0;
         }
 
         private static bool IsQuotableWhitespace(char c)
