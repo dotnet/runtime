@@ -63,10 +63,18 @@
 
   DIRECT_INITOBJ:
     call bool .this::ProblemWithDirectInitObj()
-    brfalse RETURN
+    brfalse RET_BUF_CALL
 
     ldloca result
     ldstr "DIRECT_INITOBJ failed"
+    call void .this::ReportFailure(int32*, string)
+
+  RET_BUF_CALL:
+    call bool .this::ProblemWithRetBufCall()
+    brfalse RETURN
+
+    ldloca result
+    ldstr "RET_BUF_CALL failed"
     call void .this::ReportFailure(int32*, string)
 
   RETURN:
@@ -272,6 +280,47 @@
     ret
   }
 
+  .method private static bool ProblemWithRetBufCall() noinlining
+  {
+    .locals (valuetype LargeStruct a, valuetype LargeStruct b)
+
+    ldc.i8 1
+    call valuetype LargeStruct LargeStruct::CreateNoinline(int64)
+    dup
+    stloc a
+    stloc b
+
+    ldloc a
+
+    ldc.i8 2
+    call valuetype LargeStruct LargeStruct::CreateInline(int64)
+    stloc a
+
+    ldloc b
+    call bool LargeStruct::Equals(valuetype LargeStruct, valuetype LargeStruct)
+    brfalse FAILURE
+
+    ldloc b
+    stloc a
+
+    ldloc a
+
+    ldc.i8 3
+    call valuetype LargeStruct LargeStruct::CreateInline(int64)
+    stloc a
+
+    ldloc b
+    call bool LargeStruct::Equals(valuetype LargeStruct, valuetype LargeStruct)
+    brfalse FAILURE
+
+    ldc.i4 FALSE
+    ret
+
+  FAILURE:
+    ldc.i4 TRUE
+    ret
+  }
+
   .method private static !!T Get<T>(!!T arg) noinlining
   {
     ldarg arg
@@ -297,4 +346,66 @@
 .class sealed sequential StructWithInt extends [System.Runtime]System.ValueType
 {
   .field public int32 Value
+}
+
+.class sealed sequential LargeStruct extends [System.Runtime]System.ValueType
+{
+  .field public int64 LongOne
+  .field public int64 LongTwo
+  .field public int64 LongThree
+
+  .method public static bool Equals(valuetype LargeStruct left, valuetype LargeStruct right) noinlining
+  {
+    ldarg left
+    ldfld int64 .this::LongOne
+    ldarg right
+    ldfld int64 .this::LongOne
+    bne.un NOT_EQUAL
+
+    ldarg left
+    ldfld int64 .this::LongTwo
+    ldarg right
+    ldfld int64 .this::LongTwo
+    bne.un NOT_EQUAL
+
+    ldarg left
+    ldfld int64 .this::LongThree
+    ldarg right
+    ldfld int64 .this::LongThree
+    bne.un NOT_EQUAL
+
+    ldc.i4 TRUE
+    ret
+
+  NOT_EQUAL:
+    ldc.i4 FALSE
+    ret
+  }
+
+  .method public static valuetype LargeStruct CreateInline(int64 fieldValue)
+  {
+    .locals (valuetype LargeStruct result)
+
+    ldloca result
+    ldarg fieldValue
+    stfld int64 .this::LongOne
+
+    ldloca result
+    ldarg fieldValue
+    stfld int64 .this::LongTwo
+
+    ldloca result
+    ldarg fieldValue
+    stfld int64 .this::LongThree
+
+    ldloc result
+    ret
+  }
+
+  .method public static valuetype LargeStruct CreateNoinline(int64 fieldValue) noinlining
+  {
+    ldarg fieldValue
+    call valuetype LargeStruct .this::CreateInline(int64)
+    ret
+  }
 }

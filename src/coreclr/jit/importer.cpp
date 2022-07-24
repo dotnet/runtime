@@ -509,34 +509,62 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
         // If the statement being appended has any side-effects, check the stack to see if anything
         // needs to be spilled to preserve correct ordering.
-
+        //
         GenTree*     expr  = stmt->GetRootNode();
         GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
-        // If the only side effect of this tree is an assignment to an unaliased local, we can avoid
-        // spilling all pending loads from the stack. Instead we only spill trees with LCL_[VAR|FLD]
-        // nodes that refer to the local.
+        // Assignments to unaliased locals require special handling. Here, we look for trees that
+        // can modify them and spill the references. In doing so, we make two assumptions:
         //
+        // 1. All locals which can be modified indirectly are marked as address-exposed or with
+        //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
+        //    below to spill them.
+        // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
+        //    walk down the tree here), and are a subset of what is recognized here.
+        //
+        // If any of the above are violated (say for some temps), the relevant code must spill
+        // things manually.
+        //
+        LclVarDsc* dstVarDsc = nullptr;
         if (expr->OperIs(GT_ASG) && expr->AsOp()->gtOp1->OperIsLocal())
         {
-            LclVarDsc* dstVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
+            dstVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
+        }
+        else if (expr->OperIs(GT_CALL, GT_RET_EXPR)) // The special case of calls with return buffers.
+        {
+            GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
 
-            // We make two assumptions here:
-            //
-            // 1. All locals which can be modified indirectly are marked as address-exposed or with
-            //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
-            //    below to spill them.
-            // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
-            //    walk down the tree here).
-            //
-            // If any of the above are violated (say for some temps), the relevant code must spill
-            // any possible pending references manually.
-            //
-            if (!dstVarDsc->IsAddressExposed() && !dstVarDsc->lvHasLdAddrOp)
+            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg(this))
             {
-                impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
+                GenTree* retBuf;
+                if (call->AsCall()->ShouldHaveRetBufArg())
+                {
+                    assert(call->AsCall()->gtArgs.HasRetBuffer());
+                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
+                }
+                else
+                {
+                    assert(!call->AsCall()->gtArgs.HasThisPointer());
+                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+                }
 
-                // We still needs to spill things that the RHS could modify/interfere with.
+                assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                GenTreeLclVarCommon* lclNode = retBuf->IsLocalAddrExpr();
+                if (lclNode != nullptr)
+                {
+                    dstVarDsc = lvaGetDesc(lclNode);
+                }
+            }
+        }
+
+        if ((dstVarDsc != nullptr) && !dstVarDsc->IsAddressExposed() && !dstVarDsc->lvHasLdAddrOp)
+        {
+            impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
+
+            if (expr->OperIs(GT_ASG))
+            {
+                // For assignments, limit the checking to what the RHS could modify/interfere with.
                 flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
             }
         }
