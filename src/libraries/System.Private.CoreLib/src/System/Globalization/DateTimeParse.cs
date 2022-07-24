@@ -5438,8 +5438,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        private static readonly char[] WhiteSpaceChecks = new char[] { ' ', '\u00A0' };
-
         internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
@@ -5450,12 +5448,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
-                int wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition);
+                int wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
                 if (wsIndex < 0)
                 {
                     return false;
                 }
-                do
+                wsIndex += targetPosition;
+
+                while (true)
                 {
                     int segmentLength = wsIndex - targetPosition;
                     if (thisPosition >= Value.Length - segmentLength)
@@ -5491,7 +5491,15 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         thisPosition++;
                         matchLength++;
                     }
-                } while ((wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition)) >= 0);
+
+                    wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                    if (wsIndex < 0)
+                    {
+                        break;
+                    }
+                    wsIndex += targetPosition;
+                }
+
                 // now check the last segment;
                 if (targetPosition < target.Length)
                 {

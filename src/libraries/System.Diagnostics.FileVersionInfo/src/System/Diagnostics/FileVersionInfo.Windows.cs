@@ -12,60 +12,34 @@ namespace System.Diagnostics
         {
             _fileName = fileName;
 
-            uint handle;  // This variable is not used, but we need an out variable.
-            uint infoSize = Interop.Version.GetFileVersionInfoSizeEx(
-                (uint)Interop.Version.FileVersionInfoType.FILE_VER_GET_LOCALISED, _fileName, out handle);
-
+            uint infoSize = Interop.Version.GetFileVersionInfoSizeEx(Interop.Version.FileVersionInfoType.FILE_VER_GET_LOCALISED, _fileName, out _);
             if (infoSize != 0)
             {
-                byte[] mem = new byte[infoSize];
-                fixed (byte* memPtr = &mem[0])
+                void* memPtr = NativeMemory.Alloc(infoSize);
+                try
                 {
-                    IntPtr memIntPtr = new IntPtr((void*)memPtr);
+                    IntPtr memIntPtr = new IntPtr(memPtr);
                     if (Interop.Version.GetFileVersionInfoEx(
-                            (uint)Interop.Version.FileVersionInfoType.FILE_VER_GET_LOCALISED | (uint)Interop.Version.FileVersionInfoType.FILE_VER_GET_NEUTRAL,
-                            _fileName,
-                            0U,
-                            infoSize,
-                            memIntPtr))
+                        Interop.Version.FileVersionInfoType.FILE_VER_GET_LOCALISED | Interop.Version.FileVersionInfoType.FILE_VER_GET_NEUTRAL,
+                        _fileName,
+                        0U,
+                        infoSize,
+                        memIntPtr))
                     {
+                        // Some dlls might not contain correct codepage information, in which case the lookup will fail. Explorer will take
+                        // a few shots in dark. We'll simulate similar behavior by falling back to the following lang-codepages.
                         uint langid = GetVarEntry(memIntPtr);
-                        if (!GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(langid)))
-                        {
-                            // Some DLLs might not contain correct codepage information. In these cases we will fail during lookup.
-                            // Explorer will take a few shots in dark by trying several specific lang-codepages
-                            // (Explorer also randomly guesses 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE sometimes).
-                            // We will try to simulate similar behavior here.
-                            foreach (uint id in s_fallbackLanguageCodePages)
-                            {
-                                if (id != langid)
-                                {
-                                    if (GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(id)))
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                        _ = GetVersionInfoForCodePage(memIntPtr, langid.ToString("X8")) ||
+                            (langid != 0x040904B0 && GetVersionInfoForCodePage(memIntPtr, "040904B0")) || // US English + CP_UNICODE
+                            (langid != 0x040904E4 && GetVersionInfoForCodePage(memIntPtr, "040904E4")) || // US English + CP_USASCII
+                            (langid != 0x04090000 && GetVersionInfoForCodePage(memIntPtr, "04090000"));   // US English + unknown codepage
                     }
                 }
+                finally
+                {
+                    NativeMemory.Free(memPtr);
+                }
             }
-        }
-
-        // Some dlls might not contain correct codepage information,
-        // in which case the lookup will fail. Explorer will take
-        // a few shots in dark. We'll simulate similar behavior by
-        // falling back to the following lang-codepages:
-        private static readonly uint[] s_fallbackLanguageCodePages = new uint[]
-        {
-            0x040904B0, // US English + CP_UNICODE
-            0x040904E4, // US English + CP_USASCII
-            0x04090000  // US English + unknown codepage
-        };
-
-        private static string ConvertTo8DigitHex(uint value)
-        {
-            return value.ToString("X8");
         }
 
         private static unsafe Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
