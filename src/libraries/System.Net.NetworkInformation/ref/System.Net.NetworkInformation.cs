@@ -258,8 +258,16 @@ namespace System.Net.NetworkInformation
     {
         protected IPInterfaceProperties() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract System.Net.NetworkInformation.IPAddressInformationCollection AnycastAddresses { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract System.Net.NetworkInformation.IPAddressCollection DhcpServerAddresses { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         public abstract System.Net.NetworkInformation.IPAddressCollection DnsAddresses { get; }
@@ -268,12 +276,24 @@ namespace System.Net.NetworkInformation
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         public abstract System.Net.NetworkInformation.GatewayIPAddressInformationCollection GatewayAddresses { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract bool IsDnsEnabled { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract bool IsDynamicDnsEnabled { get; }
         public abstract System.Net.NetworkInformation.MulticastIPAddressInformationCollection MulticastAddresses { get; }
         public abstract System.Net.NetworkInformation.UnicastIPAddressInformationCollection UnicastAddresses { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract System.Net.NetworkInformation.IPAddressCollection WinsServersAddresses { get; }
         public abstract System.Net.NetworkInformation.IPv4InterfaceProperties GetIPv4Properties();
         public abstract System.Net.NetworkInformation.IPv6InterfaceProperties GetIPv6Properties();
