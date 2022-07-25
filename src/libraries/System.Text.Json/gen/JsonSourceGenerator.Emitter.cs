@@ -1430,8 +1430,8 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                         return GetFriendlyName(t.Name);
                     }
                     string typeName = t.Name;
-                    int tildeIndex = typeName.IndexOf('`');
-                    string typeNameWithoutGenericArity = typeName.Substring(0, tildeIndex);
+                    int backTickIndex = typeName.IndexOf('`');
+                    string typeNameWithoutGenericArity = typeName.Substring(0, backTickIndex);
                     StringBuilder sb = new(typeNameWithoutGenericArity);
                     sb.Append("&lt;");
                     bool addSeparator = false;
