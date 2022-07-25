@@ -50,7 +50,7 @@ const afterPostRun = createPromiseController();
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
-    const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance) => void) => any) = module.instantiateWasm;
+    const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any) = module.instantiateWasm;
     const userPreInit: (() => void)[] = !module.preInit ? [] : typeof module.preInit === "function" ? [module.preInit] : module.preInit;
     const userPreRun: (() => void)[] = !module.preRun ? [] : typeof module.preRun === "function" ? [module.preRun] : module.preRun as any;
     const userpostRun: (() => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
@@ -84,12 +84,12 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
 }
 
 let wasm_module_imports: WebAssembly.Imports | null = null;
-let wasm_success_callback: null | ((instance: WebAssembly.Instance) => void) = null;
+let wasm_success_callback: null | ((instance: WebAssembly.Instance, module: WebAssembly.Module) => void) = null;
 
 function instantiateWasm(
     imports: WebAssembly.Imports,
-    successCallback: (instance: WebAssembly.Instance) => void,
-    userInstantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance) => void) => any): any[] {
+    successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
+    userInstantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any): any[] {
     // this is called so early that even Module exports like addRunDependency don't exist yet
 
     if (!Module.configSrc && !Module.config && !userInstantiateWasm) {
@@ -107,9 +107,9 @@ function instantiateWasm(
     }
 
     if (userInstantiateWasm) {
-        const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance) => {
+        const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module) => {
             afterInstantiateWasm.promise_control.resolve(null);
-            successCallback(instance);
+            successCallback(instance, module);
         });
         return exports;
     }
@@ -287,10 +287,6 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
     }
 
     try {
-        setTimeout(() => {
-            // when there are free CPU cycles
-            string_decoder.init_fields();
-        });
         loaded_files.forEach(value => MONO.loaded_files.push(value.url));
         if (!loaded_files || loaded_files.length == 0) {
             Module.print("MONO_WASM: no files were loaded into runtime");
@@ -301,6 +297,10 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
+        setTimeout(() => {
+            // when there are free CPU cycles
+            string_decoder.init_fields();
+        });
     } catch (err: any) {
         _print_error("MONO_WASM: Error in mono_wasm_before_user_runtime_initialized", err);
         throw err;
@@ -405,18 +405,21 @@ async function _instantiate_wasm_module(): Promise<void> {
         const response = await pendingAsset.pending.response;
         const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
         let compiledInstance: WebAssembly.Instance;
+        let compiledModule: WebAssembly.Module;
         if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
             if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized streaming");
             const streamingResult = await WebAssembly.instantiateStreaming(response, wasm_module_imports!);
             compiledInstance = streamingResult.instance;
+            compiledModule = streamingResult.module;
         } else {
             const arrayBuffer = await response.arrayBuffer();
             if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized streaming");
             const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, wasm_module_imports!);
             compiledInstance = arrayBufferResult.instance;
+            compiledModule = arrayBufferResult.module;
         }
         ++instantiated_assets_count;
-        wasm_success_callback!(compiledInstance);
+        wasm_success_callback!(compiledInstance, compiledModule);
         if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: instantiateWasm done");
         afterInstantiateWasm.promise_control.resolve(null);
         wasm_success_callback = null;
@@ -506,6 +509,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     ++instantiated_assets_count;
 }
 
+// runs just in non-blazor
 async function _apply_configuration_from_args() {
     try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;

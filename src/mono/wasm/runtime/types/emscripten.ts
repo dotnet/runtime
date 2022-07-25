@@ -58,7 +58,7 @@ export declare interface EmscriptenModule {
 
 
     ready: Promise<unknown>;
-    instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance) => void) => any;
+    instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any;
     preInit?: (() => any)[];
     preRun?: (() => any)[];
     onRuntimeInitialized?: () => any;
