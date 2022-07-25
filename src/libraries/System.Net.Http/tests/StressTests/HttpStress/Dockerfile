@@ -10,10 +10,10 @@ RUN apt-get update -y && \
 RUN git clone --recursive https://github.com/dotnet/msquic
 RUN cd msquic/src/msquic && \
     mkdir build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
     cd build && \
-    cmake --build . --config Release
-RUN cd msquic/src/msquic/build/bin/Release && \
+    cmake --build . --config Debug
+RUN cd msquic/src/msquic/build/bin/Debug && \
     rm libmsquic.so && \
     fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
     --license MIT --url https://github.com/microsoft/msquic --log error \
@@ -34,7 +34,7 @@ RUN dotnet build -c $CONFIGURATION \
 
 # Enable dump collection
 ENV COMPlus_DbgEnableMiniDump=1
-ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
+ENV COMPlus_DbgMiniDumpType=4
 ENV COMPlus_DbgMiniDumpName="/dumps-share/coredump.%p"
 
 EXPOSE 5001
