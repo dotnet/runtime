@@ -76,7 +76,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public int Count => _coherentState.Count;
 
-        // internal for testing
+        /// <summary>
+        /// Internal accessor for Size for testing only.
+        ///
+        /// Note that this is only eventually consistent with the contents of the collection.
+        /// See comment on <see cref="CoherentState"/>.
+        /// </summary>
         internal long Size => _coherentState.Size;
 
         internal bool TrackLinkedCacheEntries { get; }
@@ -613,6 +618,22 @@ namespace Microsoft.Extensions.Caching.Memory
             ThrowHelper.ThrowIfNull(key);
         }
 
+        /// <summary>
+        /// Wrapper for the memory cache entries collection.
+        ///
+        /// Entries may have various sizes. If a size limit has been set, the cache keeps track of the aggregate of all the entries' sizes
+        /// in order to trigger compaction when the size limit is exceeded.
+        /// Because the overall size is used only to trigger compaction, it is not necessary to update it atomically with the collection,
+        /// so long as it is always eventually consistent. So instead of locking around updates to the collection and the overall size,
+        /// the size is updated after the collection, using an Interlocked operation.
+        ///
+        /// When the memory cache is cleared, it replaces the backing collection entirely. This may occur in parallel with operations
+        /// like add, set, remove, and compact which may modify the collection and thus its overall size.
+        /// To keep the overall size eventually consistent, therefore, the collection and the overall size are wrapped in this CoherentState
+        /// object. Individual operations take a local reference to this wrapper object while they work, and make size updates to this object.
+        /// Clearing the cache simply replaces the object, so that any still in progress updates do not affect the overall size value for
+        /// the new backing collection.
+        /// </summary>
         private sealed class CoherentState
         {
             internal ConcurrentDictionary<object, CacheEntry> _entries = new ConcurrentDictionary<object, CacheEntry>();
