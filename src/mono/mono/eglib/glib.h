@@ -882,10 +882,14 @@ gunichar  *g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_writte
 gunichar  *g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 G_EXTERN_C // Used by libtest, at least.
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
+gunichar2 *g_utf8_to_utf16be (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
+gunichar2 *g_utf8_to_utf16le (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar2 *eg_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar2 *eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
 G_EXTERN_C // Used by libtest, at least.
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
+gchar     *g_utf16le_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
+gchar     *g_utf16be_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar  *g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
 gchar     *g_ucs4_to_utf8  (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err);
 gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err);
@@ -911,6 +915,8 @@ gpointer
 g_fixed_buffer_custom_allocator (gsize req_size, gpointer custom_alloc_data);
 
 gunichar2 *g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
+gunichar2 *g_utf8_to_utf16be_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
+gunichar2 *g_utf8_to_utf16le_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
 gchar *g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
 
 /*
@@ -1406,6 +1412,8 @@ __CAST_PTRTYPE_TO_UTYPE(gintptr, gulong, ULONG_MAX)
 __CAST_PTRTYPE_TO_STYPE(gintptr, gint, INT_MIN, INT_MAX)
 __CAST_PTRTYPE_TO_UTYPE(gintptr, guint, UINT_MAX)
 
+__CAST_PTRTYPE_TO_UTYPE(gintptr, gsize, SIZE_MAX)
+
 __CAST_PTRTYPE_TO_STYPE(guintptr, gint32, INT32_MIN, INT32_MAX)
 __CAST_PTRTYPE_TO_UTYPE(guintptr, guint32, UINT32_MAX)
 __CAST_PTRTYPE_TO_STYPE(guintptr, gint16, INT16_MIN, INT16_MAX)
@@ -1439,6 +1447,12 @@ __CAST_STYPE_TO_UTYPE(gssize, guint32, UINT32_MAX)
 
 __CAST_STYPE_TO_STYPE(gssize, gint, INT_MIN, INT_MAX)
 __CAST_STYPE_TO_UTYPE(gssize, guint, UINT_MAX)
+
+__CAST_STYPE_TO_UTYPE(gssize, gsize, SIZE_MAX)
+__CAST_UTYPE_TO_STYPE(gsize, gssize, PTRDIFF_MIN, PTRDIFF_MAX)
+
+__CAST_STYPE_TO_UTYPE(glong, gulong, ULONG_MAX)
+__CAST_UTYPE_TO_STYPE(gulong, glong, LONG_MIN, LONG_MAX)
 
 __CAST_STYPE_TO_STYPE(gdouble, gint64, INT64_MIN, INT64_MAX)
 __CAST_STYPE_TO_UTYPE(gdouble, guint64, UINT64_MAX)
@@ -1487,6 +1501,7 @@ __CAST_STYPE_TO_UTYPE(gint32, guint8, UINT8_MAX)
 
 __CAST_STYPE_TO_UTYPE(gint32, guint, UINT_MAX)
 
+__CAST_UTYPE_TO_UTYPE(guint32, guint, UINT_MAX)
 __CAST_UTYPE_TO_STYPE(guint32, gint32, INT32_MIN, INT32_MAX)
 __CAST_UTYPE_TO_STYPE(guint32, gint16, INT16_MIN, INT16_MAX)
 __CAST_UTYPE_TO_UTYPE(guint32, guint16, UINT16_MAX)
@@ -1502,6 +1517,7 @@ __CAST_STYPE_TO_STYPE(gint, gint16, INT16_MIN, INT16_MAX)
 __CAST_STYPE_TO_UTYPE(gint, guint16, UINT16_MAX)
 __CAST_STYPE_TO_STYPE(gint, gint8, INT8_MIN, INT8_MAX)
 __CAST_STYPE_TO_UTYPE(gint, guint8, UINT8_MAX)
+__CAST_STYPE_TO_UTYPE(gint, gsize, SIZE_MAX)
 
 __CAST_STYPE_TO_UTYPE(gint, guint, UINT_MAX)
 __CAST_STYPE_TO_UTYPE(gint, gunichar2, UINT16_MAX)
@@ -1584,6 +1600,8 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 #define GINTPTR_TO_INT(v)        G_CAST_PTRTYPE_TO_STYPE(gintptr, gint, v)
 #define GINTPTR_TO_UINT(v)       G_CAST_PTRTYPE_TO_UTYPE(gintptr, guint, v)
 
+#define GINTPTR_TO_SIZE(v)       G_CAST_PTRTYPE_TO_UTYPE(gintptr, gsize, v)
+
 #define GUINTPTR_TO_INT32(v)     G_CAST_PTRTYPE_TO_STYPE(guintptr, gint32, v)
 #define GUINTPTR_TO_UINT32(v)    G_CAST_PTRTYPE_TO_UTYPE(guintptr, guint32, v)
 
@@ -1616,6 +1634,12 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 
 #define GSSIZE_TO_INT(v)         G_CAST_TYPE_TO_TYPE(gssize, gint, v)
 #define GSSIZE_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gssize, guint, v)
+
+#define GSSIZE_TO_SIZE(v)        G_CAST_TYPE_TO_TYPE(gssize, gsize, v)
+#define GSIZE_TO_SSIZE(v)        G_CAST_TYPE_TO_TYPE(gsize, gssize, v)
+
+#define GLONG_TO_ULONG(v)        G_CAST_TYPE_TO_TYPE(glong, gulong, v)
+#define GULONG_TO_LONG(v)        G_CAST_TYPE_TO_TYPE(gulong, glong, v)
 
 #define GDOUBLE_TO_INT64(v)      G_CAST_TYPE_TO_TYPE(gdouble, gint64, v)
 #define GDOUBLE_TO_UINT64(v)     G_CAST_TYPE_TO_TYPE(gdouble, guint64, v)
@@ -1670,6 +1694,7 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 
 #define GINT32_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gint32, guint, v)
 
+#define GUINT32_TO_UINT(v)       G_CAST_TYPE_TO_TYPE(guint32, guint, v)
 #define GUINT32_TO_INT32(v)      G_CAST_TYPE_TO_TYPE(guint32, gint32, v)
 #define GUINT32_TO_INT16(v)      G_CAST_TYPE_TO_TYPE(guint32, gint16, v)
 #define GUINT32_TO_UINT16(v)     G_CAST_TYPE_TO_TYPE(guint32, guint16, v)
@@ -1686,6 +1711,7 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 #define GINT_TO_UINT16(v)        G_CAST_TYPE_TO_TYPE(gint, guint16, v)
 #define GINT_TO_INT8(v)          G_CAST_TYPE_TO_TYPE(gint, gint8, v)
 #define GINT_TO_UINT8(v)         G_CAST_TYPE_TO_TYPE(gint, guint8, v)
+#define GINT_TO_SIZE(v)          G_CAST_TYPE_TO_TYPE(gint, gsize, v)
 
 #define GINT_TO_INTPTR(v)        G_CAST_STYPE_TO_PTRTYPE(gint, gintptr, v)
 #define GINT_TO_UINTPTR(v)       G_CAST_STYPE_TO_PTRTYPE(gint, guintptr, v)

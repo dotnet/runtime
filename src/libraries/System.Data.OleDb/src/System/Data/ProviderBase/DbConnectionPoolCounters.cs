@@ -121,32 +121,19 @@ namespace System.Data.ProviderBase
             internal void Decrement()
             {
                 PerformanceCounter? instance = _instance;
-                if (null != instance)
-                {
-                    instance.Decrement();
-                }
+                instance?.Decrement();
             }
 
             internal void Dispose()
             { // TODO: race condition, Dispose at the same time as Increment/Decrement
                 PerformanceCounter? instance = _instance;
                 _instance = null;
-                if (null != instance)
-                {
-                    instance.RemoveInstance();
-                    // should we be calling instance.Close?
-                    // if we do will it exacerbate the Dispose vs. Decrement race condition
-                    //instance.Close();
-                }
+                instance?.RemoveInstance();
             }
 
             internal void Increment()
             {
-                PerformanceCounter? instance = _instance;
-                if (null != instance)
-                {
-                    instance.Increment();
-                }
+                _instance?.Increment();
             }
         };
 
@@ -298,10 +285,7 @@ namespace System.Data.ProviderBase
 
         private static void SafeDispose(Counter counter)
         {
-            if (null != counter)
-            {
-                counter.Dispose();
-            }
+            counter?.Dispose();
         }
 
         private void ExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)

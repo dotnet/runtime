@@ -426,10 +426,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateType typeCur = typeStart;
             int itypeNext = 0;
 
-            if (typeCur == null)
-            {
-                typeCur = (AggregateType)types[itypeNext++];
-            }
+            typeCur ??= (AggregateType)types[itypeNext++];
             Debug.Assert(typeCur != null);
 
             // Loop through the interfaces.

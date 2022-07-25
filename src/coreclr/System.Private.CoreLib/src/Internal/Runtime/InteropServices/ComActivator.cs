@@ -59,7 +59,6 @@ namespace Internal.Runtime.InteropServices
 
     internal partial struct ComActivationContext
     {
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
             if (!Marshal.IsBuiltInComSupported)
@@ -217,7 +216,6 @@ namespace Internal.Runtime.InteropServices
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [UnmanagedCallersOnly]
         private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
@@ -243,7 +241,9 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 object cf = GetClassFactoryForType(cxt);
+#pragma warning restore IL2026
                 IntPtr nativeIUnknown = Marshal.GetIUnknownForObject(cf);
                 Marshal.WriteIntPtr(cxtInt.ClassFactoryDest, nativeIUnknown);
             }
@@ -259,7 +259,6 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [UnmanagedCallersOnly]
         private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
@@ -291,7 +290,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
-                ClassRegistrationScenarioForType(cxt, register: true);
+                ClassRegistrationScenarioForTypeLocal(cxt, register: true);
             }
             catch (Exception e)
             {
@@ -299,12 +298,16 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
             }
 
             return 0;
+
+            // Use a local function for a targeted suppression of the requires unreferenced code warning
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
+            static void ClassRegistrationScenarioForTypeLocal(ComActivationContext cxt, bool register) => ClassRegistrationScenarioForType(cxt, register);
         }
 
         /// <summary>
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [UnmanagedCallersOnly]
         private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
@@ -336,7 +339,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
-                ClassRegistrationScenarioForType(cxt, register: false);
+                ClassRegistrationScenarioForTypeLocal(cxt, register: false);
             }
             catch (Exception e)
             {
@@ -344,6 +347,11 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             }
 
             return 0;
+
+            // Use a local function for a targeted suppression of the requires unreferenced code warning
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
+            static void ClassRegistrationScenarioForTypeLocal(ComActivationContext cxt, bool register) => ClassRegistrationScenarioForType(cxt, register);
         }
 
         private static bool IsLoggingEnabled()
@@ -716,11 +724,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 throw new COMException(); // E_FAIL
             }
 
-            var license = (IDisposable?)parameters[2];
-            if (license != null)
-            {
-                license.Dispose();
-            }
+            ((IDisposable?)parameters[2])?.Dispose();
 
             var licenseKey = (string?)parameters[3];
             if (licenseKey == null)

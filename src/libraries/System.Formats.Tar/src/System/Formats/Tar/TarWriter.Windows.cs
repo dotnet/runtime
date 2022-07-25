@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -10,14 +12,16 @@ namespace System.Formats.Tar
     public sealed partial class TarWriter : IDisposable
     {
         // Creating archives in Windows always sets the mode to 777
-        private const TarFileMode DefaultWindowsMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.UserExecute | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.GroupExecute | TarFileMode.OtherRead | TarFileMode.OtherWrite | TarFileMode.UserExecute;
+        private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
-            TarEntryType entryType;
+            Debug.Assert(!string.IsNullOrEmpty(fullPath));
+
             FileAttributes attributes = File.GetAttributes(fullPath);
 
+            TarEntryType entryType;
             if (attributes.HasFlag(FileAttributes.ReparsePoint))
             {
                 entryType = TarEntryType.SymbolicLink;
@@ -46,9 +50,9 @@ namespace System.Formats.Tar
 
             FileSystemInfo info = attributes.HasFlag(FileAttributes.Directory) ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
-            entry._header._mTime = new DateTimeOffset(info.LastWriteTimeUtc);
-            entry._header._aTime = new DateTimeOffset(info.LastAccessTimeUtc);
-            entry._header._cTime = new DateTimeOffset(info.LastWriteTimeUtc); // There is no "change time" property
+            entry._header._mTime = info.LastWriteTimeUtc;
+            entry._header._aTime = info.LastAccessTimeUtc;
+            entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 
             entry.Mode = DefaultWindowsMode;
 
@@ -64,18 +68,14 @@ namespace System.Formats.Tar
                     Mode = FileMode.Open,
                     Access = FileAccess.Read,
                     Share = FileShare.Read,
-                    Options = FileOptions.None
+                    Options = fileOptions
                 };
 
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.Open(fullPath, options);
+                entry._header._dataStream = new FileStream(fullPath, options);
             }
 
-            WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            return entry;
         }
     }
 }

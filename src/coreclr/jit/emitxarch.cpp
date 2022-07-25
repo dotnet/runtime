@@ -803,7 +803,7 @@ bool IsExtendedReg(regNumber reg, emitAttr attr)
     }
 
     // Opcode field only has 3 bits for the register, these high registers
-    // need a 4th bit, that comes from the REX prefix (eiter REX.X, REX.R, or REX.B)
+    // need a 4th bit, that comes from the REX prefix (either REX.X, REX.R, or REX.B)
     if (IsExtendedReg(reg))
     {
         return true;
@@ -1452,7 +1452,7 @@ unsigned const emitter::emitInsModeFmtCnt = ArrLen(emitInsModeFmtTab);
 
 /*****************************************************************************
  *
- *  Combine the given base format with the update mode of the instuction.
+ *  Combine the given base format with the update mode of the instruction.
  */
 
 inline emitter::insFormat emitter::emitInsModeFormat(instruction ins, insFormat base)
@@ -3219,6 +3219,11 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
         id->idAddr()->iiaFieldHnd = fldHnd;
         id->idInsFmt(emitMapFmtForIns(emitMapFmtAtoM(fmt), ins));
+
+#ifdef DEBUG
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_STATIC_HDL;
+        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(fldHnd);
+#endif
     }
     else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
@@ -3279,6 +3284,14 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // disp must have already been set in the instrDesc constructor.
         assert(emitGetInsAmdAny(id) == indir->Offset()); // make sure "disp" is stored properly
     }
+
+#ifdef DEBUG
+    if ((memBase != nullptr) && memBase->IsIconHandle() && memBase->isContained())
+    {
+        id->idDebugOnlyInfo()->idFlags     = memBase->gtFlags;
+        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->gtTargetHandle;
+    }
+#endif
 }
 
 // Takes care of storing all incoming register parameters
@@ -4126,7 +4139,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags))
+void emitter::emitIns_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg,
+                          ssize_t val DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -4259,7 +4275,11 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idInsFmt(fmt);
     id->idReg1(reg);
     id->idCodeSize(sz);
-    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+#endif
 
     dispIns(id);
     emitCurIGsize += sz;
@@ -9118,7 +9138,7 @@ void emitter::emitDispIns(
                 { // (val < 0)
                     printf("-0x%IX", -val);
                 }
-                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idFlags);
+                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             }
             break;
 
@@ -9189,6 +9209,9 @@ void emitter::emitDispIns(
             }
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             emitDispAddrMode(id);
+
+            emitDispCommentForHandle(emitGetInsAmdAny(id), id->idDebugOnlyInfo()->idMemCookie,
+                                     id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_RRW_ARD_CNS:
@@ -11376,7 +11399,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     dspInByte = ((signed char)dsp == (int)dsp);
     dspIsZero = (dsp == 0);
 
-    // for stack varaibles the dsp should never be a reloc
+    // for stack variables the dsp should never be a reloc
     assert(id->idIsDspReloc() == 0);
 
     if (EBPbased)
@@ -12538,7 +12561,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     else
                     {
                         /* If emitFullGCinfo==false, the we don't use any
-                           regPtrDsc's and so explictly note the location
+                           regPtrDsc's and so explicitly note the location
                            of "this" in GCEncode.cpp
                          */
                     }
@@ -15710,12 +15733,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movntpd:
             assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instuctions
+            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instructions
             break;
 
         case INS_maskmovdqu:
             result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instuctions
+            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instructions
             break;
 
         case INS_movntdqa:

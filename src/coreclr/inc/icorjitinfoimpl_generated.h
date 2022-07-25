@@ -44,6 +44,10 @@ CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd) override;
 
+void beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd) override;
+
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -405,6 +409,12 @@ void setVars(
           CORINFO_METHOD_HANDLE ftn,
           uint32_t cVars,
           ICorDebugInfo::NativeVarInfo* vars) override;
+
+void reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings) override;
 
 void* allocateArray(
           size_t cBytes) override;

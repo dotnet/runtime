@@ -23,6 +23,13 @@
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
+
 #endif //!DACCESS_COMPILE
 
 //*****************************************************************************
@@ -2591,161 +2598,6 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
     *pCode = addInstr;          // write the assembled instruction
 
     _ASSERTE(GetArm64Rel12(pCode) == imm12);
-}
-
-//---------------------------------------------------------------------
-// Splits a command line into argc/argv lists, using the VC7 parsing rules.
-//
-// This functions interface mimics the CommandLineToArgvW api.
-//
-// If function fails, returns NULL.
-//
-// If function suceeds, call delete [] on return pointer when done.
-//
-//---------------------------------------------------------------------
-// NOTE: Implementation-wise, once every few years it would be a good idea to
-// compare this code with the C runtime library's parse_cmdline method,
-// which is in vctools\crt\crtw32\startup\stdargv.c.  (Note we don't
-// support wild cards, and we use Unicode characters exclusively.)
-// We are up to date as of ~6/2005.
-//---------------------------------------------------------------------
-LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
-
-    *pNumArgs = 0;
-
-    int nch = (int)wcslen(lpCmdLine);
-
-    // Calculate the worstcase storage requirement. (One pointer for
-    // each argument, plus storage for the arguments themselves.)
-    int cbAlloc = (nch+1)*sizeof(LPWSTR) + sizeof(WCHAR)*(nch + 1);
-    LPWSTR pAlloc = new (nothrow) WCHAR[cbAlloc / sizeof(WCHAR)];
-    if (!pAlloc)
-        return NULL;
-
-    LPWSTR *argv = (LPWSTR*) pAlloc;  // We store the argv pointers in the first halt
-    LPWSTR  pdst = (LPWSTR)( ((BYTE*)pAlloc) + sizeof(LPWSTR)*(nch+1) ); // A running pointer to second half to store arguments
-    LPCWSTR psrc = lpCmdLine;
-    WCHAR   c;
-    BOOL    inquote;
-    BOOL    copychar;
-    int     numslash;
-
-    // First, parse the program name (argv[0]). Argv[0] is parsed under
-    // special rules. Anything up to the first whitespace outside a quoted
-    // subtring is accepted. Backslashes are treated as normal characters.
-    argv[ (*pNumArgs)++ ] = pdst;
-    inquote = FALSE;
-    do {
-        if (*psrc == W('"') )
-        {
-            inquote = !inquote;
-            c = *psrc++;
-            continue;
-        }
-        *pdst++ = *psrc;
-
-        c = *psrc++;
-
-    } while ( (c != W('\0') && (inquote || (c != W(' ') && c != W('\t')))) );
-
-    if ( c == W('\0') ) {
-        psrc--;
-    } else {
-        *(pdst-1) = W('\0');
-    }
-
-    inquote = FALSE;
-
-
-
-    /* loop on each argument */
-    for(;;)
-    {
-        if ( *psrc )
-        {
-            while (*psrc == W(' ') || *psrc == W('\t'))
-            {
-                ++psrc;
-            }
-        }
-
-        if (*psrc == W('\0'))
-            break;              /* end of args */
-
-        /* scan an argument */
-        argv[ (*pNumArgs)++ ] = pdst;
-
-        /* loop through scanning one argument */
-        for (;;)
-        {
-            copychar = 1;
-            /* Rules: 2N backslashes + " ==> N backslashes and begin/end quote
-               2N+1 backslashes + " ==> N backslashes + literal "
-               N backslashes ==> N backslashes */
-            numslash = 0;
-            while (*psrc == W('\\'))
-            {
-                /* count number of backslashes for use below */
-                ++psrc;
-                ++numslash;
-            }
-            if (*psrc == W('"'))
-            {
-                /* if 2N backslashes before, start/end quote, otherwise
-                   copy literally */
-                if (numslash % 2 == 0)
-                {
-                    if (inquote && psrc[1] == W('"'))
-                    {
-                        psrc++;    /* Double quote inside quoted string */
-                    }
-                    else
-                    {
-                        /* skip first quote char and copy second */
-                        copychar = 0;       /* don't copy quote */
-                        inquote = !inquote;
-                    }
-                }
-                numslash /= 2;          /* divide numslash by two */
-            }
-
-            /* copy slashes */
-            while (numslash--)
-            {
-                *pdst++ = W('\\');
-            }
-
-            /* if at end of arg, break loop */
-            if (*psrc == W('\0') || (!inquote && (*psrc == W(' ') || *psrc == W('\t'))))
-                break;
-
-            /* copy character into argument */
-            if (copychar)
-            {
-                *pdst++ = *psrc;
-            }
-            ++psrc;
-        }
-
-        /* null-terminate the argument */
-
-        *pdst++ = W('\0');          /* terminate string */
-    }
-
-    /* We put one last argument in -- a null ptr */
-    argv[ (*pNumArgs) ] = NULL;
-
-    // If we hit this assert, we overwrote our destination buffer.
-    // Since we're supposed to allocate for the worst
-    // case, either the parsing rules have changed or our worse case
-    // formula is wrong.
-    _ASSERTE((BYTE*)pdst <= (BYTE*)pAlloc + cbAlloc);
-    return argv;
 }
 
 //======================================================================

@@ -1430,10 +1430,7 @@ namespace System.Reflection.Emit
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
-            if (con == null)
-            {
-                con = m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
-            }
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
@@ -1800,7 +1797,7 @@ namespace System.Reflection.Emit
 
                 MethodAttributes methodAttrs = meth.Attributes;
 
-                // Any of these flags in the implemenation flags is set, we will not attach the IL method body
+                // Any of these flags in the implementation flags is set, we will not attach the IL method body
                 if (((meth.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
                     ((methodAttrs & MethodAttributes.PinvokeImpl) != (MethodAttributes)0))
                 {

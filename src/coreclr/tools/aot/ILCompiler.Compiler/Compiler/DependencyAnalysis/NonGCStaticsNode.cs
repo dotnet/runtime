@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         public NonGCStaticsNode(MetadataType type, PreinitializationManager preinitializationManager)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsGenericDefinition);
             _type = type;
             _preinitializationManager = preinitializationManager;
         }

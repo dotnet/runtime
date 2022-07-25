@@ -1716,7 +1716,7 @@ namespace System
             // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             if (length >= (nuint)sizeof(nuint))
             {
-                // Conditional jmp foward to favor shorter lengths. (See comment at "Equal:" label)
+                // Conditional jmp forward to favor shorter lengths. (See comment at "Equal:" label)
                 // The longer lengths can make back the time due to branch misprediction
                 // better than shorter lengths.
                 goto Longer;
@@ -1760,7 +1760,7 @@ namespace System
                 goto Vector;
             }
 
-            // This becomes a conditional jmp foward to not favor it.
+            // This becomes a conditional jmp forward to not favor it.
             goto Equal;
 
         Result:
@@ -1800,7 +1800,7 @@ namespace System
                         goto Equal;
                     }
 
-                    // This becomes a conditional jmp foward to not favor it.
+                    // This becomes a conditional jmp forward to not favor it.
                     goto NotEqual;
                 }
                 else if (length >= (nuint)Vector128<byte>.Count)
@@ -1830,7 +1830,7 @@ namespace System
                         goto Equal;
                     }
 
-                    // This becomes a conditional jmp foward to not favor it.
+                    // This becomes a conditional jmp forward to not favor it.
                     goto NotEqual;
                 }
             }
@@ -1859,7 +1859,7 @@ namespace System
                     goto Equal;
                 }
 
-                // This becomes a conditional jmp foward to not favor it.
+                // This becomes a conditional jmp forward to not favor it.
                 goto NotEqual;
             }
 
@@ -1906,7 +1906,7 @@ namespace System
             // We want them at the end so the conditional early exit jmps are all jmp forwards so the
             // branch predictor in a uninitialized state will not take them e.g.
             // - loops are conditional jmps backwards and predicted
-            // - exceptions are conditional fowards jmps and not predicted
+            // - exceptions are conditional forwards jmps and not predicted
         NotEqual:
             return false;
         }
@@ -2414,12 +2414,7 @@ namespace System
             }
 
             // Store any remaining values one-by-one
-            for (nuint i = 0; i < (length / 2); i++)
-            {
-                ref byte first = ref Unsafe.Add(ref buf, i);
-                ref byte last = ref Unsafe.Add(ref buf, length - 1 - i);
-                (last, first) = (first, last);
-            }
+            ReverseInner(ref buf, length);
         }
     }
 }

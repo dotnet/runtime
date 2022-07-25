@@ -4,6 +4,8 @@ As part of the new source-generated direction for .NET Interop, we are looking a
 
 These types pose an interesting problem for a number of reasons listed below. With a few constraints, I believe we can create a system that will enable users to use their own user-defined types and pass them by-value to native code.
 
+> NOTE: These design docs are kept for historical purposes. The designs in this file are superseded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
+
 ## Problems
 
 - What types require marshalling and what types can be passed as-is to native code?
@@ -139,7 +141,7 @@ When these `CallerAllocatedBuffer` feature flag is present, the source generator
 
 Type authors can pass down the `buffer` pointer to native code by using the `TwoStageMarshalling` feature to provide a `ToNativeValue` method that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. The `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 
-### Determining if a type is doesn't need marshalling
+### Determining if a type doesn't need marshalling
 
 For this design, we need to decide how to determine a type doesn't need to be marshalled and already has a representation we can pass directly to native code - that is, we need a definition for "does not require marshalling". We have two designs that we have experimented with below, and we have decided to go with design 2.
 
@@ -270,7 +272,7 @@ There are 2 usage mechanisms of these attributes.
 
 #### Usage 1, Source-generated interop
 
-The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type requires marshalling. If it does, it will generate a representation of the struct that does not require marshalling with the aformentioned required shape and apply the `NativeMarshallingAttribute` and point it to that new type. This generated representation can either be generated as a separate top-level type or as a nested type on `S`.
+The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type requires marshalling. If it does, it will generate a representation of the struct that does not require marshalling with the aforementioned required shape and apply the `NativeMarshallingAttribute` and point it to that new type. This generated representation can either be generated as a separate top-level type or as a nested type on `S`.
 
 #### Usage 2, Manual interop
 
@@ -336,7 +338,7 @@ public struct TMarshaller
 
 In this case, the underlying native type would actually be an `int`, but the user could use the strongly-typed `HResult` type as the public surface area.
 
-If a type `TMarshaller` with the `CustomTypeMarshaller` attribute specifies the `TwoStageMarshalling` feature, then it must provide the `ToNativeValue` feature if it supports the `In` direction, and the `FromNativeValue` method if it supports the `Out` direction. The return value of the `ToNativeValue` method will be passed to native code instead of the `TMarshaller` value itself. As a result, the type `TMarshaller` will be allowed to require marshalling and the return type of the `ToNativeValue` method, will be required be passable to native code without any additional marshalling. When marshalling in the native-to-managed direction, a default value of `TMarshaller` will have the `FromNativeValu` method called with the native value. If we are marshalling a scenario where a single frame covers the whole native call and we are marshalling in and out, then the same instance of the marshller will be reused.
+If a type `TMarshaller` with the `CustomTypeMarshaller` attribute specifies the `TwoStageMarshalling` feature, then it must provide the `ToNativeValue` feature if it supports the `In` direction, and the `FromNativeValue` method if it supports the `Out` direction. The return value of the `ToNativeValue` method will be passed to native code instead of the `TMarshaller` value itself. As a result, the type `TMarshaller` will be allowed to require marshalling and the return type of the `ToNativeValue` method, will be required be passable to native code without any additional marshalling. When marshalling in the native-to-managed direction, a default value of `TMarshaller` will have the `FromNativeValue` method called with the native value. If we are marshalling a scenario where a single frame covers the whole native call and we are marshalling in and out, then the same instance of the marshller will be reused.
 
 If the `TwoStageMarshalling` feature is specified, the developer may also provide a ref-returning or readonly-ref-returning `GetPinnableReference` method. The `GetPinnableReference` method will be called before the `ToNativeValue` method is called. The ref returned by `GetPinnableReference` will be pinned with a `fixed` statement, but the pinned value will not be used (it acts exclusively as a side-effect). As a result, `GetPinnableReference` can return a `ref` to any `T` that can be used in a fixed statement (a C# `unmanaged` type).
 

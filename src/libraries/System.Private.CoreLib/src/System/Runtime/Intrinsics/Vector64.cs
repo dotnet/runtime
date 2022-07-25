@@ -857,6 +857,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector64{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Create<T>(T[] values, int index)
             where T : struct
         {
@@ -880,6 +881,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="values">The readonly span from which the vector is created.</param>
         /// <returns>A new <see cref="Vector64{T}" /> with its elements set to the first <see cref="Vector64{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector64{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Create<T>(ReadOnlySpan<T> values)
             where T : struct
         {
@@ -2968,7 +2970,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="vector">The vector to copy.</param>
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
-        /// <returns><c>true</c> if <paramref name="vector" /> was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector64{T}.Count" />.</returns>
+        /// <returns><c>true</c> if <paramref name="vector" /> was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector64{T}.Count" />.</returns>
         public static bool TryCopyTo<T>(this Vector64<T> vector, Span<T> destination)
             where T : struct
         {

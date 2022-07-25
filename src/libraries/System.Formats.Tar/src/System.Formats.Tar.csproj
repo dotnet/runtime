@@ -14,7 +14,6 @@
     <Compile Include="System\Formats\Tar\FieldLengths.cs" />
     <Compile Include="System\Formats\Tar\FieldLocations.cs" />
     <Compile Include="System\Formats\Tar\PosixTarEntry.cs" />
-    <Compile Include="System\Formats\Tar\TarFileMode.cs" />
     <Compile Include="System\Formats\Tar\V7TarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarHeader.cs" />
     <Compile Include="System\Formats\Tar\TarHeader.Read.cs" />
@@ -24,6 +23,7 @@
     <Compile Include="System\Formats\Tar\TarEntryFormat.cs" />
     <Compile Include="System\Formats\Tar\UstarTarEntry.cs" />
     <Compile Include="System\Formats\Tar\GnuTarEntry.cs" />
+    <Compile Include="System\Formats\Tar\PaxGlobalExtendedAttributesTarEntry.cs" />
     <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarEntryType.cs" />
     <Compile Include="System\Formats\Tar\TarFile.cs" />
@@ -56,13 +56,11 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\System.Native\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.DeviceFiles.cs" Link="Common\Interop\Unix\System.Native\Interop.DeviceFiles.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs" Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\System.Native\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs" Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupName.cs" Link="Common\Interop\Unix\System.Native\Interop.GetGroupName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\System.Native\Interop.Link.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs" Link="Common\System\IO\Archiving.Utils.Unix.cs" />
   </ItemGroup>

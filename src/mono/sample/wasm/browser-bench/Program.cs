@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace Sample
 {
@@ -30,6 +31,7 @@ namespace Sample
         Formatter formatter = new HTMLFormatter();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [JSExport]
         public static Task<string> RunBenchmark()
         {
             return instance.RunTasks();
@@ -39,6 +41,7 @@ namespace Sample
         // the constructors of the task we care about are already used when createing tasks field
         [UnconditionalSuppressMessage("Trim analysis error", "IL2057")]
         [UnconditionalSuppressMessage("Trim analysis error", "IL2072")]
+        [JSExport]
         public static void SetTasks(string taskNames)
         {
             Regex pattern;
@@ -71,6 +74,13 @@ namespace Sample
             }
 
             instance.tasks = tasksList;
+        }
+
+        [JSExport]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string GetFullJsonResults()
+        {
+            return instance.GetJsonResults();
         }
 
         int taskCounter = 0;
@@ -198,11 +208,6 @@ namespace Sample
             public List<BenchTask.Result> results;
             public Dictionary<string, double> minTimes;
             public DateTime timeStamp;
-        }
-
-        public static string GetFullJsonResults()
-        {
-            return instance.GetJsonResults();
         }
 
         string GetJsonResults ()

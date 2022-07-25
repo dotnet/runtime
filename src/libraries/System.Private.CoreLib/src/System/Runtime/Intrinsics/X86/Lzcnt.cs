@@ -26,7 +26,7 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)
             ///   LZCNT reg, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong LeadingZeroCount(ulong value) => LeadingZeroCount(value);
         }

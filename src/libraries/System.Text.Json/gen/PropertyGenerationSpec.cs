@@ -9,6 +9,13 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
     internal sealed class PropertyGenerationSpec
     {
+        /// <summary>
+        /// The exact name specified in the source code. This might be different
+        /// from the <see cref="ClrName"/> because source code might be decorated
+        /// with '@' for reserved keywords, e.g. public string @event { get; set; }
+        /// </summary>
+        public string NameSpecifiedInSourceCode { get; init; }
+
         public string ClrName { get; init; }
 
         /// <summary>

@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -31,6 +32,5 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" />
   </ItemGroup>
 </Project>

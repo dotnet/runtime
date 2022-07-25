@@ -16,7 +16,6 @@ namespace Wasm.Build.Tests
         {}
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
@@ -25,7 +24,6 @@ namespace Wasm.Build.Tests
                     buildArgs, host, id);
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void AsyncMain(BuildArgs buildArgs, RunHost host, string id)

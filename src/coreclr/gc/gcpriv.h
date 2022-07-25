@@ -859,7 +859,7 @@ struct static_data
     float limit;
     float max_limit;
     uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
-    size_t gc_clock; // nubmer of gcs after which to collect generation
+    size_t gc_clock; // number of gcs after which to collect generation
 };
 
 // The dynamic data fields are grouped into 3 categories:
@@ -1476,10 +1476,14 @@ public:
     static
     void shutdown_gc();
 
-    // If the hard limit is specified, take that into consideration
-    // and this means it may modify the # of heaps.
     PER_HEAP_ISOLATED
-    size_t get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps);
+    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit_va (size_t seg_size);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
 
     PER_HEAP_ISOLATED
     bool should_retry_other_heap (int gen_number, size_t size);
@@ -2029,7 +2033,7 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL); 
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
     bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
     PER_HEAP_ISOLATED

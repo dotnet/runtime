@@ -500,7 +500,7 @@ public:
     //
     // Returns:
     //    True if the key was removed from the table; false otherwise.
-    bool TryRemove(const TKey& key, TValue* value)
+    bool TryRemove(const TKey& key, TValue* value = nullptr)
     {
         unsigned hash = TKeyInfo::GetHashCode(key);
 
@@ -543,8 +543,25 @@ public:
 
         m_numFullBuckets--;
 
-        *value = bucket->m_value;
+        if (value != nullptr)
+        {
+            *value = bucket->m_value;
+        }
+
         return true;
+    }
+
+    //------------------------------------------------------------------------
+    // HashTableBase::Remove: removes a key from the hash table and asserts
+    //                        that it did exist in the the table.
+    //
+    // Arguments:
+    //    key   - The key to remove from the table.
+    //
+    void Remove(const TKey& key)
+    {
+        bool removed = TryRemove(key);
+        assert(removed);
     }
 
     //------------------------------------------------------------------------

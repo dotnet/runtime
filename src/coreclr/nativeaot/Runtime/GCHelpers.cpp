@@ -287,6 +287,14 @@ COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
     return current_high;
 }
 
+using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+{
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    pHeap->EnumerateConfigurationValues(configurationContext, callback);
+}
+
 EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 {
     int64_t allocated;

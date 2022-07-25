@@ -56,11 +56,14 @@ namespace Wasm.Build.Tests
             string projectName = $"AppUsingSkiaSharp";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
+                            // FIXME: temporary, till `main` is either completely on 3.1.7, or 3.1.12
+                            extraProperties: "<EmccExtraLDFlags>-s ERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>",
                             extraItems: @$"
-                                <PackageReference Include=""SkiaSharp"" Version=""2.80.3"" />
-                                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.80.3"" />
+                                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
+                                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
 
-                                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\2.0.9\*.a"" />
+                                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
+
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
                             ");
 
@@ -95,8 +98,8 @@ public class Test
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
+        [BuildAndRun(aot: false, host: RunHost.Chrome)]
+        [BuildAndRun(aot: true, host: RunHost.Chrome)]
         public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingBrowserNativeCrypto";
@@ -137,14 +140,7 @@ public class Test
                 output);
 
             string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
-            if (host == RunHost.V8 || host == RunHost.NodeJS)
-            {
-                Assert.DoesNotContain(cryptoInitMsg, output);
-            }
-            else
-            {
-                Assert.Contains(cryptoInitMsg, output);
-            }
+            Assert.Contains(cryptoInitMsg, output);
         }
     }
 }

@@ -439,5 +439,34 @@ namespace System.Text.Json.Serialization.Tests
             public int? Age { get; set; }
             public DateTime? Birthday { get; set; }
         }
+
+        [Fact]
+        public static void RecursiveNullableStruct_Roundtrip()
+        {
+            var value = new RecursiveNullableStruct
+            {
+                Next = new RecursiveNullableStruct?[]
+                {
+                    new()
+                    {
+                        Next = new RecursiveNullableStruct?[]
+                        {
+                            null
+                        }
+                    }
+                }
+            };
+
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal("""{"Next":[{"Next":[null]}]}""", json);
+            value = JsonSerializer.Deserialize<RecursiveNullableStruct>(json);
+            string roundtripJson = JsonSerializer.Serialize(value);
+            Assert.Equal(roundtripJson, json);
+        }
+
+        public struct RecursiveNullableStruct
+        {
+            public RecursiveNullableStruct?[] Next { get; set; } 
+        }
     }
 }

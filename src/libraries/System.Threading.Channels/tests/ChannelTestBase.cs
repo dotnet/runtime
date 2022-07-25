@@ -328,7 +328,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public async Task WaitToWriteAsync_ManyConcurrent_SatisifedByReaders()
+        public async Task WaitToWriteAsync_ManyConcurrent_SatisfiedByReaders()
         {
             if (RequiresSingleReader || RequiresSingleWriter)
             {

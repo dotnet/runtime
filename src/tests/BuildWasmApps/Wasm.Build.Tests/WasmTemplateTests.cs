@@ -3,10 +3,10 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using System.Threading.Tasks;
 
 #nullable enable
 
@@ -17,6 +17,20 @@ namespace Wasm.Build.Tests
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
+        }
+
+        private void updateProgramCS() {
+            string programText = """
+            Console.WriteLine("Hello, Console!");
+
+            for (int i = 0; i < args.Length; i ++)
+                Console.WriteLine ($"args[{i}] = {args[i]}");
+            """;
+            var path = Path.Combine(_projectDir!, "Program.cs");
+            string text = File.ReadAllText(path);
+            text = text.Replace(@"Console.WriteLine(""Hello, Console!"");", programText);
+            text = text.Replace("return 0;", "return 42;");
+            File.WriteAllText(path, text);
         }
 
         [Theory]
@@ -34,13 +48,15 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: false,
                             TargetFramework: "net7.0"
                         ));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -50,16 +66,19 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            bool expectRelinking = config == "Release";
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [Theory]
@@ -80,10 +99,12 @@ namespace Wasm.Build.Tests
                         DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
                         HasV8Script: false,
-                        MainJS: "main.cjs",
+                        MainJS: "main.mjs",
                         Publish: false,
                         TargetFramework: "net7.0"
                         ));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
@@ -103,10 +124,12 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -118,13 +141,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string programText = """
-            using System;
-
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            updateProgramCS();
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -135,13 +152,15 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: false,
                             TargetFramework: "net7.0"
                             ));
 
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
-            Assert.Equal(0, exitCode);
+            Assert.Equal(42, exitCode);
             Assert.Contains("args[0] = x", output);
             Assert.Contains("args[1] = y", output);
             Assert.Contains("args[2] = z", output);
@@ -158,13 +177,8 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string programText = """
-            using System;
-
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            updateProgramCS();
+            
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
@@ -178,10 +192,12 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
 
             // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";
@@ -191,7 +207,7 @@ namespace Wasm.Build.Tests
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
                                 .ExecuteWithCapturedOutput(runArgs)
-                                .EnsureSuccessful();
+                                .EnsureExitCode(42);
 
             if (aot)
                 Assert.Contains($"AOT: image '{Path.GetFileNameWithoutExtension(projectFile)}' found", res.Output);
@@ -200,7 +216,6 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-#if false // FIXME: playwright on CI
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         public async Task BlazorRunTest()
         {
@@ -255,6 +270,5 @@ namespace Wasm.Build.Tests
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }
-#endif
     }
 }

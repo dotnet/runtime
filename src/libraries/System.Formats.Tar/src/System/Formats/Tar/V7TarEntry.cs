@@ -8,9 +8,9 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class V7TarEntry : TarEntry
     {
-        // Constructor used when reading an existing archive.
+        // Constructor called when reading a TarEntry from a TarReader.
         internal V7TarEntry(TarHeader header, TarReader readerOfOrigin)
-            : base(header, readerOfOrigin)
+            : base(header, readerOfOrigin, TarEntryFormat.V7)
         {
         }
 
@@ -23,7 +23,15 @@ namespace System.Formats.Tar
         /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="V7TarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/> and <see cref="TarEntryType.V7RegularFile"/>.</remarks>
         public V7TarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.V7)
+            : base(entryType, entryName, TarEntryFormat.V7, isGea: false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
+        /// </summary>
+        public V7TarEntry(TarEntry other)
+            : base(other, TarEntryFormat.V7)
         {
         }
 

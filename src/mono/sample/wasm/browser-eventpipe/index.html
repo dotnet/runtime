@@ -7,6 +7,8 @@
   <title>Sample EventPipe profile session</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="modulepreload" href="./main.js" />
+  <link rel="modulepreload" href="./dotnet.js" />
 </head>
 
 <body>
@@ -16,9 +18,8 @@
     <label for="inputN">N:</label> <input type="number" id="inputN" value="10"/>
   </div>
   <div>Computing Fib(N) repeatedly: <span id="out"></span>
-  <script type="text/javascript" src="./dotnet.js"></script>
-  <script type="text/javascript" src="./dotnet.worker.js"></script>
-  <script type="text/javascript" src="./main.js"></script>
+  <script type="module" src="./dotnet.worker.js"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 
 </html>

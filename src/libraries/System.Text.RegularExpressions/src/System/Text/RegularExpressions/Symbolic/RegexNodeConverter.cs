@@ -240,12 +240,12 @@ namespace System.Text.RegularExpressions.Symbolic
                                     SymbolicRegexNode<BDD> elem = childResult.Count == 1 ?
                                         childResult.FirstElement :
                                         _builder.CreateConcatAlreadyReversed(childResult);
-                                    if (elem.IsNothing)
+                                    if (elem.IsNothing(_builder._solver))
                                     {
                                         continue;
                                     }
 
-                                    or = elem.IsAnyStar ?
+                                    or = elem.IsAnyStar(_builder._solver) ?
                                         elem : // .* is the absorbing element
                                         SymbolicRegexNode<BDD>.CreateAlternate(_builder, elem, or);
                                 }

@@ -153,7 +153,7 @@ namespace System.Reflection.Emit
                 Type a = args[i];
                 Type b = other.args[i];
                 /*
-                We must cannonicalize as much as we can. Using equals means that some resulting types
+                We must canonicalize as much as we can. Using equals means that some resulting types
                 won't have the exact same types as the argument ones.
                 For example, flyweight types used array, pointer and byref will should this behavior.
                 MCS seens to be resilient to this problem so hopefully this won't show up.
@@ -360,11 +360,11 @@ namespace System.Reflection.Emit
 
         public override Module[] GetLoadedModules(bool getResourceModules) => GetModules(getResourceModules);
 
-        //FIXME MS has issues loading satelite assemblies from SRE
+        //FIXME MS has issues loading satellite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture) => GetSatelliteAssembly(culture, null);
 
-        //FIXME MS has issues loading satelite assemblies from SRE
+        //FIXME MS has issues loading satellite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) =>
             RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;

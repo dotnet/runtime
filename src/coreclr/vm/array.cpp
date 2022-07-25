@@ -402,8 +402,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             StackSString ssElemName;
             elemTypeHnd.GetName(ssElemName);
 
-            StackScratchBuffer scratch;
-            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
+            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
         }
     }
 
@@ -510,8 +509,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 #ifdef _DEBUG
     StackSString debugName;
     TypeString::AppendType(debugName, TypeHandle(pMT));
-    StackScratchBuffer buff;
-    const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+    const char* pDebugNameUTF8 = debugName.GetUTF8();
     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
     size_t len = safeLen.Value();
@@ -657,8 +655,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                     StackSString ssElemName;
                     elemTypeHnd.GetName(ssElemName);
 
-                    StackScratchBuffer scratch;
-                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch),
+                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(),
                                                                       IDS_CLASSLOAD_VALUECLASSTOOLARGE);
                 }
 
@@ -1183,7 +1180,7 @@ public:
         if (s_pArrayStubCache == NULL)
         {
             ArrayStubCache * pArrayStubCache = new ArrayStubCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-            if (FastInterlockCompareExchangePointer(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
+            if (InterlockedCompareExchangeT(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
                 delete pArrayStubCache;
         }
 
@@ -1319,7 +1316,7 @@ CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
     _ASSERTE(CorTypeInfo::IsPrimitiveType_NoThrow(elementType));
 
     // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-    // Enums with interchangeable underlying types are interchangable
+    // Enums with interchangeable underlying types are interchangeable
     // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
     switch (elementType)

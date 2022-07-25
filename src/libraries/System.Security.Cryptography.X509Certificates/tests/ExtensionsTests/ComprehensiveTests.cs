@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Net;
 using Test.Cryptography;
 using Xunit;
 
@@ -75,7 +76,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
                     Assert.Equal(expected, sans.RawData);
 
-                    Assert.IsType<X509Extension>(sans);
+                    // This SAN only contains an alternate DirectoryName entry, so both the DNSNames and
+                    // IPAddresses enumerations being empty is correct.
+                    X509SubjectAlternativeNameExtension rich = Assert.IsType<X509SubjectAlternativeNameExtension>(sans);
+                    Assert.Equal(Enumerable.Empty<string>(), rich.EnumerateDnsNames());
+                    Assert.Equal(Enumerable.Empty<IPAddress>(), rich.EnumerateIPAddresses());
                 }
 
                 {
@@ -103,7 +108,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
                     byte[] expected = "30168014cb11e8cad2b4165801c9372e331616b94c9a0a1f".HexToByteArray();
                     Assert.Equal(expected, akid.RawData);
 
-                    Assert.IsType<X509Extension>(akid);
+                    X509AuthorityKeyIdentifierExtension rich =
+                        Assert.IsType<X509AuthorityKeyIdentifierExtension>(akid);
+
+                    Assert.False(rich.RawIssuer.HasValue, "akid.RawIssuer.HasValue");
+                    Assert.Null(rich.NamedIssuer);
+                    Assert.False(rich.SerialNumber.HasValue, "akid.SerialNumber.HasValue");
+                    Assert.True(rich.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
+
+                    Assert.Equal(
+                        "CB11E8CAD2B4165801C9372E331616B94C9A0A1F",
+                        rich.KeyIdentifier.GetValueOrDefault().ByteArrayToHex());
                 }
 
                 {

@@ -52,7 +52,7 @@ namespace Microsoft.Interop
             if (!fixedStatements.IsEmpty)
             {
                 int i = fixedStatements.Length - 1;
-                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(SyntaxFactory.Block(nestedStatement));
+                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(WrapStatementInBlock(nestedStatement));
                 i--;
                 for (; i >= 0; i--)
                 {
@@ -60,6 +60,15 @@ namespace Microsoft.Interop
                 }
             }
             return nestedStatement;
+
+            static StatementSyntax WrapStatementInBlock(StatementSyntax statement)
+            {
+                if (statement.IsKind(SyntaxKind.Block))
+                {
+                    return statement;
+                }
+                return SyntaxFactory.Block(statement);
+            }
         }
 
         public static SyntaxTokenList StripTriviaFromTokens(this SyntaxTokenList tokenList)

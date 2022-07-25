@@ -21,6 +21,6 @@ namespace System.Numerics
         /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
         /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
         /// <exception cref="OverflowException">The difference of <paramref name="right" /> subtracted from <paramref name="left" /> is not representable by <typeparamref name="TResult" />.</exception>
-        static abstract TResult operator checked -(TSelf left, TOther right);
+        static virtual TResult operator checked -(TSelf left, TOther right) => left - right;
     }
 }

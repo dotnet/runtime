@@ -71,8 +71,7 @@ namespace System.Net
             lock (_locker)
             {
                 _completed = true;
-                if (_handle != null)
-                    _handle.Set();
+                _handle?.Set();
 
                 if (_cb != null)
                     ThreadPool.UnsafeQueueUserWorkItem(s_invokeCB, this);
@@ -177,8 +176,7 @@ namespace System.Net
                     _completed = true;
                     _synch = false;
 
-                    if (_handle != null)
-                        _handle.Set();
+                    _handle?.Set();
 
                     if (_cb != null)
                         ThreadPool.UnsafeQueueUserWorkItem(s_invokeCB, this);
@@ -220,8 +218,7 @@ namespace System.Net
 
                 lock (_locker)
                 {
-                    if (_handle == null)
-                        _handle = new ManualResetEvent(_completed);
+                    _handle ??= new ManualResetEvent(_completed);
                 }
 
                 return _handle;

@@ -281,7 +281,7 @@ namespace System
             ParsingStatus status = TryParseInt32(value, styles, info, out int result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.Int32);
+                ThrowOverflowOrFormatException(status, value, TypeCode.Int32);
             }
 
             return result;
@@ -292,7 +292,7 @@ namespace System
             ParsingStatus status = TryParseInt64(value, styles, info, out long result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.Int64);
+                ThrowOverflowOrFormatException(status, value, TypeCode.Int64);
             }
 
             return result;
@@ -314,7 +314,7 @@ namespace System
             ParsingStatus status = TryParseUInt32(value, styles, info, out uint result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.UInt32);
+                ThrowOverflowOrFormatException(status, value, TypeCode.UInt32);
             }
 
             return result;
@@ -325,7 +325,7 @@ namespace System
             ParsingStatus status = TryParseUInt64(value, styles, info, out ulong result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.UInt64);
+                ThrowOverflowOrFormatException(status, value, TypeCode.UInt64);
             }
 
             return result;
@@ -622,8 +622,7 @@ namespace System
         private static unsafe ParsingStatus TryParseInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[Int32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[Int32NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1017,8 +1016,7 @@ namespace System
         private static unsafe ParsingStatus TryParseInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[Int64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[Int64NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1234,8 +1232,7 @@ namespace System
         private static unsafe ParsingStatus TryParseInt128Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Int128 result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[Int128NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int128NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[Int128NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1270,8 +1267,7 @@ namespace System
         private static unsafe ParsingStatus TryParseUInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[UInt32NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1606,8 +1602,7 @@ namespace System
         private static unsafe ParsingStatus TryParseUInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
         {
             result = 0;
-            byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[UInt64NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1942,8 +1937,7 @@ namespace System
         private static unsafe ParsingStatus TryParseUInt128Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out UInt128 result)
         {
             result = 0U;
-            byte* pDigits = stackalloc byte[UInt128NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt128NumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[UInt128NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -2265,7 +2259,7 @@ namespace System
             ParsingStatus status = TryParseDecimal(value, styles, info, out decimal result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.Decimal);
+                ThrowOverflowOrFormatException(status, value, TypeCode.Decimal);
             }
 
             return result;
@@ -2395,7 +2389,7 @@ namespace System
         {
             if (!TryParseDouble(value, styles, info, out double result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
 
             return result;
@@ -2405,7 +2399,7 @@ namespace System
         {
             if (!TryParseSingle(value, styles, info, out float result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
 
             return result;
@@ -2415,7 +2409,7 @@ namespace System
         {
             if (!TryParseHalf(value, styles, info, out Half result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
 
             return result;
@@ -2423,8 +2417,7 @@ namespace System
 
         internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
-            byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, DecimalNumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
 
             result = 0;
 
@@ -2445,8 +2438,7 @@ namespace System
 
         internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
-            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[DoubleNumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -2507,8 +2499,7 @@ namespace System
 
         internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
         {
-            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[HalfNumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -2579,8 +2570,7 @@ namespace System
 
         internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
         {
-            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[SingleNumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -2667,19 +2657,10 @@ namespace System
             return true;
         }
 
-        private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
-        {
+        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
+        private static bool TrailingZeros(ReadOnlySpan<char> value, int index) =>
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            for (int i = index; (uint)i < (uint)value.Length; i++)
-            {
-                if (value[i] != '\0')
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+            value.Slice(index).IndexOfAnyExcept('\0') < 0;
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
@@ -2736,10 +2717,10 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatException(ParsingStatus status, TypeCode type = 0) => throw GetException(status, type);
+        internal static void ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw GetException(status, value, type);
 
         [DoesNotReturn]
-        internal static void ThrowOverflowException(TypeCode type) => throw GetException(ParsingStatus.Overflow, type);
+        internal static void ThrowOverflowException(TypeCode type) => throw GetOverflowException(type);
 
         [DoesNotReturn]
         internal static void ThrowOverflowOrFormatExceptionInt128(ParsingStatus status) => throw GetExceptionInt128(status);
@@ -2747,11 +2728,16 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowOverflowOrFormatExceptionUInt128(ParsingStatus status) => throw GetExceptionUInt128(status);
 
-        private static Exception GetException(ParsingStatus status, TypeCode type)
+        private static Exception GetException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type)
         {
             if (status == ParsingStatus.Failed)
-                return new FormatException(SR.Format_InvalidString);
+                return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
 
+            return GetOverflowException(type);
+        }
+
+        private static Exception GetOverflowException(TypeCode type)
+        {
             string s;
             switch (type)
             {

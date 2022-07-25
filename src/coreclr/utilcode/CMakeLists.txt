@@ -27,7 +27,6 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
-  iallocator.cpp
   loaderheap.cpp
   outstring.cpp
   ilformatter.cpp

@@ -404,7 +404,7 @@ namespace System.Data.Odbc
             NESTED = 0x00000008,    // SQL_OJ_NESTED
             NOT_ORDERED = 0x00000010,    // SQL_OJ_NOT_ORDERED
             INNER = 0x00000020,    // SQL_OJ_INNER
-            ALL_COMPARISON_OPS = 0x00000040,  //SQL_OJ_ALLCOMPARISION+OPS
+            ALL_COMPARISON_OPS = 0x00000040,  //SQL_OJ_ALLCOMPARISON+OPS
         }
 
         internal enum SQL_UPDATABLE
@@ -985,7 +985,7 @@ namespace System.Data.Odbc
         {
             // upgrade unsigned types to be able to hold data that has the highest bit set
             //
-            if (unsigned == true)
+            if (unsigned)
             {
                 return typeMap._dbType switch
                 {

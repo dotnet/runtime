@@ -523,7 +523,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -554,7 +554,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-#ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
+#ifdef DEBUG // This information is used in DEBUG builds for additional diagnostics
 
     struct instrDesc;
 
@@ -997,7 +997,7 @@ protected:
                 case IF_LARGELDC:
                     if (isVectorRegister(idReg1()))
                     {
-                        // adrp + ldr + fmov
+                        // (adrp + ldr + fmov) or (adrp + add + ld1)
                         size = 12;
                     }
                     else
@@ -1430,7 +1430,7 @@ protected:
 #define PERFSCORE_LATENCY_62C 62.0f
 #define PERFSCORE_LATENCY_69C 69.0f
 #define PERFSCORE_LATENCY_140C 140.0f
-#define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instuctions
+#define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instructions
 
 #define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch
 #define PERFSCORE_LATENCY_BRANCH_COND 2.0f     // includes cost of a possible misprediction
@@ -2368,6 +2368,11 @@ public:
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
     void emitSetFrameRangeArgs(int offsLo, int offsHi);
 
+    bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
+    }
+
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
@@ -2555,7 +2560,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
 #ifdef DEBUG
-    void emitDispDataSec(dataSecDsc* section);
+    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
 #endif
 
     /************************************************************************/

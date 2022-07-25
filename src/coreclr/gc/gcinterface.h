@@ -536,6 +536,16 @@ public:
     virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
 };
 
+// Enum representing the type to be passed to GC.CoreCLR.cs used to deduce the type of configuration.
+enum class GCConfigurationType
+{
+    Int64,
+    StringUtf8,
+    Boolean 
+};
+
+using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
 public:
@@ -933,6 +943,9 @@ public:
 
     // Get the total paused duration.
     virtual int64_t GetTotalPauseDuration() = 0;
+
+    // Gets all the names and values of the GC configurations.
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

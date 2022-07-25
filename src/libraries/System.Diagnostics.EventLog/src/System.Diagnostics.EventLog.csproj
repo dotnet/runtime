@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -110,6 +110,8 @@ System.Diagnostics.EventLog</PackageDescription>
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
+             Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

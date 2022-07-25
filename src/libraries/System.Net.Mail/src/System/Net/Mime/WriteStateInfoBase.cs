@@ -77,10 +77,10 @@ namespace System.Net.Mime
             _currentLineLength++;
         }
 
-        internal void Append(params byte[] bytes)
+        internal void Append(ReadOnlySpan<byte> bytes)
         {
             EnsureSpaceInBuffer(bytes.Length);
-            bytes.CopyTo(_buffer, Length);
+            bytes.CopyTo(_buffer.AsSpan(Length));
             _currentLineLength += bytes.Length;
             _currentBufferUsed += bytes.Length;
         }
@@ -90,7 +90,7 @@ namespace System.Net.Mime
             AppendFooter();
 
             //add soft line break
-            Append((byte)'\r', (byte)'\n');
+            Append("\r\n"u8);
             _currentLineLength = 0; // New Line
             if (includeSpace)
             {

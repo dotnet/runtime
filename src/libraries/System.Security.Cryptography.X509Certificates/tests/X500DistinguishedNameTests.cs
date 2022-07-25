@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Formats.Asn1;
+using System.Linq;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -228,6 +231,212 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             X500DistinguishedName dn = new X500DistinguishedName("ST=VA, C=US");
             Assert.Equal("C=US, S=VA", dn.Decode(X500DistinguishedNameFlags.None));
+        }
+
+        [Fact]
+        public static void EnumeratorWithNonTextualData()
+        {
+            // OID.2.5.4.106=#06032A0304, CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation,
+            // L=Redmond, S=Washington, C=US
+            byte[] encoded =
+            {
+                0x30, 0x81, 0x98, 0x31, 0x0B, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x55, 0x53,
+                0x31, 0x13, 0x30, 0x11, 0x06, 0x03, 0x55, 0x04, 0x08, 0x13, 0x0A, 0x57, 0x61, 0x73, 0x68, 0x69,
+                0x6E, 0x67, 0x74, 0x6F, 0x6E, 0x31, 0x10, 0x30, 0x0E, 0x06, 0x03, 0x55, 0x04, 0x07, 0x13, 0x07,
+                0x52, 0x65, 0x64, 0x6D, 0x6F, 0x6E, 0x64, 0x31, 0x1E, 0x30, 0x1C, 0x06, 0x03, 0x55, 0x04, 0x0A,
+                0x13, 0x15, 0x4D, 0x69, 0x63, 0x72, 0x6F, 0x73, 0x6F, 0x66, 0x74, 0x20, 0x43, 0x6F, 0x72, 0x70,
+                0x6F, 0x72, 0x61, 0x74, 0x69, 0x6F, 0x6E, 0x31, 0x20, 0x30, 0x1E, 0x06, 0x03, 0x55, 0x04, 0x0B,
+                0x13, 0x17, 0x2E, 0x4E, 0x45, 0x54, 0x20, 0x46, 0x72, 0x61, 0x6D, 0x65, 0x77, 0x6F, 0x72, 0x6B,
+                0x20, 0x28, 0x43, 0x6F, 0x72, 0x65, 0x46, 0x58, 0x29, 0x31, 0x12, 0x30, 0x10, 0x06, 0x03, 0x55,
+                0x04, 0x03, 0x13, 0x09, 0x6C, 0x6F, 0x63, 0x61, 0x6C, 0x68, 0x6F, 0x73, 0x74, 0x31, 0x0C, 0x30,
+                0x0A, 0x06, 0x03, 0x55, 0x04, 0x6A, 0x06, 0x03, 0x2A, 0x03, 0x04,
+            };
+
+            X500DistinguishedName dn = new X500DistinguishedName(encoded);
+            IEnumerable<X500RelativeDistinguishedName> able = dn.EnumerateRelativeDistinguishedNames(false);
+            IEnumerator<X500RelativeDistinguishedName> ator = able.GetEnumerator();
+
+            int index = 0;
+            AssertRDN(ator, "2.5.4.6", "US", ++index);
+            AssertRDN(ator, "2.5.4.8", "Washington", ++index);
+            AssertRDN(ator, "2.5.4.7", "Redmond", ++index);
+            AssertRDN(ator, "2.5.4.10", "Microsoft Corporation", ++index);
+            AssertRDN(ator, "2.5.4.11", ".NET Framework (CoreFX)", ++index);
+            AssertRDN(ator, "2.5.4.3", "localhost", ++index);
+            AssertRDN(ator, "2.5.4.106", null, ++index);
+
+            Assert.False(ator.MoveNext(), $"ator.MoveNext() {++index}");
+
+            static void AssertRDN(
+                IEnumerator<X500RelativeDistinguishedName> ator,
+                string typeOid,
+                string? value,
+                int index)
+            {
+                Assert.True(ator.MoveNext(), $"ator.MoveNext() {index}");
+                Assert.False(ator.Current.HasMultipleElements, $"ator.Current.HasMultipleElements {index}");
+                Assert.Equal(typeOid, ator.Current.GetSingleElementType().Value);
+                Assert.Equal(value, ator.Current.GetSingleElementValue());
+            }
+        }
+
+        [Fact]
+        public static void EnumeratorWithInvalidData()
+        {
+            // A variety of encodings of a country name, except it has two versions of
+            // the CountryCode3n attribute, both say they are NumericString (as matching the spec),
+            // but the latter one has the correct value (840) and the earlier one has the 3c text (USA).
+            //
+            // C=US, n3=840, n3=USA, c3=USA, jurisdictionOfIncorporationCountryName=US
+            X500DistinguishedName dn = new X500DistinguishedName((
+                "304C31133011060B2B0601040182373C02010313025553310C300A0603550462" +
+                "1303555341310C300A06035504631203555341310C300A060355046312033834" +
+                "30310B3009060355040613025553").HexToByteArray());
+
+            int index = 0;
+
+            foreach (X500RelativeDistinguishedName rdn in dn.EnumerateRelativeDistinguishedNames(reversed: false))
+            {
+                switch (index)
+                {
+                    case 0:
+                        AssertSimpleRDN(rdn, "1.3.6.1.4.1.311.60.2.1.3", "US", index);
+                        break;
+                    case 1:
+                        AssertSimpleRDN(rdn, "2.5.4.98", "USA", index);
+                        break;
+                    case 2:
+                        Assert.False(rdn.HasMultipleElements, $"rdn.HasMultipleElements {index}");
+                        Assert.Equal("2.5.4.99", rdn.GetSingleElementType().Value);
+
+                        CryptographicException ex = Assert.Throws<CryptographicException>(
+                            () => rdn.GetSingleElementValue());
+
+                        Assert.IsType<AsnContentException>(ex.InnerException);
+                        Assert.IsType<DecoderFallbackException>(ex.InnerException.InnerException);
+                        break;
+                    case 3:
+                        AssertSimpleRDN(rdn, "2.5.4.99", "840", index);
+                        break;
+                    case 4:
+                        AssertSimpleRDN(rdn, "2.5.4.6", "US", index);
+                        break;
+                    default:
+                        Assert.Fail($"Enumeration produced an unexpected {index}th result");
+                        break;
+                }
+
+                index++;
+            }
+
+            Assert.Equal(5, index);
+
+            static void AssertSimpleRDN(
+                X500RelativeDistinguishedName rdn,
+                string typeOid,
+                string? value,
+                int index)
+            {
+                Assert.False(rdn.HasMultipleElements, $"rdn.HasMultipleElements {index}");
+                Assert.Equal(typeOid, rdn.GetSingleElementType().Value);
+                Assert.Equal(value, rdn.GetSingleElementValue());
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void EnumerateWithMultiValueRdn(bool fromSpan)
+        {
+            // n3=840, CN=James + O=Microsoft, C=US
+            ReadOnlySpan<byte> encoded = new byte[]
+            {
+                0x30, 0x3D, 0x31, 0x0B, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x55, 0x53, 0x31,
+                0x20, 0x30, 0x0C, 0x06, 0x03, 0x55, 0x04, 0x03, 0x13, 0x05, 0x4A, 0x61, 0x6D, 0x65, 0x73, 0x30,
+                0x10, 0x06, 0x03, 0x55, 0x04, 0x0A, 0x13, 0x09, 0x4D, 0x69, 0x63, 0x72, 0x6F, 0x73, 0x6F, 0x66,
+                0x74, 0x31, 0x0C, 0x30, 0x0A, 0x06, 0x03, 0x55, 0x04, 0x63, 0x12, 0x03, 0x38, 0x34, 0x30,
+            };
+
+            X500DistinguishedName dn;
+
+            if (fromSpan)
+            {
+                dn = new X500DistinguishedName(encoded);
+            }
+            else
+            {
+                byte[] tmp = encoded.ToArray();
+                dn = new X500DistinguishedName(tmp);
+
+                // Updating encoded here is important for the !Overlaps test.
+                encoded = tmp;
+            }
+
+            int index = 0;
+
+            foreach (X500RelativeDistinguishedName rdn in dn.EnumerateRelativeDistinguishedNames(reversed: false))
+            {
+                switch (index)
+                {
+                    case 0:
+                        Assert.False(rdn.HasMultipleElements, $"rdn.HasMultipleElements {index}");
+                        Assert.Equal("2.5.4.6", rdn.GetSingleElementType().Value);
+                        Assert.Equal("US", rdn.GetSingleElementValue());
+                        break;
+                    case 1:
+                        Assert.True(rdn.HasMultipleElements, $"rdn.HasMultipleElements {index}");
+                        Assert.Throws<InvalidOperationException>(() => rdn.GetSingleElementType());
+                        Assert.Throws<InvalidOperationException>(() => rdn.GetSingleElementValue());
+
+                        ReadOnlySpan<byte> expected = encoded.Slice(15, 34);
+                        AssertExtensions.SequenceEqual(expected, rdn.RawData.Span);
+                        Assert.False(expected.Overlaps(rdn.RawData.Span), "expected.Overlaps(rdn.RawData.Span)");
+
+                        break;
+                    case 2:
+                        Assert.False(rdn.HasMultipleElements, $"rdn.HasMultipleElements {index}");
+                        Assert.Equal("2.5.4.99", rdn.GetSingleElementType().Value);
+                        Assert.Equal("840", rdn.GetSingleElementValue());
+                        break;
+                    default:
+                        Assert.Fail($"Enumeration produced an unexpected {index}th result");
+                        break;
+                }
+
+                index++;
+            }
+
+            Assert.Equal(3, index);
+        }
+
+        [Fact]
+        public static void CheckCachedOids()
+        {
+            // This test uses a couple of OIDs that should be cached, and a couple that are rare
+            // and thus are not cached.  It's not intended to test the caching 100%, just that the
+            // caching is matching some basic sanity.
+
+            // n3=840, C=CA, E=totes not an email, n3=840 C=US, E=totes not an email
+            X500DistinguishedName dn = new X500DistinguishedName((
+                "307C3121301F06092A864886F70D0109011612746F746573206E6F7420616E20" +
+                "656D61696C310B3009060355040613025553310C300A06035504631203383430" +
+                "3121301F06092A864886F70D0109011612746F746573206E6F7420616E20656D" +
+                "61696C310B3009060355040613024341310C300A06035504631203383430").HexToByteArray());
+
+            List<X500RelativeDistinguishedName> rdns = dn.EnumerateRelativeDistinguishedNames().ToList();
+
+            // n3 isn't cached, so the two Oid instances are not the same.
+            Assert.NotSame(rdns[0].GetSingleElementType(), rdns[3].GetSingleElementType());
+            Assert.Equal(rdns[0].GetSingleElementType().Value, rdns[3].GetSingleElementType().Value);
+            Assert.Equal("2.5.4.99", rdns[0].GetSingleElementType().Value);
+
+            // C is cached
+            Assert.Same(rdns[1].GetSingleElementType(), rdns[4].GetSingleElementType());
+            Assert.Equal("2.5.4.6", rdns[1].GetSingleElementType().Value);
+
+            // E is cached
+            Assert.Same(rdns[2].GetSingleElementType(), rdns[5].GetSingleElementType());
+            Assert.Equal("1.2.840.113549.1.9.1", rdns[2].GetSingleElementType().Value);
         }
 
         public static readonly object[][] WhitespaceBeforeCases =

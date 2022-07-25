@@ -685,7 +685,7 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
 
 /*
 The wrappers below are simple implementations that may not be as robust as complete functions in the Secure CRT library.
-Remember to fix the errcode defintion in safecrt.h.
+Remember to fix the errcode definition in safecrt.h.
 */
 
 #define swscanf_s swscanf
@@ -933,7 +933,7 @@ interface IMoniker;
 
 typedef VOID (WINAPI *LPOVERLAPPED_COMPLETION_ROUTINE)(
     DWORD dwErrorCode,
-    DWORD dwNumberOfBytesTransfered,
+    DWORD dwNumberOfBytesTransferred,
     LPOVERLAPPED lpOverlapped);
 
 //
@@ -1144,6 +1144,14 @@ typedef struct _DISPATCHER_CONTEXT {
 
 typedef struct _DISPATCHER_CONTEXT {
     // S390X does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(HOST_POWERPC64)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // PPC64LE does not build the VM or JIT at this point,
     // so we only provide a dummy definition.
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;

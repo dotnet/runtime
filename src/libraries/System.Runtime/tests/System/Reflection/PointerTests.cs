@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.Reflection.Tests

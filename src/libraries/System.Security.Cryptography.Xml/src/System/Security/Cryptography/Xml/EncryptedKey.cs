@@ -15,13 +15,7 @@ namespace System.Security.Cryptography.Xml
 
         public string Recipient
         {
-            get
-            {
-                // an unspecified value for an XmlAttribute is string.Empty
-                if (_recipient == null)
-                    _recipient = string.Empty;
-                return _recipient;
-            }
+            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
             set
             {
                 _recipient = value;
@@ -39,15 +33,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public ReferenceList ReferenceList
-        {
-            get
-            {
-                if (_referenceList == null)
-                    _referenceList = new ReferenceList();
-                return _referenceList;
-            }
-        }
+        public ReferenceList ReferenceList => _referenceList ??= new ReferenceList();
 
         public void AddReference(DataReference dataReference)
         {

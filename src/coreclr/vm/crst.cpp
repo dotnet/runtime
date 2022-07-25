@@ -308,7 +308,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         if (m_dwFlags & CRST_TAKEN_DURING_SHUTDOWN)
         {
             // increment the usage count of locks that can be taken during shutdown
-            FastInterlockIncrement(&g_ShutdownCrstUsageCount);
+            InterlockedIncrement(&g_ShutdownCrstUsageCount);
         }
 
         // If this is a debugger lock, bump up the "Can't-Stop" count.
@@ -368,7 +368,7 @@ void CrstBase::Leave()
         {
             // decrement the usage count of locks that can be taken during shutdown
             _ASSERTE_MSG(g_ShutdownCrstUsageCount.Load() > 0, "Attempting to leave a lock that was never taken!");
-            FastInterlockDecrement(&g_ShutdownCrstUsageCount);
+            InterlockedDecrement(&g_ShutdownCrstUsageCount);
         }
     }
 

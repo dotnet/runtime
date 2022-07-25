@@ -233,32 +233,33 @@ unw_save_loc_t;
 
 /* These routines work both for local and remote unwinding.  */
 
-#define unw_local_addr_space	UNW_OBJ(local_addr_space)
-#define unw_create_addr_space	UNW_OBJ(create_addr_space)
-#define unw_destroy_addr_space	UNW_OBJ(destroy_addr_space)
-#define unw_get_accessors	UNW_ARCH_OBJ(get_accessors)
-#define unw_get_accessors_int	UNW_ARCH_OBJ(get_accessors_int)
-#define unw_init_local		UNW_OBJ(init_local)
-#define unw_init_local2	        UNW_OBJ(init_local2)
-#define unw_init_remote		UNW_OBJ(init_remote)
-#define unw_step		UNW_OBJ(step)
-#define unw_resume		UNW_OBJ(resume)
-#define unw_get_proc_info	UNW_OBJ(get_proc_info)
-#define unw_get_proc_info_by_ip	UNW_OBJ(get_proc_info_by_ip)
-#define unw_reg_states_iterate  UNW_OBJ(reg_states_iterate)
-#define unw_apply_reg_state     UNW_OBJ(apply_reg_state)
-#define unw_get_reg		UNW_OBJ(get_reg)
-#define unw_set_reg		UNW_OBJ(set_reg)
-#define unw_get_fpreg		UNW_OBJ(get_fpreg)
-#define unw_set_fpreg		UNW_OBJ(set_fpreg)
-#define unw_get_save_loc	UNW_OBJ(get_save_loc)
-#define unw_is_signal_frame	UNW_OBJ(is_signal_frame)
-#define unw_get_proc_name	UNW_OBJ(get_proc_name)
-#define unw_set_caching_policy	UNW_OBJ(set_caching_policy)
-#define unw_set_cache_size	UNW_OBJ(set_cache_size)
-#define unw_regname		UNW_ARCH_OBJ(regname)
-#define unw_flush_cache		UNW_ARCH_OBJ(flush_cache)
-#define unw_strerror		UNW_ARCH_OBJ(strerror)
+#define unw_local_addr_space		UNW_OBJ(local_addr_space)
+#define unw_create_addr_space		UNW_OBJ(create_addr_space)
+#define unw_destroy_addr_space		UNW_OBJ(destroy_addr_space)
+#define unw_get_accessors		UNW_ARCH_OBJ(get_accessors)
+#define unw_get_accessors_int		UNW_ARCH_OBJ(get_accessors_int)
+#define unw_init_local			UNW_OBJ(init_local)
+#define unw_init_local2			UNW_OBJ(init_local2)
+#define unw_init_remote			UNW_OBJ(init_remote)
+#define unw_step			UNW_OBJ(step)
+#define unw_resume			UNW_OBJ(resume)
+#define unw_get_proc_info		UNW_OBJ(get_proc_info)
+#define unw_get_proc_info_by_ip		UNW_OBJ(get_proc_info_by_ip)
+#define unw_get_proc_info_in_range	UNW_OBJ(get_proc_info_in_range)
+#define unw_reg_states_iterate		UNW_OBJ(reg_states_iterate)
+#define unw_apply_reg_state		UNW_OBJ(apply_reg_state)
+#define unw_get_reg			UNW_OBJ(get_reg)
+#define unw_set_reg			UNW_OBJ(set_reg)
+#define unw_get_fpreg			UNW_OBJ(get_fpreg)
+#define unw_set_fpreg			UNW_OBJ(set_fpreg)
+#define unw_get_save_loc		UNW_OBJ(get_save_loc)
+#define unw_is_signal_frame		UNW_OBJ(is_signal_frame)
+#define unw_get_proc_name		UNW_OBJ(get_proc_name)
+#define unw_set_caching_policy		UNW_OBJ(set_caching_policy)
+#define unw_set_cache_size		UNW_OBJ(set_cache_size)
+#define unw_regname			UNW_ARCH_OBJ(regname)
+#define unw_flush_cache			UNW_ARCH_OBJ(flush_cache)
+#define unw_strerror			UNW_ARCH_OBJ(strerror)
 
 extern unw_addr_space_t unw_create_addr_space (unw_accessors_t *, int);
 extern void unw_destroy_addr_space (unw_addr_space_t);
@@ -277,6 +278,12 @@ extern int unw_resume (unw_cursor_t *);
 extern int unw_get_proc_info (unw_cursor_t *, unw_proc_info_t *);
 extern int unw_get_proc_info_by_ip (unw_addr_space_t, unw_word_t,
 				    unw_proc_info_t *, void *);
+extern int unw_get_proc_info_in_range (unw_word_t, unw_word_t,
+                                       unw_word_t, unw_word_t,
+                                       unw_word_t, unw_word_t,
+                                       unw_addr_space_t, unw_word_t,
+                                       unw_proc_info_t *, int,
+                                       void *);
 extern int unw_reg_states_iterate (unw_cursor_t *, unw_reg_states_callback, void *);
 extern int unw_apply_reg_state (unw_cursor_t *, void *);
 extern int unw_get_reg (unw_cursor_t *, int, unw_word_t *);

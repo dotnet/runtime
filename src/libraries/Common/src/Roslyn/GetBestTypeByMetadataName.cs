@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Immutable;
+
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 {
@@ -134,5 +138,40 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
             Private = 2,
             Friend = Internal,
         }
+
+        internal static bool HasAttributeSuffix(this string name, bool isCaseSensitive)
+        {
+            const string AttributeSuffix = "Attribute";
+
+            var comparison = isCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            return name.Length > AttributeSuffix.Length && name.EndsWith(AttributeSuffix, comparison);
+        }
+
+        public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> span)
+        {
+            switch (span.Length)
+            {
+                case 0: return ImmutableArray<T>.Empty;
+                case 1: return ImmutableArray.Create(span[0]);
+                case 2: return ImmutableArray.Create(span[0], span[1]);
+                case 3: return ImmutableArray.Create(span[0], span[1], span[2]);
+                case 4: return ImmutableArray.Create(span[0], span[1], span[2], span[3]);
+                default:
+                    var builder = ImmutableArray.CreateBuilder<T>(span.Length);
+                    foreach (var item in span)
+                        builder.Add(item);
+
+                    return builder.MoveToImmutable();
+            }
+        }
+
+        public static SimpleNameSyntax GetUnqualifiedName(this NameSyntax name)
+            => name switch
+            {
+                AliasQualifiedNameSyntax alias => alias.Name,
+                QualifiedNameSyntax qualified => qualified.Right,
+                SimpleNameSyntax simple => simple,
+                _ => throw new InvalidOperationException("Unreachable"),
+            };
     }
 }

@@ -278,6 +278,7 @@ namespace System.Runtime.Intrinsics
     {
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector128<T> AllBitsSet { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -564,6 +565,7 @@ namespace System.Runtime.Intrinsics
     {
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector256<T> AllBitsSet { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -820,6 +822,7 @@ namespace System.Runtime.Intrinsics
     {
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector64<T> AllBitsSet { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }

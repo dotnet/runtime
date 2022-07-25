@@ -427,7 +427,7 @@ CorUnix::InternalCreateFileMapping(
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
-    
+
     maximumSize = ((off_t)dwMaximumSizeHigh << 32) | (off_t)dwMaximumSizeLow;
 
     palError = g_pObjectManager->AllocateObject(
@@ -2212,7 +2212,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //don't need more directories.
 
     //I now know how big the file is.  Reserve enough address space for the whole thing.  Try to get the
-    //preferred base.  Create the intial mapping as "no access".  We'll use that for the guard pages in the
+    //preferred base.  Create the initial mapping as "no access".  We'll use that for the guard pages in the
     //"holes" between sections.
     SIZE_T preferredBase, virtualSize;
     preferredBase = ntHeader.OptionalHeader.ImageBase;
@@ -2284,7 +2284,13 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
     // not be necessary (alignment to page size should be sufficient), but see
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done.
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    if (!g_useDefaultBaseAddr)
+#endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    {
+        loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+    }
 #endif // HOST_64BIT
 
     if (loadedBase == NULL)
