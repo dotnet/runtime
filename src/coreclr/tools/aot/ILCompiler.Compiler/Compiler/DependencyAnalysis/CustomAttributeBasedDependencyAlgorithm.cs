@@ -124,9 +124,10 @@ namespace ILCompiler.DependencyAnalysis
                         continue;
 
                     CustomAttributeValue<TypeDesc> decodedValue = attribute.DecodeValue(attributeTypeProvider);
+                    TypeSystemEntity parent = module.GetObject(attribute.Parent, NotFoundBehavior.Throw) as TypeSystemEntity;
 
                     // Make a new list in case we need to abort.
-                    var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue) ?? new DependencyList();
+                    var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue, parent) ?? new DependencyList();
 
                     caDependencies.Add(factory.ReflectableMethod(constructor), "Attribute constructor");
                     caDependencies.Add(factory.ConstructedTypeSymbol(constructor.OwningType), "Attribute type");

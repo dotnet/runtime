@@ -702,12 +702,12 @@ namespace ILCompiler
             }
         }
 
-        public override DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue)
+        public override DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection)
             {
-                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(attributeCtor))).ProcessAttributeDataflow(attributeCtor, decodedValue);
+                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(parent))).ProcessAttributeDataflow(attributeCtor, decodedValue);
             }
 
             return null;
