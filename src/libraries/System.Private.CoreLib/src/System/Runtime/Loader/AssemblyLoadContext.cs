@@ -398,7 +398,10 @@ namespace System.Runtime.Loader
             {
                 if (stream.GetType() == typeof(MemoryStream) && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> memoryStreamBuffer))
                 {
-                    return memoryStreamBuffer.AsSpan((int)stream.Position);
+                    int position = (int)stream.Position;
+                    // Simulate that we read the stream to its end.
+                    stream.Seek(0, SeekOrigin.End);
+                    return memoryStreamBuffer.AsSpan(position);
                 }
 
                 int length = (int)(stream.Length - stream.Position);
