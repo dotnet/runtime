@@ -908,24 +908,42 @@ assigningNull:
                 return IsInstanceOfClass(pTargetType, obj);
         }
 
-        [RuntimeExport("RhTypeCast_IsSimpleInstanceOf")]
-        public static unsafe bool IsSimpleInstanceOf(MethodTable* typeHnd, object obj)
+        [RuntimeExport("RhTypeCast_IsInstanceOfException")]
+        public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
         {
+            // Based on IsInstanceOfClass_Helper
+
             if (obj == null)
                 return false;
 
-            MethodTable* mt = obj.GetMethodTable();
+            MethodTable* pObjType = obj.GetMethodTable();
+            if (pTargetType->IsCloned)
+                pTargetType = pTargetType->CanonicalEEType;
 
-            if (typeHnd == mt)
+            if (pObjType->IsCloned)
+                pObjType = pObjType->CanonicalEEType;
+
+            if (pObjType == pTargetType)
                 return true;
 
-            while (mt != null)
+            if (pTargetType->HasGenericVariance && pObjType->HasGenericVariance)
+                return CastCache.AreTypesAssignableInternal(pObjType, pTargetType, AssignmentVariation.BoxedSource, null);
+
+            if (pObjType->IsArray)
+                return false;
+
+            while (true)
             {
-                mt = mt->RawBaseType;
-                if (mt == typeHnd)
+                pObjType = pObjType->NonClonedNonArrayBaseType;
+                if (pObjType == null)
+                    return false;
+
+                if (pObjType->IsCloned)
+                    pObjType = pObjType->CanonicalEEType;
+
+                if (pObjType == pTargetType)
                     return true;
             }
-            return false;
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
