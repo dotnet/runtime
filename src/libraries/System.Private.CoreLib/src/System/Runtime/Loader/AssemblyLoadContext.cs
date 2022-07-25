@@ -374,12 +374,11 @@ namespace System.Runtime.Loader
         {
             ArgumentNullException.ThrowIfNull(assembly);
 
-            if ((int)assembly.Length <= 0)
+            ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
+            if (spanAssembly.IsEmpty)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
             }
-
-            ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
 
             // Read the symbol stream if provided
             ReadOnlySpan<byte> spanSymbols = default;
@@ -399,15 +398,20 @@ namespace System.Runtime.Loader
             {
                 if (stream.GetType() == typeof(MemoryStream) && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> memoryStreamBuffer))
                 {
-                    return memoryStreamBuffer;
+                    return memoryStreamBuffer.AsSpan((int)stream.Position);
                 }
 
-                int length = (int)stream.Length;
+                int length = (int)(stream.Length - stream.Position);
+
+                if (length == 0)
+                {
+                    return ReadOnlySpan<byte>.Empty;
+                }
 
                 byte[] bytes = new byte[length];
 
                 // Copy the stream to the byte array
-                stream.Read(bytes, 0, length);
+                stream.ReadExactly(bytes, 0, length);
 
                 return bytes;
             }
