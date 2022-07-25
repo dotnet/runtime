@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
@@ -58,6 +59,23 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
-        return await runner.Run();
+        int result = await runner.Run();
+
+        // if the execution doesn't finish on the main thread, the test runner
+        // doesn't exit correctly and the test time outs
+        await SwitchToMainThreadAsync();
+
+        return result;
+    }
+
+    private static async Task SwitchToMainThreadAsync()
+    {
+        // TODO: is there a better way to do this? this works but it feels very hacky...
+        // it would be best to ensure switching threads in the mono driver so that it works for _all_
+        // WASM programs running on Mono
+        while (Thread.CurrentThread.IsBackground)
+        {
+            await Task.Delay(1);
+        }
     }
 }
