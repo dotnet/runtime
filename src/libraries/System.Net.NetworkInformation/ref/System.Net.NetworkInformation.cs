@@ -46,9 +46,25 @@ namespace System.Net.NetworkInformation
         public abstract long EchoRepliesSent { get; }
         public abstract long EchoRequestsReceived { get; }
         public abstract long EchoRequestsSent { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long ErrorsReceived { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long ErrorsSent { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long MessagesReceived { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long MessagesSent { get; }
         public abstract long ParameterProblemsReceived { get; }
         public abstract long ParameterProblemsSent { get; }
@@ -72,7 +88,15 @@ namespace System.Net.NetworkInformation
         public abstract long EchoRepliesSent { get; }
         public abstract long EchoRequestsReceived { get; }
         public abstract long EchoRequestsSent { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long ErrorsReceived { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long ErrorsSent { get; }
         public abstract long MembershipQueriesReceived { get; }
         public abstract long MembershipQueriesSent { get; }
@@ -80,7 +104,15 @@ namespace System.Net.NetworkInformation
         public abstract long MembershipReductionsSent { get; }
         public abstract long MembershipReportsReceived { get; }
         public abstract long MembershipReportsSent { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long MessagesReceived { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract long MessagesSent { get; }
         public abstract long NeighborAdvertisementsReceived { get; }
         public abstract long NeighborAdvertisementsSent { get; }
