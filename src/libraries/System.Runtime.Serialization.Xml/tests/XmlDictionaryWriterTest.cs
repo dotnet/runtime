@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -318,6 +319,109 @@ public static class XmlDictionaryWriterTest
         MemoryStream ms = new MemoryStream();
         XmlDictionaryWriter writer = (XmlDictionaryWriter)ReaderWriterFactory.CreateXmlWriter(rwType, ms, encoding);
         Assert.False(FragmentHelper.CanFragment(writer));
+    }
+
+    [Fact]
+    public static void BinaryWriter_PrimitiveTypes()
+    {
+        using MemoryStream ms = new();
+        using XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
+        writer.WriteStartElement("root");
+
+        AssertBytesWritten(x => x.WriteValue((byte)0x78), XmlBinaryNodeType.Int8Text, new byte[] { 0x78 });
+        AssertBytesWritten(x => x.WriteValue((short)0x1234), XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0x12 });
+        AssertBytesWritten(x => x.WriteValue(unchecked((short)0xf234)), XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0xf2 });
+        AssertBytesWritten(x => x.WriteValue((int)0x12345678), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0x12 });
+        AssertBytesWritten(x => x.WriteValue((long)0x0102030412345678), XmlBinaryNodeType.Int64Text, new byte[] { 0x78, 0x56, 0x34, 0x12, 04, 03, 02, 01 });
+
+        // Integer values should be represented using smalles possible type
+        AssertBytesWritten(x => x.WriteValue((long)0), XmlBinaryNodeType.ZeroText, Span<byte>.Empty);
+        AssertBytesWritten(x => x.WriteValue((long)1), XmlBinaryNodeType.OneText, Span<byte>.Empty);
+        AssertBytesWritten(x => x.WriteValue((int)0x00000078), XmlBinaryNodeType.Int8Text, new byte[] { 0x78 });
+        AssertBytesWritten(x => x.WriteValue(unchecked((int)0xfffffff0)), XmlBinaryNodeType.Int8Text, new byte[] { 0xf0 });
+        AssertBytesWritten(x => x.WriteValue((int)0x00001234), XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0x12 });
+        AssertBytesWritten(x => x.WriteValue(unchecked((int)0xfffff234)), XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0xf2 });
+        AssertBytesWritten(x => x.WriteValue((long)0x12345678), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0x12 });
+        AssertBytesWritten(x => x.WriteValue(unchecked((long)0xfffffffff2345678)), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0xf2 });
+
+        decimal decMax = decimal.MaxValue;
+        float f = 1.23f;
+        double d = 1.0 / 3.0;
+        Guid guid = Guid.NewGuid();
+
+        AssertBytesWritten(x => x.WriteValue(decimal.MaxValue), XmlBinaryNodeType.DecimalText, MemoryMarshal.AsBytes(new ReadOnlySpan<decimal>(in decMax)));
+        AssertBytesWritten(x => x.WriteValue(f), XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+        AssertBytesWritten(x => x.WriteValue(guid), XmlBinaryNodeType.GuidText, guid.ToByteArray());
+        AssertBytesWritten(x => x.WriteValue(new TimeSpan(0x0807060504030201)), XmlBinaryNodeType.TimeSpanText, new byte[] { 01, 02, 03, 04, 05, 06, 07, 08 });
+
+        // Double can be represented as float or inte as long as no detail is lost
+        AssertBytesWritten(x => x.WriteValue((double)f), XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+        AssertBytesWritten(x => x.WriteValue((double)0x0100), XmlBinaryNodeType.Int16Text, new byte[] { 0x00, 0x01 });
+        AssertBytesWritten(x => x.WriteValue(d), XmlBinaryNodeType.DoubleText, MemoryMarshal.AsBytes(new ReadOnlySpan<double>(in d)));
+
+
+        void AssertBytesWritten(Action<XmlDictionaryWriter> action, XmlBinaryNodeType nodeType, ReadOnlySpan<byte> expected)
+        {
+            writer.WriteStartElement("a");
+
+            // Reset stream so we only compare the actual value written (including end element)
+            writer.Flush();
+            ms.Position = 0;
+            ms.SetLength(0);
+
+            action(writer);
+
+            writer.Flush();
+            ms.TryGetBuffer(out ArraySegment<byte> segement);
+            Assert.Equal(nodeType, (XmlBinaryNodeType)segement[0]);
+            AssertExtensions.SequenceEqual(expected, segement.AsSpan(1));
+            writer.WriteEndElement();
+        }
+    }
+
+
+    [Fact]
+    public static void BinaryWriter_Array()
+    {
+        using var ms = new MemoryStream();
+        using var writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
+        writer.WriteStartElement("root");
+        int offset = 1;
+        int count = 2;
+
+        int[] ints = new int[] {-1, 0x01020304, 0x11223344, -1 };
+
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, ints, offset, count), XmlBinaryNodeType.Int32TextWithEndElement, count, new byte[] { 4, 3, 2, 1, 0x44, 0x33, 0x22, 0x11 });
+
+        void AssertBytesWritten(Action<XmlDictionaryWriter> action, XmlBinaryNodeType nodeType, int count, ReadOnlySpan<byte> expected)
+        {
+            // Reset stream so we only compare the actual value written (including end element)
+            writer.Flush();
+            ms.Position = 0;
+            ms.SetLength(0);
+
+            action(writer);
+
+            writer.Flush();
+            ms.TryGetBuffer(out ArraySegment<byte> segement);
+
+            var actual = segement.AsSpan(); 
+            Assert.Equal(XmlBinaryNodeType.Array, (XmlBinaryNodeType)actual[0]);
+
+            //// start element: ShortDictionaryElement + lenght of str + str
+            Assert.Equal(XmlBinaryNodeType.ShortElement, (XmlBinaryNodeType)actual[1]);
+            int elementLenght = actual[2];
+            Assert.InRange(actual[2], 0, 0x8f);
+            Assert.Equal(XmlBinaryNodeType.EndElement, (XmlBinaryNodeType)actual[3 + elementLenght]);
+
+            actual = actual.Slice(4 + elementLenght);
+            // nodetype and count
+            Assert.Equal(nodeType, (XmlBinaryNodeType)actual[0]);
+            Assert.Equal(checked((sbyte)count), (sbyte)actual[1]);
+
+            AssertExtensions.SequenceEqual(expected, actual.Slice(2));
+            writer.WriteEndElement();
+        }
     }
 
     private static bool ReadTest(MemoryStream ms, Encoding encoding, ReaderWriterFactory.ReaderWriterType rwType, byte[] byteArray)

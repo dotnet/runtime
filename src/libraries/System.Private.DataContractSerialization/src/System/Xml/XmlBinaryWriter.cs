@@ -719,7 +719,7 @@ namespace System.Xml
             }
             else
             {
-                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, f);
+                WriteTextNodeRaw(XmlBinaryNodeType.FloatText, f);
             }
         }
 
@@ -732,7 +732,7 @@ namespace System.Xml
             }
             else
             {
-                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
+                WriteTextNodeRaw(XmlBinaryNodeType.DoubleText, d);
             }
         }
 
