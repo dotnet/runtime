@@ -59,6 +59,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   </para>
         ///   <para>- or -</para>
         ///   <para>
+        ///     <paramref name="issuerCertificate"/> uses a public key algorithm that is unknown,
+        ///     or not supported by this implementation.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
         ///     <paramref name="issuerCertificate"/> does not have a Basic Constraints extension.
         ///   </para>
         ///   <para>- or -</para>
@@ -123,7 +128,7 @@ namespace System.Security.Cryptography.X509Certificates
             DateTimeOffset nextUpdate,
             DateTimeOffset thisUpdate,
             HashAlgorithmName hashAlgorithm,
-            RSASignaturePadding? rsaSignaturePadding = null)
+            RSASignaturePadding? rsaSignaturePadding)
         {
             ArgumentNullException.ThrowIfNull(issuerCertificate);
 
@@ -149,15 +154,25 @@ namespace System.Security.Cryptography.X509Certificates
                 (X509SubjectKeyIdentifierExtension?)issuerCertificate.Extensions[Oids.SubjectKeyIdentifier];
 
             if (basicConstraints == null)
+            {
                 throw new ArgumentException(
                     SR.Cryptography_CertReq_BasicConstraintsRequired,
                     nameof(issuerCertificate));
+            }
+
             if (!basicConstraints.CertificateAuthority)
+            {
                 throw new ArgumentException(
                     SR.Cryptography_CertReq_IssuerBasicConstraintsInvalid,
                     nameof(issuerCertificate));
+            }
+
             if (keyUsage != null && (keyUsage.KeyUsages & X509KeyUsageFlags.CrlSign) == 0)
-                throw new ArgumentException(SR.Cryptography_CRLBuilder_IssuerKeyUsageInvalid, nameof(issuerCertificate));
+            {
+                throw new ArgumentException(
+                    SR.Cryptography_CRLBuilder_IssuerKeyUsageInvalid,
+                    nameof(issuerCertificate));
+            }
 
             AsymmetricAlgorithm? key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
@@ -397,7 +412,7 @@ namespace System.Security.Cryptography.X509Certificates
                         // CRL Number Extension
                         using (writer.PushSequence())
                         {
-                            writer.WriteObjectIdentifier("2.5.29.20");
+                            writer.WriteObjectIdentifier(Oids.CrlNumber);
 
                             using (writer.PushOctetString())
                             {

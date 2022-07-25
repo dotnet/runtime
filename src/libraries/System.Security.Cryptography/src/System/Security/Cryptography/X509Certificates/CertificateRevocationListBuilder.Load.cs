@@ -78,14 +78,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   A new builder that has the same revocation entries as the decoded CRL.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="currentCrl" /> could not be decoded.
-        ///   </para>
-        ///   <para>- or -</para>
-        ///   <para>
-        ///     <paramref name="currentCrl" /> decoded successfully, but decoding did not
-        ///     need all of the bytes provided in the array.
-        ///   </para>
+        ///   <paramref name="currentCrl" /> could not be decoded.
         /// </exception>
         public static CertificateRevocationListBuilder Load(
             ReadOnlySpan<byte> currentCrl,
@@ -137,7 +130,12 @@ namespace System.Security.Cryptography.X509Certificates
                 // nextUpdate
                 ReadX509TimeOpt(ref tbsCertList);
 
-                AsnValueReader revokedCertificates = tbsCertList.ReadSequence();
+                AsnValueReader revokedCertificates = default;
+
+                if (tbsCertList.HasData && tbsCertList.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
+                {
+                    revokedCertificates = tbsCertList.ReadSequence();
+                }
 
                 if (version > 0 && tbsCertList.HasData)
                 {
@@ -165,7 +163,11 @@ namespace System.Security.Cryptography.X509Certificates
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
-                        if (ReferenceEquals(extnOid, Oids.CommonNameOid))
+                        // Since we're only matching against OIDs that come from GetSharedOrNullOid
+                        // we can use ReferenceEquals and skip the Value string equality check in
+                        // the Oid.ValueEquals extension method (as it will always be preempted by
+                        // the ReferenceEquals or will evaulate to false).
+                        if (ReferenceEquals(extnOid, Oids.CrlNumberOid))
                         {
                             AsnValueReader crlNumberReader = new AsnValueReader(
                                 extnValue,
@@ -210,17 +212,20 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>
         ///   A new builder that has the same revocation entries as the decoded CRL.
         /// </returns>
+        /// <remarks>
+        ///   This loads the first well-formed PEM found with an <c>X509 CRL</c> label.
+        /// </remarks>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="currentCrl" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <paramref name="currentCrl" /> could not be decoded.
+        ///     <paramref name="currentCrl" /> did not contain a well-formed PEM payload with
+        ///     an <c>X509 CRL</c> label.
         ///   </para>
         ///   <para>- or -</para>
         ///   <para>
-        ///     <paramref name="currentCrl" /> decoded successfully, but decoding did not
-        ///     need all of the bytes provided in the array.
+        ///     <paramref name="currentCrl" /> could not be decoded.
         ///   </para>
         /// </exception>
         public static CertificateRevocationListBuilder LoadPem(string currentCrl, out BigInteger currentCrlNumber)
@@ -245,14 +250,17 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>
         ///   A new builder that has the same revocation entries as the decoded CRL.
         /// </returns>
+        /// <remarks>
+        ///   This loads the first well-formed PEM found with an <c>X509 CRL</c> label.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <paramref name="currentCrl" /> could not be decoded.
+        ///     <paramref name="currentCrl" /> did not contain a well-formed PEM payload with
+        ///     an <c>X509 CRL</c> label.
         ///   </para>
         ///   <para>- or -</para>
         ///   <para>
-        ///     <paramref name="currentCrl" /> decoded successfully, but decoding did not
-        ///     need all of the bytes provided in the array.
+        ///     <paramref name="currentCrl" /> could not be decoded.
         ///   </para>
         /// </exception>
         public static CertificateRevocationListBuilder LoadPem(ReadOnlySpan<char> currentCrl, out BigInteger currentCrlNumber)

@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
         internal static Oid SubjectKeyIdentifierOid => s_subjectKeyIdentifierOid ??= InitializeOid(SubjectKeyIdentifier);
         internal static Oid SubjectAltNameOid => s_subjectAltNameOid ??= InitializeOid(SubjectAltName);
         internal static Oid AuthorityInformationAccessOid => s_authorityInformationAccessOid ??= InitializeOid(AuthorityInformationAccess);
-        internal static Oid CrlNumberOid = s_crlNumberOid ??= InitializeOid(CrlNumber);
+        internal static Oid CrlNumberOid => s_crlNumberOid ??= InitializeOid(CrlNumber);
 
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);
         internal static Oid CountryOrRegionNameOid => s_countryOrRegionOid ??= InitializeOid(CountryOrRegionName);
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography
                 [0x55, 0x04, 0x08] => StateOrProvinceNameOid,
                 [0x55, 0x04, 0x0A] => OrganizationOid,
                 [0x55, 0x04, 0x0B] => OrganizationalUnitOid,
-                [0x55, 0x1D, 0x23] => CrlNumberOid,
+                [0x55, 0x1D, 0x14] => CrlNumberOid,
                 _ => null,
             };
 

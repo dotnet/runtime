@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Test.Cryptography;
 using Xunit;
@@ -374,24 +376,150 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // for this test (since it doesn't use ECDSA's variable-length, non-deterministic, signature)
                     //
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
-
-                    byte[] expected = (
-                        "3082018E3078020101300D06092A864886F70D01010B05003015311330110603" +
-                        "550403130A4275696C64456D707479170D3133303430363037353830395A170D" +
-                        "3133303430363038303330395AA02F302D301F0603551D2304183016801478A5" +
-                        "C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D14040302017B300D" +
-                        "06092A864886F70D01010B0500038201010005A249671E2EE8780CBE17180493" +
-                        "094A5EB576465A9B2674666B762184AD992832556B36CC8320264FE45A6B4981" +
-                        "439ED9CFB87EAD10D4A95769713A0442B2D3A5FD20487DA5B33BCFBE10ED921C" +
-                        "8B9896B69EA443D8D9F0AF5E0EB789361655C80EC3C7C7C84F5127C6A29C27BE" +
-                        "8437CE0182BD16CF697169121C2BBFAADC4EDE17C8BB76949D25376F2739E03C" +
-                        "DA0609D03C024CD5A911B342571F385B3B8A782B62C5375E1D674E43447FE2EB" +
-                        "9EFFCAF71CCCECBAE600C74F6FD6CB36A87C5786603501EA43794144142E8557" +
-                        "EC2EBC2F7357DB050440FD97F233441E2BE981ED6309CE7C8B1C97BCE658FCEC" +
-                        "6BD63004A1D3D4EA0043783E55E7ECBCF6E6").HexToByteArray();
-
-                    Assert.Equal(expected, built);
+                    
+                    AssertExtensions.SequenceEqual(BuildEmptyExpectedCrl, built);
                 });
+        }
+
+        [Theory]
+        [InlineData("SHA256")]
+        [InlineData("SHA384")]
+        [InlineData("SHA512")]
+        public static void BuildEmptyRsaPss(string hashName)
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                (cert, now) =>
+                {
+                    HashAlgorithmName hashAlg = new HashAlgorithmName(hashName);
+                    RSASignaturePadding pad = RSASignaturePadding.Pss;
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    DateTimeOffset thisUpdate = now;
+                    DateTimeOffset nextUpdate = now.AddHours(2);
+                    int crlNumber = RandomNumberGenerator.GetInt32(1066, 1813);
+
+                    byte[] crl = builder.Build(cert, crlNumber, nextUpdate, hashAlg, pad, thisUpdate);
+
+                    AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER).ReadSequence();
+                    ReadOnlyMemory<byte> tbs = reader.ReadEncodedValue();
+                    // sigAlg
+                    reader.ReadEncodedValue();
+                    byte[] signature = reader.ReadBitString(out _);
+
+                    using (RSA pubKey = cert.GetRSAPublicKey())
+                    {
+                        Assert.True(
+                            pubKey.VerifyData(tbs.Span, signature, hashAlg, pad),
+                            "Certificate's public key verifies the signature");
+                    }
+
+                    VerifyCrlFields(
+                        crl,
+                        cert.SubjectName,
+                        thisUpdate,
+                        nextUpdate,
+                        X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false),
+                        crlNumber);
+                });
+        }
+
+        [Fact]
+        public static void BuildEmptyEcdsa()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                (cert, now) =>
+                {
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    DateTimeOffset nextUpdate = now.AddHours(1);
+                    byte[] crl = builder.Build(cert, 2, nextUpdate, HashAlgorithmName.SHA256);
+
+                    AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
+                    reader = reader.ReadSequence();
+                    ReadOnlyMemory<byte> tbs = reader.ReadEncodedValue();
+                    // signatureAlgorithm
+                    reader.ReadEncodedValue();
+                    byte[] signature = reader.ReadBitString(out _);
+                    reader.ThrowIfNotEmpty();
+
+                    using (ECDsa pubKey = cert.GetECDsaPublicKey())
+                    {
+                        Assert.True(
+                            pubKey.VerifyData(
+                                tbs.Span,
+                                signature,
+                                HashAlgorithmName.SHA256,
+                                DSASignatureFormat.Rfc3279DerSequence),
+                            "Certificate public key verifies CRL");
+                    }
+
+                    VerifyCrlFields(
+                        crl,
+                        cert.SubjectName,
+                        thisUpdate: null,
+                        nextUpdate,
+                        X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false),
+                        2);
+                });
+        }
+
+        [Fact]
+        public static void BuildEmptyEcdsa_NoSubjectKeyIdentifier()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                (cert, now) =>
+                {
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    DateTimeOffset nextUpdate = now.AddHours(1);
+                    DateTimeOffset thisUpdate = now;
+
+                    byte[] crl = builder.Build(
+                        cert,
+                        2,
+                        nextUpdate,
+                        HashAlgorithmName.SHA256,
+                        thisUpdate: thisUpdate);
+
+                    AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
+                    reader = reader.ReadSequence();
+                    ReadOnlyMemory<byte> tbs = reader.ReadEncodedValue();
+                    // signatureAlgorithm
+                    reader.ReadEncodedValue();
+                    byte[] signature = reader.ReadBitString(out _);
+                    reader.ThrowIfNotEmpty();
+
+                    using (ECDsa pubKey = cert.GetECDsaPublicKey())
+                    {
+                        Assert.True(
+                            pubKey.VerifyData(
+                                tbs.Span,
+                                signature,
+                                HashAlgorithmName.SHA256,
+                                DSASignatureFormat.Rfc3279DerSequence),
+                            "Certificate public key verifies CRL");
+                    }
+
+                    VerifyCrlFields(
+                        crl,
+                        cert.SubjectName,
+                        thisUpdate,
+                        nextUpdate,
+                        X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, false, true),
+                        2);
+                },
+                addSubjectKeyIdentifier: false);
         }
 
         [Fact]
@@ -409,34 +537,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    builder.AddEntry(
-                        stackalloc byte[] { 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15 },
-                        now.AddSeconds(-1812));
+                    ReadOnlySpan<byte> serialToAdd =
+                        new byte[] { 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15 };
 
-                    byte[] explicitUpdateTime = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
+                    builder.AddEntry(serialToAdd, now.AddSeconds(-1812));
+
+                    byte[] crl = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
 
                     // The length of the output depends on a number of factors, but they're all stable
                     // for this test (since it doesn't use ECDSA's variable-length, non-deterministic, signature)
                     //
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
-
-                    byte[] expected = (
-                        "308201B230819B020101300D06092A864886F70D01010B0500301B3119301706" +
-                        "0355040313104275696C6453696E676C65456E747279170D3133303430363037" +
-                        "353830395A170D3133303430363038303330395A301B30190208010102030508" +
-                        "0C15170D3133303430363037323735375AA02F302D301F0603551D2304183016" +
-                        "801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D14040302" +
-                        "017B300D06092A864886F70D01010B05000382010100A9E1D03571B1E4BF7670" +
-                        "EC32459A74B11482741FD973FF5040D57B133B5B6C783DC9ED105C4CF5DDE8FC" +
-                        "8B767C6034253D749A834622034A669AA4C6EFDB93C82EB15B69E6DC43F05BAE" +
-                        "7E9E21B0351A720C5E79F3BE65304658EBDFE196269BC285D653E7ACD97811D6" +
-                        "4E08792034B47D83BF9D37851116023BDF7460C5BF1492CFA486AD7B2F277870" +
-                        "82E6A3C05C0E43BB7D62B234C0E6C5BA2E0103E1CCBDAE15F9CD6DB989DED687" +
-                        "0915AB164EB2FC2ADA00D4980574FC2C3C0905C1BFC9F42DBF0F800FF7F9D92C" +
-                        "1F99C443EFC32593C749E18C41282E0EF232643846D204A6BC23C55605299225" +
-                        "6323F7BD75DEE733C9FD011B6D3B85395422046B5573").HexToByteArray();
-
-                    AssertExtensions.SequenceEqual(expected, explicitUpdateTime);
+                    AssertExtensions.SequenceEqual(BuildSingleEntryExpectedCrl, crl);
                 });
         }
 
@@ -572,9 +684,631 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 () => builder.AddEntry(serial, reason: X509RevocationReason.RemoveFromCrl));
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+        public static void DsaNotDirectlySupported()
+        {
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            X500DistinguishedName dn = new X500DistinguishedName("CN=DSA CA");
+
+            using (DSA key = DSA.Create(TestData.GetDSA1024Params()))
+            {
+                DSAX509SignatureGenerator gen = new DSAX509SignatureGenerator(key);
+
+                CertificateRequest req = new CertificateRequest(
+                    dn,
+                    gen.PublicKey,
+                    HashAlgorithmName.SHA1);
+
+                req.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority());
+
+                byte[] serial = { 1, 2, 3, };
+
+                using (X509Certificate2 certPub = req.Create(dn, gen, now.AddMonths(-1), now.AddYears(1), serial))
+                using (X509Certificate2 cert = certPub.CopyWithPrivateKey(key))
+                {
+                    ArgumentException ex = Assert.Throws<ArgumentException>(
+                        "issuerCertificate",
+                        () => builder.Build(
+                            cert,
+                            BigInteger.One,
+                            DateTimeOffset.UtcNow.AddMonths(3),
+                            HashAlgorithmName.SHA1));
+
+                    Assert.Contains("key algorithm", ex.Message);
+
+                    X509AuthorityKeyIdentifierExtension akid =
+                        X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, false, true);
+
+                    // Rewrite it as critical
+                    akid = new X509AuthorityKeyIdentifierExtension(akid.RawData, critical: true);
+                    DateTimeOffset nextUpdate = DateTimeOffset.UtcNow.AddMonths(3);
+                    int crlNumber = RandomNumberGenerator.GetInt32(0, 1 + short.MaxValue);
+
+                    byte[] crl = builder.Build(
+                        cert.SubjectName,
+                        gen,
+                        crlNumber,
+                        nextUpdate,
+                        HashAlgorithmName.SHA1,
+                        akid);
+
+                    AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
+                    reader = reader.ReadSequence();
+                    ReadOnlyMemory<byte> tbs = reader.ReadEncodedValue();
+                    // signatureAlgorithm
+                    reader.ReadEncodedValue();
+                    byte[] signature = reader.ReadBitString(out _);
+                    reader.ThrowIfNotEmpty();
+
+                    Assert.True(
+                        key.VerifyData(tbs.Span, signature, HashAlgorithmName.SHA1, DSASignatureFormat.Rfc3279DerSequence),
+                        "Signing key verifies the CRL");
+
+                    VerifyCrlFields(
+                        crl,
+                        cert.SubjectName,
+                        null,
+                        nextUpdate,
+                        akid,
+                        crlNumber);
+                }
+            }
+        }
+
+        [Fact]
+        public static void AddInvalidSerial()
+        {
+            byte[] invalidPositive = new byte[] { 0x00, 0x7F };
+            byte[] invalidNegative = new byte[] { 0xFF, 0x80 };
+
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+            Assert.Throws<ArgumentException>("serialNumber", () => builder.AddEntry(invalidPositive));
+            Assert.Throws<ArgumentException>("serialNumber", () => builder.AddEntry(invalidNegative));
+
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => builder.AddEntry(new ReadOnlySpan<byte>(invalidPositive)));
+            Assert.Throws<ArgumentException>(
+                "serialNumber",
+                () => builder.AddEntry(new ReadOnlySpan<byte>(invalidNegative)));
+        }
+
+        [Fact]
+        public static void RemoveMissing_ReturnsFalse()
+        {
+            byte[] needle = { 0x03, 0x02, 0x01 };
+
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+            Assert.False(builder.RemoveEntry(needle), "builder.RemoveEntry(array)");
+            Assert.False(builder.RemoveEntry(needle.AsSpan()), "builder.RemoveEntry(span)");
+
+            builder.AddEntry(needle);
+
+            Array.Reverse(needle);
+            Assert.False(builder.RemoveEntry(needle), "builder.RemoveEntry(array)");
+            Assert.False(builder.RemoveEntry(needle.AsSpan()), "builder.RemoveEntry(span)");
+        }
+
+        [Fact]
+        public static void RemovePresent_ReturnsTrue()
+        {
+            byte[] needle = { 0x03, 0x02, 0x01 };
+
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+            builder.AddEntry(needle.AsSpan());
+            Assert.True(builder.RemoveEntry(needle), "builder.RemoveEntry(array)");
+            Assert.False(builder.RemoveEntry(needle.AsSpan()), "builder.RemoveEntry(span) when missing");
+
+            builder.AddEntry(needle);
+            Assert.True(builder.RemoveEntry(needle.AsSpan()), "builder.RemoveEntry(span)");
+            Assert.False(builder.RemoveEntry(needle), "builder.RemoveEntry(array) when missing");
+        }
+
+        [Fact]
+        public static void ThisUpdate2049NextUpdate2050()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    DateTimeOffset now = new DateTimeOffset(2049, 12, 31, 23, 59, 59, TimeSpan.Zero);
+
+                    byte[] built = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+
+                    byte[] expected = (
+                        "308201A330818C020101300D06092A864886F70D01010B050030273125302306" +
+                        "03550403131C54686973557064617465323034394E6578745570646174653230" +
+                        "3530170D3439313233313233353935395A180F32303530303130313030303435" +
+                        "395AA02F302D301F0603551D2304183016801478A5C75D51667331D5A9692411" +
+                        "4C9B5FA00D7BCB300A0603551D14040302017B300D06092A864886F70D01010B" +
+                        "0500038201010030CAB8946944FFD3958A42AA94851D3EEDB533516926A0661B" +
+                        "91D41F6526876A345021377F9FFC0372EC744C85CF2FD51458D898EC8D26A0C5" +
+                        "C3FE0C616AB1EC1E8E90A45BA7543D9009B21AE2EC98DF55497DB299B6DD2363" +
+                        "2619C1E0FB29AA0F85C9DB59901D2A995C6B56D6CAD74E7840EDC3F09A3D6FD9" +
+                        "455569F554CF4CDB04BDC3775C9E7C48EBC85B818D00DB55B6FDF62CC22427A5" +
+                        "DE1BF178C18FE28726A853D89B4299FA241328F8CDD801843B8F24128217020E" +
+                        "2F7D2E2B5F4993F82E6B33B5C515D576BE78F55847A544FC8869B4FB9DF2E66D" +
+                        "3D222B9A3BA511E6AF3CBDBC54F5B44C49571F2432E5C6CA4F11510C822BA808" +
+                        "0C87EBEAD6728B").HexToByteArray();
+
+                    Assert.Equal(expected, built);
+                });
+        }
+
+        [Fact]
+        public static void ThisUpdate2050()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    DateTimeOffset now = new DateTimeOffset(2050, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+                    byte[] built = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+
+                    byte[] expected = (
+                        "30820197308180020101300D06092A864886F70D01010B050030193117301506" +
+                        "03550403130E5468697355706461746532303530180F32303530303130313030" +
+                        "303030305A180F32303530303130313030303530305AA02F302D301F0603551D" +
+                        "2304183016801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A060355" +
+                        "1D14040302017B300D06092A864886F70D01010B05000382010100ACB629E3A6" +
+                        "CCF5B32204E149FD5A193657EB687942B93153275BC32D8E92C318BE5484EA53" +
+                        "609BEC03F6BE62CF06BE11EF203A3A8F296D635D265202AD285EDFDB286DD814" +
+                        "33ED645D1093CE70AB77F840658C6A219ACF35E394A1A4E05334E6B27FAC8288" +
+                        "D37EB75F31540CB7C3AD05178C4F7552AAA59472C9D457C26B2D4D37A3E394AF" +
+                        "00577D174B6015C2673E951B34720E6D1CCB97D1B4A70B88C0B89CDC27B56D9D" +
+                        "A3D8974B1B4B37CFC4EBFAA9DC9466ACE56D0835CD848DB112918523A74AD398" +
+                        "0CEE5F70C8C5C2610111C6EC72A68CAC314C4F516D697C3B52F16A109CFC526A" +
+                        "2F26EDF7B69DD7D630266BC82B5A5AB265E06847280B5A2C658F3E").HexToByteArray();
+
+                    Assert.Equal(expected, built);
+                });
+        }
+
+        [Fact]
+        public static void AddEntryFromCertificate()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA512;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2016, 3, 8, 4, 59, 7, TimeSpan.Zero);
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    // This certificate certainly wasn't issued by the CA cert we just built for this test,
+                    // but that's OK, because CRLBuilder doesn't check.
+                    using (X509Certificate2 toRevoke = new X509Certificate2(TestData.Dsa1024Cert))
+                    {
+                        builder.AddEntry(toRevoke, now.AddSeconds(-1066));
+                    }
+
+                    byte[] crl = builder.Build(cert, 122, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+                    AssertExtensions.SequenceEqual(AddEntryFromCertificateExpectedCrl, crl);
+                });
+        }
+
+        [Fact]
+        public static void AddEntryFromCertificate_WithReason()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA384;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    // This certificate certainly wasn't issued by the CA cert we just built for this test,
+                    // but that's OK, because CRLBuilder doesn't check.
+                    using (X509Certificate2 toRevoke = new X509Certificate2(TestData.Dsa1024Cert))
+                    {
+                        builder.AddEntry(
+                            toRevoke,
+                            now.AddSeconds(-1066),
+                            X509RevocationReason.PrivilegeWithdrawn);
+                    }
+
+                    byte[] crl = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+                    byte[] expected = (
+                        "308201F53081DE020101300D06092A864886F70D01010C0500304F314D304B06" +
+                        "035504031E440041006400640045006E00740072007900460072006F006D0043" +
+                        "0065007200740069006600690063006100740065005F00570069007400680052" +
+                        "006500610073006F006E170D3133303430363037353830395A170D3133303430" +
+                        "363038303330395A302A3028020900AB740A714AA83C92170D31333034303630" +
+                        "37343032335A300C300A0603551D1504030A0109A02F302D301F0603551D2304" +
+                        "183016801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D14" +
+                        "040302017B300D06092A864886F70D01010C050003820101008BBAA8E524EF60" +
+                        "B55D9B6099C3B898D916B3E87547FBBB2E77846D4CBA04842C081CAE7C527A8E" +
+                        "C264C8905295D3166AEE724418670324637B2B304DB64EE8EA28E8300E4AAAF6" +
+                        "2CF8696AC734CE8450BC3C61253F4AF35599D77A794178A6ECB2DB4C7949D5C2" +
+                        "8A7F198A20700014A44A670226BC489466BABDB7A3E43AE3AFBF6306925CE5F9" +
+                        "67E5232844502D671C1463E28A9B00AE6B5869A1A5654A89AFF06714C5A0A87E" +
+                        "DE33236C65A07C7604FE978CCDE897C0A5D143608375FF667777756A7B291FF7" +
+                        "D7F106B4202A4ECDA24BEF5ED835F9D613EC62C0A398D79F26D3E5E1792957A8" +
+                        "2305C2BADEEEA49BF3677AA1783750DFF429852A42244A6086").HexToByteArray();
+
+                    AssertExtensions.SequenceEqual(expected, crl);
+                });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void LoadRemoveAndBuild(bool oversized)
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
+
+                    ReadOnlySpan<byte> toLoad = AddEntryFromCertificateExpectedCrl;
+
+                    if (oversized)
+                    {
+                        byte[] arr = new byte[toLoad.Length + 23];
+                        Span<byte> write = arr.AsSpan(1);
+                        toLoad.CopyTo(write);
+                        toLoad = write;
+                    }
+
+                    CertificateRevocationListBuilder builder = CertificateRevocationListBuilder.Load(
+                        AddEntryFromCertificateExpectedCrl,
+                        out BigInteger currentCrlNumber,
+                        out int bytesConsumed);
+
+                    Assert.Equal(AddEntryFromCertificateExpectedCrl.Length, bytesConsumed);
+                    Assert.Equal(122, currentCrlNumber);
+
+                    using (X509Certificate2 toUnRevoke = new X509Certificate2(TestData.Dsa1024Cert))
+                    {
+                        Assert.True(builder.RemoveEntry(toUnRevoke.SerialNumberBytes.Span));
+                    }
+
+                    currentCrlNumber++;
+
+                    byte[] built = builder.Build(cert, currentCrlNumber, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+                    //
+                    // We're using a different signing algorithm, a different date, and a different
+                    // CRL number than the CRL we loaded.  Because of all that, this looks exactly
+                    // like the CRL from the BuildEmpty test.
+                    AssertExtensions.SequenceEqual(BuildEmptyExpectedCrl, built);
+                },
+                // Use the same cert subject name as the BuildEmpty test.
+                callerName: nameof(BuildEmpty));
+        }
+
+        [Fact]
+        public static void LoadAddAndBuild()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+
+                    // There is one entry in this CRL, SN:00AB740A714AA83C92 was revoked
+                    // 2013-04-06T07:40:23Z and one extension (revoked for reason 9).
+                    // The nextUpdate field (OPTIONAL in the spec) is not present.
+                    // The signature is completely invalid (it's 0 bits long),
+                    // but we don't check that, since we don't know what key to use.
+                    byte[] toLoad = (
+                        "3081B030819B020101300D06092A864886F70D01010C0500301B311930170603" +
+                        "5504031610496E76616C69646C79205369676E6564170D313330343036303735" +
+                        "3830395A302A3028020900AB740A714AA83C92170D3133303430363037343032" +
+                        "335A300C300A0603551D1504030A0109A02F302D301F0603551D230418301680" +
+                        "1478A5C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D1404030201" +
+                        "7B300D06092A864886F70D01010C0500030100").HexToByteArray();
+
+                    DateTimeOffset now = new DateTimeOffset(2053, 9, 8, 7, 56, 41, TimeSpan.Zero);
+
+                    CertificateRevocationListBuilder builder = CertificateRevocationListBuilder.Load(
+                        toLoad,
+                        out BigInteger currentCrlNumber);
+
+                    Assert.Equal(123, currentCrlNumber);
+
+                    ReadOnlySpan<byte> nextToRevoke = new byte[] { 0x0A, 0x03, 0x04 };
+                    builder.AddEntry(nextToRevoke, now.AddSeconds(-2), X509RevocationReason.KeyCompromise);
+
+                    BigInteger nextCrlNumber = BigInteger.Parse("20530908075641000000000000000000001");
+                    byte[] built = builder.Build(cert, nextCrlNumber, now.AddDays(1), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+                    byte[] expected = (
+                        "308201F83081E1020101300D06092A864886F70D01010B0500301A3118301606" +
+                        "03550403130F4C6F6164416464416E644275696C64180F323035333039303830" +
+                        "37353634315A180F32303533303930393037353634315A30503028020900AB74" +
+                        "0A714AA83C92170D3133303430363037343032335A300C300A0603551D150403" +
+                        "0A0109302402030A0304180F32303533303930383037353633395A300C300A06" +
+                        "03551D1504030A0101A03D303B301F0603551D2304183016801478A5C75D5166" +
+                        "7331D5A96924114C9B5FA00D7BCB30180603551D140411020F03F4407DDE4753" +
+                        "F848A9D7F9A00001300D06092A864886F70D01010B05000382010100041092BF" +
+                        "3931B87B3756111412763E0612BC3DBE52366904F4558C316901A724790BF5D6" +
+                        "201AC99E79ABDE56AEAF019E78398B230D669F6DA3A3E8607971729D85E83EDE" +
+                        "9F7626333032E4785377C0C04C2E5F5B25D0D79B7A0F1AA34DA23AEAAFB578E2" +
+                        "AB41CD1DFAB4AD19CA049851FF941DA37173BA974B68A9469D7CF7987C97BB29" +
+                        "D16889749177D284ADB629BEBC5C7AC872E63F7D4A02A6E8B9BA05B1476C5711" +
+                        "263A124BAF87B84F3A4B064929A2679E5C8D41B6C39DDDAFEB2E9092A3CAF13B" +
+                        "31D6CD8C4EF88E09BE44EE8EA896315A0C6E8A79DD13ACD78B92E349514866C7" +
+                        "69A28F554C7BE6FDEC59ADD39D607F548E2F05C086FEDF9439862720").HexToByteArray();
+
+                    AssertExtensions.SequenceEqual(expected, built);
+                });
+        }
+
+        [Fact]
+        public static void LoadPreservesUnknownExtensions()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+
+                    // There are two entries in this CRL:
+                    //   * SN:00AB740A714AA83C92 was revoked 2013-04-06T07:40:23Z
+                    //     and has no extensions (no revocation reason).
+                    //   * SN:0A0304 was revoked 2053-09-08T07:56:39Z and has two extensions:
+                    //     * Revocation reason (1)
+                    //     * rsaEncryptionWithSha256 (yep, nonsense) with a nonsense payload
+                    // The signature is completely invalid (it's 1 bit long),
+                    // but we don't check that, since we don't know what key to use.
+                    // It also uses a different signature algorithm in the TBS and the signature,
+                    // one of which says the algorithm was CRLReason.
+                    byte[] toLoad = (
+                        "3081F53081E5020101300D06092A864886F70D01010B05003016311430120603" +
+                        "550403130B5374696C6C205765697264180F3230353330393038303735363431" +
+                        "5A180F32303533303930393037353634315A3058301A020900AB740A714AA83C" +
+                        "92170D3133303430363037343032335A303A02030A0304180F32303533303930" +
+                        "383037353633395A3022300A0603551D1504030A0101301406092A864886F70D" +
+                        "01010B040730050400020103A03D303B301F0603551D2304183016801478A5C7" +
+                        "5D51667331D5A96924114C9B5FA00D7BCB30180603551D140411020F03F4407D" +
+                        "DE4753F848A9D7F9A0000130070603551D14050003020780").HexToByteArray();
+
+                    DateTimeOffset now = new DateTimeOffset(1949, 9, 8, 7, 56, 41, TimeSpan.Zero);
+
+                    CertificateRevocationListBuilder builder = CertificateRevocationListBuilder.Load(
+                        toLoad,
+                        out BigInteger currentCrlNumber);
+
+                    BigInteger expectedCrlNumber = BigInteger.Parse("20530908075641000000000000000000001");
+
+                    Assert.Equal(expectedCrlNumber, currentCrlNumber);
+
+                    ReadOnlySpan<byte> nextToRevoke = new byte[] { 0x15, 0x84, 0x57, 0x1B };
+                    builder.AddEntry(nextToRevoke, now.AddSeconds(-2));
+
+                    BigInteger nextCrlNumber = currentCrlNumber + 12;
+                    byte[] built = builder.Build(cert, nextCrlNumber, now.AddYears(1), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, so we can check for exact bytes.
+                    byte[] expected = (
+                        "308202273082010F020101300D06092A864886F70D01010B0500302931273025" +
+                        "0603550403131E4C6F6164507265736572766573556E6B6E6F776E457874656E" +
+                        "73696F6E73180F31393439303930383037353634315A170D3530303930383037" +
+                        "353634315A3071301A020900AB740A714AA83C92170D31333034303630373430" +
+                        "32335A303A02030A0304180F32303533303930383037353633395A3022300A06" +
+                        "03551D1504030A0101301406092A864886F70D01010B04073005040002010330" +
+                        "1702041584571B180F31393439303930383037353633395AA03D303B301F0603" +
+                        "551D2304183016801478A5C75D51667331D5A96924114C9B5FA00D7BCB301806" +
+                        "03551D140411020F03F4407DDE4753F848A9D7F9A0000D300D06092A864886F7" +
+                        "0D01010B05000382010100359B39840DF4516EEC6F02757B0B9A4638AA6B59A6" +
+                        "B159785EB3ABC03AB1F71807657C6AEC488C0E7103D5D7C936B704B727F8DCF1" +
+                        "C1E88920C200A9EE36522ED50AF0E1D9C404101007E65D52359AA46A52044195" +
+                        "4BE506C2217810888865BD8EBED1F87144EC5364E082EDAC23F197EAD135225C" +
+                        "343483FE671B2849A9D4F83B75B6A70D7DA8DD12CC7561D1FA059A636D5F1272" +
+                        "9C18D3FFED99F0E3D9A2EBADBE452A4D127777D52538BAFDDD9F828CC3060A30" +
+                        "366831CD9D8E92DECA397527CAEE1133FFF6F9F0648E6D86AE86FC19B1CB551B" +
+                        "3CFA0F490B7AFDD6286C3C99B83C4BD1D1B8509E332C2212CB22D5BCD2532741" +
+                        "34875DDE2FE7062BA2F2B6"
+                    ).HexToByteArray();
+
+                    AssertExtensions.SequenceEqual(expected, built);
+                });
+        }
+
+        [Fact]
+        public static void LoadInvalid()
+        {
+            byte[] invalid = { 0x3 };
+            BigInteger crlNumber = BigInteger.MinusOne;
+            int bytesConsumed = -1;
+
+            Assert.Throws<CryptographicException>(
+                () => CertificateRevocationListBuilder.Load(invalid, out crlNumber));
+
+            Assert.Equal(BigInteger.MinusOne, crlNumber);
+
+            Assert.Throws<CryptographicException>(
+                () => CertificateRevocationListBuilder.Load(
+                    new ReadOnlySpan<byte>(invalid),
+                    out crlNumber,
+                    out bytesConsumed));
+
+            Assert.Equal(BigInteger.MinusOne, crlNumber);
+            Assert.Equal(-1, bytesConsumed);
+        }
+
+        [Fact]
+        public static void LoadEmpty()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
+
+                    CertificateRevocationListBuilder builder = CertificateRevocationListBuilder.Load(
+                        BuildEmptyExpectedCrl,
+                        out BigInteger currentCrlNumber,
+                        out int bytesConsumed);
+
+                    Assert.Equal(BuildEmptyExpectedCrl.Length, bytesConsumed);
+                    Assert.Equal(123, currentCrlNumber);
+
+                    ReadOnlySpan<byte> serialToAdd =
+                        new byte[] { 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15 };
+
+                    builder.AddEntry(serialToAdd, now.AddSeconds(-1812));
+
+                    byte[] crl = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, and built to look just like BuildSingleEntry.
+                    AssertExtensions.SequenceEqual(BuildSingleEntryExpectedCrl, crl);
+                },
+                callerName: nameof(BuildSingleEntry));
+        }
+
+        [Fact]
+        public static void LoadEmptyPem()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
+
+                    string toLoad = $@"
+This is text before the PRE-EB.
+-----BEGIN RANDOM-----
+-----END RANDOM-----
+-----BEGIN X509 CRL-----
+This is text that is poorly encapsulated, so we skip it.
+-----END CERTIFICATE-----
+More random text.
+{PemEncoding.WriteString("X509 CRL", BuildEmptyExpectedCrl)}
+The next entry is invalid, but we don't read it.
+-----BEGIN X509 CRL-----
+AQAB
+-----END X509 CRL-----";
+
+                    CertificateRevocationListBuilder builder = CertificateRevocationListBuilder.LoadPem(
+                        toLoad,
+                        out BigInteger currentCrlNumber);
+
+                    Assert.Equal(123, currentCrlNumber);
+
+                    ReadOnlySpan<byte> serialToAdd =
+                        new byte[] { 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15 };
+
+                    builder.AddEntry(serialToAdd, now.AddSeconds(-1812));
+
+                    byte[] crl = builder.Build(cert, 123, now.AddMinutes(5), hashAlg, pad, now);
+
+                    // RSASSA-PKCS1, and built to look just like BuildSingleEntry.
+                    AssertExtensions.SequenceEqual(BuildSingleEntryExpectedCrl, crl);
+                },
+                callerName: nameof(BuildSingleEntry));
+        }
+
+        [Fact]
+        public static void LoadOversizedArray()
+        {
+            byte[] oversized = new byte[AddEntryFromCertificateExpectedCrl.Length + 1];
+            AddEntryFromCertificateExpectedCrl.CopyTo(oversized);
+
+            BigInteger crlNumber = BigInteger.MinusOne;
+
+            Assert.Throws<CryptographicException>(
+                () => CertificateRevocationListBuilder.Load(oversized, out crlNumber));
+
+            Assert.Equal(BigInteger.MinusOne, crlNumber);
+        }
+
+        [Fact]
+        public static void LoadPem_InvalidBeforeValid()
+        {
+            string pem = $@"
+-----BEGIN X509 CRL-----
+AQAB
+-----END X509 CRL-----
+{PemEncoding.WriteString("X509 CRL", BuildSingleEntryExpectedCrl)}";
+
+            BigInteger currentCrlNumber = BigInteger.MinusOne;
+
+            Assert.Throws<CryptographicException>(
+                () => CertificateRevocationListBuilder.LoadPem(pem, out currentCrlNumber));
+
+            Assert.Equal(BigInteger.MinusOne, currentCrlNumber);
+        }
+
+        [Fact]
+        public static void LoadPem_NoCrls()
+        {
+            BigInteger currentCrlNumber = BigInteger.MinusOne;
+
+            Assert.Throws<CryptographicException>(
+                () => CertificateRevocationListBuilder.LoadPem(
+                    System.Text.Encoding.ASCII.GetString(TestData.Pkcs7ChainPemBytes),
+                    out currentCrlNumber));
+
+            Assert.Equal(BigInteger.MinusOne, currentCrlNumber);
+        }
+
         private static void BuildCertificateAndRun(
             IEnumerable<X509Extension> extensions,
             Action<X509Certificate2, DateTimeOffset> action,
+            bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
             using (ECDsa key = ECDsa.Create())
@@ -584,7 +1318,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     key,
                     HashAlgorithmName.SHA384);
 
-                req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                if (addSubjectKeyIdentifier)
+                {
+                    req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                }
 
                 foreach (X509Extension ext in extensions)
                 {
@@ -603,6 +1340,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         private static void BuildRsaCertificateAndRun(
             IEnumerable<X509Extension> extensions,
             Action<X509Certificate2, DateTimeOffset> action,
+            bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
             using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
@@ -613,7 +1351,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     HashAlgorithmName.SHA384,
                     RSASignaturePadding.Pkcs1);
 
-                req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                if (addSubjectKeyIdentifier)
+                {
+                    req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                }
 
                 foreach (X509Extension ext in extensions)
                 {
@@ -628,5 +1369,180 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 }
             }
         }
+
+        private static void VerifyCrlFields(
+            ReadOnlyMemory<byte> crl,
+            X500DistinguishedName crlIssuerName,
+            DateTimeOffset? thisUpdate,
+            DateTimeOffset nextUpdate,
+            X509AuthorityKeyIdentifierExtension expectedAkid,
+            BigInteger expectedCrlNumber)
+        {
+            AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
+            reader = reader.ReadSequence();
+            AsnReader tbs = reader.ReadSequence();
+            // signatureAlgorithm
+            reader.ReadEncodedValue();
+            // signature
+            reader.ReadEncodedValue();
+            reader.ThrowIfNotEmpty();
+
+            reader = tbs;
+            // CRL Version
+            Assert.Equal(BigInteger.One, reader.ReadInteger());
+            // signature algorithm identifier
+            reader.ReadEncodedValue();
+
+            AssertExtensions.SequenceEqual(crlIssuerName.RawData, reader.ReadEncodedValue().Span);
+
+            if (thisUpdate.HasValue)
+            {
+                Assert.Equal(ToTheSecond(thisUpdate.Value), ReadX509Time(reader));
+                Assert.Equal(ToTheSecond(nextUpdate), ReadX509Time(reader));
+            }
+            else
+            {
+                // The thisUpdate value was implicit DateTimeOffset.UtcNow,
+                // but it'll still be less than nextUpdate.
+                DateTimeOffset thisUpd = ReadX509Time(reader);
+                Assert.Equal(ToTheSecond(nextUpdate), ReadX509Time(reader));
+                AssertExtensions.LessThan(thisUpd, nextUpdate);
+            }
+
+            AsnReader wrap = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            reader.ThrowIfNotEmpty();
+            AsnReader extensions = wrap.ReadSequence();
+            wrap.ThrowIfNotEmpty();
+
+            AsnReader akidExt = extensions.ReadSequence();
+            Assert.Equal("2.5.29.35", akidExt.ReadObjectIdentifier());
+
+            if (expectedAkid.Critical)
+            {
+                Assert.True(akidExt.ReadBoolean(), "AKID.Critical");
+            }
+
+            byte[] akidBytes = akidExt.ReadOctetString();
+            akidExt.ThrowIfNotEmpty();
+            Assert.Equal(expectedAkid.RawData, akidBytes);
+
+            AsnReader crlNumberExt = extensions.ReadSequence();
+            Assert.Equal("2.5.29.20", crlNumberExt.ReadObjectIdentifier());
+            byte[] crlNumberBytes = crlNumberExt.ReadOctetString();
+            crlNumberExt.ThrowIfNotEmpty();
+            reader = new AsnReader(crlNumberBytes, AsnEncodingRules.DER);
+            Assert.Equal(expectedCrlNumber, reader.ReadInteger());
+            reader.ThrowIfNotEmpty();
+
+            extensions.ThrowIfNotEmpty();
+
+            static DateTimeOffset ToTheSecond(DateTimeOffset input)
+            {
+                long totalTicks = input.Ticks;
+                long unwantedTicks = totalTicks % TimeSpan.TicksPerSecond;
+                long truncatedTicks = totalTicks - unwantedTicks;
+                return new DateTimeOffset(truncatedTicks, input.Offset);
+            }
+        }
+
+        private static DateTimeOffset ReadX509Time(AsnReader reader)
+        {
+            if (reader.PeekTag().HasSameClassAndValue(Asn1Tag.UtcTime))
+            {
+                return reader.ReadUtcTime();
+            }
+
+            return reader.ReadGeneralizedTime();
+        }
+
+        private static ReadOnlySpan<byte> BuildEmptyExpectedCrl => new byte[]
+        {
+            0x30, 0x82, 0x01, 0x8E, 0x30, 0x78, 0x02, 0x01, 0x01, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86,
+            0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x30, 0x15, 0x31, 0x13, 0x30, 0x11, 0x06, 0x03, 0x55, 0x04,
+            0x03, 0x13, 0x0A, 0x42, 0x75, 0x69, 0x6C, 0x64, 0x45, 0x6D, 0x70, 0x74, 0x79, 0x17, 0x0D, 0x31, 0x33,
+            0x30, 0x34, 0x30, 0x36, 0x30, 0x37, 0x35, 0x38, 0x30, 0x39, 0x5A, 0x17, 0x0D, 0x31, 0x33, 0x30, 0x34,
+            0x30, 0x36, 0x30, 0x38, 0x30, 0x33, 0x30, 0x39, 0x5A, 0xA0, 0x2F, 0x30, 0x2D, 0x30, 0x1F, 0x06, 0x03,
+            0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x78, 0xA5, 0xC7, 0x5D, 0x51, 0x66, 0x73, 0x31,
+            0xD5, 0xA9, 0x69, 0x24, 0x11, 0x4C, 0x9B, 0x5F, 0xA0, 0x0D, 0x7B, 0xCB, 0x30, 0x0A, 0x06, 0x03, 0x55,
+            0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7B, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D,
+            0x01, 0x01, 0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0x05, 0xA2, 0x49, 0x67, 0x1E, 0x2E, 0xE8,
+            0x78, 0x0C, 0xBE, 0x17, 0x18, 0x04, 0x93, 0x09, 0x4A, 0x5E, 0xB5, 0x76, 0x46, 0x5A, 0x9B, 0x26, 0x74,
+            0x66, 0x6B, 0x76, 0x21, 0x84, 0xAD, 0x99, 0x28, 0x32, 0x55, 0x6B, 0x36, 0xCC, 0x83, 0x20, 0x26, 0x4F,
+            0xE4, 0x5A, 0x6B, 0x49, 0x81, 0x43, 0x9E, 0xD9, 0xCF, 0xB8, 0x7E, 0xAD, 0x10, 0xD4, 0xA9, 0x57, 0x69,
+            0x71, 0x3A, 0x04, 0x42, 0xB2, 0xD3, 0xA5, 0xFD, 0x20, 0x48, 0x7D, 0xA5, 0xB3, 0x3B, 0xCF, 0xBE, 0x10,
+            0xED, 0x92, 0x1C, 0x8B, 0x98, 0x96, 0xB6, 0x9E, 0xA4, 0x43, 0xD8, 0xD9, 0xF0, 0xAF, 0x5E, 0x0E, 0xB7,
+            0x89, 0x36, 0x16, 0x55, 0xC8, 0x0E, 0xC3, 0xC7, 0xC7, 0xC8, 0x4F, 0x51, 0x27, 0xC6, 0xA2, 0x9C, 0x27,
+            0xBE, 0x84, 0x37, 0xCE, 0x01, 0x82, 0xBD, 0x16, 0xCF, 0x69, 0x71, 0x69, 0x12, 0x1C, 0x2B, 0xBF, 0xAA,
+            0xDC, 0x4E, 0xDE, 0x17, 0xC8, 0xBB, 0x76, 0x94, 0x9D, 0x25, 0x37, 0x6F, 0x27, 0x39, 0xE0, 0x3C, 0xDA,
+            0x06, 0x09, 0xD0, 0x3C, 0x02, 0x4C, 0xD5, 0xA9, 0x11, 0xB3, 0x42, 0x57, 0x1F, 0x38, 0x5B, 0x3B, 0x8A,
+            0x78, 0x2B, 0x62, 0xC5, 0x37, 0x5E, 0x1D, 0x67, 0x4E, 0x43, 0x44, 0x7F, 0xE2, 0xEB, 0x9E, 0xFF, 0xCA,
+            0xF7, 0x1C, 0xCC, 0xEC, 0xBA, 0xE6, 0x00, 0xC7, 0x4F, 0x6F, 0xD6, 0xCB, 0x36, 0xA8, 0x7C, 0x57, 0x86,
+            0x60, 0x35, 0x01, 0xEA, 0x43, 0x79, 0x41, 0x44, 0x14, 0x2E, 0x85, 0x57, 0xEC, 0x2E, 0xBC, 0x2F, 0x73,
+            0x57, 0xDB, 0x05, 0x04, 0x40, 0xFD, 0x97, 0xF2, 0x33, 0x44, 0x1E, 0x2B, 0xE9, 0x81, 0xED, 0x63, 0x09,
+            0xCE, 0x7C, 0x8B, 0x1C, 0x97, 0xBC, 0xE6, 0x58, 0xFC, 0xEC, 0x6B, 0xD6, 0x30, 0x04, 0xA1, 0xD3, 0xD4,
+            0xEA, 0x00, 0x43, 0x78, 0x3E, 0x55, 0xE7, 0xEC, 0xBC, 0xF6, 0xE6,
+        };
+
+        // See AddEntryFromCertificate for the characteristics of this CRL.
+        private static ReadOnlySpan<byte> AddEntryFromCertificateExpectedCrl => new byte[]
+        {
+            0x30, 0x82, 0x01, 0xBA, 0x30, 0x81, 0xA3, 0x02, 0x01, 0x01, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48,
+            0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D, 0x05, 0x00, 0x30, 0x22, 0x31, 0x20, 0x30, 0x1E, 0x06, 0x03, 0x55,
+            0x04, 0x03, 0x13, 0x17, 0x41, 0x64, 0x64, 0x45, 0x6E, 0x74, 0x72, 0x79, 0x46, 0x72, 0x6F, 0x6D, 0x43,
+            0x65, 0x72, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x65, 0x17, 0x0D, 0x31, 0x36, 0x30, 0x33, 0x30,
+            0x38, 0x30, 0x34, 0x35, 0x39, 0x30, 0x37, 0x5A, 0x17, 0x0D, 0x31, 0x36, 0x30, 0x33, 0x30, 0x38, 0x30,
+            0x35, 0x30, 0x34, 0x30, 0x37, 0x5A, 0x30, 0x1C, 0x30, 0x1A, 0x02, 0x09, 0x00, 0xAB, 0x74, 0x0A, 0x71,
+            0x4A, 0xA8, 0x3C, 0x92, 0x17, 0x0D, 0x31, 0x36, 0x30, 0x33, 0x30, 0x38, 0x30, 0x34, 0x34, 0x31, 0x32,
+            0x31, 0x5A, 0xA0, 0x2F, 0x30, 0x2D, 0x30, 0x1F, 0x06, 0x03, 0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16,
+            0x80, 0x14, 0x78, 0xA5, 0xC7, 0x5D, 0x51, 0x66, 0x73, 0x31, 0xD5, 0xA9, 0x69, 0x24, 0x11, 0x4C, 0x9B,
+            0x5F, 0xA0, 0x0D, 0x7B, 0xCB, 0x30, 0x0A, 0x06, 0x03, 0x55, 0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7A,
+            0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D, 0x05, 0x00, 0x03, 0x82,
+            0x01, 0x01, 0x00, 0xA1, 0xD2, 0xEC, 0xA5, 0x52, 0x8F, 0x04, 0x34, 0x4D, 0x05, 0x0E, 0xCD, 0x2E, 0xF8,
+            0xF1, 0x83, 0x0C, 0xC5, 0x48, 0x78, 0xC5, 0x97, 0xE1, 0x42, 0x5A, 0xDB, 0x87, 0x19, 0x7D, 0x33, 0xBE,
+            0x2B, 0x96, 0xFF, 0xAF, 0x25, 0xA8, 0x6E, 0xDA, 0x19, 0x71, 0x1C, 0xA7, 0x04, 0x36, 0xF6, 0x0D, 0xF1,
+            0x73, 0x71, 0xA0, 0xF6, 0xFA, 0x81, 0xE4, 0xF2, 0xDC, 0x1E, 0xB7, 0x0D, 0x96, 0x78, 0x8B, 0x9F, 0xE0,
+            0x2B, 0xDC, 0xD1, 0xD8, 0x25, 0xB4, 0xF9, 0x92, 0xA8, 0x84, 0x4A, 0x9E, 0x68, 0x2A, 0x92, 0x32, 0x10,
+            0x73, 0x10, 0x60, 0x9A, 0x9C, 0xF6, 0xCA, 0xE7, 0x14, 0x00, 0x66, 0x20, 0x5C, 0xE8, 0xB1, 0x77, 0xE1,
+            0x74, 0x53, 0x6B, 0x50, 0x48, 0xED, 0x64, 0xDE, 0xDC, 0x9F, 0x1A, 0x85, 0x2C, 0x48, 0xB5, 0x82, 0xFA,
+            0x10, 0xAE, 0xC9, 0x48, 0xEE, 0xDA, 0x7A, 0x48, 0xA8, 0x8E, 0xEF, 0x3E, 0x31, 0x3E, 0x6C, 0x61, 0xC1,
+            0x0A, 0x19, 0x5B, 0xD6, 0xB6, 0xF1, 0x37, 0xF8, 0x81, 0xA7, 0x2D, 0x7D, 0x93, 0x9B, 0xD6, 0x43, 0x46,
+            0xBC, 0x60, 0x9B, 0xD0, 0xFB, 0xF2, 0xF6, 0xC5, 0x09, 0x60, 0x63, 0x36, 0x16, 0xEB, 0xCC, 0xCD, 0x35,
+            0xEB, 0x6F, 0xD4, 0x00, 0xAF, 0xD9, 0xD2, 0xFE, 0x5B, 0x19, 0x0A, 0x22, 0x28, 0x17, 0xDA, 0x0C, 0xB7,
+            0xFD, 0xEB, 0x99, 0x8B, 0x76, 0xDD, 0x63, 0x34, 0xC4, 0x0A, 0x61, 0x5A, 0xE0, 0xB6, 0x7E, 0x9D, 0x3C,
+            0xD0, 0x4E, 0xAB, 0x68, 0xD8, 0x1B, 0x2E, 0x95, 0x43, 0xFD, 0x5E, 0x58, 0x04, 0x29, 0x78, 0x7C, 0x39,
+            0xC7, 0x21, 0xE5, 0xE0, 0x7D, 0x28, 0xCE, 0xAF, 0x32, 0x1A, 0x90, 0x72, 0x94, 0x77, 0xED, 0xAF, 0xCD,
+            0x22, 0x3A, 0xC8, 0x2A, 0x68, 0xAC, 0xB1, 0x08, 0x26, 0x97, 0xA2, 0xD0, 0xC0, 0x98, 0x56, 0x31, 0x7D,
+            0x5C, 0x3E, 0xD3, 0x09,
+        };
+
+        private static ReadOnlySpan<byte> BuildSingleEntryExpectedCrl => new byte[]
+        {
+            0x30, 0x82, 0x01, 0xB2, 0x30, 0x81, 0x9B, 0x02, 0x01, 0x01, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48,
+            0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x30, 0x1B, 0x31, 0x19, 0x30, 0x17, 0x06, 0x03, 0x55,
+            0x04, 0x03, 0x13, 0x10, 0x42, 0x75, 0x69, 0x6C, 0x64, 0x53, 0x69, 0x6E, 0x67, 0x6C, 0x65, 0x45, 0x6E,
+            0x74, 0x72, 0x79, 0x17, 0x0D, 0x31, 0x33, 0x30, 0x34, 0x30, 0x36, 0x30, 0x37, 0x35, 0x38, 0x30, 0x39,
+            0x5A, 0x17, 0x0D, 0x31, 0x33, 0x30, 0x34, 0x30, 0x36, 0x30, 0x38, 0x30, 0x33, 0x30, 0x39, 0x5A, 0x30,
+            0x1B, 0x30, 0x19, 0x02, 0x08, 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15, 0x17, 0x0D, 0x31, 0x33,
+            0x30, 0x34, 0x30, 0x36, 0x30, 0x37, 0x32, 0x37, 0x35, 0x37, 0x5A, 0xA0, 0x2F, 0x30, 0x2D, 0x30, 0x1F,
+            0x06, 0x03, 0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x78, 0xA5, 0xC7, 0x5D, 0x51, 0x66,
+            0x73, 0x31, 0xD5, 0xA9, 0x69, 0x24, 0x11, 0x4C, 0x9B, 0x5F, 0xA0, 0x0D, 0x7B, 0xCB, 0x30, 0x0A, 0x06,
+            0x03, 0x55, 0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7B, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86,
+            0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0xA9, 0xE1, 0xD0, 0x35, 0x71,
+            0xB1, 0xE4, 0xBF, 0x76, 0x70, 0xEC, 0x32, 0x45, 0x9A, 0x74, 0xB1, 0x14, 0x82, 0x74, 0x1F, 0xD9, 0x73,
+            0xFF, 0x50, 0x40, 0xD5, 0x7B, 0x13, 0x3B, 0x5B, 0x6C, 0x78, 0x3D, 0xC9, 0xED, 0x10, 0x5C, 0x4C, 0xF5,
+            0xDD, 0xE8, 0xFC, 0x8B, 0x76, 0x7C, 0x60, 0x34, 0x25, 0x3D, 0x74, 0x9A, 0x83, 0x46, 0x22, 0x03, 0x4A,
+            0x66, 0x9A, 0xA4, 0xC6, 0xEF, 0xDB, 0x93, 0xC8, 0x2E, 0xB1, 0x5B, 0x69, 0xE6, 0xDC, 0x43, 0xF0, 0x5B,
+            0xAE, 0x7E, 0x9E, 0x21, 0xB0, 0x35, 0x1A, 0x72, 0x0C, 0x5E, 0x79, 0xF3, 0xBE, 0x65, 0x30, 0x46, 0x58,
+            0xEB, 0xDF, 0xE1, 0x96, 0x26, 0x9B, 0xC2, 0x85, 0xD6, 0x53, 0xE7, 0xAC, 0xD9, 0x78, 0x11, 0xD6, 0x4E,
+            0x08, 0x79, 0x20, 0x34, 0xB4, 0x7D, 0x83, 0xBF, 0x9D, 0x37, 0x85, 0x11, 0x16, 0x02, 0x3B, 0xDF, 0x74,
+            0x60, 0xC5, 0xBF, 0x14, 0x92, 0xCF, 0xA4, 0x86, 0xAD, 0x7B, 0x2F, 0x27, 0x78, 0x70, 0x82, 0xE6, 0xA3,
+            0xC0, 0x5C, 0x0E, 0x43, 0xBB, 0x7D, 0x62, 0xB2, 0x34, 0xC0, 0xE6, 0xC5, 0xBA, 0x2E, 0x01, 0x03, 0xE1,
+            0xCC, 0xBD, 0xAE, 0x15, 0xF9, 0xCD, 0x6D, 0xB9, 0x89, 0xDE, 0xD6, 0x87, 0x09, 0x15, 0xAB, 0x16, 0x4E,
+            0xB2, 0xFC, 0x2A, 0xDA, 0x00, 0xD4, 0x98, 0x05, 0x74, 0xFC, 0x2C, 0x3C, 0x09, 0x05, 0xC1, 0xBF, 0xC9,
+            0xF4, 0x2D, 0xBF, 0x0F, 0x80, 0x0F, 0xF7, 0xF9, 0xD9, 0x2C, 0x1F, 0x99, 0xC4, 0x43, 0xEF, 0xC3, 0x25,
+            0x93, 0xC7, 0x49, 0xE1, 0x8C, 0x41, 0x28, 0x2E, 0x0E, 0xF2, 0x32, 0x64, 0x38, 0x46, 0xD2, 0x04, 0xA6,
+            0xBC, 0x23, 0xC5, 0x56, 0x05, 0x29, 0x92, 0x25, 0x63, 0x23, 0xF7, 0xBD, 0x75, 0xDE, 0xE7, 0x33, 0xC9,
+            0xFD, 0x01, 0x1B, 0x6D, 0x3B, 0x85, 0x39, 0x54, 0x22, 0x04, 0x6B, 0x55, 0x73,
+        };
     }
 }
