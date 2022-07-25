@@ -1069,8 +1069,12 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
                 string typeCompilableName = typeMetadata.TypeRef;
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
                 string typeInfoPropertyTypeRef = $"{JsonTypeInfoTypeRef}<{typeCompilableName}>";
+                string encodedTypeCompilableName = FormatTypeForXmlComment(typeMetadata.Type, typeCompilableName);
 
                 return @$"private {typeInfoPropertyTypeRef}? _{typeFriendlyName};
+/// <summary>
+/// JSON-related serialization metadata for the {encodedTypeCompilableName} type.
+/// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
     get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName});
@@ -1103,6 +1107,9 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
+                string encodedContextTypeRef = FormatTypeForXmlComment(_currentContext.ContextType, _currentContext.ContextTypeRef);
+                string encodedContextTypeName = FormatTypeForXmlComment(_currentContext.ContextType, _currentContext.ContextType.Name);
+
                 int backTickIndex = contextTypeName.IndexOf('`');
                 if (backTickIndex != -1)
                 {
@@ -1114,14 +1121,27 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
                 sb.Append(@$"{GetLogicForDefaultSerializerOptionsInit()}
 
 private static {contextTypeRef}? {DefaultContextBackingStaticVarName};
+
+/// <summary>
+/// The default {encodedContextTypeRef} associated with a default <see cref=""{JsonSerializerOptionsTypeRef}""/> instance.
+/// </summary>
 public static {contextTypeRef} Default => {DefaultContextBackingStaticVarName} ??= new {contextTypeRef}(new {JsonSerializerOptionsTypeRef}({DefaultOptionsStaticVarName}));
 
+/// <summary>
+/// The source-generated options associated with this context.
+/// </summary>
 protected override {JsonSerializerOptionsTypeRef}? GeneratedSerializerOptions {{ get; }} = {DefaultOptionsStaticVarName};
 
+/// <summary>
+/// Initializes a new instance of the {encodedContextTypeName} class.
+/// </summary>
 public {contextTypeName}() : base(null)
 {{
 }}
 
+/// <summary>
+/// Initializes a new instance of the {encodedContextTypeName} class with the provided <see cref=""{JsonSerializerOptionsTypeRef}""/>.
+/// </summary>
 public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}) : base({OptionsLocalVariableName})
 {{
 }}
@@ -1221,7 +1241,9 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
             {
                 StringBuilder sb = new();
 
-                sb.Append(@$"public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
+                sb.Append(
+@$"/// <inheritdoc/>
+public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
 {{");
 
                 HashSet<TypeGenerationSpec> types = new(_currentContext.TypesWithMetadataGenerated);
@@ -1369,6 +1391,70 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                 }
 
                 string FormatNumber() => $"({typeRef})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
+            }
+
+            private static readonly Dictionary<string, string> AliasedTypeMap = new Dictionary<string, string>()
+            {
+                [nameof(Boolean)] = "bool",
+                [nameof(Byte)] = "byte",
+                [nameof(Char)] = "char",
+                [nameof(Decimal)] = "decimal",
+                [nameof(Double)] = "double",
+                [nameof(Single)] = "float",
+                [nameof(Int32)] = "int",
+                [nameof(Int64)] = "long",
+                [nameof(Object)] = "object",
+                [nameof(SByte)] = "sbyte",
+                [nameof(Int16)] = "short",
+                [nameof(String)] = "string",
+                [nameof(UInt32)] = "uint",
+                [nameof(UInt64)] = "ulong",
+                [nameof(UInt16)] = "ushort"
+            };
+
+            private static string FormatTypeForXmlComment(Type type, string typeRef)
+            {
+                string GetFriendlyName(string typeName)
+                {
+                    if (AliasedTypeMap.TryGetValue(typeName, out string aliasedName))
+                    {
+                        return aliasedName;
+                    }
+                    return typeName;
+                }
+
+                string FormatType(Type t)
+                {
+                    if (!t.IsGenericType)
+                    {
+                        return GetFriendlyName(t.Name);
+                    }
+                    string typeName = t.Name;
+                    int tildeIndex = typeName.IndexOf('`');
+                    string typeNameWithoutGenericArity = typeName.Substring(0, tildeIndex);
+                    StringBuilder sb = new(typeNameWithoutGenericArity);
+                    sb.Append("&lt;");
+                    bool addSeparator = false;
+                    foreach (Type genericTypeArgument in t.GenericTypeArguments)
+                    {
+                        if (addSeparator)
+                        {
+                            sb.Append(',');
+                        }
+                        string s = FormatType(genericTypeArgument);
+                        sb.Append(s);
+                        addSeparator = true;
+                    }
+                    sb.Append("&gt;");
+                    return sb.ToString();
+                }
+
+                if (type.IsGenericType)
+                {
+                    return FormatType(type);
+                }
+
+                return $@"<see cref=""{typeRef}""/>";
             }
         }
     }
