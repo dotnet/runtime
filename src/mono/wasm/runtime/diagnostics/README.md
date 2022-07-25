@@ -10,7 +10,11 @@ EventPipe streaming threads (that are just ordinary C pthreads) through a shared
 - `shared/` type definitions to be shared between the worker and browser main thread
 - `mock/` a utility to fake WebSocket connectings by playing back a script.  Used for prototyping the diagnostic server without hooking up to a real WebSocket.
 
-## Mocking
+## Mocking diagnostics clients
+
+In `diagnostics/mock` we provide a framework for mocking a connection between the diagnostic server and a diagnostic client.
+Instead of creating tests around a real WebSocket connection to `dotnet-dsrouter` and a tool such as `dotnet-trace collect`, we
+can simulate a connection by playing back a script.  The script represents the commands and responses of a client such as `dotnet-trace` that is connected to `dotnet-dsrouter`.
 
 Build the runtime with `/p:MonoDiagnosticsMock=true`.
 

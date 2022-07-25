@@ -39,7 +39,7 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeCrea
     if (!cwraps.mono_wasm_event_pipe_enable(tracePath, ipcStreamAddr, options.bufferSizeInMB, options.providers, options.rundownRequested, sessionIdOutPtr)) {
         return false;
     } else {
-        return memory.getI32(sessionIdOutPtr);
+        return memory.getU32(sessionIdOutPtr);
     }
 }
 

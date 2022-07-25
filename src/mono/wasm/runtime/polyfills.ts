@@ -92,9 +92,19 @@ export async function init_polyfills(): Promise<void> {
                 if (!this.subscribers.has(event.type)) {
                     return true;
                 }
-                const subscribers = this.subscribers.get(event.type);
+                let subscribers = this.subscribers.get(event.type);
                 if (subscribers === undefined) {
                     return true;
+                }
+                let needsCopy = false;
+                for (const sub of subscribers) {
+                    if (sub.oneShot) {
+                        needsCopy = true;
+                        break;
+                    }
+                }
+                if (needsCopy) {
+                    subscribers = subscribers.slice(0);
                 }
                 for (const sub of subscribers) {
                     const listener = sub.listener;
