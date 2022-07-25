@@ -701,9 +701,6 @@ namespace Internal.JitInterface
                     // TODO: separate helper for the _SPECIAL case
                     id = ReadyToRunHelper.CheckCastClass;
                     break;
-                // case CorInfoHelpFunc.CORINFO_HELP_SIMPLEISINSTANCEOF:
-                //     id = ReadyToRunHelper.SimpleIsInstanceOf;
-                //     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS:
                     id = ReadyToRunHelper.CheckInstanceClass;
                     break;
