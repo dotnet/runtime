@@ -628,27 +628,5 @@ namespace System.Runtime.CompilerServices
 
             throw new ArrayTypeMismatchException();
         }
-
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        private static bool IsInstanceOfException(void* typeHnd, object? obj)
-        {
-            if (obj == null)
-                return false;
-
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-
-            if (typeHnd == mt)
-                return true;
-
-            while (mt != null)
-            {
-                mt = mt->ParentMethodTable;
-                if (mt == typeHnd)
-                    return true;
-            }
-            return false;
-        }
     }
 }
