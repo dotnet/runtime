@@ -51,6 +51,10 @@ namespace System.Net.Security.Tests
 
         private static Lazy<bool> s_cipherSuitePolicySupported = new Lazy<bool>(() =>
         {
+            // see src/libraries/System.Net.Security/src/System/Net/Security/Pal.Android/SafeDeleteSslContext.cs:InitializeSslContext
+            if (PlatformDetection.IsAndroid)
+                return false;
+
             try
             {
                 new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());
@@ -69,7 +73,6 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(Tls13Supported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsTls13_ShouldBeTls13()
         {
             var p = new ConnectionParams()
@@ -91,7 +94,6 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls11)]
 #pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.Tls12)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsLowerThanTls13_ShouldMatchTheProtocol(SslProtocols protocol)
         {
             var p = new ConnectionParams()
@@ -156,7 +158,6 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void CipherSuitesPolicy_AllowOneOnOneSideTls13_Success()
         {
             bool hasSucceededAtLeastOnce = false;

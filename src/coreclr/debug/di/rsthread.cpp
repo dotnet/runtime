@@ -3003,7 +3003,7 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 #endif
 
 // Read the contents from the LS's Predefined TLS block.
-// This is an auxillary TLS storage array-of-void*, indexed off the TLS.
+// This is an auxiliary TLS storage array-of-void*, indexed off the TLS.
 // pRead is optional. This makes sense when '0' is a valid default value.
 // 1) On success (block exists in LS, we can read it),
 //    return value of data in the slot, *pRead = true
@@ -4373,7 +4373,7 @@ void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
         return;
     }
 
-    // If everything was succesful then set this flag, otherwise none of the above data is considered valid
+    // If everything was successful then set this flag, otherwise none of the above data is considered valid
     SetState(CUTS_HasRaiseExceptionEntryCtx);
     return;
 }
@@ -6062,7 +6062,7 @@ HRESULT CordbNativeFrame::IsChild(BOOL * pIsChild)
 //
 // Arguments:
 //    pPotentialParentFrame - the ICDNativeFrame2 to check
-//    pIsParent             - out paramter; returns whether the specified frame is indeed the parent frame
+//    pIsParent             - out parameter; returns whether the specified frame is indeed the parent frame
 //
 // Return Value:
 //    S_OK on success.
@@ -10549,7 +10549,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
 /* ------------------------------------------------------------------------- *
  * CordbEval2
  *
- *   Extentions to the CordbEval class for Whidbey
+ *   Extensions to the CordbEval class for Whidbey
  *
  * ------------------------------------------------------------------------- */
 

@@ -293,7 +293,7 @@ namespace System.Data.Tests
             // Item 4
             Assert.Equal(dt.Rows[0][4], drv[4]);
 
-            // Item -1 - excpetion
+            // Item -1 - exception
             Assert.Throws<IndexOutOfRangeException>(() => drv[-1]);
         }
 
@@ -311,7 +311,7 @@ namespace System.Data.Tests
             // Item 'ParentDateTime'
             Assert.Equal(dt.Rows[0]["ParentDateTime"], drv["ParentDateTime"]);
 
-            // Item invalid - excpetion
+            // Item invalid - exception
             AssertExtensions.Throws<ArgumentException>(null, () => drv["something"]);
         }
 

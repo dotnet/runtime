@@ -11,7 +11,6 @@ namespace System.ComponentModel.Tests
     public class ReflectionCachesUpdateHandlerTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57456", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void ReflectionCachesUpdateHandler_CachesCleared()
         {
             AttributeCollection ac1 = TypeDescriptor.GetAttributes(typeof(ReflectionCachesUpdateHandlerTests));
@@ -20,7 +19,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(2, ac1.Count);
             Assert.Same(ac1[0], ac2[0]);
 
-            MethodInfo clearCache = typeof(TypeDescriptionProvider).Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler", throwOnError: true).GetMethod("ClearCache");
+            MethodInfo clearCache = Type.GetType("System.ComponentModel.ReflectionCachesUpdateHandler, System.ComponentModel.TypeConverter", throwOnError: true).GetMethod("ClearCache");
             Assert.NotNull(clearCache);
             clearCache.Invoke(null, new object[] { null });
 

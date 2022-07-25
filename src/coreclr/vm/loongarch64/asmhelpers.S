@@ -16,7 +16,7 @@ LEAF_ENTRY GetCurrentSP, _TEXT
 LEAF_END GetCurrentSP, _TEXT
 
 //-----------------------------------------------------------------------------
-// The following Macros help in WRITE_BARRIER Implemetations
+// The following Macros help in WRITE_BARRIER Implementations
 // WRITE_BARRIER_ENTRY
 //
 // Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -675,7 +675,7 @@ LOCAL_LABEL(Success):
     jirl  $r0, $t4, 0                // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
-                          // Move this entry to head postion of the chain
+                          // Move this entry to head position of the chain
     addi.d  $t4, $zero, 256
     st.d  $t4, $t3, 0         // be quick to reset the counter so we don't get a bunch of contending threads
     ori  $t8, $t8, PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG

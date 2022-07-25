@@ -59,7 +59,7 @@ namespace System.Net.NetworkInformation
         /// </summary>
         /// <param name="prefixLength">Length of the prefix.</param>
         /// <param name="family">AddressFamily for the mask.</param>
-        /// <returns>netmask corresponsing to prefix length.</returns>
+        /// <returns>netmask corresponding to prefix length.</returns>
         internal static IPAddress PrefixLengthToSubnetMask(byte prefixLength, AddressFamily family)
         {
             Debug.Assert((0 <= prefixLength) && (prefixLength <= 126));

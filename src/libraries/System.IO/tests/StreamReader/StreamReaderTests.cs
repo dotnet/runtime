@@ -189,7 +189,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ArgumentOutOfRangeOnNegativCount()
+        public void ArgumentOutOfRangeOnNegativeCount()
         {
             var sr = GetCharArrayStream().Item2;
             AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 0, 1));
@@ -657,7 +657,7 @@ namespace System.IO.Tests
                     Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
                 }
 
-                // check disabled BOM, default enconding and leaveOpen
+                // check disabled BOM, default encoding and leaveOpen
                 tempStream.Seek(0, SeekOrigin.Begin);
                 using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
                 {
