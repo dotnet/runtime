@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.IO.Compression.Tests;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IO.Compression.Tests;
 using Xunit;
 
 namespace System.IO.Compression
@@ -274,6 +274,8 @@ namespace System.IO.Compression
             }
         }
 
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Fact]
         public void StreamCorruption_IsDetected()
         {
