@@ -31,6 +31,9 @@ namespace Microsoft.Interop.Analyzers
             public const string MarshalModeKey = nameof(MarshalMode);
 
             public static ImmutableDictionary<string, string> CreateDiagnosticPropertiesForMissingMembersDiagnostic(MarshalMode mode, params string[] missingMemberNames)
+                => CreateDiagnosticPropertiesForMissingMembersDiagnostic(mode, (IEnumerable<string>)missingMemberNames);
+
+            public static ImmutableDictionary<string, string> CreateDiagnosticPropertiesForMissingMembersDiagnostic(MarshalMode mode, IEnumerable<string> missingMemberNames)
             {
                 var builder = ImmutableDictionary.CreateBuilder<string, string>();
                 builder.Add(MarshalModeKey, mode.ToString());
@@ -571,6 +574,7 @@ namespace Microsoft.Interop.Analyzers
 
                 void ReportDiagnosticsForMissingMembers(DiagnosticReporter diagnosticReporter)
                 {
+                    // If a caller-allocated-buffer convert method exists, verify that the BufferSize property exists
                     if (shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && mode == MarshalMode.ManagedToUnmanagedIn)
                     {
                         CheckForBufferSizeMember(
@@ -582,10 +586,18 @@ namespace Microsoft.Interop.Analyzers
 
                     if (ManualTypeMarshallingHelper.ModeUsesManagedToUnmanagedShape(mode))
                     {
+                        // If the marshaller mode uses the managed->unmanaged shapes,
+                        // verify that we have either a full managed-to-unmanaged shape
+                        // or that our scenario supports the caller-allocated buffer managed-to-unmanaged shape
+                        // and that the caller-allocated-buffer shape is present.
                         if (!(shape.HasFlag(MarshallerShape.ToUnmanaged) || (mode == MarshalMode.ManagedToUnmanagedIn && shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))))
                         {
                             if (isLinearCollectionMarshaller)
                             {
+                                // Verify that all of the following methods are present with valid shapes:
+                                // - AllocateContainerForUnmanagedElements
+                                // - GetManagedValuesSource
+                                // - GetUnmanagedValuesDestination
                                 if (methods.ToUnmanaged is null && methods.ToUnmanagedWithBuffer is null)
                                 {
                                     diagnosticReporter.CreateAndReportDiagnostic(
@@ -597,16 +609,16 @@ namespace Microsoft.Interop.Analyzers
                                         mode,
                                         managedType.ToDisplayString());
                                 }
-                                string missingCollectionMethods = "";
+                                List<string> missingCollectionMethods = new();
                                 if (methods.ManagedValuesSource is null)
                                 {
-                                    missingCollectionMethods = ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource;
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource);
                                 }
                                 if (methods.UnmanagedValuesDestination is null)
                                 {
-                                    missingCollectionMethods += MissingMemberNames.Delimiter + ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource;
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesDestination);
                                 }
-                                if (!string.IsNullOrEmpty(missingCollectionMethods))
+                                if (missingCollectionMethods.Count > 0)
                                 {
                                     diagnosticReporter.CreateAndReportDiagnostic(
                                         StatelessLinearCollectionInRequiresCollectionMethodsRule,
@@ -620,6 +632,8 @@ namespace Microsoft.Interop.Analyzers
                             }
                             else
                             {
+                                // Verify that all of the following methods are present with valid shapes:
+                                // - ConvertToUnmanaged
                                 diagnosticReporter.CreateAndReportDiagnostic(
                                     StatelessValueInRequiresConvertToUnmanagedRule,
                                     MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(mode, ShapeMemberNames.Value.Stateless.ConvertToUnmanaged),
@@ -632,10 +646,16 @@ namespace Microsoft.Interop.Analyzers
 
                     if (ManualTypeMarshallingHelper.ModeUsesUnmanagedToManagedShape(mode))
                     {
+                        // If the marshaller mode uses the unmanaged->managed shapes,
+                        // verify that we have a full unmanaged-to-managed shape
                         if ((shape & (MarshallerShape.ToManaged | MarshallerShape.GuaranteedUnmarshal)) == 0)
                         {
                             if (isLinearCollectionMarshaller)
                             {
+                                // Verify that all of the following methods are present with valid shapes:
+                                // - AllocateContainerForUnmanagedElements
+                                // - GetUnmanagedValuesSource
+                                // - GetManagedValuesDestination
                                 if (methods.ToManaged is null && methods.ToManagedFinally is null)
                                 {
                                     diagnosticReporter.CreateAndReportDiagnostic(
@@ -647,16 +667,16 @@ namespace Microsoft.Interop.Analyzers
                                         mode,
                                         managedType.ToDisplayString());
                                 }
-                                string missingCollectionMethods = "";
+                                List<string> missingCollectionMethods = new();
                                 if (methods.UnmanagedValuesSource is null)
                                 {
-                                    missingCollectionMethods = ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource;
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource);
                                 }
                                 if (methods.ManagedValuesDestination is null)
                                 {
-                                    missingCollectionMethods += MissingMemberNames.Delimiter + ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination;
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination);
                                 }
-                                if (!string.IsNullOrEmpty(missingCollectionMethods))
+                                if (missingCollectionMethods.Count > 0)
                                 {
                                     diagnosticReporter.CreateAndReportDiagnostic(
                                         StatelessLinearCollectionOutRequiresCollectionMethodsRule,
@@ -670,6 +690,8 @@ namespace Microsoft.Interop.Analyzers
                             }
                             else
                             {
+                                // Verify that all of the following methods are present with valid shapes:
+                                // - ConvertToManaged
                                 diagnosticReporter.CreateAndReportDiagnostic(StatelessRequiresConvertToManagedRule,
                                     MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
                                         mode,
@@ -684,9 +706,13 @@ namespace Microsoft.Interop.Analyzers
 
                 void ReportDiagnosticsForMismatchedMemberSignatures(DiagnosticReporter diagnosticReporter)
                 {
+                    // Verify that the unmanaged type used by the marshaller is consistently
+                    // the same in all of the methods that use the unmanaged type.
+                    // Also, verify that the collection element types are consistent.
                     ITypeSymbol? unmanagedType = null;
                     if (ManualTypeMarshallingHelper.ModeUsesManagedToUnmanagedShape(mode))
                     {
+                        // First verify all usages in the managed->unmanaged shape.
                         IMethodSymbol toUnmanagedMethod = methods.ToUnmanaged ?? methods.ToUnmanagedWithBuffer;
                         unmanagedType = toUnmanagedMethod.ReturnType;
                         if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
@@ -714,10 +740,12 @@ namespace Microsoft.Interop.Analyzers
 
                     if (ManualTypeMarshallingHelper.ModeUsesUnmanagedToManagedShape(mode))
                     {
+                        // Verify the usages unmanaged->managed shape
                         IMethodSymbol toManagedMethod = methods.ToManaged ?? methods.ToManagedFinally;
 
                         if (unmanagedType is not null && !SymbolEqualityComparer.Default.Equals(unmanagedType, toManagedMethod.Parameters[0].Type))
                         {
+                            // If both shapes are present, verify that the unmanaged types match
                             diagnosticReporter.CreateAndReportDiagnostic(FirstParameterMustMatchReturnTypeRule, toManagedMethod.ToDisplayString(), (methods.ToUnmanaged ?? methods.ToUnmanagedWithBuffer).ToDisplayString());
                         }
 
@@ -741,6 +769,8 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
 
+                    // Verify that the managed collection element types match.
+                    // Verify that the unmanaged collection types have the expected element types.
                     if (isLinearCollectionMarshaller)
                     {
                         if (methods.ManagedValuesSource is not null && methods.ManagedValuesDestination is not null)
@@ -755,19 +785,19 @@ namespace Microsoft.Interop.Analyzers
 
                         var (typeArguments, _) = marshallerType.GetAllTypeArgumentsIncludingInContainingTypes();
                         ITypeSymbol expectedUnmanagedCollectionElementType = typeArguments[typeArguments.Length - 1];
-                        VerifyUnmanagedCollectionElementType(methods.UnmanagedValuesSource, expectedUnmanagedCollectionElementType, _readOnlySpanOfT);
-                        VerifyUnmanagedCollectionElementType(methods.UnmanagedValuesDestination, expectedUnmanagedCollectionElementType, _spanOfT);
-
-                        void VerifyUnmanagedCollectionElementType(IMethodSymbol? unmanagedValuesCollectionMethod, ITypeSymbol expectedElementType, INamedTypeSymbol expectedSpanType)
-                        {
-                            if (unmanagedValuesCollectionMethod is not null
-                                && TryGetElementTypeFromSpanType(unmanagedValuesCollectionMethod.ReturnType, out ITypeSymbol sourceElementType)
-                                && !SymbolEqualityComparer.Default.Equals(sourceElementType, expectedElementType))
-                            {
-                                diagnosticReporter.CreateAndReportDiagnostic(ReturnTypeMustBeExpectedTypeRule, unmanagedValuesCollectionMethod.ToDisplayString(), expectedSpanType.Construct(expectedElementType).ToDisplayString());
-                            }
-                        }
+                        VerifyUnmanagedCollectionElementType(diagnosticReporter, methods.UnmanagedValuesSource, expectedUnmanagedCollectionElementType, _readOnlySpanOfT);
+                        VerifyUnmanagedCollectionElementType(diagnosticReporter, methods.UnmanagedValuesDestination, expectedUnmanagedCollectionElementType, _spanOfT);
                     }
+                }
+            }
+
+            private void VerifyUnmanagedCollectionElementType(DiagnosticReporter diagnosticReporter, IMethodSymbol? unmanagedValuesCollectionMethod, ITypeSymbol expectedElementType, INamedTypeSymbol expectedSpanType)
+            {
+                if (unmanagedValuesCollectionMethod is not null
+                    && TryGetElementTypeFromSpanType(unmanagedValuesCollectionMethod.ReturnType, out ITypeSymbol sourceElementType)
+                    && !SymbolEqualityComparer.Default.Equals(sourceElementType, expectedElementType))
+                {
+                    diagnosticReporter.CreateAndReportDiagnostic(ReturnTypeMustBeExpectedTypeRule, unmanagedValuesCollectionMethod.ToDisplayString(), expectedSpanType.Construct(expectedElementType).ToDisplayString());
                 }
             }
 
