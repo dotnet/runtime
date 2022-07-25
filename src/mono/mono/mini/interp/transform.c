@@ -4494,6 +4494,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				init_bb_stack_state (td, new_bb);
 			}
 			link_bblocks = TRUE;
+			// Unoptimized code cannot access exception object directly from the exvar, we need
+			// to push it explicitly on the execution stack
+			if (!td->optimized) {
+                                int index = td->clause_indexes [in_offset];
+                                if (index != -1 && new_bb->stack_height == 1 && header->clauses [index].handler_offset == in_offset) {
+					int exvar = td->clause_vars [index];
+					g_assert (td->stack [0].local == exvar);
+					td->sp--;
+					push_simple_type (td, STACK_TYPE_O);
+					interp_add_ins (td, MINT_MOV_P);
+					interp_ins_set_sreg (td->last_ins, exvar);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+                                }
+                        }
 		}
 		td->offset_to_bb [in_offset] = td->cbb;
 		td->in_start = td->ip;
@@ -9643,9 +9657,6 @@ retry:
 	if (td->prof_coverage)
 		td->coverage_info = mono_profiler_coverage_alloc (method, header->code_size);
 
-	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header, error);
-	goto_if_nok (error, exit);
-
 	if (verbose_method_name) {
 		const char *name = verbose_method_name;
 
@@ -9662,6 +9673,9 @@ retry:
 				td->verbose_level = 4;
 		}
 	}
+
+	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header, error);
+	goto_if_nok (error, exit);
 
 	td->stack = (StackInfo*)g_malloc0 ((header->max_stack + 1) * sizeof (td->stack [0]));
 	td->stack_capacity = header->max_stack + 1;
