@@ -1367,14 +1367,16 @@ namespace System
             ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
             ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
             int n3 = 2141 * daySinceMarch1 + 197913;
+            // Return 1-based day-of-month
             if (part == DatePartDay)
                 return (ushort)n3 / 2141 + 1;
+            // If month was requested, return it
             if (part == DatePartMonth)
                 return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
 
             int year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
             return part == DatePartYear
-                ? year
+                ? year                                                      // If year was requested, compute and return it
                 : daySinceMarch1 >= March1BasedDayOfNewYear                 // DatePartDayOfYear case
                     ? daySinceMarch1 - March1BasedDayOfNewYear + 1          // rollover December 31
                     : daySinceMarch1 + (366 - March1BasedDayOfNewYear) + (IsLeapYear(year) ? 1 : 0);
@@ -1392,6 +1394,7 @@ namespace System
             ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
             int n3 = 2141 * daySinceMarch1 + 197913;
             year = (int)(100 * y400 + (uint)(u2 >> 32));
+            // compute month and day
             month = (ushort)(n3 >> 16);
             day = (ushort)n3 / 2141 + 1;
 
