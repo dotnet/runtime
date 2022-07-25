@@ -283,6 +283,9 @@
     <type fullname="System.Diagnostics.CodeAnalysis.StringSyntaxAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.UnscopedRefAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.InteropServices.LibraryImportAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
