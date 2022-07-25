@@ -426,6 +426,10 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <summary>
+        /// Returns true if increasing the cache size by the size of entry would
+        /// cause it to exceed any size limit on the cache, otherwise, returns false.
+        /// </summary>
         private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CoherentState coherentState)
         {
             long sizeLimit = _options.SizeLimitValue;
