@@ -404,17 +404,22 @@ namespace System.Runtime.Loader
                     return memoryStreamBuffer.AsSpan(position);
                 }
 
-                int length = (int)(stream.Length - stream.Position);
+                long length = stream.Length - stream.Position;
 
                 if (length == 0)
                 {
                     return ReadOnlySpan<byte>.Empty;
                 }
 
-                byte[] bytes = GC.AllocateUninitializedArray<byte>(length);
+                if (((ulong)length) > (ulong)Array.MaxLength)
+                {
+                    throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+                }
+
+                byte[] bytes = GC.AllocateUninitializedArray<byte>((int)length);
 
                 // Copy the stream to the byte array
-                stream.ReadExactly(bytes, 0, length);
+                stream.ReadExactly(bytes);
 
                 return bytes;
             }
