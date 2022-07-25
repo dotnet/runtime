@@ -1976,10 +1976,10 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
+    AssertionIndex fastAnswer = NO_ASSERTION_INDEX;
+    AssertionIndex slowAnswer = NO_ASSERTION_INDEX;
 #ifdef DEBUG
     bool           found      = false;
-    AssertionIndex slowAnswer = NO_ASSERTION_INDEX;
-    AssertionIndex fastAnswer = NO_ASSERTION_INDEX;
 
     // Check if exists already, so we can skip adding new one. Search backwards.
     for (AssertionIndex index = optAssertionCount; index >= 1; index--)
@@ -2006,12 +2006,14 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         }
         else
         {
+#ifdef DEBUG
             if (found)
             {
                 JITDUMP("HashCode= %u not found in map.\n",
                         AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
                 assert(false);
             }
+#endif
             return NO_ASSERTION_INDEX;
         }
     }
