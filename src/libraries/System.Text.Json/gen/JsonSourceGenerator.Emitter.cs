@@ -57,6 +57,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
+            private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
@@ -1069,11 +1070,10 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
                 string typeCompilableName = typeMetadata.TypeRef;
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
                 string typeInfoPropertyTypeRef = $"{JsonTypeInfoTypeRef}<{typeCompilableName}>";
-                string encodedTypeCompilableName = FormatTypeForXmlComment(typeMetadata.Type, typeCompilableName);
 
                 return @$"private {typeInfoPropertyTypeRef}? _{typeFriendlyName};
 /// <summary>
-/// JSON-related serialization metadata for the {encodedTypeCompilableName} type.
+/// JSON-related serialization metadata for a type.
 /// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
@@ -1107,8 +1107,6 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
-                string encodedContextTypeRef = FormatTypeForXmlComment(_currentContext.ContextType, _currentContext.ContextTypeRef);
-                string encodedContextTypeName = FormatTypeForXmlComment(_currentContext.ContextType, _currentContext.ContextType.Name);
 
                 int backTickIndex = contextTypeName.IndexOf('`');
                 if (backTickIndex != -1)
@@ -1123,7 +1121,7 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
 private static {contextTypeRef}? {DefaultContextBackingStaticVarName};
 
 /// <summary>
-/// The default {encodedContextTypeRef} associated with a default <see cref=""{JsonSerializerOptionsTypeRef}""/> instance.
+/// The default <see cref=""{JsonSerializerContextTypeRef}""/> associated with a default <see cref=""{JsonSerializerOptionsTypeRef}""/> instance.
 /// </summary>
 public static {contextTypeRef} Default => {DefaultContextBackingStaticVarName} ??= new {contextTypeRef}(new {JsonSerializerOptionsTypeRef}({DefaultOptionsStaticVarName}));
 
@@ -1132,16 +1130,12 @@ public static {contextTypeRef} Default => {DefaultContextBackingStaticVarName} ?
 /// </summary>
 protected override {JsonSerializerOptionsTypeRef}? GeneratedSerializerOptions {{ get; }} = {DefaultOptionsStaticVarName};
 
-/// <summary>
-/// Initializes a new instance of the {encodedContextTypeName} class.
-/// </summary>
+/// <inheritdoc/>
 public {contextTypeName}() : base(null)
 {{
 }}
 
-/// <summary>
-/// Initializes a new instance of the {encodedContextTypeName} class with the provided <see cref=""{JsonSerializerOptionsTypeRef}""/>.
-/// </summary>
+/// <inheritdoc/>
 public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}) : base({OptionsLocalVariableName})
 {{
 }}
@@ -1391,70 +1385,6 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                 }
 
                 string FormatNumber() => $"({typeRef})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
-            }
-
-            private static readonly Dictionary<string, string> AliasedTypeMap = new Dictionary<string, string>()
-            {
-                [nameof(Boolean)] = "bool",
-                [nameof(Byte)] = "byte",
-                [nameof(Char)] = "char",
-                [nameof(Decimal)] = "decimal",
-                [nameof(Double)] = "double",
-                [nameof(Single)] = "float",
-                [nameof(Int32)] = "int",
-                [nameof(Int64)] = "long",
-                [nameof(Object)] = "object",
-                [nameof(SByte)] = "sbyte",
-                [nameof(Int16)] = "short",
-                [nameof(String)] = "string",
-                [nameof(UInt32)] = "uint",
-                [nameof(UInt64)] = "ulong",
-                [nameof(UInt16)] = "ushort"
-            };
-
-            private static string FormatTypeForXmlComment(Type type, string typeRef)
-            {
-                string GetFriendlyName(string typeName)
-                {
-                    if (AliasedTypeMap.TryGetValue(typeName, out string aliasedName))
-                    {
-                        return aliasedName;
-                    }
-                    return typeName;
-                }
-
-                string FormatType(Type t)
-                {
-                    if (!t.IsGenericType)
-                    {
-                        return GetFriendlyName(t.Name);
-                    }
-                    string typeName = t.Name;
-                    int backTickIndex = typeName.IndexOf('`');
-                    string typeNameWithoutGenericArity = typeName.Substring(0, backTickIndex);
-                    StringBuilder sb = new(typeNameWithoutGenericArity);
-                    sb.Append("&lt;");
-                    bool addSeparator = false;
-                    foreach (Type genericTypeArgument in t.GenericTypeArguments)
-                    {
-                        if (addSeparator)
-                        {
-                            sb.Append(',');
-                        }
-                        string s = FormatType(genericTypeArgument);
-                        sb.Append(s);
-                        addSeparator = true;
-                    }
-                    sb.Append("&gt;");
-                    return sb.ToString();
-                }
-
-                if (type.IsGenericType)
-                {
-                    return FormatType(type);
-                }
-
-                return $@"<see cref=""{typeRef}""/>";
             }
         }
     }
