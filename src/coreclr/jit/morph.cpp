@@ -1794,10 +1794,10 @@ TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= 
     }
 
     // If rhs->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
-    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use rhs->TypeGet() for
+    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use type of rhs for
     // setting type of lcl vars created.
     GenTree* asg  = gtNewTempAssign(lclNum, rhs);
-    GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, rhs->TypeGet(), lclNum);
+    GenTree* load = gtNewLclvNode(lclNum, genActualType(rhs));
 
     TempInfo tempInfo{};
     tempInfo.asg  = asg;
