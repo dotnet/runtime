@@ -36,7 +36,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceModel.Syndication\src\System.ServiceModel.Syndication.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Speech\src\System.Speech.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 
@@ -45,7 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />  
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
     <PackageReference Include="System.ServiceModel.Primitives;
                                      System.ServiceModel.Duplex;
                                      System.ServiceModel.Http;
@@ -71,5 +70,6 @@
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
 </Project>
