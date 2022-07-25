@@ -23,6 +23,7 @@ import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
+import { mono_wasm_init_diagnostics } from "./diagnostics/index";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
 const loaded_files: { url?: string, file: string }[] = [];
@@ -188,7 +189,7 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
             if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
 
             // load runtime
-            mono_wasm_before_user_runtime_initialized();
+            await mono_wasm_before_user_runtime_initialized();
         }
         // call user code
         try {
@@ -278,7 +279,7 @@ async function mono_wasm_pre_init_full(): Promise<void> {
 }
 
 // runs just in non-blazor
-function mono_wasm_before_user_runtime_initialized(): void {
+async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
     if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
 
     if (!Module.config || Module.config.isError) {
@@ -295,7 +296,7 @@ function mono_wasm_before_user_runtime_initialized(): void {
             Module.print("MONO_WASM: no files were loaded into runtime");
         }
 
-        _apply_configuration_from_args();
+        await _apply_configuration_from_args();
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
@@ -505,7 +506,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     ++instantiated_assets_count;
 }
 
-function _apply_configuration_from_args() {
+async function _apply_configuration_from_args() {
     try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         mono_wasm_setenv("TZ", tz || "UTC");
@@ -529,8 +530,11 @@ function _apply_configuration_from_args() {
 
     if (config.coverage_profiler_options)
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
-}
 
+    if (config.diagnostic_options) {
+        await mono_wasm_init_diagnostics(config.diagnostic_options);
+    }
+}
 
 export function mono_wasm_load_runtime(unused?: string, debug_level?: number): void {
     if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
@@ -954,9 +958,8 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 async function mono_wasm_pthread_worker_init(): Promise<void> {
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
-    console.debug("MONO_WASM: mono_wasm_pthread_worker_init");
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        console.debug("MONO_WASM: thread created", ev.pthread_ptr);
+        console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
 }
 

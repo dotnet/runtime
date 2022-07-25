@@ -9333,95 +9333,50 @@ GenTree* Compiler::fgMorphForRegisterFP(GenTree* tree)
 //      ignoreUsedInSIMDIntrinsic - bool. If this is set to true, then this function will ignore
 //                                  the UsedInSIMDIntrinsic check.
 //
-// return value:
+// Return Value:
 //       A GenTree* which points the simd lclvar tree belongs to. If the tree is not the simd
 //       instrinic related field, return nullptr.
 //
-
 GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                                           CorInfoType* simdBaseJitTypeOut,
                                           unsigned*    indexOut,
                                           unsigned*    simdSizeOut,
                                           bool         ignoreUsedInSIMDIntrinsic /*false*/)
 {
-    GenTree* ret = nullptr;
-    if (tree->OperGet() == GT_FIELD)
+    if (tree->OperIs(GT_FIELD))
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if (objRef != nullptr)
+        if ((objRef != nullptr) && objRef->OperIs(GT_ADDR))
         {
-            GenTree* obj = nullptr;
-            if (objRef->gtOper == GT_ADDR)
-            {
-                obj = objRef->AsOp()->gtOp1;
-            }
-            else if (ignoreUsedInSIMDIntrinsic)
-            {
-                obj = objRef;
-            }
-            else
-            {
-                return nullptr;
-            }
+            GenTree* obj = objRef->AsOp()->gtOp1;
 
             if (isSIMDTypeLocal(obj))
             {
                 LclVarDsc* varDsc = lvaGetDesc(obj->AsLclVarCommon());
                 if (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic)
                 {
-                    *simdSizeOut        = varDsc->lvExactSize;
-                    *simdBaseJitTypeOut = getBaseJitTypeOfSIMDLocal(obj);
-                    ret                 = obj;
+                    CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+                    var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
+                    unsigned    fieldOffset     = tree->AsField()->gtFldOffset;
+                    unsigned    baseTypeSize    = genTypeSize(simdBaseType);
+
+                    // Below condition is convervative. We don't actually need the two types to
+                    // match (only the tree type is relevant), but we don't have a convenient way
+                    // to turn the tree type into "CorInfoType".
+                    if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
+                    {
+                        *simdSizeOut        = varDsc->lvExactSize;
+                        *simdBaseJitTypeOut = simdBaseJitType;
+                        *indexOut           = fieldOffset / baseTypeSize;
+
+                        return obj;
+                    }
                 }
             }
-            else if (obj->OperGet() == GT_SIMD)
-            {
-                ret                   = obj;
-                GenTreeSIMD* simdNode = obj->AsSIMD();
-                *simdSizeOut          = simdNode->GetSimdSize();
-                *simdBaseJitTypeOut   = simdNode->GetSimdBaseJitType();
-            }
-#ifdef FEATURE_HW_INTRINSICS
-            else if (obj->OperIsHWIntrinsic())
-            {
-                ret                          = obj;
-                GenTreeHWIntrinsic* simdNode = obj->AsHWIntrinsic();
-                *simdSizeOut                 = simdNode->GetSimdSize();
-                *simdBaseJitTypeOut          = simdNode->GetSimdBaseJitType();
-            }
-#endif // FEATURE_HW_INTRINSICS
-            else if (obj->IsCnsVec())
-            {
-                ret                   = obj;
-                GenTreeVecCon* vecCon = obj->AsVecCon();
-                *simdSizeOut          = genTypeSize(vecCon);
-                *simdBaseJitTypeOut   = vecCon->GetSimdBaseJitType();
-            }
         }
     }
-    if (ret != nullptr)
-    {
-        var_types fieldType = tree->TypeGet();
-        if (fieldType == TYP_LONG)
-        {
-            // Vector2/3/4 expose public float fields while Vector<T>
-            // and Vector64/128/256<T> have internal ulong fields. So
-            // we should only ever encounter accesses for TYP_FLOAT or
-            // TYP_LONG and in the case of the latter we don't want the
-            // generic type since we are executing some algorithm on the
-            // raw underlying bits instead.
 
-            *simdBaseJitTypeOut = CORINFO_TYPE_ULONG;
-        }
-        else
-        {
-            assert(fieldType == TYP_FLOAT);
-        }
-
-        unsigned baseTypeSize = genTypeSize(JITtype2varType(*simdBaseJitTypeOut));
-        *indexOut             = tree->AsField()->gtFldOffset / baseTypeSize;
-    }
-    return ret;
+    return nullptr;
 }
 
 /*****************************************************************************

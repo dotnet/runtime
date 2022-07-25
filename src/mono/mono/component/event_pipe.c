@@ -98,9 +98,18 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
+#ifdef HOST_WASM
+static void
+mono_wasm_event_pipe_init (void);
+#endif
+
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
+#ifndef HOST_WASM
 	&ep_init,
+#else
+	&mono_wasm_event_pipe_init,
+#endif
 	&ep_finish_init,
 	&ep_shutdown,
 	&event_pipe_enable,
@@ -354,19 +363,22 @@ wasm_to_ep_session_id (MonoWasmEventPipeSessionID session_id)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
 			     MonoWasmEventPipeSessionID *out_session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
 	EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
-	EventPipeSessionType session_type = EP_SESSION_TYPE_FILE;
+	EventPipeSessionType session_type = output_path != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_IPCSTREAM;
+
+	g_assert ((output_path == NULL && ipc_stream != NULL) ||
+		  (output_path != NULL && ipc_stream == NULL));
 
 	EventPipeSessionID session;
 	session = ep_enable_2 (output_path,
@@ -375,7 +387,7 @@ mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			       session_type,
 			       format,
 			       !!rundown_requested,
-			       /* stream */NULL,
+			       ipc_stream,
 			       /* callback*/ NULL,
 			       /* callback_data*/ NULL);
   
@@ -401,6 +413,17 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	ep_disable (wasm_to_ep_session_id (session_id));
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
+}
+
+// JS callback to invoke on the main thread early during runtime initialization once eventpipe is functional but before too much of the rest of the runtime is loaded.
+extern void mono_wasm_event_pipe_early_startup_callback (void);
+
+
+static void
+mono_wasm_event_pipe_init (void)
+{
+	ep_init ();
+	mono_wasm_event_pipe_early_startup_callback ();
 }
 
 #endif /* HOST_WASM */
