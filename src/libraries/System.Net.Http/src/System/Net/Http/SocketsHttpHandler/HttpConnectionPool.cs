@@ -579,7 +579,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
 
             bool canUse = true;
-            TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
+            HttpConnectionWaiter<Http2Connection?>? waiter = null;
             lock (SyncObj)
             {
                 Debug.Assert(_pendingHttp2Connection);
@@ -608,6 +608,9 @@ namespace System.Net.Http
             while (waiter is not null)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Downgrading queued HTTP2 request to HTTP/1.1");
+
+                // We are done with the HTTP2 connection attempt, no point to cancel it anymore.
+                Volatile.Write(ref waiter.ConnectionCancellationTokenSource, null);
 
                 // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
                 waiter.TrySetResult(null);
@@ -1721,7 +1724,7 @@ namespace System.Net.Http
             return stream;
         }
 
-        private void HandleHttp11ConnectionFailure(TaskCompletionSourceWithCancellation<HttpConnection>? requestWaiter, Exception e)
+        private void HandleHttp11ConnectionFailure(HttpConnectionWaiter<HttpConnection>? requestWaiter, Exception e)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/1.1 connection failed: {e}");
 
@@ -1741,7 +1744,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleHttp2ConnectionFailure(TaskCompletionSourceWithCancellation<Http2Connection?> requestWaiter, Exception e)
+        private void HandleHttp2ConnectionFailure(HttpConnectionWaiter<Http2Connection?> requestWaiter, Exception e)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP2 connection failed: {e}");
 
@@ -1822,7 +1825,9 @@ namespace System.Net.Http
             return false;
         }
 
-        public void ReturnHttp11Connection(HttpConnection connection, bool isNewConnection, TaskCompletionSourceWithCancellation<HttpConnection>? initialRequestWaiter = null)
+        public void RecycleHttp11Connection(HttpConnection connection) => ReturnHttp11Connection(connection, false);
+
+        private void ReturnHttp11Connection(HttpConnection connection, bool isNewConnection, HttpConnectionWaiter<HttpConnection>? initialRequestWaiter = null)
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
@@ -1838,7 +1843,7 @@ namespace System.Net.Http
             // Loop in case we get a request that has already been canceled or handeled by a different connection.
             while (true)
             {
-                TaskCompletionSourceWithCancellation<HttpConnection>? waiter = null;
+                HttpConnectionWaiter<HttpConnection>? waiter = null;
                 bool added = false;
                 lock (SyncObj)
                 {
@@ -1915,7 +1920,7 @@ namespace System.Net.Http
             }
         }
 
-        public void ReturnHttp2Connection(Http2Connection connection, bool isNewConnection, TaskCompletionSourceWithCancellation<Http2Connection?>? initialRequestWaiter = null)
+        private void ReturnHttp2Connection(Http2Connection connection, bool isNewConnection, HttpConnectionWaiter<Http2Connection?>? initialRequestWaiter = null)
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
@@ -1940,7 +1945,7 @@ namespace System.Net.Http
                 // Loop in case we get a request that has already been canceled or handeled by a different connection.
                 while (true)
                 {
-                    TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
+                    HttpConnectionWaiter<Http2Connection?>? waiter = null;
                     bool added = false;
                     lock (SyncObj)
                     {
@@ -2474,7 +2479,7 @@ namespace System.Net.Http
                 }
             }
 
-            public bool TryDequeueWaiter(HttpConnectionPool pool, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
+            public bool TryDequeueWaiter(HttpConnectionPool pool, [MaybeNullWhen(false)] out HttpConnectionWaiter<T> waiter)
             {
                 PruneCompletedRequestsFromHeadOfQueue(pool);
 
@@ -2488,7 +2493,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            public void TryDequeueSpecificWaiter(TaskCompletionSourceWithCancellation<T> waiter)
+            public void TryDequeueSpecificWaiter(HttpConnectionWaiter<T> waiter)
             {
                 if (TryPeek(out QueueItem queueItem) && queueItem.Waiter == waiter)
                 {
@@ -2521,7 +2526,7 @@ namespace System.Net.Http
         {
             // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
             // or completes on a different connection.
-            public CancellationTokenSource? ConnectionCancellationTokenSource { get; set; }
+            public CancellationTokenSource? ConnectionCancellationTokenSource;
 
             // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
             public bool CancelledByOriginatingRequestCompletion { get; set; }
