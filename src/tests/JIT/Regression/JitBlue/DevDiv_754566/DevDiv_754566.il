@@ -10,7 +10,7 @@
 }
 .assembly 'DevDiv_754566'
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
   .hash algorithm 0x00008004
@@ -31,7 +31,7 @@
 .class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Test(int32 val) cil managed noinlining
   {
     // This testcase ensures that we don't perform devirtualization
@@ -46,7 +46,7 @@
     IL_000b:  ret
   } // end of method Program::Test
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Main(string[] args) cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -78,7 +78,7 @@
     IL_002a:  stloc.0
     IL_002b:  br.s       IL_0047
 
-    IL_002d:  ldstr      "result shoudl be 42, is= "
+    IL_002d:  ldstr      "result should be 42, is= "
     IL_0032:  ldloc.2
     IL_0033:  call       string [mscorlib]System.String::Concat(string,
                                                                 string)
@@ -89,7 +89,7 @@
     IL_0048:  ret
   } // end of method Program::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

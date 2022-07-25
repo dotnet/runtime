@@ -20,7 +20,7 @@ public sealed class RegexGeneratorAttribute : Attribute
     /// <summary>Initializes a new instance of the <see cref="RegexGeneratorAttribute"/> with the specified pattern and options.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
-    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) : this (pattern, options, Timeout.Infinite)
+    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) : this (pattern, options, Timeout.Infinite)
     {
     }
 
@@ -28,7 +28,7 @@ public sealed class RegexGeneratorAttribute : Attribute
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
     /// <param name="matchTimeoutMilliseconds">A time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</param>
-    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, int matchTimeoutMilliseconds)
+    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options, int matchTimeoutMilliseconds)
     {
         Pattern = pattern;
         Options = options;

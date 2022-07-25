@@ -170,9 +170,14 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1059`__ | Marshaller type does not support allocating constructor |
 |  __`SYSLIB1060`__ | BufferSize should be set on CustomTypeMarshallerAttribute |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
-|  __`SYSLIB1062`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1063`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1064`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1062`__ | Project must be updated with '<AllowUnsafeBlocks>true</AllowUnsafeBlocks>' |
+|  __`SYSLIB1063`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1064`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1065`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1066`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1067`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1068`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1069`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 

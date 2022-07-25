@@ -70,7 +70,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MultipleIntSouce()
+        public void MultipleIntSource()
         {
             int[] source = { 5, -10, 15, 40, 28 };
             double expected = 15.6;

@@ -155,6 +155,7 @@ declare type MonoConfig = {
     runtime_options?: string[];
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
+    diagnostic_options?: DiagnosticOptions;
     ignore_pdb_load_errors?: boolean;
     wait_for_debugger?: number;
 };
@@ -208,10 +209,18 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+declare type DiagnosticOptions = {
+    sessions?: EventPipeSessionOptions[];
+    server?: DiagnosticServerOptions;
+};
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
     providers: string;
 }
+declare type DiagnosticServerOptions = {
+    connect_url: string;
+    suspend: string | boolean;
+};
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
@@ -242,14 +251,8 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
-
 declare type EventPipeSessionID = bigint;
-interface EventPipeSession {
-    get sessionID(): EventPipeSessionID;
-    start(): void;
-    stop(): void;
-    getTraceBlob(): Blob;
-}
+
 declare const eventLevel: {
     readonly LogAlways: 0;
     readonly Critical: 1;
@@ -280,10 +283,19 @@ declare class SessionOptionsBuilder {
     addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
     build(): EventPipeSessionOptions;
 }
+
+interface EventPipeSession {
+    get sessionID(): EventPipeSessionID;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
+}
+
 interface Diagnostics {
     EventLevel: EventLevel;
     SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+    getStartupSessions(): (EventPipeSession | null)[];
 }
 
 declare function mono_wasm_runtime_ready(): void;

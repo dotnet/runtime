@@ -292,7 +292,7 @@ namespace Internal.ReadyToRunConstants
         DblRound                    = 0xE2,
         FltRound                    = 0xE3,
 
-        // Personality rountines
+        // Personality routines
         PersonalityRoutine          = 0xF0,
         PersonalityRoutineFilterFunclet = 0xF1,
 

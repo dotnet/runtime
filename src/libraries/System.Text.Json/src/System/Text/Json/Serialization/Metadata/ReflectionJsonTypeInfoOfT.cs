@@ -35,16 +35,10 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             CreateObjectForExtensionDataProperty = createObject;
-        }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked as RequiresUnreferencedCode")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
-        internal override void Configure()
-        {
-            base.Configure();
-            Converter.ConfigureJsonTypeInfoUsingReflection(this, Options);
+            // Plug in any converter configuration -- should be run last.
+            converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfoUsingReflection(this, options);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

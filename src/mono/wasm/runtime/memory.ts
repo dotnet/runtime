@@ -1,3 +1,4 @@
+import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
 import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
@@ -255,3 +256,17 @@ export function withStackAlloc<T1, T2, T3, TResult>(bytesWanted: number, f: (ptr
     }
 }
 
+const BuiltinAtomics = globalThis.Atomics;
+
+export const Atomics = monoWasmThreads ? {
+    storeI32(offset: _MemOffset, value: number): void {
+
+        BuiltinAtomics.store(Module.HEAP32, <any>offset >>> 2, value);
+    },
+    notifyI32(offset: _MemOffset, count: number): void {
+        BuiltinAtomics.notify(Module.HEAP32, <any>offset >>> 2, count);
+    }
+} : {
+    storeI32: setI32,
+    notifyI32: () => { /*empty*/ }
+};

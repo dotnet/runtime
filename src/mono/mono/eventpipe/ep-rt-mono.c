@@ -3437,7 +3437,7 @@ static const uint32_t MAX_METHOD_TYPE_ARGUMENT_COUNT = 1024;
 // eventpipe events. It calls ep_rt_mono_log_type_and_parameters_if_necessary to log
 // unique types from the method type and available method instantiation parameter types
 // that are ultimately emitted as a BulkType event in ep_rt_mono_fire_bulk_type_event.
-// After appropraitely logging type information, it sends method details outlined by
+// After appropriately logging type information, it sends method details outlined by
 // the generated dotnetruntime.c and ClrEtwAll manifest.
 //
 // Arguments:

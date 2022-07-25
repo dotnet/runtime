@@ -1486,7 +1486,7 @@ namespace System.Diagnostics
             // registering the handler and no special cases are needed.
             //
             // CASE 1.2: PROCESS EXITS BEFORE REGISTERING HANDLER
-            // It's possible that the process can exit after we enable events but before we reigster
+            // It's possible that the process can exit after we enable events but before we register
             // the handler. In that case we must check for exit after registering the handler.
             //
             //

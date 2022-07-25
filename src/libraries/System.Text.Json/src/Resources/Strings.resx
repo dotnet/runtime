@@ -352,7 +352,7 @@
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
+    <value>The extension data property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>

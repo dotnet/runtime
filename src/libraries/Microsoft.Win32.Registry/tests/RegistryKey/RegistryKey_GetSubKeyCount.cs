@@ -11,7 +11,7 @@ namespace Microsoft.Win32.RegistryTests
     public class RegistryKey_GetSubKeyCount : RegistryTestsBase
     {
         [Fact]
-        public void ShoudThrowIfDisposed()
+        public void ShouldThrowIfDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
