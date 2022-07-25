@@ -3664,6 +3664,26 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
         ni = lookupNamedIntrinsic(method);
 
+        if (ni == NI_System_StubHelpers_GetStubContext)
+        {
+            *pIntrinsicName = ni;
+
+            // must be done regardless of DbgCode and MinOpts
+            return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+        }
+
+        if (ni == NI_System_StubHelpers_NextCallReturnAddress)
+        {
+            *pIntrinsicName = ni;
+
+            // For now we just avoid inlining anything into these methods since
+            // this intrinsic is only rarely used. We could do this better if we
+            // wanted to by trying to match which call is the one we need to get
+            // the return address of.
+            info.compHasNextCallRetAddr = true;
+            return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+        }
+
         switch (ni)
         {
             // CreateSpan must be expanded for NativeAOT
@@ -3745,22 +3765,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     }
 
     *pIntrinsicName = ni;
-
-    if (ni == NI_System_StubHelpers_GetStubContext)
-    {
-        // must be done regardless of DbgCode and MinOpts
-        return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
-    }
-
-    if (ni == NI_System_StubHelpers_NextCallReturnAddress)
-    {
-        // For now we just avoid inlining anything into these methods since
-        // this intrinsic is only rarely used. We could do this better if we
-        // wanted to by trying to match which call is the one we need to get
-        // the return address of.
-        info.compHasNextCallRetAddr = true;
-        return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
-    }
 
     GenTree*    retNode     = nullptr;
     CorInfoType callJitType = sig->retType;
