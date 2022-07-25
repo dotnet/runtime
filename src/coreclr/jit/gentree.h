@@ -498,7 +498,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
-    GTF_INX_ADDR_NONNULL        = 0x20000000, // GT_INDEX_ADDR -- this array must be null checked
+    GTF_INX_MUST_NULLCHECK      = 0x20000000, // GT_INDEX_ADDR -- this array must be null checked
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not on the heap
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND -- the load or store must use volatile semantics (this is a nop on X86)
