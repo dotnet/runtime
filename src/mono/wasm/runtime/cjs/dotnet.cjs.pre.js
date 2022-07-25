@@ -26,5 +26,3 @@ else if (typeof createDotnetRuntime === "function") {
 else {
     throw new Error("MONO_WASM: Can't locate global Module object or moduleFactory callback of createDotnetRuntime function.")
 }
-var require = require || undefined;
-var __dirname = __dirname || '';

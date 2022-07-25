@@ -719,10 +719,10 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
         }
         if (asset.name === attemptUrl) {
             if (runtimeHelpers.diagnostic_tracing)
-                console.debug(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
+                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
         } else {
             if (runtimeHelpers.diagnostic_tracing)
-                console.debug(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
+                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
             const loadingResource = downloadResource({
@@ -733,7 +733,7 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
             });
             const response = await loadingResource.response;
             if (!response.ok) {
-                error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+                error = new Error(`MONO_WASM: download '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
                 continue;// next source
             }
             asset.pending = loadingResource;
@@ -742,7 +742,7 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
             error = undefined;
         }
         catch (err) {
-            error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${err}`);
+            error = new Error(`MONO_WASM: download '${attemptUrl}' for ${asset.name} failed ${err}`);
             continue; //next source
         }
 

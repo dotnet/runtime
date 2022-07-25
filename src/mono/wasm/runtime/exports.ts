@@ -31,7 +31,7 @@ import {
     mono_wasm_debugger_attached,
     mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
-import { ENVIRONMENT_IS_WORKER, runtimeHelpers, setImportsAndExports } from "./imports";
+import { ENVIRONMENT_IS_WORKER, runtimeHelpers, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, MonoConfig, MonoConfigError, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -204,9 +204,9 @@ function initializeImportsAndExports(
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
-    init_polyfills();
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    setImportsAndExports(imports, exports, replacements);
+    set_imports_exports(imports, exports);
+    init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, MONO);

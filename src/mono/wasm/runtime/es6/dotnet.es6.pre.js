@@ -1,5 +1,7 @@
 const MONO = {}, BINDING = {}, INTERNAL = {}, IMPORTS = {}, EXPORTS = {};
 let ENVIRONMENT_IS_GLOBAL = false;
+var require = require || undefined;
+var __dirname = __dirname || '';
 if (typeof createDotnetRuntime === "function") {
     Module = { ready: Module.ready };
     const extension = createDotnetRuntime({ MONO, BINDING, INTERNAL, IMPORTS, EXPORTS, Module })
@@ -19,5 +21,3 @@ else if (typeof createDotnetRuntime === "object") {
 else {
     throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.")
 }
-var require = require || undefined;
-var __dirname = __dirname || '';

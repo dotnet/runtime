@@ -4,14 +4,8 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
-import Configuration from "consts:configuration";
-import { fetch_like } from "./polyfills";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
-import { afterThreadInitTLS } from "./pthreads/worker";
-import { DotnetModule, DotnetModuleConfigImports, EarlyExports, EarlyImports, EarlyReplacements, MonoConfig, RuntimeHelpers } from "./types";
+import { DotnetModule, EarlyExports, EarlyImports, MonoConfig, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
-import MonoWasmThreads from "consts:monoWasmThreads";
-import { afterUpdateGlobalBufferAndViews } from "./memory";
 
 // these are our public API (except internal)
 export let Module: EmscriptenModule & DotnetModule;
@@ -30,16 +24,14 @@ export let ENVIRONMENT_IS_WORKER: boolean;
 export let ENVIRONMENT_IS_PTHREAD: boolean;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function setImportsAndExports(
+export function set_imports_exports(
     imports: EarlyImports,
     exports: EarlyExports,
-    replacements: EarlyReplacements,
 ): void {
     MONO = exports.mono;
     BINDING = exports.binding;
     INTERNAL = exports.internal;
     Module = exports.module;
-    const anyModule = Module as any;
 
     EXPORTS = exports.marshaled_exports; // [JSExport]
     IMPORTS = exports.marshaled_imports; // [JSImport]
@@ -53,145 +45,6 @@ export function setImportsAndExports(
     runtimeHelpers.quit = imports.quit_;
     runtimeHelpers.ExitStatus = imports.ExitStatus;
     runtimeHelpers.requirePromise = imports.requirePromise;
-
-    // require replacement
-    Module.imports = Module.imports || <DotnetModuleConfigImports>{};
-    const requireWrapper = (wrappedRequire: Function) => (name: string) => {
-        const resolved = (<any>Module.imports)[name];
-        if (resolved) {
-            return resolved;
-        }
-        return wrappedRequire(name);
-    };
-    if (Module.imports.require) {
-        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(Module.imports.require));
-    }
-    else if (replacements.require) {
-        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(replacements.require));
-    } else if (replacements.requirePromise) {
-        runtimeHelpers.requirePromise = replacements.requirePromise.then(require => requireWrapper(require));
-    } else {
-        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper((name: string) => {
-            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
-        }));
-    }
-
-    // script location
-    runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
-    anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    if (Configuration === "Debug") {
-        console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
-        console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
-    }
-    if (anyModule.__locateFile === anyModule.locateFile) {
-        // above it's our early version from dotnet.es6.pre.js, we could replace it with better
-        anyModule.locateFile = runtimeHelpers.locateFile = (path) => {
-            if (isPathAbsolute(path)) return path;
-            return runtimeHelpers.scriptDirectory + path;
-        };
-    } else {
-        // we use what was given to us
-        runtimeHelpers.locateFile = anyModule.locateFile;
-    }
-
-    // fetch poly
-    if (Module.imports.fetch) {
-        replacements.fetch = runtimeHelpers.fetch_like = Module.imports.fetch;
-    }
-    else {
-        replacements.fetch = runtimeHelpers.fetch_like = fetch_like;
-    }
-
-    // misc
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
-
-    // threads
-    if (MonoWasmThreads) {
-        if (replacements.pthreadReplacements) {
-            const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-            replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-                originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-                afterLoadWasmModuleToWorker(worker);
-            };
-            const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-            replacements.pthreadReplacements.threadInitTLS = (): void => {
-                originalThreadInitTLS();
-                afterThreadInitTLS();
-            };
-        }
-    }
-
-    // memory
-    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
-        originalUpdateGlobalBufferAndViews(buffer);
-        afterUpdateGlobalBufferAndViews(buffer);
-    };
-}
-
-function normalizeFileUrl(filename: string) {
-    // unix vs windows
-    // remove query string
-    return filename.replace(/\\/g, "/").replace(/[?#].*/, "");
-}
-
-function normalizeDirectoryUrl(dir: string) {
-    return dir.slice(0, dir.lastIndexOf("/")) + "/";
-}
-
-export function detectScriptDirectory(replacements: EarlyReplacements): string {
-    if (ENVIRONMENT_IS_WORKER) {
-        // Check worker, not web, since window could be polyfilled
-        replacements.scriptUrl = self.location.href;
-    }
-    // when ENVIRONMENT_IS_ESM we have scriptUrl from import.meta.url from dotnet.es6.lib.js
-    if (!ENVIRONMENT_IS_ESM) {
-        if (ENVIRONMENT_IS_WEB) {
-            if (
-                (typeof (globalThis.document) === "object") &&
-                (typeof (globalThis.document.createElement) === "function")
-            ) {
-                // blazor injects a module preload link element for dotnet.[version].[sha].js
-                const blazorDotNetJS = Array.from(document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf(".js") != -1);
-                if (blazorDotNetJS.length == 1) {
-                    replacements.scriptUrl = blazorDotNetJS[0].href;
-                } else {
-                    const temp = globalThis.document.createElement("a");
-                    temp.href = "dotnet.js";
-                    replacements.scriptUrl = temp.href;
-                }
-            }
-        }
-        if (ENVIRONMENT_IS_NODE) {
-            if (typeof __filename !== "undefined") {
-                // unix vs windows
-                replacements.scriptUrl = __filename;
-            }
-        }
-    }
-    if (!replacements.scriptUrl) {
-        // probably V8 shell in non ES6
-        replacements.scriptUrl = "./dotnet.js";
-    }
-    replacements.scriptUrl = normalizeFileUrl(replacements.scriptUrl);
-    return normalizeDirectoryUrl(replacements.scriptUrl);
-}
-
-const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;
-const windowsAbsoluteRx = /[a-zA-Z]:[\\/]/;
-function isPathAbsolute(path: string): boolean {
-    if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
-        // unix /x.json
-        // windows \x.json
-        // windows C:\x.json
-        // windows C:/x.json
-        return path.startsWith("/") || path.startsWith("\\") || path.indexOf("///") !== -1 || windowsAbsoluteRx.test(path);
-    }
-
-    // anything with protocol is always absolute
-    // windows file:///C:/x.json
-    // windows http://C:/x.json
-    return protocolRx.test(path);
 }
 
 let monoConfig: MonoConfig = {} as any;
