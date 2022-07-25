@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization
         SnakeLowerCase = 2,
 
         /// <summary>
-        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.SnakeLowerCase"/> be used to convert JSON property names.
+        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.SnakeUpperCase"/> be used to convert JSON property names.
         /// </summary>
         SnakeUpperCase = 3,
 
