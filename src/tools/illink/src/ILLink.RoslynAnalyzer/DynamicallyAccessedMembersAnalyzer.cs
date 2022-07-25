@@ -22,8 +22,9 @@ namespace ILLink.RoslynAnalyzer
 	{
 		internal const string DynamicallyAccessedMembers = nameof (DynamicallyAccessedMembers);
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
+		public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
 
-		static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
+		public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
 			var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor> (26);
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode));
@@ -114,12 +115,12 @@ namespace ILLink.RoslynAnalyzer
 
 			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;
 
-			// Avoid unnecesary execution if not NamedType or Method
+			// Avoid unnecessary execution if not NamedType or Method
 			if (symbol is not INamedTypeSymbol && symbol is not IMethodSymbol)
 				return;
 
 			// Members inside nameof or cref comments, commonly used to access the string value of a variable, type, or a memeber,
-			// can generate diagnostics warnings, which can be noisy and unhelpful. 
+			// can generate diagnostics warnings, which can be noisy and unhelpful.
 			// Walking the node heirarchy to check if the member is inside a nameof/cref to not generate diagnostics
 			var parentNode = context.Node;
 			while (parentNode != null) {
@@ -210,11 +211,12 @@ namespace ILLink.RoslynAnalyzer
 					method.Locations[0], method.GetDisplayName (), overriddenMethod.GetDisplayName ()));
 
 			for (int i = 0; i < method.Parameters.Length; i++) {
-				if (FlowAnnotations.GetMethodParameterAnnotation (method.Parameters[i]) != FlowAnnotations.GetMethodParameterAnnotation (overriddenMethod.Parameters[i]))
+				if (FlowAnnotations.GetMethodParameterAnnotation (method.Parameters[i]) != FlowAnnotations.GetMethodParameterAnnotation (overriddenMethod.Parameters[i])) {
 					context.ReportDiagnostic (Diagnostic.Create (
 						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides),
 						method.Parameters[i].Locations[0],
 						method.Parameters[i].GetDisplayName (), method.GetDisplayName (), overriddenMethod.Parameters[i].GetDisplayName (), overriddenMethod.GetDisplayName ()));
+				}
 			}
 
 			for (int i = 0; i < method.TypeParameters.Length; i++) {

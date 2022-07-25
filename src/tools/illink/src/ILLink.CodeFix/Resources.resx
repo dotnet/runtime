@@ -129,4 +129,7 @@
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>
+  <data name="DynamicallyAccessedMembersCodeFixTitle" xml:space="preserve">
+    <value>Add DynamicallyAccessedMembers attribute to source of warning</value>
+  </data>
 </root>
