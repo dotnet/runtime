@@ -642,7 +642,7 @@ namespace System.Diagnostics
                             Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
                                             "method that requires unreferenced code. EventSource will not access this local function.")]
                         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                            Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+                            Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
                         void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
