@@ -139,7 +139,7 @@ const sampleProfilerProviderDefault: ProviderConfiguration = {
 export class SessionOptionsBuilder {
     private _rundown?: boolean;
     private _providers: ProviderConfiguration[];
-    /// Create  an empty builder.  Prefer to use SesssionOptionsBuilder.Empty
+    /// Create  an empty builder.  Prefer to use SessionOptionsBuilder.Empty
     constructor() {
         this._providers = [];
     }

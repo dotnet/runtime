@@ -51,7 +51,6 @@ namespace System.Reflection
             ContentType = 32
         }
 
-        private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };
         private ReadOnlySpan<char> _input;
         private int _index;
 
@@ -90,7 +89,7 @@ namespace System.Reflection
             if (token != Token.String)
                 ThrowInvalidAssemblyName();
 
-            if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
+            if (string.IsNullOrEmpty(name) || name.AsSpan().IndexOfAny('/', '\\', ':') != -1)
                 ThrowInvalidAssemblyName();
 
             Version? version = null;

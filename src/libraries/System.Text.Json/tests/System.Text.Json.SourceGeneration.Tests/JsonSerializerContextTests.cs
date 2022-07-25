@@ -169,6 +169,60 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("lastName", personInfo.Properties[1].Name);
         }
 
+        [Fact]
+        public static void FastPathSerialization_ResolvingJsonTypeInfo()
+        {
+            JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
+
+            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            Assert.NotNull(jsonMessageInfo.SerializeHandler);
+
+            var value = new JsonMessage { Message = "Hi" };
+            string expectedJson = """{"Message":"Hi","Length":2}""";
+
+            Assert.Equal(expectedJson, JsonSerializer.Serialize(value, jsonMessageInfo));
+            Assert.Equal(expectedJson, JsonSerializer.Serialize(value, options));
+
+            // Throws since deserialization without metadata is not supported
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonMessage>(expectedJson, jsonMessageInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonMessage>(expectedJson, options));
+        }
+
+        [Fact]
+        public static void FastPathSerialization_CombinedContext_ThrowsInvalidOperationException()
+        {
+            // TODO change exception assertions once https://github.com/dotnet/runtime/issues/71933 is fixed.
+
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(FastPathSerializationContext.Default, new DefaultJsonTypeInfoResolver())
+            };
+
+            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            Assert.NotNull(jsonMessageInfo.SerializeHandler);
+
+            var value = new JsonMessage { Message = "Hi" };
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, jsonMessageInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, options));
+
+            JsonTypeInfo<ClassWithJsonMessage> classInfo = (JsonTypeInfo<ClassWithJsonMessage>)options.GetTypeInfo(typeof(ClassWithJsonMessage));
+            Assert.Null(classInfo.SerializeHandler);
+
+            var largerValue = new ClassWithJsonMessage { Message = value };
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(largerValue, classInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(largerValue, options));
+        }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
+        [JsonSerializable(typeof(JsonMessage))]
+        public partial class FastPathSerializationContext : JsonSerializerContext
+        { }
+
+        public class ClassWithJsonMessage
+        {
+            public JsonMessage Message { get; set; }
+        }
+
         [Theory]
         [MemberData(nameof(GetCombiningContextsData))]
         public static void CombiningContexts_Serialization<T>(T value, string expectedJson)

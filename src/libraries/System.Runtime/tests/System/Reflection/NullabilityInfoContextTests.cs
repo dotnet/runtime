@@ -825,7 +825,7 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.NotNull, maybeNullWhen.WriteState);
             Assert.Equal(NullabilityState.Nullable, nullabilityContext.Create(maybeNullParameters[1]).ReadState);
 
-            // string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull("allowNull")] string? notNullIfNotNull)
+            // string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull(nameof(allowNull))] string? notNullIfNotNull)
             ParameterInfo[] allowNullParameter = type.GetMethod("AllowNullParameter", flags)!.GetParameters();
             NullabilityInfo allowNull = nullabilityContext.Create(allowNullParameter[0]);
             NullabilityInfo notNullIfNotNull = nullabilityContext.Create(allowNullParameter[1]);
@@ -835,7 +835,7 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, notNullIfNotNull.WriteState);
             Assert.Equal(NullabilityState.Nullable, nullabilityContext.Create(allowNullParameter[1]).ReadState);
 
-            // [return: NotNullIfNotNull("nullable")] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull)
+            // [return: NotNullIfNotNull(nameof(nullable))] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull)
             ParameterInfo[] nullableNotNullIfNotNullReturn = type.GetMethod("NullableNotNullIfNotNullReturn", flags)!.GetParameters();
             NullabilityInfo returnNotNullIfNotNull = nullabilityContext.Create(type.GetMethod("NullableNotNullIfNotNullReturn", flags)!.ReturnParameter);
             NullabilityInfo readNotNull = nullabilityContext.Create(nullableNotNullIfNotNullReturn[1]);
@@ -1169,8 +1169,8 @@ namespace System.Reflection.Tests
         public string PropertyEnabledNonNullable { get; set; } = null!;
         bool NotNullWhenParameter([DisallowNull] string? disallowNull, [NotNullWhen(true)] ref string? notNullWhen, Type? nullableType) { return false; }
         public bool MaybeNullParameters([MaybeNull] string maybeNull, [MaybeNullWhen(false)] out string maybeNullWhen, Type? nullableType) { maybeNullWhen = null; return false; }
-        public string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull("allowNull")] string? notNullIfNotNull) { return null; }
-        [return: NotNullIfNotNull("nullable")] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
+        public string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull(nameof(allowNull))] string? notNullIfNotNull) { return null; }
+        [return: NotNullIfNotNull(nameof(nullable))] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
         public ref string? RefReturnNullable([AllowNull] ref string id) { return ref id!; }
         [return: MaybeNull] public ref string RefReturnMaybeNull([DisallowNull] ref string? id) { return ref id; }
         [return: NotNull] public ref string? RefReturnNotNull([NotNull] ref string? id) { id = string.Empty; return ref id!; }

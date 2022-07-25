@@ -652,7 +652,7 @@ error:
 			     "Allocation failed.");
 	} else if (errno == EILSEQ) {
 		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-			     "Illegal byte sequence encounted in the input.");
+			     "Illegal byte sequence encountered in the input.");
 	} else if (items_read) {
 		/* partial input is ok if we can let our caller know... */
 	} else {
@@ -739,7 +739,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 		if ((n = decode_utf8 (inptr, inleft, &c)) < 0) {
 			if (errno == EILSEQ) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 			} else if (items_read) {
 				/* partial input is ok if we can let our caller know... */
 				break;
@@ -820,7 +820,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 
 			if (errno == EILSEQ) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 			} else if (items_read) {
 				/* partial input is ok if we can let our caller know... */
 				break;
@@ -936,7 +936,7 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 
 			if (errno == EILSEQ) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 			} else if (items_read) {
 				/* partial input is ok if we can let our caller know... */
 				break;
@@ -1000,7 +1000,7 @@ g_ucs4_to_utf8 (const gunichar *str, glong len, glong *items_read, glong *items_
 		for (i = 0; str[i] != 0; i++) {
 			if ((n = g_unichar_to_utf8 (str[i], NULL)) < 0) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 
 				if (items_written)
 					*items_written = 0;
@@ -1017,7 +1017,7 @@ g_ucs4_to_utf8 (const gunichar *str, glong len, glong *items_read, glong *items_
 		for (i = 0; i < len && str[i] != 0; i++) {
 			if ((n = g_unichar_to_utf8 (str[i], NULL)) < 0) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 
 				if (items_written)
 					*items_written = 0;
@@ -1062,7 +1062,7 @@ g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items
 		for (i = 0; str[i] != 0; i++) {
 			if ((n = g_unichar_to_utf16 (str[i], NULL)) < 0) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 
 				if (items_written)
 					*items_written = 0;
@@ -1079,7 +1079,7 @@ g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items
 		for (i = 0; i < len && str[i] != 0; i++) {
 			if ((n = g_unichar_to_utf16 (str[i], NULL)) < 0) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
+					     "Illegal byte sequence encountered in the input.");
 
 				if (items_written)
 					*items_written = 0;

@@ -133,7 +133,7 @@ When running towards iOS device (connected over usb):
 dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port iOS
 ```
 
-Run diagnostic tooling like this, regardless of `suspend|nosuspend`, `Android|iOS` or `simulator|emultor|device` scenarios are being used:
+Run diagnostic tooling like this, regardless of `suspend|nosuspend`, `Android|iOS` or `simulator|emulator|device` scenarios are being used:
 
 ```
 dotnet-trace collect --diagnostic-port ~/myport,connect

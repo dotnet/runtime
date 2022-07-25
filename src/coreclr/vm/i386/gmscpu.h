@@ -57,7 +57,7 @@ struct MachState {
 
 
 protected:
-    // Note the fields are layed out to make generating a
+    // Note the fields are laid out to make generating a
     // MachState structure from assembly code very easy
 
     // The state of all the callee saved registers.

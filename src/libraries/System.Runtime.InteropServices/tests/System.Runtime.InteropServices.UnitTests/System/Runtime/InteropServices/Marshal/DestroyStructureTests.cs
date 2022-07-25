@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void DestroyStructure_NonGeneric_Succes()
+        public void DestroyStructure_NonGeneric_Success()
         {
             var structure = new TestStruct();
             IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(structure));

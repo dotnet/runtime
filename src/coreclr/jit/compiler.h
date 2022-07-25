@@ -1001,8 +1001,6 @@ public:
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
-    typeInfo lvVerTypeInfo; // type info needed for verification
-
     // class handle for the local or null if not known or not a class,
     // for a struct handle use `GetStructHnd()`.
     CORINFO_CLASS_HANDLE lvClassHnd;
@@ -2667,7 +2665,7 @@ public:
     GenTree* gtCloneExpr(
         GenTree* tree, GenTreeFlags addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal);
 
-    // Create a copy of `tree`, optionally adding specifed flags, and optionally mapping uses of local
+    // Create a copy of `tree`, optionally adding specified flags, and optionally mapping uses of local
     // `varNum` to int constants with value `varVal`.
     GenTree* gtCloneExpr(GenTree*     tree,
                          GenTreeFlags addFlags = GTF_EMPTY,
@@ -3297,7 +3295,7 @@ public:
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
     CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
-    void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo = true);
+    void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
 
     // If the local is TYP_REF, set or update the associated class information.
@@ -3353,7 +3351,7 @@ public:
 
     // This class is responsible for checking validity and profitability of struct promotion.
     // If it is both legal and profitable, then TryPromoteStructVar promotes the struct and initializes
-    // nessesary information for fgMorphStructField to use.
+    // necessary information for fgMorphStructField to use.
     class StructPromotionHelper
     {
     public:
@@ -4112,11 +4110,7 @@ private:
 
     void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
-    void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
-    void impLoadVar(unsigned lclNum, IL_OFFSET offset)
-    {
-        impLoadVar(lclNum, offset, lvaGetDesc(lclNum)->lvVerTypeInfo);
-    }
+    void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
@@ -5677,7 +5671,7 @@ private:
     void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
 
     // fgPreviousCandidateSIMDFieldAsgStmt is only used for tracking previous simd field assignment
-    // in function: Complier::impMarkContiguousSIMDFieldAssignments.
+    // in function: Compiler::impMarkContiguousSIMDFieldAssignments.
     Statement* fgPreviousCandidateSIMDFieldAsgStmt;
 
 #endif // FEATURE_SIMD
@@ -6821,7 +6815,7 @@ public:
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
-#define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional instrinsic array element loads or stores.
+#define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
 
     // clang-format on
 
@@ -8723,7 +8717,7 @@ public:
 
 private:
     // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
-    // is defined for both FEATURE_SIMD and !FEATURE_SIMD apropriately. The use
+    // is defined for both FEATURE_SIMD and !FEATURE_SIMD appropriately. The use
     // of this routines also avoids the need of #ifdef FEATURE_SIMD specific code.
 
     // Is this var is of type simd struct?
@@ -10227,6 +10221,7 @@ public:
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
+    typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
     typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd,
                              bool bashStructToRef = false); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,

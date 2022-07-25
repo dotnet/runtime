@@ -639,7 +639,7 @@ namespace System.ComponentModel
             // successive phases to recompute their results as well. "Results" is
             // always a collection, and the various stages of the pipeline may
             // replace or modify this collection (depending on if it's a
-            // read-only IList or not). It is possible for the orignal
+            // read-only IList or not). It is possible for the original
             // descriptor or attribute collection to pass through the entire
             // pipeline without modification.
             //
@@ -1051,7 +1051,7 @@ namespace System.ComponentModel
             // successive phases to recompute their results as well. "Results" is
             // always a collection, and the various stages of the pipeline may
             // replace or modify this collection (depending on if it's a
-            // read-only IList or not). It is possible for the orignal
+            // read-only IList or not). It is possible for the original
             // descriptor or attribute collection to pass through the entire
             // pipeline without modification.
             //
@@ -1291,7 +1291,7 @@ namespace System.ComponentModel
             // successive phases to recompute their results as well. "Results" is
             // always a collection, and the various stages of the pipeline may
             // replace or modify this collection (depending on if it's a
-            // read-only IList or not). It is possible for the orignal
+            // read-only IList or not). It is possible for the original
             // descriptor or attribute collection to pass through the entire
             // pipeline without modification.
             //
@@ -2549,7 +2549,7 @@ namespace System.ComponentModel
             /// Implements GetTypeDescriptor. This creates a custom type
             /// descriptor that walks the linked list for each of its calls.
             /// </summary>
-            [return: NotNullIfNotNull("instance")]
+            [return: NotNullIfNotNull(nameof(instance))]
             public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
@@ -2830,7 +2830,7 @@ namespace System.ComponentModel
                 _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor)!;
             }
 
-            [return: NotNullIfNotNull("instance")]
+            [return: NotNullIfNotNull(nameof(instance))]
             public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
                 return _comNativeDescriptor.GetTypeDescriptor(objectType, instance);
