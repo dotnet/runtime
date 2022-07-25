@@ -192,6 +192,10 @@ namespace System.Net.NetworkInformation
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
         public static System.Net.NetworkInformation.IPGlobalProperties GetIPGlobalProperties() { throw null; }
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv4GlobalStatistics();
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv6GlobalStatistics();
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         public abstract System.Net.NetworkInformation.TcpStatistics GetTcpIPv4Statistics();
