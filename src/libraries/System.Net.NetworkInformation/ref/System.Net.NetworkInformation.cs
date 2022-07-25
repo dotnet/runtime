@@ -305,8 +305,10 @@ namespace System.Net.NetworkInformation
         public abstract long BytesSent { get; }
         public abstract long IncomingPacketsDiscarded { get; }
         public abstract long IncomingPacketsWithErrors { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
         public abstract long IncomingUnknownProtocolPackets { get; }
         public abstract long NonUnicastPacketsReceived { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
         public abstract long NonUnicastPacketsSent { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
