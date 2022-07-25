@@ -325,7 +325,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
         DWORD newBucketSize = max(m_NextBucketSize, nRequested);
 
         // Leave the lock temporarily to do the GC allocation
-        // 
+        //
         // Why do we need to do certain work outside the lock? Because if we didn't this can happen:
         // 1. AllocateHandles needs the GC to allocate
         // 2. Anything which invokes the GC might also get suspended by the managed debugger which
@@ -2524,7 +2524,7 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 
     if (!pMD->IsInterface() || pMD->IsStatic()) //interfaces require no activation for instance methods
     {
-        //cctor could have been interupted by ADU
+        //cctor could have been interrupted by ADU
         CHECK_MSG(pModule->CheckActivated(),
               "Managed code can only run when its module has been activated in the current app domain");
     }
@@ -4899,7 +4899,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             // Finally, setup arguments for invocation
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::ResolveSatelliteAssembly);
 
-            MethodDescCallSite methResolveSatelitteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
+            MethodDescCallSite methResolveSateliteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
 
             // Setup the arguments for the call
             ARG_SLOT args[2] =
@@ -4909,7 +4909,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             };
 
             // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveSatelitteAssembly.Call_RetOBJECTREF(args);
+            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveSateliteAssembly.Call_RetOBJECTREF(args);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 // Set the flag indicating we found the assembly

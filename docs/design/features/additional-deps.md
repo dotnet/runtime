@@ -9,7 +9,7 @@ https://github.com/dotnet/core-setup/issues/3884
 
 The `deps.json` file format specifies assets including managed assemblies, resource assemblies and native libraries to load.
 
-Every applicaton has its own `<app>.deps.json` file which is automatically processed. If an application needs additional deps files, typically for "lightup" extensions, it can specify that by:
+Every application has its own `<app>.deps.json` file which is automatically processed. If an application needs additional deps files, typically for "lightup" extensions, it can specify that by:
 - The `--additional-deps` command line option
 - If this is not set, the `DOTNET_ADDITIONAL_DEPS` environment variable is used
 
@@ -67,7 +67,7 @@ The proposal for this is to change the ordering of the processing of additional-
 Finally, a lower-priority issue is there is no way to turn off the global deps lightup (via `%DOTNET_ADDITIONAL_DEPS%`) for a single application if they run into issues with pulling in the additional deps. If the environment variable is set, and an application can't load because of the additional lightup deps, and the lightup isn't needed, there should be a way to turn it off so the app can load. One (poor) workaround would be to specify `--additional-deps` in the command-line to point to any empty file, but that would only work if the command line can be used in this way to launch the application.
 
 ## 2.1 proposal (roll-backwards)
-In order to prevent having to co-release for roll-forward cases, and deploy all past versions, the followng rules are proposed:
+In order to prevent having to co-release for roll-forward cases, and deploy all past versions, the following rules are proposed:
 1) Instead of `requested_framework_version`, use `found_framework_version`
 
 Where "found" means the version that is being used at run time including roll-forward. For example, if an app requests `2.1.0` of `Microsoft.NETCore.App` in its runtimeconfig.json, but we actually found and are using `2.2.1` (because there were no "compatible" versions installed from 2.1.0 to 2.2.0), then look for the deps folder `shared/Microsoft.NETCore.App/2.2.1` first.
@@ -117,6 +117,6 @@ A lightup "extension" could be considered an application, and have its own `runt
 
 It could be supported by entending the concept of "multi-layered frameworks" like we have with Microsoft.AspNetCore.App, Microsoft.AspNetCore.All, Microsoft.NETCore.App, where they each have their own runtimeconfig.json and deps.json files.
 
-Adding support for app-to-app dependencies would imply adding a "horizontal" hierarchy, and introducing a "graph reconcilation" phase that would need to be able to collapse several references to the same app or framework when they have different versions.
+Adding support for app-to-app dependencies would imply adding a "horizontal" hierarchy, and introducing a "graph reconciliation" phase that would need to be able to collapse several references to the same app or framework when they have different versions.
 
 Similar to additional-deps, the extension apps could "light up" by (for example) an "additional-apps" host option or environment variable.

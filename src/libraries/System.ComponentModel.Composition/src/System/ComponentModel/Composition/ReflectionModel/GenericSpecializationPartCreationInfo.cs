@@ -556,7 +556,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             object[]? genericParameterConstraints = partMetadata.GetValue<object[]>(CompositionConstants.GenericParameterConstraintsMetadataName);
             GenericParameterAttributes[]? genericParameterAttributes = partMetadata.GetValue<GenericParameterAttributes[]>(CompositionConstants.GenericParameterAttributesMetadataName);
 
-            // if no constraints and attributes been specifed, anything can be created
+            // if no constraints and attributes been specified, anything can be created
             if ((genericParameterConstraints == null) && (genericParameterAttributes == null))
             {
                 return true;

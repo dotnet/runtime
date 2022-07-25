@@ -295,7 +295,7 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            // The OwningType/OwningTypeNotDerivedFromToken shoud be equivalent if the above conditions are equal.
+            // The OwningType/OwningTypeNotDerivedFromToken should be equivalent if the above conditions are equal.
             Debug.Assert(OwningTypeNotDerivedFromToken == other.OwningTypeNotDerivedFromToken);
             Debug.Assert(OwningTypeNotDerivedFromToken || (OwningType == other.OwningType));
 

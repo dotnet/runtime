@@ -1001,7 +1001,7 @@ enum {
 };
 
 enum {
-	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an unitialized rgctx slot */
+	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an uninitialized rgctx slot */
 	MONO_GSHAREDVT_BOX_TYPE_VTYPE = 1,
 	MONO_GSHAREDVT_BOX_TYPE_REF = 2,
 	MONO_GSHAREDVT_BOX_TYPE_NULLABLE = 3

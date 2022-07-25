@@ -55,7 +55,7 @@ Finally, while the original JIT was quite x86-oriented, we now have a broader se
   - Inherits from ICorDynamicInfo (corinfo.h)
 
 #### Notes
-In this talk and elsewhere, you will see the .NET runtime often refered to as the VM, for virtual machine, the EE, for execution engine, or the CLR, for common language runtime. They are largely used interchangeably, though some might argue the terms have subtle differences.
+In this talk and elsewhere, you will see the .NET runtime often referred to as the VM, for virtual machine, the EE, for execution engine, or the CLR, for common language runtime. They are largely used interchangeably, though some might argue the terms have subtle differences.
 .NET is somewhat unique in that it currently has a single-tier JIT – no interpreter, and no re-optimizing JIT. While an interpreter exists, and experimentation has been done on re-jitting, the current model remains single-tier.
 
 The JIT and the VM each implement an interface that abstracts the dependencies they share. The VM invokes methods on the ICorJitCompiler interface to compile methods, and the JIT calls back on the ICorJitInfo interface to get information about types and methods.
@@ -667,7 +667,7 @@ Recognize "Intrinsic" (SampleStep1 shelveset)
 Add Pattern Recognition (SampleStep2 shelveset):
 - ifdef out the name recognition
 - Go back to jitdump1.out and look at IR just prior to optCloneLoops
-- Let's assume we're going to eventually add more than one instrinsic that implements a loop, so we'll add a method that looks for simple loops we can turn into intrinsics.
+- Let's assume we're going to eventually add more than one intrinsic that implements a loop, so we'll add a method that looks for simple loops we can turn into intrinsics.
 - Unshelve SampleStep2:
 - Add optFindLoopIntrinsics() to compCompile after optOptimizeLoops()
 - compiler.h, compiler.cpp

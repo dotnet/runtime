@@ -144,7 +144,7 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 }
 
 //------------------------------------------------------------------------
-// storeVariableInRegisters: Convert the siVarLoc instance in a regsiter
+// storeVariableInRegisters: Convert the siVarLoc instance in a register
 //  location using the given registers.
 //
 // Arguments:

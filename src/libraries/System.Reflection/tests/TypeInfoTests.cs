@@ -683,7 +683,7 @@ namespace System.Reflection.Tests
             Assert.True(a1.IsAssignableTo(ie));
         }
 
-        public static IEnumerable<object[]> IsEquivilentTo_TestData()
+        public static IEnumerable<object[]> IsEquivalentTo_TestData()
         {
             yield return new object[] { typeof(string), typeof(string), true };
             yield return new object[] { typeof(object), typeof(string), false };
@@ -694,7 +694,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IsEquivilentTo_TestData))]
+        [MemberData(nameof(IsEquivalentTo_TestData))]
         public void IsEquivalentTo(Type type, Type other, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsEquivalentTo(other));

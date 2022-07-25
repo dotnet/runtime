@@ -1126,7 +1126,7 @@ ds_ipc_poll (
 			} else {
 				poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_UNKNOWN;
 				if (callback)
-					callback ("unkown poll response", (uint32_t)poll_fds [i].revents);
+					callback ("unknown poll response", (uint32_t)poll_fds [i].revents);
 			}
 		}
 	}
