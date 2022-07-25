@@ -262,7 +262,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             return true;
 
         if (args["type"] == null)
-            return await Task.FromResult(false);
+            return false;
+
         switch (args["type"].Value<string>())
         {
             case "paused":
@@ -318,6 +319,16 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             case "target-available-form":
                 {
                     OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["target"]["consoleActor"].Value<string>()));
+                    var ctx = GetContextFixefox(sessionId);
+                    ctx.GlobalName = args["target"]["actor"].Value<string>();
+                    ctx.ThreadName = args["target"]["threadActor"].Value<string>();
+                    ResetCmdId();
+                    if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
+                    {
+                        await ForwardMessageToIde(args, token);
+                        await RuntimeReady(sessionId, token);
+                        return true;
+                    }
                     break;
                 }
         }
@@ -364,6 +375,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 {
                     var ctx = GetContextFixefox(sessionId);
                     ctx.ThreadName = args["to"].Value<string>();
+                    if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
+                        await RuntimeReady(sessionId, token);
                     break;
                 }
             case "source":
@@ -698,16 +711,16 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return false;
     }
 
-    internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+    internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
     {
         var context = GetContextFixefox(sessionId);
-        context.LastDebuggerAgentBufferReceived = res;
+        context.LastDebuggerAgentBufferReceived = debuggerAgentBufferTask;
     }
 
     private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
     {
         var context = GetContextFixefox(sessionId);
-        Result res = context.LastDebuggerAgentBufferReceived;
+        Result res = await context.LastDebuggerAgentBufferReceived;
         if (!res.IsOk)
             return false;
 

@@ -45,8 +45,6 @@ export function mono_wasm_runtime_ready(): void {
         // eslint-disable-next-line no-debugger
         debugger;
     else
-        console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
-
     _readSymbolMapFile("dotnet.js.symbols");
 }
 

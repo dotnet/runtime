@@ -17,6 +17,7 @@
 				this.run_all = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTest:run_all");
 				this.static_method_table = {};
 				console.log ("ready");
+				console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 			},
 		};
 		function invoke_static_method (method_name, ...args) {
@@ -90,6 +91,7 @@
 		function load_wasm_page_without_assets () {
 			console.log("load_wasm_page_without_assets")
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
+			console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 		}
 		</script>
 
