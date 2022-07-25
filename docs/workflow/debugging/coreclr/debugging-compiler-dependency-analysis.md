@@ -34,7 +34,7 @@ Usage instructions:
 
 # Single Node Exploration #
 Once the interesting node(s) have been identified in the dependency graph window, select one of them, and then press Explore.
-  - In the Node Explorer window, the Dependent nodes (the ones which dependend on the current node are the nodes displayed above, and the Dependee nodes (the nodes that this node depends on) are displayed below. Each node in the list is paired with a textual reason as to why that edge in the graph exists.
+  - In the Node Explorer window, the Dependent nodes (the ones which depend on the current node are the nodes displayed above, and the Dependee nodes (the nodes that this node depends on) are displayed below. Each node in the list is paired with a textual reason as to why that edge in the graph exists.
   - Select a node to explore further and press the corresponding button to make it happen.
 
 WhyDGML

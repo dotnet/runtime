@@ -72,6 +72,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expected, actual);
         }
 
+        [Fact]
+        public static void ForceUtf8EncodingWithFlagWhenEncoding()
+        {
+            // Even though these values are encodable as a PrintableString, the flag should force them to be encoded
+            // as UTF8String.
+            X500DistinguishedName name = new X500DistinguishedName(
+                "CN=potato, O=jicama",
+                X500DistinguishedNameFlags.ForceUTF8Encoding);
+
+            ReadOnlySpan<byte> expectedDer = new byte[]
+            {
+                0x30, 0x22,
+                0x31, 0x0F,
+                0x30, 0x0D,
+                    0x06, 0x03, 0x55, 0x04, 0x03, // id-at-commonName OID
+                    0x0C, 0x06, 0x70, 0x6F, 0x74, 0x61, 0x74, 0x6F, // 0x0C is UTF8String
+                0x31, 0x0F,
+                0x30, 0x0D,
+                    0x06, 0x03, 0x55, 0x04, 0x0A,  // id-at-organizatioName OID
+                    0x0C, 0x06, 0x6A, 0x69, 0x63, 0x61, 0x6D, 0x61, // 0x0C is UTF8String
+            };
+
+            AssertExtensions.SequenceEqual(expectedDer, name.RawData);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

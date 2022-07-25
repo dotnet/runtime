@@ -988,7 +988,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     // BitVec trait information for computing CSE availability using the CSE_DataFlow algorithm.
     // Two bits are allocated per CSE candidate to compute CSE availability
     // plus an extra bit to handle the initial unvisited case.
-    // (See CSE_DataFlow::EndMerge for an explaination of why this is necessary)
+    // (See CSE_DataFlow::EndMerge for an explanation of why this is necessary)
     //
     // The two bits per CSE candidate have the following meanings:
     //     11 - The CSE is available, and is also available when considering calls as killing availability.
@@ -1497,7 +1497,7 @@ void Compiler::optValnumCSE_Availablity()
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exeception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
+                            // The exception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
                             //
                             if (vnStore->VNExcIsSubset(theLiberalExcSet, desc->defExcSetPromise))
                             {
@@ -1943,7 +1943,7 @@ public:
             const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
             const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
             //
-            // On Windows x64 this yeilds:
+            // On Windows x64 this yields:
             // aggressiveEnregNum == 12 and moderateEnregNum == 38
             // Thus we will typically set the cutoff values for
             //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)

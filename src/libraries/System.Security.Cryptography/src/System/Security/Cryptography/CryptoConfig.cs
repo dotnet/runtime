@@ -256,6 +256,7 @@ namespace System.Security.Cryptography
                 ht.Add("2.5.29.19", typeof(X509Certificates.X509BasicConstraintsExtension));
                 ht.Add("2.5.29.14", typeof(X509Certificates.X509SubjectKeyIdentifierExtension));
                 ht.Add("2.5.29.15", typeof(X509Certificates.X509KeyUsageExtension));
+                ht.Add("2.5.29.35", typeof(X509Certificates.X509AuthorityKeyIdentifierExtension));
                 ht.Add("2.5.29.37", typeof(X509Certificates.X509EnhancedKeyUsageExtension));
                 ht.Add(Oids.AuthorityInformationAccess, typeof(X509Certificates.X509AuthorityInformationAccessExtension));
                 ht.Add(Oids.SubjectAltName, typeof(X509Certificates.X509SubjectAlternativeNameExtension));

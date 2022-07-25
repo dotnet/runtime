@@ -1,4 +1,4 @@
-//===--------------------------- libunwind.cpp ----------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -11,11 +11,20 @@
 
 #include <libunwind.h>
 
-#include "libunwind_ext.h"
 #include "config.h"
+#include "libunwind_ext.h"
 
 #include <stdlib.h>
 
+// Define the __has_feature extension for compilers that do not support it so
+// that we can later check for the presence of ASan in a compiler-neutral way.
+#if !defined(__has_feature)
+#define __has_feature(feature) 0
+#endif
+
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#include <sanitizer/asan_interface.h>
+#endif
 
 #if !defined(__USING_SJLJ_EXCEPTIONS__)
 #include "AddressSpace.hpp"
@@ -42,7 +51,7 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 # define REGISTER_KIND Registers_x86_64
 #elif defined(__powerpc64__)
 # define REGISTER_KIND Registers_ppc64
-#elif defined(__ppc__)
+#elif defined(__powerpc__)
 # define REGISTER_KIND Registers_ppc
 #elif defined(__aarch64__)
 # define REGISTER_KIND Registers_arm64
@@ -50,14 +59,22 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 # define REGISTER_KIND Registers_arm
 #elif defined(__or1k__)
 # define REGISTER_KIND Registers_or1k
+#elif defined(__hexagon__)
+# define REGISTER_KIND Registers_hexagon
 #elif defined(__mips__) && defined(_ABIO32) && _MIPS_SIM == _ABIO32
 # define REGISTER_KIND Registers_mips_o32
 #elif defined(__mips64)
 # define REGISTER_KIND Registers_mips_newabi
 #elif defined(__mips__)
 # warning The MIPS architecture is not supported with this ABI and environment!
+#elif defined(__sparc__) && defined(__arch64__)
+#define REGISTER_KIND Registers_sparc64
 #elif defined(__sparc__)
 # define REGISTER_KIND Registers_sparc
+#elif defined(__riscv)
+# define REGISTER_KIND Registers_riscv
+#elif defined(__ve__)
+# define REGISTER_KIND Registers_ve
 #else
 # error Architecture not supported
 #endif
@@ -186,14 +203,17 @@ _LIBUNWIND_HIDDEN int __unw_get_proc_info(unw_cursor_t *cursor,
   co->getInfo(info);
   if (info->end_ip == 0)
     return UNW_ENOINFO;
-  else
-    return UNW_ESUCCESS;
+  return UNW_ESUCCESS;
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_get_proc_info, unw_get_proc_info)
 
 /// Resume execution at cursor position (aka longjump).
 _LIBUNWIND_HIDDEN int __unw_resume(unw_cursor_t *cursor) {
   _LIBUNWIND_TRACE_API("__unw_resume(cursor=%p)", static_cast<void *>(cursor));
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+  // Inform the ASan runtime that now might be a good time to clean stuff up.
+  __asan_handle_no_return();
+#endif
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   co->jumpto();
   return UNW_EUNSPEC;
@@ -209,8 +229,7 @@ _LIBUNWIND_HIDDEN int __unw_get_proc_name(unw_cursor_t *cursor, char *buf,
   AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
   if (co->getFunctionName(buf, bufLen, offset))
     return UNW_ESUCCESS;
-  else
-    return UNW_EUNSPEC;
+  return UNW_EUNSPEC;
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_get_proc_name, unw_get_proc_name)
 
@@ -290,6 +309,35 @@ void __unw_remove_dynamic_fde(unw_word_t fde) {
   // fde is own mh_group
   DwarfFDECache<LocalAddressSpace>::removeAllIn((LocalAddressSpace::pint_t)fde);
 }
+
+void __unw_add_dynamic_eh_frame_section(unw_word_t eh_frame_start) {
+  // The eh_frame section start serves as the mh_group
+  unw_word_t mh_group = eh_frame_start;
+  CFI_Parser<LocalAddressSpace>::CIE_Info cieInfo;
+  CFI_Parser<LocalAddressSpace>::FDE_Info fdeInfo;
+  auto p = (LocalAddressSpace::pint_t)eh_frame_start;
+  while (true) {
+    if (CFI_Parser<LocalAddressSpace>::decodeFDE(
+            LocalAddressSpace::sThisAddressSpace, p, &fdeInfo, &cieInfo,
+            true) == NULL) {
+      DwarfFDECache<LocalAddressSpace>::add((LocalAddressSpace::pint_t)mh_group,
+                                            fdeInfo.pcStart, fdeInfo.pcEnd,
+                                            fdeInfo.fdeStart);
+      p += fdeInfo.fdeLength;
+    } else if (CFI_Parser<LocalAddressSpace>::parseCIE(
+                   LocalAddressSpace::sThisAddressSpace, p, &cieInfo) == NULL) {
+      p += cieInfo.cieLength;
+    } else
+      return;
+  }
+}
+
+void __unw_remove_dynamic_eh_frame_section(unw_word_t eh_frame_start) {
+  // The eh_frame section start serves as the mh_group
+  DwarfFDECache<LocalAddressSpace>::removeAllIn(
+      (LocalAddressSpace::pint_t)eh_frame_start);
+}
+
 #endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
 #endif // !defined(__USING_SJLJ_EXCEPTIONS__)
 

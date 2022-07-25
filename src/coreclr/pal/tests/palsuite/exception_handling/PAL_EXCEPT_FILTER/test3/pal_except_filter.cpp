@@ -5,12 +5,12 @@
 **
 ** Source:  pal_except_filter.c (test 3)
 **
-** Purpose: Tests the PAL implementation of the PAL_EXCEPT_FILTER in the 
-**          presence of a call stack. An 
+** Purpose: Tests the PAL implementation of the PAL_EXCEPT_FILTER in the
+**          presence of a call stack. An
 **          exception is forced and passed to two nested exception filters for
 **          consideration.  The first filter returns EXCEPTION_CONTINUE_SEARCH
-**          so the second can run and return EXCEPTION_EXECUTE_HANDLER.  The 
-**          initial exception handler should be skipped, and the second 
+**          so the second can run and return EXCEPTION_EXECUTE_HANDLER.  The
+**          initial exception handler should be skipped, and the second
 **          executed
 **
 **
@@ -31,7 +31,7 @@ const int nValidator = 12321;
 
 LONG ContSearchFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
 {
-    
+
     /* let the main know we've hit the filter function */
     bFilterCS = TRUE;
 
@@ -51,7 +51,7 @@ LONG ContSearchFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-LONG ExecExeptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
+LONG ExecExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
 {
     /* let the main know we've hit the filter function */
     bFilterEE = TRUE;
@@ -65,17 +65,17 @@ LONG ExecExeptionFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
     if (!bFilterCS)
     {
         Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
-             " The ExecExeption filter was hit before the ContSearch "
+             " The ExecException filter was hit before the ContSearch "
              "filter.\n");
     }
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-void NestedFunc1 (void) 
+void NestedFunc1 (void)
 {
     int* p = 0x00000000;   /* pointer to NULL */
-    
-    PAL_TRY 
+
+    PAL_TRY
     {
         if (bExcept1 || bExcept2)
         {
@@ -84,7 +84,7 @@ void NestedFunc1 (void)
         }
         bTry2 = TRUE; /* indicate we hit the inner PAL_TRY block */
         *p = 13;        /* causes an access violation exception */
-        
+
         Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
              " We executed beyond the trapping code.\n");
     }
@@ -99,7 +99,7 @@ void NestedFunc1 (void)
 
 }
 
-void NestedFunc2 (void) 
+void NestedFunc2 (void)
 {
     NestedFunc1();
 }
@@ -116,8 +116,8 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_test3_paltest_pal_except_filter_tes
     ** test to make sure we get into the second exception block only based
     ** on the return codes of the filters
     */
-    
-    PAL_TRY 
+
+    PAL_TRY
     {
         if (bExcept1 || bExcept2)
         {
@@ -131,7 +131,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_test3_paltest_pal_except_filter_tes
         Fail("PAL_EXCEPT_FILTER: ERROR -> Something weird is going on."
              " We executed beyond the trapping code.\n");
     }
-    PAL_EXCEPT_FILTER(ExecExeptionFilter, (LPVOID)&nValidator)
+    PAL_EXCEPT_FILTER(ExecExceptionFilter, (LPVOID)&nValidator)
     {
         if (!bTry1)
         {
@@ -199,7 +199,7 @@ PALTEST(exception_handling_PAL_EXCEPT_FILTER_test3_paltest_pal_except_filter_tes
     }
 
 
-    PAL_Terminate();  
+    PAL_Terminate();
     return PASS;
 
 }

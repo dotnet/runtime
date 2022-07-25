@@ -113,7 +113,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
-        // we have done so because of reentrancy contraints.)
+        // we have done so because of reentrancy constraints.)
 
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }

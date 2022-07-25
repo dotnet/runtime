@@ -227,7 +227,7 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Type_GetNestedType:
 			case IntrinsicId.Nullable_GetUnderlyingType:
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"):
-			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
+			case var fieldOrPropertyIntrinsic when fieldOrPropertyIntrinsic == IntrinsicId.Expression_Field || fieldOrPropertyIntrinsic == IntrinsicId.Expression_Property:
 			case IntrinsicId.Type_get_BaseType:
 			case IntrinsicId.Type_GetConstructor:
 			case IntrinsicId.MethodBase_GetMethodFromHandle:
@@ -354,7 +354,7 @@ namespace Mono.Linker.Dataflow
 			//    For all other cases, the linker would have already produced a warning.
 
 			default:
-				throw new NotImplementedException ("Unhandled instrinsic");
+				throw new NotImplementedException ("Unhandled intrinsic");
 			}
 
 			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above

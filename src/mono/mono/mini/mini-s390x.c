@@ -766,7 +766,7 @@ mono_arch_cpu_init (void)
 
 /**
  *
- * @brief Archictecture specific initialization
+ * @brief Architecture specific initialization
  *
  *
  * Initialize architecture specific code:
@@ -2079,7 +2079,7 @@ compare_and_branch(MonoBasicBlock *bb, MonoInst *ins, int cc, gboolean logical)
 
 /**
  *
- * @brief Architecure-specific peephole pass 1 processing
+ * @brief Architecture-specific peephole pass 1 processing
  *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
@@ -2146,7 +2146,7 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /**
  *
- * @brief Architecure-specific peephole pass 2 processing
+ * @brief Architecture-specific peephole pass 2 processing
  *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
@@ -2179,7 +2179,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /**
  *
- * @brief Architecure-specific lowering pass processing
+ * @brief Architecture-specific lowering pass processing
  *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
@@ -2403,7 +2403,7 @@ is_unsigned (MonoInst *next)
 
 /**
  *
- * @brief Architecutre-specific processing of a basic block
+ * @brief Architecture-specific processing of a basic block
  *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
@@ -6033,7 +6033,7 @@ printf("ns: %s k: %s m: %s\n",method->klass->name_space,method->klass->name,meth
 
 /**
  *
- * @brief Architecutre-specific epilog generation
+ * @brief Architecture-specific epilog generation
  *
  * @param[in] @cfg - Compile control block
  *

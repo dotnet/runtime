@@ -15,7 +15,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platforms:
-    # disable Linux x64 for now untill OOMs are resolved.
+    # disable Linux x64 for now until OOMs are resolved.
     # - Linux_x64
     - Linux_arm64
     - windows_x64
@@ -39,7 +39,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: release
     platforms:
-    # disable Linux x64 for now untill OOMs are resolved.
+    # disable Linux x64 for now until OOMs are resolved.
     # - Linux_x64
     - Linux_arm64
     - windows_x64

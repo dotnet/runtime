@@ -750,6 +750,7 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(TARGET_LOONGARCH64)
+    static bool IsLoongArch64OnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
@@ -2421,7 +2422,7 @@ public:
     //
     // #KindsOfElementTypes
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
-    // appropiate to use this. For example, we treat enums as their underlying type or some structs are
+    // appropriate to use this. For example, we treat enums as their underlying type or some structs are
     // optimized to be ints. To get the signature type or the verifier type (same as signature except for
     // enums are normalized to the primitive type that underlies them), use the APIs in Typehandle.h
     //

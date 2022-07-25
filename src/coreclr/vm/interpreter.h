@@ -148,7 +148,7 @@ class InterpreterType
     // low-order bits of a "real" CORINFO_CLASS_HANDLE are zero, then use them as follows:
     //    0x0 ==> if "ci" is a non-struct CORINFO_TYPE_* value, m_tp contents are (ci << 2).
     //    0x1, 0x3 ==> is a CORINFO_CLASS_HANDLE "sh" for a struct type, or'd with 0x1 and possibly 0x2.
-    //       0x2 is added to indicate that an instance does not fit in a INT64 stack slot on the plaform, and
+    //       0x2 is added to indicate that an instance does not fit in a INT64 stack slot on the platform, and
     //         should be referenced via a level of indirection.
     //    0x2 (exactly) indicates that it is a "native struct type".
     //
