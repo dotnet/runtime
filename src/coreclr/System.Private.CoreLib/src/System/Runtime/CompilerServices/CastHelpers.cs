@@ -632,7 +632,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        private static bool SimpleIsInstanceOf(void* typeHnd, object? obj)
+        private static bool IsInstanceOfException(void* typeHnd, object? obj)
         {
             if (obj == null)
                 return false;

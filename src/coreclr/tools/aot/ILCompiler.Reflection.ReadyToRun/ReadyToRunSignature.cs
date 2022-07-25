@@ -1782,7 +1782,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("CHECK_INSTANCE_ANY");
                     break;
 
-                case ReadyToRunHelper.SimpleIsInstanceOf:
+                case ReadyToRunHelper.IsInstanceOfException:
                     builder.Append("SIMPLE_ISINSTANCE_OF");
                     break;
 

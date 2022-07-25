@@ -133,10 +133,6 @@ void ECall::PopulateManagedCastHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__SIMPLEISINSTANCEOF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_SIMPLEISINSTANCEOF, pDest);
-
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);

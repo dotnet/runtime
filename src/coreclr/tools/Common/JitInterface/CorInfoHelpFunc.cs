@@ -84,7 +84,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                            // has been taken care of by the inlined check
 
-        CORINFO_HELP_SIMPLEISINSTANCEOF,
+        CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
 
         CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>

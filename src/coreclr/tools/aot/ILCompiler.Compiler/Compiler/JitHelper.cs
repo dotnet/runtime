@@ -248,8 +248,8 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckInstanceAny:
                     mangledName = "RhTypeCast_IsInstanceOf";
                     break;
-                case ReadyToRunHelper.SimpleIsInstanceOf:
-                    mangledName = "RhTypeCast_SimpleIsInstanceOf";
+                case ReadyToRunHelper.IsInstanceOfException:
+                    mangledName = "RhTypeCast_IsInstanceOfException";
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
                     mangledName = "RhTypeCast_CheckCastInterface";
