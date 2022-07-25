@@ -917,6 +917,7 @@ assigningNull:
                 return false;
 
             MethodTable* pObjType = obj.GetMethodTable();
+
             if (pTargetType->IsCloned)
                 pTargetType = pTargetType->CanonicalEEType;
 
@@ -926,8 +927,9 @@ assigningNull:
             if (pObjType == pTargetType)
                 return true;
 
+            // arrays can be cast to System.Object and System.Array
             if (pObjType->IsArray)
-                return false;
+                return WellKnownEETypes.IsSystemObject(pTargetType) || WellKnownEETypes.IsSystemArray(pTargetType);
 
             while (true)
             {
