@@ -366,7 +366,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         shr     rax, cl
         PREPARE_EXTERNAL_VAR g_region_to_generation_table, r10
         mov     r10, [r10]
-        cmp     byte ptr [rax + r10], 0x22
+        cmp     byte ptr [rax + r10], 0x82
         je      Exit_ByRefWriteBarrier
 
         // check if the destination happens to be in gen 0

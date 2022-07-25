@@ -52,7 +52,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
+#if defined (HOST_64BIT) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -1377,6 +1377,12 @@ public:
     PER_HEAP
     void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
     PER_HEAP
+    void set_region_sweep_in_plan (heap_segment* region);
+    PER_HEAP
+    void clear_region_sweep_in_plan (heap_segment* region);
+    PER_HEAP
+    void clear_region_demoted (heap_segment* region);
+    PER_HEAP
     void decide_on_demotion_pin_surv (heap_segment* region);
     PER_HEAP
     void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
@@ -1449,7 +1455,7 @@ public:
     void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED
-    void compute_ephemeral_range();
+    void compute_gc_and_ephemeral_range (int condemned_gen_number);
 #ifdef STRESS_REGIONS
     PER_HEAP
     void pin_by_gc (uint8_t* object);
@@ -3084,6 +3090,8 @@ protected:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    bool is_in_gc_range (uint8_t* o);
     // o is guaranteed to be in the heap range.
     PER_HEAP_ISOLATED
     bool is_in_condemned_gc (uint8_t* o);
@@ -3679,12 +3687,34 @@ public:
     // there are actually two generation numbers per entry:
     // - the region's current generation
     // - the region's planned generation, i.e. after the GC
+    // and there are flags
+    // - whether the region is sweep in plan
+    // - and whether the region is demoted
+    enum region_info : uint8_t
+    {
+        // lowest 2 bits are current generation number
+        RI_GEN_0        = 0x0,
+        RI_GEN_1        = 0x1,
+        RI_GEN_2        = 0x2,
+        RI_GEN_MASK     = 0x3,
+
+        // we have 4 bits available for flags, of which 2 are used
+        RI_SIP          = 0x4,
+        RI_DEMOTED      = 0x8,
+
+        // top 2 bits are planned generation number
+        RI_PLAN_GEN_SHR = 0x6, // how much to shift the value right to obtain plan gen
+        RI_PLAN_GEN_0   = 0x00,
+        RI_PLAN_GEN_1   = 0x40,
+        RI_PLAN_GEN_2   = 0x80,
+        RI_PLAN_GEN_MASK= 0xC0,
+    };
     PER_HEAP_ISOLATED
-    uint8_t* map_region_to_generation;
+    region_info* map_region_to_generation;
     // same table as above, but skewed so that we can index
     // directly with address >> min_segment_size_shr
     PER_HEAP_ISOLATED
-    uint8_t* map_region_to_generation_skewed;
+    region_info* map_region_to_generation_skewed;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
@@ -3737,10 +3767,10 @@ public:
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
-    uint8_t*  ephemeral_low;      //lowest ephemeral address
+    VOLATILE(uint8_t*)  ephemeral_low;      //lowest ephemeral address
 
     PER_HEAP_ISOLATED
-    uint8_t*  ephemeral_high;     //highest ephemeral address
+    VOLATILE(uint8_t*)  ephemeral_high;     //highest ephemeral address
 #else //!USE_REGIONS
     PER_HEAP
     uint8_t*  ephemeral_low;      //lowest ephemeral address
@@ -4102,13 +4132,19 @@ protected:
     PER_HEAP
     uint64_t time_bgc_last;
 
-//#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    uint8_t*       gc_low; // low end of the lowest region being condemned
+
+    PER_HEAP_ISOLATED
+    uint8_t*       gc_high; // high end of the highest region being condemned
+#else // USE_REGIONS
     PER_HEAP
     uint8_t*       gc_low; // lowest address being condemned
 
     PER_HEAP
     uint8_t*       gc_high; // highest address being condemned
-//#endif //USE_REGIONS
+#endif //USE_REGIONS
 
     PER_HEAP
     size_t      mark_stack_tos;

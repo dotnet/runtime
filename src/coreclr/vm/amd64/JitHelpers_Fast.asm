@@ -345,7 +345,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         ; check if the source is in gen 2 - then it's not an ephemeral pointer
         shr     rax, cl
         add     rax, [g_region_to_generation_table]
-        cmp     byte ptr [rax], 22h
+        cmp     byte ptr [rax], 82h
         je      Exit
 
         ; check if the destination happens to be in gen 0
