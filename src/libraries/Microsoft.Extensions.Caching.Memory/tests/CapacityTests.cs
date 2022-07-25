@@ -72,11 +72,11 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 5 });
 
-            Assert.Equal(5, cache.Size);
+            AssertCacheSize(5, cache);
         }
 
         [Fact]
@@ -84,11 +84,11 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = new MemoryCache(new MemoryCacheOptions());
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 5 });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -96,17 +96,17 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 4 });
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(4, cache.Size);
+            AssertCacheSize(4, cache);
 
             cache.Set("key2", "value2", new MemoryCacheEntryOptions { Size = 7 });
 
             Assert.Null(cache.Get("key2"));
-            Assert.Equal(4, cache.Size);
+            AssertCacheSize(4, cache);
         }
 
         [Fact]
@@ -122,12 +122,12 @@ namespace Microsoft.Extensions.Caching.Memory
                 State = null
             });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", entryOptions);
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(long.MaxValue, cache.Size);
+            AssertCacheSize(long.MaxValue, cache);
 
             cache.Set("key1", "value1", new MemoryCacheEntryOptions { Size = long.MaxValue });
             // Do not add the new item
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Compaction removes old item
             Assert.Null(cache.Get("key"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -159,12 +159,12 @@ namespace Microsoft.Extensions.Caching.Memory
                 State = null
             });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", entryOptions);
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(6, cache.Size);
+            AssertCacheSize(6, cache);
 
             cache.Set("key2", "value2", new MemoryCacheEntryOptions { Size = 5 });
 
@@ -173,7 +173,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Assert.Null(cache.Get("key"));
             Assert.Null(cache.Get("key2"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -181,17 +181,17 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 2 });
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(2, cache.Size);
+            AssertCacheSize(2, cache);
 
             cache.Set("key", "value1", new MemoryCacheEntryOptions { Size = 3 });
 
             Assert.Equal("value1", cache.Get("key"));
-            Assert.Equal(3, cache.Size);
+            AssertCacheSize(3, cache);
         }
 
         [Fact]
@@ -199,17 +199,17 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 2 });
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(2, cache.Size);
+            AssertCacheSize(2, cache);
 
             cache.Set("key", "value1", new MemoryCacheEntryOptions { Size = 1 });
 
             Assert.Equal("value1", cache.Get("key"));
-            Assert.Equal(1, cache.Size);
+            AssertCacheSize(1, cache);
         }
 
         [Fact]
@@ -221,17 +221,17 @@ namespace Microsoft.Extensions.Caching.Memory
                 CompactionPercentage = 0.5
             });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 5 });
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(5, cache.Size);
+            AssertCacheSize(5, cache);
 
             cache.Set("key", "value1", new MemoryCacheEntryOptions { Size = 6 });
 
             Assert.Null(cache.Get("key"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -251,12 +251,12 @@ namespace Microsoft.Extensions.Caching.Memory
                 State = null
             });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", entryOptions);
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(6, cache.Size);
+            AssertCacheSize(6, cache);
 
             cache.Set("key", "value1", new MemoryCacheEntryOptions { Size = 5 });
 
@@ -264,7 +264,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(await sem.WaitAsync(TimeSpan.FromSeconds(10)));
 
             Assert.Null(cache.Get("key"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -276,17 +276,18 @@ namespace Microsoft.Extensions.Caching.Memory
                 CompactionPercentage = 0.5
             });
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 6 });
 
             Assert.Equal("value", cache.Get("key"));
-            Assert.Equal(6, cache.Size);
+
+            AssertCacheSize(6, cache);
 
             cache.Set("key", "value1", new MemoryCacheEntryOptions { Size = 11 });
 
             Assert.Null(cache.Get("key"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache); // addition was rejected due to size, and previous item with the same key removed
         }
 
         [Fact]
@@ -296,11 +297,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 5 });
 
-            Assert.Equal(5, cache.Size);
+            AssertCacheSize(5, cache);
 
             cache.Remove("key");
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -324,7 +325,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             cache.Set("key", "value", entryOptions);
 
-            Assert.Equal(5, cache.Size);
+            AssertCacheSize(5, cache);
 
             // Expire entry
             changeToken.Fire();
@@ -335,7 +336,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // Wait for compaction to complete
             Assert.True(await sem.WaitAsync(TimeSpan.FromSeconds(10)));
 
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -351,9 +352,9 @@ namespace Microsoft.Extensions.Caching.Memory
             };
 
             cache.Set("key", "value", entryOptions);
-            
+
             Assert.Null(cache.Get("key"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -368,9 +369,9 @@ namespace Microsoft.Extensions.Caching.Memory
             };
 
             cache.Set("key", "value", entryOptions);
-            
+
             Assert.Null(cache.Get("key"));
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
         }
 
         [Fact]
@@ -444,14 +445,23 @@ namespace Microsoft.Extensions.Caching.Memory
         public void ClearZeroesTheSize()
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
 
             cache.Set("key", "value", new MemoryCacheEntryOptions { Size = 5 });
-            Assert.Equal(5, cache.Size);
+            AssertCacheSize(5, cache);
 
             cache.Clear();
-            Assert.Equal(0, cache.Size);
+            AssertCacheSize(0, cache);
             Assert.Equal(0, cache.Count);
+        }
+
+        internal static void AssertCacheSize(long size, MemoryCache cache)
+        {
+            // Size is only eventually consistent, so retry a few times
+            RetryHelper.Execute(() =>
+            {
+                Assert.Equal(size, cache.Size);
+            }, maxAttempts: 12, (iteration) => (int)Math.Pow(2, iteration)); // 2ms, 4ms.. 4096 ms. Not observed to need over 0.5 sec.
         }
     }
 }

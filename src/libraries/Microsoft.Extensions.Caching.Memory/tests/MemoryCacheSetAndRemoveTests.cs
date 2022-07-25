@@ -655,7 +655,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal(TaskStatus.RanToCompletion, task1.Status);
             Assert.Equal(TaskStatus.RanToCompletion, task2.Status);
             Assert.Equal(TaskStatus.RanToCompletion, task3.Status);
-            Assert.Equal(cache.Count, cache.Size);
+            CapacityTests.AssertCacheSize(cache.Count, cache);
             Assert.InRange(cache.Count, 0, 10);
             Assert.False(limitExceeded);
         }
@@ -716,7 +716,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 cacheSize += cache.Get<int>(i);
             }
 
-            Assert.Equal(cacheSize, cache.Size);
+            CapacityTests.AssertCacheSize(cacheSize, cache);
             Assert.InRange(cache.Count, 0, 20);
         }
 
