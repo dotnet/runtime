@@ -5,7 +5,9 @@ import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { PromiseController, createPromiseController } from "./promise-controller";
 import { mono_assert } from "./types";
-import { ArraySegment, IDisposable } from "./marshal";
+import { VoidPtr } from "./export-types";
+import { Module } from "./imports";
+import { setI32 } from "./memory";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -59,12 +61,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, onCl
         // send close to any pending receivers, to wake them
         const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
         receive_promise_queue.drain((receive_promise_control) => {
-
-            const response = new Int32Array([
-                0,// count
-                2, // type:close
-                1]);// end_of_message: true
-            receive_promise_control.responseView.set(response);
+            setI32(receive_promise_control.response_ptr, 0); // count
+            setI32(<any>receive_promise_control.response_ptr + 4, 2); // type:close
+            setI32(<any>receive_promise_control.response_ptr + 8, 1);// end_of_message: true
             receive_promise_control.resolve();
         });
     };
@@ -85,19 +84,20 @@ export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension
     return open_promise_control.promise;
 }
 
-export function ws_wasm_send(ws: WebSocketExtension, bufferView: ArraySegment, message_type: number, end_of_message: boolean): Promise<void> | null {
+export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number, message_type: number, end_of_message: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
 
-    const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, bufferView, message_type, end_of_message);
+    const buffer_view = new Uint8Array(Module.HEAPU8.buffer, <any>buffer_ptr, buffer_length);
+    const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
         return null;
     }
 
-    return _mono_wasm_web_socket_send_and_wait(ws, whole_buffer, bufferView);
+    return _mono_wasm_web_socket_send_and_wait(ws, whole_buffer);
 }
 
-export function ws_wasm_receive(ws: WebSocketExtension, bufferView: ArraySegment, responseView: ArraySegment): Promise<void> | null {
+export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number, response_ptr: VoidPtr): Promise<void> | null {
     mono_assert(!!ws, "ERR18: expected ws instance");
 
     const receive_event_queue = ws[wasm_ws_pending_receive_event_queue];
@@ -112,14 +112,15 @@ export function ws_wasm_receive(ws: WebSocketExtension, bufferView: ArraySegment
         mono_assert(receive_promise_queue.getLength() == 0, "ERR20: Invalid WS state");
 
         // finish synchronously
-        _mono_wasm_web_socket_receive_buffering(receive_event_queue, bufferView, responseView);
+        _mono_wasm_web_socket_receive_buffering(receive_event_queue, buffer_ptr, buffer_length, response_ptr);
 
         return null;
     }
     const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
-    receive_promise_control.bufferView = bufferView;
-    receive_promise_control.responseView = responseView;
+    receive_promise_control.buffer_ptr = buffer_ptr;
+    receive_promise_control.buffer_length = buffer_length;
+    receive_promise_control.response_ptr = response_ptr;
     receive_promise_queue.enqueue(receive_promise_control);
 
     return promise;
@@ -181,10 +182,9 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     ws.close(1000, "Connection was aborted.");
 }
 
-function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uint8Array | string, managedBuffer: IDisposable): Promise<void> | null {
-    // send and return promise
-    ws.send(buffer);
-    managedBuffer.dispose();
+// send and return promise
+function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view: Uint8Array | string): Promise<void> | null {
+    ws.send(buffer_view);
     ws[wasm_ws_pending_send_buffer] = null;
 
     // if the remaining send buffer is small, we don't block so that the throughput doesn't suffer.
@@ -261,18 +261,19 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
     while (promise_queue.getLength() && event_queue.getLength()) {
         const promise_control = promise_queue.dequeue()!;
         _mono_wasm_web_socket_receive_buffering(event_queue,
-            promise_control.bufferView, promise_control.responseView);
+            promise_control.buffer_ptr, promise_control.buffer_length, promise_control.response_ptr);
         promise_control.resolve();
     }
     prevent_timer_throttling();
 }
 
-function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, bufferView: ArraySegment, responseView: ArraySegment) {
+function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer_ptr: VoidPtr, buffer_length: number, response_ptr: VoidPtr) {
     const event = event_queue.peek();
 
-    const count = Math.min(bufferView.length, event.data.length - event.offset);
+    const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
         const sourceView = event.data.subarray(event.offset, event.offset + count);
+        const bufferView = new Uint8Array(Module.HEAPU8.buffer, <any>buffer_ptr, buffer_length);
         bufferView.set(sourceView, 0);
         event.offset += count;
     }
@@ -281,17 +282,15 @@ function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer
         event_queue.dequeue();
     }
 
-    const response = new Int32Array([count, event.type, end_of_message]);
-    responseView.set(response);
-
-    bufferView.dispose();
-    responseView.dispose();
+    setI32(response_ptr, count);
+    setI32(<any>response_ptr + 4, event.type);
+    setI32(<any>response_ptr + 8, end_of_message);
 }
 
-function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, bufferView: ArraySegment, message_type: number, end_of_message: boolean): Uint8Array | string | null {
+function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_view: Uint8Array, message_type: number, end_of_message: boolean): Uint8Array | string | null {
     let buffer = ws[wasm_ws_pending_send_buffer];
     let offset = 0;
-    const length = bufferView.length;
+    const length = buffer_view.byteLength;
 
     if (buffer) {
         offset = ws[wasm_ws_pending_send_buffer_offset];
@@ -302,11 +301,11 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, bufferView
             if (offset + length > buffer.length) {
                 const newbuffer = new Uint8Array((offset + length + 50) * 1.5); // exponential growth
                 newbuffer.set(buffer, 0);// copy previous buffer
-                bufferView.copyTo(newbuffer.subarray(offset));// append copy at the end
+                newbuffer.subarray(offset).set(buffer_view);// append copy at the end
                 ws[wasm_ws_pending_send_buffer] = buffer = newbuffer;
             }
             else {
-                bufferView.copyTo(buffer.subarray(offset));// append copy at the end
+                buffer.subarray(offset).set(buffer_view);// append copy at the end
             }
             offset += length;
             ws[wasm_ws_pending_send_buffer_offset] = offset;
@@ -315,7 +314,7 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, bufferView
     else if (!end_of_message) {
         // create new buffer
         if (length !== 0) {
-            buffer = <Uint8Array>bufferView.slice(); // copy
+            buffer = <Uint8Array>buffer_view.slice(); // copy
             offset = length;
             ws[wasm_ws_pending_send_buffer_offset] = offset;
             ws[wasm_ws_pending_send_buffer] = buffer;
@@ -324,8 +323,8 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, bufferView
     }
     else {
         if (length !== 0) {
-            // we could use the unsafe view, because it will be immediately used in ws.send()
-            buffer = <Uint8Array>bufferView._unsafe_create_view();
+            // we could use the un-pinned view, because it will be immediately used in ws.send()
+            buffer = buffer_view;
             offset = length;
         }
     }
@@ -367,8 +366,9 @@ type WebSocketExtension = WebSocket & {
 }
 
 type ReceivePromiseControl = PromiseController<void> & {
-    bufferView: ArraySegment,
-    responseView: ArraySegment
+    buffer_ptr: VoidPtr,
+    buffer_length: number,
+    response_ptr: VoidPtr
 }
 
 type Message = {

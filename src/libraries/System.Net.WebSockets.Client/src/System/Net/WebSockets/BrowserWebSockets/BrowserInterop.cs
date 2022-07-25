@@ -37,15 +37,17 @@ namespace System.Net.WebSockets
         [JSImport("INTERNAL.ws_wasm_send")]
         public static partial Task? WebSocketSend(
             JSObject webSocket,
-            [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> buffer,
+            IntPtr bufferPtr,
+            int bufferLength,
             int messageType,
             bool endOfMessage);
 
         [JSImport("INTERNAL.ws_wasm_receive")]
         public static partial Task? WebSocketReceive(
             JSObject webSocket,
-            [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> buffer,
-            [JSMarshalAs<JSType.MemoryView>] ArraySegment<int> response);
+            IntPtr bufferPtr,
+            int bufferLength,
+            IntPtr responsePtr);
 
         [JSImport("INTERNAL.ws_wasm_close")]
         public static partial Task? WebSocketClose(
