@@ -221,6 +221,7 @@ namespace System.Net.WebSockets
                 }
 
                 var span = buffer.AsSpan();
+                // we can do this because the bytes in the buffer are always consumed synchronously (not later with Task resolution)
                 fixed (void* spanPtr = span)
                 {
                     return BrowserInterop.WebSocketSend(jsWs, (IntPtr)spanPtr, buffer.Count, (int)messageType, endOfMessage);
