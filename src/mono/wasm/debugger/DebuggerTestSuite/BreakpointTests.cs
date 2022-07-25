@@ -611,8 +611,8 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "RunStepThrough", "StepThrougBp", "", 846, 8)]
-        [InlineData(true, "RunStepThrough", "StepThrougBp", "RunStepThrough", 847, 8)]
+        [InlineData(false, "RunStepThrough", "StepThroughBp", "", 846, 8)]
+        [InlineData(true, "RunStepThrough", "StepThroughBp", "RunStepThrough", 847, 8)]
         [InlineData(false, "RunNonUserCode", "NonUserCodeBp", "NonUserCodeBp", 852, 4)]
         [InlineData(true, "RunNonUserCode", "NonUserCodeBp", "RunNonUserCode", 867, 8)]
         [InlineData(false, "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeBp", "", 932, 8)]
@@ -645,8 +645,8 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "RunStepThrough", "StepThrougBp")]
-        [InlineData(true, "RunStepThrough", "StepThrougBp")]
+        [InlineData(false, "RunStepThrough", "StepThroughBp")]
+        [InlineData(true, "RunStepThrough", "StepThroughBp")]
         [InlineData(true, "RunNonUserCode", "NonUserCodeBp")]
         [InlineData(false, "RunNonUserCode", "NonUserCodeBp")]
         [InlineData(false, "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeBp")]
@@ -675,9 +675,9 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
+        [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThroughUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.stepInto", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
-        [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
+        [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThroughUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.resume", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
         [InlineData(false, "Debugger.stepInto", "RunNonUserCode",  "NonUserCodeUserBp", 860, 4, "NonUserCodeUserBp", 861, 8)]
         [InlineData(true, "Debugger.stepInto", "RunNonUserCode", "RunNonUserCode", -1, 8, "RunNonUserCode", -1, 4)]

@@ -2765,6 +2765,10 @@ ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle)
 {
 	MonoType *type = type_handle.type;
 
+	// Enums in generic classes should still return VALUETYPE
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
+		return MONO_TYPE_VALUETYPE;
+
 	if (m_type_is_byref (type))
 		return MONO_TYPE_BYREF;
 	else
