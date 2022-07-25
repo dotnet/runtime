@@ -88,6 +88,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
 

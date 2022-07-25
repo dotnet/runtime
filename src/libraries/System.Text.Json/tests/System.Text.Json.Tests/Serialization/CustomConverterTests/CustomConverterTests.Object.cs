@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -307,9 +308,19 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
             {
-                Assert.IsType<object>(value);
-                writer.WriteStartObject();
-                writer.WriteEndObject();
+                if (value is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else if (value.GetType() == typeof(object))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    JsonSerializer.Serialize(writer, value, value.GetType(), options);
+                }
             }
         }
 
@@ -743,6 +754,27 @@ namespace System.Text.Json.Serialization.Tests
             string expectedJson = "42";
             string actualJson = JsonSerializer.Serialize(new object(), options);
             Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public static void CustomSystemObjectConverter_DoesNotUsePolymorphismInAllContexts()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/72681
+
+            var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
+
+            object value = "string";
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("42", json);
+
+            json = JsonSerializer.Serialize(new { Value = value }, options);
+            Assert.Equal("""{"Value":42}""", json);
+
+            json = JsonSerializer.Serialize(new object[] { value }, options);
+            Assert.Equal("[42]", json);
+
+            json = JsonSerializer.Serialize(new Dictionary<string, object> { ["key"] = value }, options);
+            Assert.Equal("""{"key":42}""", json);
         }
 
         private class CustomSystemObjectConverter : JsonConverter<object>

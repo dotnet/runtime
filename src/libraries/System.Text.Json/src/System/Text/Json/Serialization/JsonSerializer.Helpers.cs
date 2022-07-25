@@ -29,6 +29,11 @@ namespace System.Text.Json
             return options.GetTypeInfoForRootType(runtimeType);
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        private static JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options)
+            => (JsonTypeInfo<T>)GetTypeInfo(options, typeof(T));
+
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)
         {
             Debug.Assert(context != null);
@@ -40,6 +45,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type, context);
             }
 
+            info.EnsureConfigured();
             return info;
         }
 
