@@ -110,7 +110,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task DoNotAddIfSizeOverflows()
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = long.MaxValue });
@@ -143,7 +142,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task ExceedsCapacityCompacts()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -237,7 +235,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task AddingReplacementWhenTotalSizeExceedsCapacityDoesNotUpdateRemovesOldEntryAndTriggersCompaction()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -307,7 +304,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task ExpiringEntryDecreasesCacheSize()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -378,7 +374,6 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task CompactsToLessThanLowWatermarkUsingLRUWhenHighWatermarkExceeded()
         {
             var testClock = new TestClock();
