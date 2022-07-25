@@ -531,7 +531,6 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventPeerSendAborted(ref PEER_SEND_ABORTED data)
     {
-        _receiveBuffers.SetFinal();
         _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
         return QUIC_STATUS_SUCCESS;
     }

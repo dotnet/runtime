@@ -192,7 +192,7 @@ ep_config_init (EventPipeConfiguration *config)
 		0, /* event_version */
 		EP_EVENT_LEVEL_LOGALWAYS,
 		false, /* need_stack */
-		NULL, /* meatadata */
+		NULL, /* metadata */
 		0); /* metadata_len */
 	ep_raise_error_if_nok (config->metadata_event != NULL);
 

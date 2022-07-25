@@ -27,7 +27,9 @@ namespace System.Security.Cryptography
         private static volatile Oid? s_basicConstraints2Oid;
         private static volatile Oid? s_enhancedKeyUsageOid;
         private static volatile Oid? s_keyUsageOid;
+        private static volatile Oid? s_subjectAltNameOid;
         private static volatile Oid? s_subjectKeyIdentifierOid;
+        private static volatile Oid? s_authorityKeyIdentifierOid;
         private static volatile Oid? s_authorityInformationAccessOid;
         private static volatile Oid? s_commonNameOid;
         private static volatile Oid? s_countryOrRegionOid;
@@ -58,7 +60,9 @@ namespace System.Security.Cryptography
         internal static Oid BasicConstraints2Oid => s_basicConstraints2Oid ??= InitializeOid(BasicConstraints2);
         internal static Oid EnhancedKeyUsageOid => s_enhancedKeyUsageOid ??= InitializeOid(EnhancedKeyUsage);
         internal static Oid KeyUsageOid => s_keyUsageOid ??= InitializeOid(KeyUsage);
+        internal static Oid AuthorityKeyIdentifierOid => s_authorityKeyIdentifierOid ??= InitializeOid(AuthorityKeyIdentifier);
         internal static Oid SubjectKeyIdentifierOid => s_subjectKeyIdentifierOid ??= InitializeOid(SubjectKeyIdentifier);
+        internal static Oid SubjectAltNameOid => s_subjectAltNameOid ??= InitializeOid(SubjectAltName);
         internal static Oid AuthorityInformationAccessOid => s_authorityInformationAccessOid ??= InitializeOid(AuthorityInformationAccess);
 
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);
@@ -147,6 +151,23 @@ namespace System.Security.Cryptography
 
             return null;
 #endif
+        }
+
+        internal static bool ValueEquals(this Oid oid, Oid? other)
+        {
+            Debug.Assert(oid is not null);
+
+            if (ReferenceEquals(oid, other))
+            {
+                return true;
+            }
+
+            if (other is null)
+            {
+                return false;
+            }
+
+            return oid.Value is not null && oid.Value.Equals(other.Value);
         }
     }
 }

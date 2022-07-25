@@ -514,15 +514,13 @@ namespace DebuggerTests
                    res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
-               Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
+               Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
                Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-               Assert.Contains(
-                    "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'",
-                    res.Error["result"]?["description"]?.Value<string>());
+               Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
@@ -585,10 +583,23 @@ namespace DebuggerTests
                     ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
            });
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingNegative() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
+                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["message"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
+                Assert.Equal( "Unable to evaluate element access 'f[1]': Type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate' cannot be indexed.", res.Error["message"]?.Value<string>());
+           });
+
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessByConstant() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithElementAccessTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingsByConstant() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -601,9 +612,9 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithElementAccessTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -617,9 +628,9 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithElementAccessTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -635,9 +646,9 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessNested() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithElementAccessTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingNested() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -652,9 +663,9 @@ namespace DebuggerTests
            });
 
         [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateExpressionsWithElementAccessMultidimentional() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithElementAccessTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -1181,7 +1192,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateNullObjectPropertiesPositive() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "DebuggerTests.EvaluateNullableProperties.Evaluate",
+            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 11, "DebuggerTests.EvaluateNullableProperties.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1200,7 +1211,11 @@ namespace DebuggerTests
                    ("tc!.MemberList!.Count", TNumber(2)),
                    ("tc?.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
-                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
+                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)),
+                   ("str!.Length", TNumber(9)),
+                   ("str?.Length", TNumber(9)),
+                   ("str_null?.Length", TObject("string", is_null: true))
+                );
             });
 
         [Fact]
@@ -1226,8 +1241,11 @@ namespace DebuggerTests
                     ("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\"")),
                     ("listNull?", "Expected expression."),
                     ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
-                    ("x?.p", "Operation '?' not allowed on primitive type - 'x?'")
+                    ("x?.p", "Operation '?' not allowed on primitive type - 'x?'"),
+                    ("str_null.Length", GetNullReferenceErrorOn("\"Length\"")),
+                    ("str_null!.Length", GetNullReferenceErrorOn("\"Length\""))
                 );
+
                 string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
             });
 
@@ -1246,7 +1264,6 @@ namespace DebuggerTests
                     ("test.propBool.ToString()", TString("True")),
                     ("test.propChar.ToString()", TString("X")),
                     ("test.propString.ToString()", TString("s_t_r")),
-                    ("test.propString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)", TObject("System.String[]")),
                     ("test.propString.EndsWith('r')", TBool(true)),
                     ("test.propString.StartsWith('S')", TBool(false)),
                     ("localInt.ToString()", TString("2")),
@@ -1258,9 +1275,9 @@ namespace DebuggerTests
                     ("localBool.GetTypeCode()", TObject("System.TypeCode", "Boolean")),
                     ("localChar.ToString()", TString("Y")),
                     ("localString.ToString()", TString("S*T*R")),
-                    ("localString.Split('*', 3, System.StringSplitOptions.TrimEntries)", TObject("System.String[]")),
                     ("localString.EndsWith('r')", TBool(false)),
-                    ("localString.StartsWith('S')", TBool(true)));
+                    ("localString.StartsWith('S')", TBool(true))
+                );
              });
 
         [Fact]
@@ -1295,15 +1312,15 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (res, _) = await EvaluateOnCallFrame(id, "test.propString.Split('_', 3, System.StringSplitOptions.TrimEntries)");
-                var props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>()); // in firefox getProps is necessary
-                var expected_props = new [] { TString("s"), TString("t"), TString("r") };
+                var props = await GetProperties(res["objectId"]?.Value<string>());
+                var expected_props = new[] { TString("s"), TString("t"), TString("r") };
                 await CheckProps(props, expected_props, "props#1");
 
                 (res, _) = await EvaluateOnCallFrame(id, "localString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)");
-                props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>());
-                expected_props = new [] { TString("S"), TString("T"), TString("R") };
+                props = await GetProperties(res["objectId"]?.Value<string>());
+                expected_props = new[] { TString("S"), TString("T"), TString("R") };
                 await CheckProps(props, expected_props, "props#2");
-             });
+            });
 
         [Theory]
         [InlineData("DefaultMethod", "IDefaultInterface", "Evaluate")]
@@ -1338,5 +1355,20 @@ namespace DebuggerTests
                     ("defaultInterfaceMember", TString("defaultInterfaceMember"))
                 );
             });
+
+        [Fact]
+        public async Task EvaluateStringProperties() => await CheckInspectLocalsAtBreakpointSite(
+             $"DebuggerTests.TypeProperties", "Run", 3, "DebuggerTests.TypeProperties.Run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.TypeProperties:Run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("localString.Length", TNumber(5)),
+                   ("localString[1]", TChar('B')),
+                   ("instance.str.Length", TNumber(5)),
+                   ("instance.str[3]", TChar('c'))
+                );
+           });
     }
 }

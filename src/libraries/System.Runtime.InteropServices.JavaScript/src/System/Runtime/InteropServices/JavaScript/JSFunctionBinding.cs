@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed partial class JSFunctionBinding
     {
-        #region intentionaly opaque internal structure
+        #region intentionally opaque internal structure
         internal unsafe JSBindingHeader* Header;
         internal unsafe JSBindingType* Sigs;// points to first arg, not exception, not result
         internal JSObject? JSFunction;

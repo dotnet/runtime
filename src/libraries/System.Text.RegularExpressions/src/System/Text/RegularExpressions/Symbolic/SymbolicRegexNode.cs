@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="right">right child</param>
         /// <param name="lower">lower bound of a loop</param>
         /// <param name="upper">upper boubd of a loop</param>
-        /// <param name="set">singelton set</param>
+        /// <param name="set">singleton set</param>
         /// <param name="info">misc flags including laziness</param>
         private SymbolicRegexNode(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet set, SymbolicRegexInfo info)
         {

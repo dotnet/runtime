@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsLockedInstance => !_resolver._mutable;
+            protected override bool IsImmutable => !_resolver._mutable;
             protected override void VerifyMutable()
             {
                 if (!_resolver._mutable)

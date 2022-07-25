@@ -625,7 +625,7 @@ namespace System.Net.Quic.Tests
             };
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
+            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
             await serverConnection.DisposeAsync();
             await clientConnection.DisposeAsync();
         }

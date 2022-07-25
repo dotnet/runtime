@@ -1828,7 +1828,7 @@ HRESULT Debugger::Startup(void)
         // Stubs in Stacktraces are always enabled.
         g_EnableSIS = true;
 
-        // We can get extra Interop-debugging test coverage by having some auxillary unmanaged
+        // We can get extra Interop-debugging test coverage by having some auxiliary unmanaged
         // threads running and throwing debug events. Keep these stress procs separate so that
         // we can focus on certain problem areas.
     #ifdef _DEBUG
@@ -3172,7 +3172,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
                     ULONG32 dummy;
 
                     p = new ULONG32[n];
-                    _ASSERTE(p != NULL); // throws on oom errror
+                    _ASSERTE(p != NULL); // throws on oom error
 
                     hr = pISymMethod->GetSequencePoints(n, &dummy,
                                                         p, NULL, NULL, NULL,
@@ -3182,7 +3182,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
 
                     *pILOffsets = (DWORD*)p;
 
-                    // Translate the IL offets based on an
+                    // Translate the IL offsets based on an
                     // instrumented IL map if one exists.
                     if (dmi->HasInstrumentedILMap())
                     {
@@ -4750,7 +4750,7 @@ BOOL IsDuplicatePatch(SIZE_T *rgEntries,
 //      set a correponding breakpoint in the new function if we haven't moved
 //      the patch to the new version already.
 //
-//      This must be done _AFTER_ the MethodDesc has been udpated
+//      This must be done _AFTER_ the MethodDesc has been updated
 //      with the new address (ie, when GetFunctionAddress pFD returns
 //      the address of the new EnC code)
 //
@@ -6593,7 +6593,7 @@ CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {0};
 // InitDebuggerLaunchJitInfo - initialize JDI structure on Vista
 //
 // Arguments:
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - unhandled exception info
 //
 // Return Value:
@@ -6776,7 +6776,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
 
     // There is no security concern to expect that the debug string we retrieve from HKLM follows a certain
     // format because changing HKLM keys requires admin priviledge.  Padding with zeros is not a security mitigation,
-    // but rather a forward looking compability measure.  If future verions of Windows introduces more parameters for
+    // but rather a forward looking compatibility measure.  If future versions of Windows introduces more parameters for
     // JIT debugger launch, it is preferrable to pass zeros than other random values for those unsupported parameters.
     pStrArgsBuf->Printf(ssDebuggerString, pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -6990,7 +6990,7 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
 // Make sure you called PreJitAttach and it returned TRUE before you call this
 //
 // Arguments:
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - the unhandled exception info
 //
 // Returns:
@@ -7159,7 +7159,7 @@ void Debugger::PostJitAttach()
 // Launches a debugger and blocks waiting for it to either attach or abort the attach.
 //
 // Arguments:
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - the unhandled exception info
 //    willSendManagedEvent - TRUE if after getting attached we will send a managed debug event
 //    explicitUserRequest - TRUE if this attach is caused by a call to the Debugger.Launch() API.
@@ -7205,7 +7205,7 @@ void Debugger::JitAttach(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, 
 // Ensure that a debugger is attached. Will jit-attach if needed.
 //
 // Arguments
-//    pThread - the managed thread with the unhandled excpetion
+//    pThread - the managed thread with the unhandled exception
 //    pExceptionInfo - the unhandled exception info
 //    willSendManagedEvent - true if after getting (or staying) attached we will send
 //                           a managed debug event
@@ -8655,7 +8655,7 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
     else
     {
         // Note: we don't do anything on NO or TERMINATE. We just return to the exception logic, which will abort the
-        // app or not depending on what the CLR impl decides is appropiate.
+        // app or not depending on what the CLR impl decides is appropriate.
         _ASSERTE(action == ATTACH_TERMINATE || action == ATTACH_NO);
     }
 
@@ -9711,7 +9711,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         // the Right Side can delete them later.
         DebuggerController::RemovePatchesFromModule(pRuntimeModule, domainToRemovePatchesIn);
 
-        // Deactive all JMC functions in this module.  We don't do this for shared assemblies
+        // Deactivate all JMC functions in this module.  We don't do this for shared assemblies
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
         LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
@@ -10108,7 +10108,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     // Note: it's possible that the AppDomain has (or is about to be) unloaded, which could lead to a
     // crash when we use the DebuggerModule.  Ideally we'd only be using AppDomain IDs here.
     // We can't easily convert our ADID to an AppDomain* (SystemDomain::GetAppDomainFromId)
-    // because we can't proove that the AppDomain* would be valid (not unloaded).
+    // because we can't prove that the AppDomain* would be valid (not unloaded).
     //
     AppDomain *pDomain = pThread->GetDomain();
     AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
@@ -10957,7 +10957,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // Note that we'd like to be able to do this assert here
         //      _ASSERTE(DebuggerController::GetNumberOfPatches() == 0);
         // However controllers may get queued for deletion if there is outstanding
-        // work and so we can't gaurentee the deletion will complete now.
+        // work and so we can't guarantee the deletion will complete now.
         // @dbgtodo  inspection: This shouldn't be an issue in the complete V3 architecture
 
         MarkDebuggerUnattachedInternal();
@@ -11233,7 +11233,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
         break;
 
-    // Set the JMC status on invididual methods
+    // Set the JMC status on individual methods
     case DB_IPCE_SET_METHOD_JMC_STATUS:
         {
             // Get the info out of the event
@@ -13355,7 +13355,7 @@ void Debugger::UnhandledHijackWorker(CONTEXT * pContext, EXCEPTION_RECORD * pRec
 
             // EEPolicy::HandleFatalStackOverflow pushes a FaultingExceptionFrame on the stack after SO
             // exception.  Our hijack code runs in the exception context, and overwrites the stack space
-            // after SO excpetion, so this frame was popped out before invoking RaiseFailFast.  We need to
+            // after SO exception, so this frame was popped out before invoking RaiseFailFast.  We need to
             // put it back here for running func-eval code.
             // This cumbersome code should be removed once SO synchronization is moved to be completely
             // out-of-process.
@@ -13592,7 +13592,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
                 // Setting the FilterContext must be done in cooperative mode (since it's like pushing a Frame onto the Frame chain).
                 // Thus we have a violation. We don't really need the filter context specifically here, we're just using
                 // it for legacy purposes as a way to stash the context of the original exception (that this thread was hijacked from).
-                // @todo - use another way to store the context indepedent of the Filter context.
+                // @todo - use another way to store the context independent of the Filter context.
                 CONTRACT_VIOLATION(ModeViolation);
                 _ASSERTE(g_pEEInterface->GetThreadFilterContext(pEEThread) == NULL);
                 g_pEEInterface->SetThreadFilterContext(pEEThread, pContext);
@@ -14766,7 +14766,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
             m_pThis = pThis;
         }
 
-        void SupressCleanup()
+        void SuppressCleanup()
         {
             m_pThis = NULL;
         }
@@ -14848,15 +14848,15 @@ HRESULT Debugger::InitAppDomainIPC(void)
         m_pAppDomainCB->Unlock();
     }
 
-    hEnsureCleanup.SupressCleanup();
+    hEnsureCleanup.SuppressCleanup();
     return S_OK;
 }
 
 /******************************************************************************
- * Unitialize the AppDomain IPC block
+ * Uninitialize the AppDomain IPC block
  * Returns:
- * S_OK -if fully unitialized
- * E_FAIL - if we can't get ownership of the block, and thus no unitialization
+ * S_OK -if fully uninitialized
+ * E_FAIL - if we can't get ownership of the block, and thus no uninitialization
  *          work is done.
  ******************************************************************************/
 HRESULT Debugger::TerminateAppDomainIPC(void)
@@ -15393,7 +15393,7 @@ void Debugger::EarlyHelperThreadDeath(void)
 
 //
 // This tells the debugger that shutdown of the in-proc debugging services has begun. We need to know this during
-// managed/unmanaged debugging so we can stop doing certian things to the process (like hijacking threads.)
+// managed/unmanaged debugging so we can stop doing certain things to the process (like hijacking threads.)
 //
 void Debugger::ShutdownBegun(void)
 {

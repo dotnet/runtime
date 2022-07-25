@@ -275,7 +275,7 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Type_GetNestedType:
                 case IntrinsicId.Nullable_GetUnderlyingType:
                 case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType(1, "System.Reflection.MethodInfo"):
-                case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
+                case var fieldOrPropertyIntrinsic when fieldOrPropertyIntrinsic == IntrinsicId.Expression_Field || fieldOrPropertyIntrinsic == IntrinsicId.Expression_Property:
                 case IntrinsicId.Type_get_BaseType:
                 case IntrinsicId.Type_GetConstructor:
                 case IntrinsicId.MethodBase_GetMethodFromHandle:
@@ -454,7 +454,7 @@ namespace ILCompiler.Dataflow
 
                 //
                 // System.Object
-                // 
+                //
                 // GetType()
                 //
                 case IntrinsicId.Object_GetType:
@@ -522,7 +522,7 @@ namespace ILCompiler.Dataflow
                     break;
 
                 default:
-                    throw new NotImplementedException("Unhandled instrinsic");
+                    throw new NotImplementedException("Unhandled intrinsic");
             }
 
             // If we get here, we handled this as an intrinsic.  As a convenience, if the code above

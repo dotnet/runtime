@@ -659,7 +659,7 @@ namespace Internal.JitInterface
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
         private List<Object> _handleToObject = new List<Object>();
 
-        private const int handleMultipler = 8;
+        private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
 
 #if DEBUG
@@ -673,7 +673,7 @@ namespace Internal.JitInterface
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
-                handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
+                handle = (IntPtr)(handleMultiplier * _handleToObject.Count + handleBase);
 #if DEBUG
                 handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
 #endif
@@ -688,7 +688,7 @@ namespace Internal.JitInterface
 #if DEBUG
             handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
 #endif
-            int index = ((int)handle - handleBase) / handleMultipler;
+            int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
 
@@ -3716,7 +3716,7 @@ namespace Internal.JitInterface
 
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
-            // Set the rest of the flags that don't make sense to expose publically.
+            // Set the rest of the flags that don't make sense to expose publicly.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);

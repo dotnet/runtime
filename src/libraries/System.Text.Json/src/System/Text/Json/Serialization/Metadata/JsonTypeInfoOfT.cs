@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
                 _serialize = value;
-                HasSerialize = value != null;
+                HasSerializeHandler = value != null;
             }
         }
 
