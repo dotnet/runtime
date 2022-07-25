@@ -7,11 +7,8 @@
     <IsTrimmable>false</IsTrimmable>
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides types that support using configuration files.
-
-Commonly Used Types:
-System.Configuration.Configuration
-System.Configuration.ConfigurationManager</PackageDescription>
+    <PackageDescription>Provides types that support using XML configuration files (app.config). This package is mostly useful to assist in porting of the existing .NET Framework code that depends on XML configuration. For a modern configuration API, see Microsoft.Extensions.Configuration.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -277,5 +274,9 @@ System.Configuration.ConfigurationManager</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 </Project>
