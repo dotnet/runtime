@@ -10,6 +10,7 @@ import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
+import { mono_wasm_init_diagnostics, } from "./diagnostics";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
@@ -173,12 +174,12 @@ async function mono_wasm_pre_init(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init");
 }
 
-function mono_wasm_after_runtime_initialized(): void {
+async function mono_wasm_after_runtime_initialized(): Promise<void> {
     if (!Module.config || Module.config.isError) {
         return;
     }
     finalize_assets(Module.config);
-    finalize_startup(Module.config);
+    await finalize_startup(Module.config);
     if (!ctx || !ctx.loaded_files || ctx.loaded_files.length == 0) {
         Module.print("MONO_WASM: no files were loaded into runtime");
     }
@@ -293,7 +294,7 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
     }
 }
 
-function _apply_configuration_from_args(config: MonoConfig) {
+async function _apply_configuration_from_args(config: MonoConfig): Promise<void> {
     const envars = (config.environment_variables || {});
     if (typeof (envars) !== "object")
         throw new Error("Expected config.environment_variables to be unset or a dictionary-style object");
@@ -314,9 +315,13 @@ function _apply_configuration_from_args(config: MonoConfig) {
 
     if (config.coverage_profiler_options)
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
+
+    if (config.diagnostic_options) {
+        await mono_wasm_init_diagnostics(config.diagnostic_options);
+    }
 }
 
-function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
+async function finalize_startup(config: MonoConfig | MonoConfigError | undefined): Promise<void> {
     const globalThisAny = globalThis as any;
 
     try {
@@ -347,8 +352,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
         }
 
         try {
-            _apply_configuration_from_args(config);
-
+            await _apply_configuration_from_args(config);
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
             runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
@@ -360,6 +364,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 const wasm_exit = cwraps.mono_wasm_exit;
                 wasm_exit(1);
             }
+            return;
         }
 
         bindings_lazy_init();
@@ -788,8 +793,7 @@ export type DownloadAssetsContext = {
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 async function mono_wasm_pthread_worker_init(): Promise<void> {
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
-    console.debug("mono_wasm_pthread_worker_init");
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        console.debug("thread created", ev.pthread_ptr);
+        console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
 }
