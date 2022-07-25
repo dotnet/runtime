@@ -675,9 +675,9 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
+        [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThroughUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.stepInto", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
-        [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
+        [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThroughUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.resume", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
         [InlineData(false, "Debugger.stepInto", "RunNonUserCode",  "NonUserCodeUserBp", 860, 4, "NonUserCodeUserBp", 861, 8)]
         [InlineData(true, "Debugger.stepInto", "RunNonUserCode", "RunNonUserCode", -1, 8, "RunNonUserCode", -1, 4)]
