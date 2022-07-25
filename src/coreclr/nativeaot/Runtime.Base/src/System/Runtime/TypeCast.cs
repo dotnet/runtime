@@ -926,9 +926,6 @@ assigningNull:
             if (pObjType == pTargetType)
                 return true;
 
-            if (pTargetType->HasGenericVariance && pObjType->HasGenericVariance)
-                return CastCache.AreTypesAssignableInternal(pObjType, pTargetType, AssignmentVariation.BoxedSource, null);
-
             if (pObjType->IsArray)
                 return false;
 
