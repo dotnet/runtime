@@ -169,10 +169,11 @@ namespace System.Net.Http.Headers
 
             // If we reached the end of the string after reading protocolName/Version we return (we expect at least
             // <receivedBy> to follow). If reading protocolName/Version read 0 bytes, we return.
-            if ((current == startIndex) || (current == input.Length) || (protocolVersion == null))
+            if ((current == 0) || (current == input.Length))
             {
                 return 0;
             }
+            Debug.Assert(protocolVersion != null);
 
             // Read <receivedBy> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
             int receivedByLength = HttpRuleParser.GetHostLength(input, current, true);
