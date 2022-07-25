@@ -1,10 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461-windows</TargetFrameworks>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <SetIsTrimmable>false</SetIsTrimmable>
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides types that support using configuration files.
 
 Commonly Used Types:
