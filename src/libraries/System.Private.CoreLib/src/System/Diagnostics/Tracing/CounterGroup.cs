@@ -12,7 +12,7 @@ namespace System.Diagnostics.Tracing
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
         private static readonly object s_counterGroupLock = new object();
-        private static int s_refCount = 0;
+        private static int s_refCount;
 
         internal CounterGroup(EventSource eventSource)
         {
