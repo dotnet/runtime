@@ -411,7 +411,7 @@ namespace System.Runtime.Loader
                     return ReadOnlySpan<byte>.Empty;
                 }
 
-                byte[] bytes = new byte[length];
+                byte[] bytes = GC.AllocateUninitializedArray<byte>(length);
 
                 // Copy the stream to the byte array
                 stream.ReadExactly(bytes, 0, length);
