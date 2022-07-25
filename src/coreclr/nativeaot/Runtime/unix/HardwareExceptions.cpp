@@ -8,9 +8,8 @@
 #include "daccess.h"
 #include "regdisplay.h"
 #include "UnixContext.h"
-
-#include <signal.h>
 #include "HardwareExceptions.h"
+#include "UnixSignals.h"
 
 #if !HAVE_SIGINFO_T
 #error Cannot handle hardware exceptions on this platform
@@ -48,8 +47,6 @@
 
 struct sigaction g_previousSIGSEGV;
 struct sigaction g_previousSIGFPE;
-
-typedef void (*SignalHandler)(int code, siginfo_t *siginfo, void *context);
 
 // Exception handler for hardware exceptions
 static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
@@ -284,7 +281,7 @@ bool IsDivByZeroAnIntegerOverflow(void* context)
 
     uint8_t code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
-    // The REX prefix must directly preceed the instruction code
+    // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
         rex = code;
@@ -537,53 +534,6 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
     return false;
 }
 
-// Add handler for hardware exception signal
-bool AddSignalHandler(int signal, SignalHandler handler, struct sigaction* previousAction)
-{
-    struct sigaction newAction;
-
-    newAction.sa_flags = SA_RESTART;
-    newAction.sa_handler = NULL;
-    newAction.sa_sigaction = handler;
-    newAction.sa_flags |= SA_SIGINFO;
-
-    sigemptyset(&newAction.sa_mask);
-
-    if (sigaction(signal, NULL, previousAction) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("Failed to get previous signal handler");
-        return false;
-    }
-
-    if (previousAction->sa_flags & SA_ONSTACK)
-    {
-        // If the previous signal handler uses an alternate stack, we need to use it too
-        // so that when we chain-call the previous handler, it is called on the kind of
-        // stack it expects.
-        // We also copy the signal mask to make sure that if some signals were blocked
-        // from execution on the alternate stack by the previous action, we honor that.
-        newAction.sa_flags |= SA_ONSTACK;
-        newAction.sa_mask = previousAction->sa_mask;
-    }
-
-    if (sigaction(signal, &newAction, previousAction) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("Failed to install signal handler");
-        return false;
-    }
-
-    return true;
-}
-
-// Restore original handler for hardware exception signal
-void RestoreSignalHandler(int signal_id, struct sigaction *previousAction)
-{
-    if (-1 == sigaction(signal_id, previousAction, NULL))
-    {
-        ASSERT_UNCONDITIONALLY("RestoreSignalHandler: sigaction() call failed");
-    }
-}
-
 // Handler for the SIGSEGV signal
 void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 {
@@ -640,7 +590,7 @@ bool InitializeHardwareExceptionHandling()
     return true;
 }
 
-// Set CoreRT hardware exception handler
+// Set hardware exception handler
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
 {
     ASSERT_MSG(g_hardwareExceptionHandler == NULL, "Hardware exception handler already set")

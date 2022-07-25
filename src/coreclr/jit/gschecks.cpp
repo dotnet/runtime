@@ -130,6 +130,8 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_FIELD:
 
             newState.isUnderIndir = true;
@@ -199,13 +201,20 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             newState.isUnderIndir = false;
             newState.isAssignSrc  = false;
             {
-                for (CallArg& arg : tree->AsCall()->gtArgs.Args())
+                CallArg* thisArg = tree->AsCall()->gtArgs.GetThisArg();
+                if (thisArg != nullptr)
                 {
-                    if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
-                    {
-                        newState.isUnderIndir = true;
-                    }
+                    // TODO-ARGS: This is a quirk for previous behavior where
+                    // we set this to true for the 'this' arg. The flag can
+                    // then remain set after the recursive call, depending on
+                    // what the child node is, e.g. GT_ARGPLACE did not clear
+                    // the flag, so when processing the second arg we would
+                    // also have isUnderIndir = true.
+                    newState.isUnderIndir = true;
+                }
 
+                for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
+                {
                     comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
                 for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
@@ -367,7 +376,7 @@ bool Compiler::gsFindVulnerableParams()
 void Compiler::gsParamsToShadows()
 {
     // Cache old count since we'll add new variables, and
-    // gsShadowVarInfo will not grow to accomodate the new ones.
+    // gsShadowVarInfo will not grow to accommodate the new ones.
     UINT lvaOldCount = lvaCount;
 
     // Create shadow copy for each param candidate
@@ -413,7 +422,7 @@ void Compiler::gsParamsToShadows()
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
-        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
+
         if (varTypeIsStruct(type))
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag

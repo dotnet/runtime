@@ -79,15 +79,7 @@ namespace System.Text.RegularExpressions
                                     // Find how much overlap there is between this branch's prefix
                                     // and the smallest amount of prefix that overlapped with all
                                     // the previously seen branches.
-                                    addedLength = Math.Min(addedLength, alternateSb.Length);
-                                    for (int j = 0; j < addedLength; j++)
-                                    {
-                                        if (vsb[initialLength + j] != alternateSb[j])
-                                        {
-                                            addedLength = j;
-                                            break;
-                                        }
-                                    }
+                                    addedLength = vsb.AsSpan(initialLength, addedLength).CommonPrefixLength(alternateSb.AsSpan());
                                 }
 
                                 alternateSb.Dispose();

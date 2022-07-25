@@ -592,5 +592,466 @@ namespace System
                 Remain = remain;
             }
         }
+
+        /// <summary>Verifies that two <see cref="double"/> values are equal, within the <paramref name="allowedVariance"/>.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="allowedVariance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(double expected, double actual, double variance)
+        {
+            if (double.IsNaN(expected))
+            {
+                if (double.IsNaN(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (double.IsNaN(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (double.IsNegativeInfinity(expected))
+            {
+                if (double.IsNegativeInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (double.IsNegativeInfinity(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (double.IsPositiveInfinity(expected))
+            {
+                if (double.IsPositiveInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (double.IsPositiveInfinity(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (IsNegativeZero(expected))
+            {
+                if (IsNegativeZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsNegativeZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            if (IsPositiveZero(expected))
+            {
+                if (IsPositiveZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsPositiveZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            var delta = Math.Abs(actual - expected);
+
+            if (delta > variance)
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            static unsafe bool IsNegativeZero(double value)
+            {
+                return (*(ulong*)(&value)) == 0x8000000000000000;
+            }
+
+            static unsafe bool IsPositiveZero(double value)
+            {
+                return (*(ulong*)(&value)) == 0x0000000000000000;
+            }
+
+            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
+            // but also NaN and +-infinity) are correctly and consistently represented.
+            static string ToStringPadded(double value)
+            {
+                if (double.IsNaN(value))
+                {
+                    return "NaN".PadLeft(20);
+                }
+                else if (double.IsPositiveInfinity(value))
+                {
+                    return "+\u221E".PadLeft(20);
+                }
+                else if (double.IsNegativeInfinity(value))
+                {
+                    return "-\u221E".PadLeft(20);
+                }
+                else if (IsNegativeZero(value))
+                {
+                    return "-0.0".PadLeft(20);
+                }
+                else if (IsPositiveZero(value))
+                {
+                    return "+0.0".PadLeft(20);
+                }
+                else
+                {
+                    return $"{value,20:G17}";
+                }
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="float"/> values are equal, within the <paramref name="variance"/>.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(float expected, float actual, float variance)
+        {
+            if (float.IsNaN(expected))
+            {
+                if (float.IsNaN(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (float.IsNaN(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (float.IsNegativeInfinity(expected))
+            {
+                if (float.IsNegativeInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (float.IsNegativeInfinity(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (float.IsPositiveInfinity(expected))
+            {
+                if (float.IsPositiveInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (float.IsPositiveInfinity(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (IsNegativeZero(expected))
+            {
+                if (IsNegativeZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsNegativeZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            if (IsPositiveZero(expected))
+            {
+                if (IsPositiveZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsPositiveZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            var delta = Math.Abs(actual - expected);
+
+            if (delta > variance)
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            static unsafe bool IsNegativeZero(float value)
+            {
+                return (*(uint*)(&value)) == 0x80000000;
+            }
+
+            static unsafe bool IsPositiveZero(float value)
+            {
+                return (*(uint*)(&value)) == 0x00000000;
+            }
+
+            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
+            // but also NaN and +-infinity) are correctly and consistently represented.
+            static string ToStringPadded(float value)
+            {
+                if (float.IsNaN(value))
+                {
+                    return "NaN".PadLeft(10);
+                }
+                else if (float.IsPositiveInfinity(value))
+                {
+                    return "+\u221E".PadLeft(10);
+                }
+                else if (float.IsNegativeInfinity(value))
+                {
+                    return "-\u221E".PadLeft(10);
+                }
+                else if (IsNegativeZero(value))
+                {
+                    return "-0.0".PadLeft(10);
+                }
+                else if (IsPositiveZero(value))
+                {
+                    return "+0.0".PadLeft(10);
+                }
+                else
+                {
+                    return $"{value,10:G9}";
+                }
+            }
+        }
+
+#if NET6_0_OR_GREATER
+        /// <summary>Verifies that two <see cref="Half"/> values are equal, within the <paramref name="variance"/>.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void Equal(Half expected, Half actual, Half variance)
+        {
+            if (Half.IsNaN(expected))
+            {
+                if (Half.IsNaN(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (Half.IsNaN(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (Half.IsNegativeInfinity(expected))
+            {
+                if (Half.IsNegativeInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (Half.IsNegativeInfinity(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (Half.IsPositiveInfinity(expected))
+            {
+                if (Half.IsPositiveInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (Half.IsPositiveInfinity(actual))
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (IsNegativeZero(expected))
+            {
+                if (IsNegativeZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsNegativeZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            if (IsPositiveZero(expected))
+            {
+                if (IsPositiveZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsPositiveZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            var delta = (Half)Math.Abs((float)actual - (float)expected);
+
+            if (delta > variance)
+            {
+                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            static unsafe bool IsNegativeZero(Half value)
+            {
+                return (*(ushort*)(&value)) == 0x8000;
+            }
+
+            static unsafe bool IsPositiveZero(Half value)
+            {
+                return (*(ushort*)(&value)) == 0x0000;
+            }
+
+            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
+            // but also NaN and +-infinity) are correctly and consistently represented.
+            static string ToStringPadded(Half value)
+            {
+                if (Half.IsNaN(value))
+                {
+                    return "NaN".PadLeft(5);
+                }
+                else if (Half.IsPositiveInfinity(value))
+                {
+                    return "+\u221E".PadLeft(5);
+                }
+                else if (Half.IsNegativeInfinity(value))
+                {
+                    return "-\u221E".PadLeft(5);
+                }
+                else if (IsNegativeZero(value))
+                {
+                    return "-0.0".PadLeft(5);
+                }
+                else if (IsPositiveZero(value))
+                {
+                    return "+0.0".PadLeft(5);
+                }
+                else
+                {
+                    return $"{value,5:G5}";
+                }
+            }
+        }
+#endif
     }
 }

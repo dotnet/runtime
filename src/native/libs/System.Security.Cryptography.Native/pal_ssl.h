@@ -119,10 +119,10 @@ typedef int32_t (*SslCtxSetAlpnCallback)(SSL* ssl,
     void* arg);
 
 // the function pointer used for new  session
-typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* sesssion);
+typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* session);
 
 // the function pointer used for new  session
-typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* sesssion);
+typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 
 /*
 Ensures that libssl is correctly initialized and ready to use.
@@ -162,7 +162,7 @@ PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
 /*
 Sets session caching. 0 is disabled.
 */
-PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode,  SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
+PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
 
 /*
 Returns name associated with given ssl session.
@@ -370,7 +370,7 @@ PALEXPORT void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode);
 /*
 Shims the SSL_get_client_CA_list method.
 
-Returns the list of CA names explicity set.
+Returns the list of CA names explicitly set.
 */
 PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 
@@ -404,6 +404,11 @@ PALEXPORT void* CryptoNative_SslCtxGetData(SSL_CTX* ctx);
 Sets the specified encryption policy on the SSL_CTX.
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+
+/*
+Activates the default OCSP stapling callback.
+*/
+PALEXPORT void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx);
 
 /*
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
@@ -493,3 +498,8 @@ PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t c
 Checks if given protocol version is supported.
 */
 PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
+
+/*
+Staples an encoded OCSP response onto the TLS session
+*/
+PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);

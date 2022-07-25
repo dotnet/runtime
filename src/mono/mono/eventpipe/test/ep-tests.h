@@ -20,7 +20,7 @@ const
 static Group test_groups [] = {
 	{"setup", ep_setup_tests_init},
 	{"rt", ep_rt_tests_init},
-	{"fastserialzier", ep_fastserializer_tests_init},
+	{"fastserializer", ep_fastserializer_tests_init},
 	{"provider-callback-dataqueue", ep_provider_callback_data_queue_tests_init},
 	{"file", ep_file_tests_init},
 	{"session", ep_session_tests_init},

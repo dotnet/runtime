@@ -117,9 +117,8 @@ namespace System.Diagnostics
         /// </remarks>
         private unsafe MetadataReader? TryGetReader(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
         {
-            if ((loadedPeAddress == IntPtr.Zero || assemblyPath == null) && inMemoryPdbAddress == IntPtr.Zero)
+            if (loadedPeAddress == IntPtr.Zero && assemblyPath == null && inMemoryPdbAddress == IntPtr.Zero)
             {
-                // Dynamic or in-memory module without symbols (they would be in-memory if they were available).
                 return null;
             }
 
@@ -193,14 +192,29 @@ namespace System.Diagnostics
                     return null;
                 }
 
-                string? pdbPath;
-                MetadataReaderProvider? provider;
-                if (peReader.TryOpenAssociatedPortablePdb(assemblyPath, TryOpenFile, out provider, out pdbPath))
+                if (assemblyPath is not null)
                 {
-                    // TODO:
-                    // Consider caching the provider in a global cache (across stack traces) if the PDB is embedded (pdbPath == null),
-                    // as decompressing embedded PDB takes some time.
-                    return provider;
+                    string? pdbPath;
+                    MetadataReaderProvider? provider;
+                    if (peReader.TryOpenAssociatedPortablePdb(assemblyPath, TryOpenFile, out provider, out pdbPath))
+                    {
+                        return provider;
+                    }
+                }
+
+                foreach (DebugDirectoryEntry entry in peReader.ReadDebugDirectory())
+                {
+                    if (entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb)
+                    {
+                        try
+                        {
+                            return peReader.ReadEmbeddedPortablePdbDebugDirectoryData(entry);
+                        }
+                        catch (Exception e) when (e is BadImageFormatException || e is IOException)
+                        {
+                            break;
+                        }
+                    }
                 }
             }
 

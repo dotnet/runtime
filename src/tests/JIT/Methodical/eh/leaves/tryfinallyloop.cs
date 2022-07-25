@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace hello
+namespace hello_tryfinallyloop_leaves_cs
 {
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -41,7 +42,8 @@ namespace hello
         {
             Console.WriteLine("in Finally\n");
         }
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             int i = 0;
             //Start recording

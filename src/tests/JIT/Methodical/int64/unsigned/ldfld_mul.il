@@ -18,9 +18,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {11B90F3C-E0C0-43E5-9E78-65FA3DCAAEF2}
-.namespace JitTest
+.namespace JitTest_ldfld_mul_unsigned_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .field private unsigned int64 op1
@@ -34,10 +34,10 @@
       .locals (bool V_0)
       IL_0000:  ldstr      "Multiplying {0} and {1}..."
       IL_0005:  ldarg.0
-      IL_0006:  ldfld     unsigned int64 JitTest.Test::op1
+      IL_0006:  ldfld     unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_000b:  box     ['mscorlib']System.UInt64
       IL_0010:  ldarg.0
-      IL_0011:  ldfld     unsigned int64 JitTest.Test::op2
+      IL_0011:  ldfld     unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_0016:  box     ['mscorlib']System.UInt64
       IL_001b:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
@@ -45,9 +45,9 @@
       .try
       {
         IL_0020:  ldarg.0
-        IL_0021:  ldfld      unsigned int64 JitTest.Test::op1
+        IL_0021:  ldfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
         IL_0026:  ldarg.0
-        IL_0027:  ldfld      unsigned int64 JitTest.Test::op2
+        IL_0027:  ldfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
         IL_002c:  mul
         IL_002d:  ldarg.1
         IL_002e:  beq.s      IL_0034
@@ -78,7 +78,7 @@
       IL_0050:  ret
     } // end of method 'Test::check'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -87,22 +87,22 @@
       .entrypoint
       // Code size       287 (0x11f)
       .maxstack  3
-      .locals (class JitTest.Test V_0,
+      .locals (class JitTest_ldfld_mul_unsigned_il.Test V_0,
                int32 V_1)
-      IL_0000:  newobj     instance void JitTest.Test::.ctor()
+      IL_0000:  newobj     instance void JitTest_ldfld_mul_unsigned_il.Test::.ctor()
       IL_0005:  stloc.0
       IL_0006:  ldloc.0
       IL_0007:  ldc.i4.m1
       IL_0008:  conv.u8
-      IL_0009:  stfld      unsigned int64 JitTest.Test::op1
+      IL_0009:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_000e:  ldloc.0
       IL_000f:  ldc.i4.m1
       IL_0010:  conv.u8
-      IL_0011:  stfld      unsigned int64 JitTest.Test::op2
+      IL_0011:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_0016:  ldloc.0
       IL_0017:  ldc.i8     0xfffffffe00000001
       IL_0020:  ldc.i4.0
-      IL_0021:  call       instance bool JitTest.Test::check(unsigned int64,
+      IL_0021:  call       instance bool JitTest_ldfld_mul_unsigned_il.Test::check(unsigned int64,
                                                              bool)
       IL_0026:  brtrue.s   IL_002d
 
@@ -110,15 +110,15 @@
 
       IL_002d:  ldloc.0
       IL_002e:  ldc.i8     0x100000000
-      IL_0037:  stfld      unsigned int64 JitTest.Test::op1
+      IL_0037:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_003c:  ldloc.0
       IL_003d:  ldc.i4.m1
       IL_003e:  conv.u8
-      IL_003f:  stfld      unsigned int64 JitTest.Test::op2
+      IL_003f:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_0044:  ldloc.0
       IL_0045:  ldc.i8     0xffffffff00000000
       IL_004e:  ldc.i4.0
-      IL_004f:  call       instance bool JitTest.Test::check(unsigned int64,
+      IL_004f:  call       instance bool JitTest_ldfld_mul_unsigned_il.Test::check(unsigned int64,
                                                              bool)
       IL_0054:  brtrue.s   IL_005b
 
@@ -126,15 +126,15 @@
 
       IL_005b:  ldloc.0
       IL_005c:  ldc.i8     0x100000000
-      IL_0065:  stfld      unsigned int64 JitTest.Test::op1
+      IL_0065:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_006a:  ldloc.0
       IL_006b:  ldc.i8     0x100000000
-      IL_0074:  stfld      unsigned int64 JitTest.Test::op2
+      IL_0074:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_0079:  ldloc.0
       IL_007a:  ldc.i4.0
       IL_007b:  conv.i8
       IL_007c:  ldc.i4.0
-      IL_007d:  call       instance bool JitTest.Test::check(unsigned int64,
+      IL_007d:  call       instance bool JitTest_ldfld_mul_unsigned_il.Test::check(unsigned int64,
                                                              bool)
       IL_0082:  brtrue.s   IL_0089
 
@@ -142,16 +142,16 @@
 
       IL_0089:  ldloc.0
       IL_008a:  ldc.i8     0x7fffffffffffffff
-      IL_0093:  stfld      unsigned int64 JitTest.Test::op1
+      IL_0093:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_0098:  ldloc.0
       IL_0099:  ldc.i4.2
       IL_009a:  conv.i8
-      IL_009b:  stfld      unsigned int64 JitTest.Test::op2
+      IL_009b:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_00a0:  ldloc.0
       IL_00a1:  ldc.i4.s   -2
       IL_00a3:  conv.i8
       IL_00a4:  ldc.i4.0
-      IL_00a5:  call       instance bool JitTest.Test::check(unsigned int64,
+      IL_00a5:  call       instance bool JitTest_ldfld_mul_unsigned_il.Test::check(unsigned int64,
                                                              bool)
       IL_00aa:  brtrue.s   IL_00ae
 
@@ -159,16 +159,16 @@
 
       IL_00ae:  ldloc.0
       IL_00af:  ldc.i8     0x8000000000000000
-      IL_00b8:  stfld      unsigned int64 JitTest.Test::op1
+      IL_00b8:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_00bd:  ldloc.0
       IL_00be:  ldc.i4.2
       IL_00bf:  conv.i8
-      IL_00c0:  stfld      unsigned int64 JitTest.Test::op2
+      IL_00c0:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_00c5:  ldloc.0
       IL_00c6:  ldc.i4.0
       IL_00c7:  conv.i8
       IL_00c8:  ldc.i4.0
-      IL_00c9:  call       instance bool JitTest.Test::check(unsigned int64,
+      IL_00c9:  call       instance bool JitTest_ldfld_mul_unsigned_il.Test::check(unsigned int64,
                                                              bool)
       IL_00ce:  brtrue.s   IL_00d2
 
@@ -177,14 +177,14 @@
       IL_00d2:  ldloc.0
       IL_00d3:  ldc.i4     0x100000
       IL_00d8:  conv.i8
-      IL_00d9:  stfld      unsigned int64 JitTest.Test::op1
+      IL_00d9:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op1
       IL_00de:  ldloc.0
       IL_00df:  ldc.i8     0x1000000000
-      IL_00e8:  stfld      unsigned int64 JitTest.Test::op2
+      IL_00e8:  stfld      unsigned int64 JitTest_ldfld_mul_unsigned_il.Test::op2
       IL_00ed:  ldloc.0
       IL_00ee:  ldc.i8     0x100000000000000
       IL_00f7:  ldc.i4.0
-      IL_00f8:  call       instance bool JitTest.Test::check(unsigned int64,
+      IL_00f8:  call       instance bool JitTest_ldfld_mul_unsigned_il.Test::check(unsigned int64,
                                                              bool)
       IL_00fd:  brtrue.s   IL_0101
 
@@ -218,6 +218,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_ldfld_mul_unsigned_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

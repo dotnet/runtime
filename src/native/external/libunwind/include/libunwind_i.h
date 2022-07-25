@@ -55,6 +55,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <errno.h>
+#include <stdio.h>
 
 #if defined(HAVE_ELF_H)
 # include <elf.h>
@@ -286,6 +288,13 @@ static ALWAYS_INLINE int
 print_error (const char *string)
 {
   return write (2, string, strlen (string));
+}
+
+HIDDEN extern long unw_page_size;
+
+static inline unw_word_t uwn_page_start(unw_word_t addr)
+{
+  return addr & ~(unw_page_size - 1);
 }
 
 #define mi_init         UNWI_ARCH_OBJ(mi_init)

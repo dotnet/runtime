@@ -15,7 +15,7 @@ namespace System.Numerics
 
         public static void Pow(uint value, uint power, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power, Span<uint> bits)
@@ -59,7 +59,7 @@ namespace System.Numerics
                     bitsLength = MultiplySelf(ref result, bitsLength, value.Slice(0, valueLength), ref temp);
                 if (power != 1)
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
-                power = power >> 1;
+                power >>= 1;
             }
 
             return result;
@@ -120,7 +120,7 @@ namespace System.Numerics
                     if (power != 1)
                         valueLength += valueLength;
                 }
-                power = power >> 1;
+                power >>= 1;
             }
 
             return resultLength;
@@ -173,7 +173,7 @@ namespace System.Numerics
                     if ((p & 1) == 1)
                         result = (result * value) % modulus;
                     value = (value * value) % modulus;
-                    p = p >> 1;
+                    p >>= 1;
                 }
             }
 
@@ -191,7 +191,7 @@ namespace System.Numerics
                     result = (result * value) % modulus;
                 if (power != 1)
                     value = (value * value) % modulus;
-                power = power >> 1;
+                power >>= 1;
             }
 
             return (uint)(result % modulus);
@@ -200,7 +200,7 @@ namespace System.Numerics
         public static void Pow(uint value, uint power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, uint power,
@@ -245,7 +245,7 @@ namespace System.Numerics
         public static void Pow(uint value, ReadOnlySpan<uint> power,
                                ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
-            Pow(value != 0U ? stackalloc uint[1] { value } : default, power, modulus, bits);
+            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
         }
 
         public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power,
@@ -431,7 +431,7 @@ namespace System.Numerics
                     }
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = Reduce(value.Slice(0, valueLength), modulus);
-                    p = p >> 1;
+                    p >>= 1;
                 }
             }
 
@@ -461,7 +461,7 @@ namespace System.Numerics
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = Reduce(value.Slice(0, valueLength), modulus);
                 }
-                power = power >> 1;
+                power >>= 1;
             }
 
             return result.Slice(0, resultLength);
@@ -490,7 +490,7 @@ namespace System.Numerics
                     }
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = reducer.Reduce(value.Slice(0, valueLength));
-                    p = p >> 1;
+                    p >>= 1;
                 }
             }
 
@@ -520,7 +520,7 @@ namespace System.Numerics
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = reducer.Reduce(value.Slice(0, valueLength));
                 }
-                power = power >> 1;
+                power >>= 1;
             }
 
             return result;

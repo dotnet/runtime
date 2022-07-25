@@ -799,9 +799,11 @@ namespace System.Runtime.Serialization.Json
             return base.ReadValueChunk(chars, offset, count);
         }
 
-        public void SetInput(byte[] buffer!!, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+        public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -826,9 +828,11 @@ namespace System.Runtime.Serialization.Json
             ResetState();
         }
 
-        public void SetInput(Stream stream!!, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
+        public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             MoveToInitial(quotas, onClose);
 
             stream = new JsonEncodingStreamWrapper(stream, encoding, true);
@@ -843,8 +847,10 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException();
         }
 
-        internal static void CheckArray(Array array!!, int offset, int count)
+        internal static void CheckArray(Array array, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -1592,7 +1598,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [return: NotNullIfNotNull("val")]
+        [return: NotNullIfNotNull(nameof(val))]
         private string? UnescapeJsonString(string? val)
         {
             if (val == null)
@@ -1607,10 +1613,7 @@ namespace System.Runtime.Serialization.Json
                 if (val[i] == '\\')
                 {
                     i++;
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder();
-                    }
+                    sb ??= new StringBuilder();
                     sb.Append(val, startIndex, count);
                     Fx.Assert(i < val.Length, "Found that an '\' was the last character in a string. ReadServerTypeAttriute validates that the escape sequence is valid when it calls ReadQuotedText and ReadEscapedCharacter");
                     if (i >= val.Length)

@@ -23,7 +23,7 @@
 // reason about VARSET_TP as immutable values, and just copying the contents would
 // introduce sharing in the indirect case, which is usually not what's desired.  On
 // the other hand, there are many cases in which the RHS value has just been
-// created functionally, and the intialization/assignment is obviously its last
+// created functionally, and the initialization/assignment is obviously its last
 // use.  In these cases, allocating a new indirect representation for the lhs (if
 // it does not already have one) would be unnecessary and wasteful.  Thus, for both
 // initialization and assignment, we have normal versions, which do make copies to
@@ -88,7 +88,7 @@ const unsigned lclMAX_TRACKED = UInt64Bits;
 
 #else
 
-#error "Unrecognized BitSet implemention for VarSet."
+#error "Unrecognized BitSet implementation for VarSet."
 
 #endif
 
@@ -111,7 +111,7 @@ typedef BitSetOpsWithCounter<VARSET_TP,
 typedef VarSetOpsRaw       VarSetOps;
 #endif
 
-#define ALLVARSET_REP BSUInt64
+#define ALLVARSET_REP BSShortLong
 
 #if ALLVARSET_REP == BSUInt64
 
@@ -141,7 +141,8 @@ typedef BitSetOps</*BitSetType*/ BitSetShortLongRep,
 
 typedef BitSetShortLongRep ALLVARSET_TP;
 
-const unsigned lclMAX_ALLSET_TRACKED = lclMAX_TRACKED;
+// default value for JitConfig.JitMaxLocalsToTrack()
+const unsigned lclMAX_ALLSET_TRACKED = 0x400;
 
 #define ALLVARSET_REP_IS_CLASS 0
 
@@ -162,7 +163,7 @@ const unsigned lclMAX_ALLSET_TRACKED = UInt64Bits;
 #define ALLVARSET_REP_IS_CLASS 1
 
 #else
-#error "Unrecognized BitSet implemention for AllVarSet."
+#error "Unrecognized BitSet implementation for AllVarSet."
 #endif
 
 // These types should be used as the types for ALLVARSET_TP arguments and return values, respectively.

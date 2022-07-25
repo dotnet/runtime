@@ -44,13 +44,6 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
                                       DebuggerIPCEvent * pIPCEvent);
 #endif // (FEATURE_DBGIPC_TRANSPORT_DI || FEATURE_DBGIPC_TRANSPORT_VM)
 
-
-void GetPidDecoratedName(_Out_writes_z_(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix,
-                         DWORD pid);
-
-
 //
 // This macro is used in CORDbgCopyThreadContext().
 //

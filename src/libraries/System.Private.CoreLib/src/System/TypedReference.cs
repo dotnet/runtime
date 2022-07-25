@@ -13,8 +13,11 @@ namespace System
     public ref partial struct TypedReference
     {
 
-        public static TypedReference MakeTypedReference(object target!!, FieldInfo[] flds!!)
+        public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(flds);
+
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 
@@ -36,7 +39,7 @@ namespace System
 
                 RuntimeType fieldType = (RuntimeType)field.FieldType;
                 if (fieldType.IsPrimitive)
-                    throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitve, field.Name));
+                    throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitive, field.Name));
 
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(SR.MissingMemberNestErr);
@@ -72,15 +75,7 @@ namespace System
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        public static unsafe object ToObject(TypedReference value)
-        {
-            return InternalToObject(&value);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object InternalToObject(void* value);
-
-        internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == IntPtr.Zero;
+        internal bool IsNull => Unsafe.IsNullRef(ref _value) && _type == IntPtr.Zero;
 
         public static Type GetTargetType(TypedReference value)
         {

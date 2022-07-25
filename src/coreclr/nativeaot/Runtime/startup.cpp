@@ -60,6 +60,30 @@ int g_cpuFeatures = 0;
 EXTERN_C int g_requiredCpuFeatures;
 #endif
 
+#ifdef TARGET_UNIX
+static bool InitGSCookie();
+
+//-----------------------------------------------------------------------------
+// GSCookies (guard-stack cookies) for detecting buffer overruns
+//-----------------------------------------------------------------------------
+
+#ifdef __APPLE__
+#define READONLY_ATTR_ARGS section("__DATA,__const")
+#else
+#define READONLY_ATTR_ARGS section(".rodata")
+#endif
+#define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
+
+// Guard-stack cookie for preventing against stack buffer overruns
+typedef size_t GSCookie;
+
+// const is so that it gets placed in the .text section (which is read-only)
+// volatile is so that accesses to it do not get optimized away because of the const
+//
+
+extern "C" volatile READONLY_ATTR const GSCookie __security_cookie = 0;
+#endif // TARGET_UNIX
+
 static bool InitDLL(HANDLE hPalInstance)
 {
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
@@ -93,13 +117,6 @@ static bool InitDLL(HANDLE hPalInstance)
 
     InitializeYieldProcessorNormalizedCrst();
 
-    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
-    if (!RedhawkGCInterface::InitializeSubsystems())
-        return false;
-
-    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
-
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = g_pRhConfig->GetTotalStressLogSize();
     uint32_t dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
@@ -114,8 +131,20 @@ static bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
+    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
+
+    if (!RedhawkGCInterface::InitializeSubsystems())
+        return false;
+
+    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
+
 #ifndef USE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
+        return false;
+#endif
+
+#ifdef TARGET_UNIX
+    if (!InitGSCookie())
         return false;
 #endif
 
@@ -177,6 +206,11 @@ bool DetectCPUFeatures()
                         if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
+
+                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            {
+                                g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
+                            }
 
                             if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
@@ -261,13 +295,42 @@ bool DetectCPUFeatures()
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
-        return false;
+        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+        RhFailFast();
     }
-#endif // HOST_X86 || HOST_AMD64
+#endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
 }
 #endif // !USE_PORTABLE_HELPERS
+
+#ifdef TARGET_UNIX
+inline
+GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&__security_cookie); }
+
+bool InitGSCookie()
+{
+    volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
+
+    // The GS cookie is stored in a read only data segment    
+    if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
+    {
+        return false;
+    }
+
+    // REVIEW: Need something better for PAL...
+    GSCookie val = (GSCookie)PalGetTickCount64();
+
+#ifdef _DEBUG
+    // In _DEBUG, always use the same value to make it easier to search for the cookie
+    val = (GSCookie)(0x9ABCDEF012345678);
+#endif
+
+    *pGSCookiePtr = val;
+
+    return PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READONLY);
+}
+#endif // TARGET_UNIX
 
 #ifdef PROFILE_STARTUP
 #define STD_OUTPUT_HANDLE ((uint32_t)-11)

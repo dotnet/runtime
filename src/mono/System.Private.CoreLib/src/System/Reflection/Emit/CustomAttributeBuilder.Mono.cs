@@ -79,10 +79,9 @@ namespace System.Reflection.Emit
 
         internal CustomAttributeBuilder(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             ctor = con;
             data = (byte[])binaryAttribute.Clone();
             /* should we check that the user supplied data is correct? */
@@ -171,18 +170,13 @@ namespace System.Reflection.Emit
             this.namedFields = namedFields;
             this.fieldValues = fieldValues;
 
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (constructorArgs == null)
-                throw new ArgumentNullException(nameof(constructorArgs));
-            if (namedProperties == null)
-                throw new ArgumentNullException(nameof(namedProperties));
-            if (propertyValues == null)
-                throw new ArgumentNullException(nameof(propertyValues));
-            if (namedFields == null)
-                throw new ArgumentNullException(nameof(namedFields));
-            if (fieldValues == null)
-                throw new ArgumentNullException(nameof(fieldValues));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(constructorArgs);
+            ArgumentNullException.ThrowIfNull(namedProperties);
+            ArgumentNullException.ThrowIfNull(propertyValues);
+            ArgumentNullException.ThrowIfNull(namedFields);
+            ArgumentNullException.ThrowIfNull(fieldValues);
+
             if (con.GetParametersCount() != constructorArgs.Length)
                 throw new ArgumentException(SR.Argument_BadParameterCountsForConstructor);
             if (namedProperties.Length != propertyValues.Length)
@@ -215,7 +209,7 @@ namespace System.Reflection.Emit
                     if (!(fi.FieldType is TypeBuilder) && !fi.FieldType.IsEnum && !fi.FieldType.IsInstanceOfType(fieldValues[i]))
                     {
                         //
-                        // mcs allways uses object[] for array types and
+                        // mcs always uses object[] for array types and
                         // MS.NET allows this
                         //
                         if (!fi.FieldType.IsArray)
@@ -354,7 +348,7 @@ namespace System.Reflection.Emit
                 paramType = ((int)data[pos++]);
                 if (paramType == 0x55)
                 {
-                    /* enums, the value is preceeded by the type */
+                    /* enums, the value is preceded by the type */
                     decode_string(data, pos, out pos);
                 }
                 string? named_name = decode_string(data, pos, out pos);

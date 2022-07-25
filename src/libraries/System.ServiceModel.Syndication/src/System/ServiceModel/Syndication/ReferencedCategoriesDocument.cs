@@ -9,8 +9,13 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public ReferencedCategoriesDocument(Uri link!!) : base()
+        public ReferencedCategoriesDocument(Uri link) : base()
         {
+            if (link is null)
+            {
+                throw new ArgumentNullException(nameof(link));
+            }
+
             Link = link;
         }
 

@@ -284,8 +284,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal override IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition!!)
+        internal override IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             string contractName = definition.ContractName;
             if (string.IsNullOrEmpty(contractName))
             {

@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     filecrt.cpp
@@ -13,8 +11,6 @@ Abstract:
 
     Implementation of the file functions in the C runtime library that
     are Windows specific.
-
-
 
 --*/
 
@@ -97,7 +93,7 @@ _open_osfhandle( INT_PTR osfhandle, int flags )
         }
         else /* the only file object with no unix_filename is a pipe */
         {
-            /* check if the file pipe descrptor is for read or write */
+            /* check if the file pipe descriptor is for read or write */
             if (pLocalData->open_flags == O_WRONLY)
             {
                 ERROR( "Couldn't open a write pipe on read mode\n");
@@ -433,7 +429,7 @@ CorUnix::InternalFwrite(
 
     nWrittenBytes = fwrite(pvBuffer, nSize, nCount, f);
 
-    // Make sure no error ocurred.
+    // Make sure no error occurred.
     if ( nWrittenBytes < nCount )
     {
         // Set the FILE* error code

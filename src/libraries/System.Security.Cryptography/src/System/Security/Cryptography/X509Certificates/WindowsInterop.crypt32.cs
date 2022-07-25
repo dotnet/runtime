@@ -69,7 +69,7 @@ internal static partial class Interop
                 pPrevCertContext = pCertContext.Disconnect();
             }
 
-            pCertContext.SetHandle((IntPtr)Crypt32.CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
+            Marshal.InitHandle(pCertContext, (IntPtr)Crypt32.CertEnumCertificatesInStore(hCertStore, pPrevCertContext));
 
             if (!pCertContext.IsInvalid)
             {
@@ -88,6 +88,14 @@ internal static partial class Interop
         public static unsafe bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo)
         {
             return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pbEncoded, cbEncoded, dwFlags, pvStructInfo, ref pcbStructInfo);
+        }
+
+        public static unsafe bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, ReadOnlySpan<byte> encoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo)
+        {
+            fixed (byte* pEncoded = encoded)
+            {
+                return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pEncoded, encoded.Length, dwFlags, pvStructInfo, ref pcbStructInfo);
+            }
         }
 
         public static unsafe bool CryptEncodeObject(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded)
@@ -125,8 +133,9 @@ internal static partial class Interop
         {
             if (!Interop.Crypt32.CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                throw errorCode.ToCryptographicException();
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                chainEngineHandle.Dispose();
+                throw e;
             }
 
             return chainEngineHandle;
@@ -141,7 +150,13 @@ internal static partial class Interop
         /// </summary>
         public static unsafe bool CertFindCertificateInStore(SafeCertStoreHandle hCertStore, Interop.Crypt32.CertFindType dwFindType, void* pvFindPara, [NotNull] ref SafeCertContextHandle? pCertContext)
         {
-            Interop.Crypt32.CERT_CONTEXT* pPrevCertContext = pCertContext == null ? null : pCertContext.Disconnect();
+            Interop.Crypt32.CERT_CONTEXT* pPrevCertContext = null;
+            if (pCertContext != null)
+            {
+                pPrevCertContext = pCertContext.Disconnect();
+                pCertContext.Dispose();
+            }
+
             pCertContext = Interop.Crypt32.CertFindCertificateInStore(hCertStore, Interop.Crypt32.CertEncodingType.All, Interop.Crypt32.CertFindFlags.None, dwFindType, pvFindPara, pPrevCertContext);
             return !pCertContext.IsInvalid;
         }

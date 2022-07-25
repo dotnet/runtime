@@ -597,10 +597,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlDateTime)
+            if (value is SqlDateTime i)
             {
-                SqlDateTime i = (SqlDateTime)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlDateTime));

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -25,7 +26,8 @@ public class Bool2D3DArrTest
     static bool[][,] ja1 = new bool[2][,];
     static bool[][, ,] ja2 = new bool[2][, ,];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         bool pass = true;

@@ -82,7 +82,7 @@ namespace System.Net
             }
         }
 
-        public ArrayList BypassArrayList => _bypassList ?? (_bypassList = new ArrayList());
+        public ArrayList BypassArrayList => _bypassList ??= new ArrayList();
 
         public ICredentials? Credentials { get; set; }
 
@@ -92,8 +92,10 @@ namespace System.Net
             set => Credentials = value ? CredentialCache.DefaultCredentials : null;
         }
 
-        public Uri? GetProxy(Uri destination!!)
+        public Uri? GetProxy(Uri destination)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             return IsBypassed(destination) ? destination : Address;
         }
 
@@ -171,8 +173,10 @@ namespace System.Net
             return false;
         }
 
-        public bool IsBypassed(Uri host!!)
+        public bool IsBypassed(Uri host)
         {
+            ArgumentNullException.ThrowIfNull(host);
+
             return
                 Address == null ||
                 (BypassProxyOnLocal && IsLocal(host)) ||

@@ -28,15 +28,20 @@ namespace System.Text.RegularExpressions
         /// culture and will also factor in the current culture in order to handle the special cases which are different between cultures.
         /// </summary>
         /// <param name="c">The character being analyzed</param>
-        /// <param name="culture">The <see cref="CultureInfo"/> to be used to determine the equivalences.</param>
+        /// <param name="culture">The <see cref="CultureInfo"/> to be used to calculate <paramref name="mappingBehavior"/> in case it hasn't been cached.</param>
+        /// <param name="mappingBehavior">The behavior to be used for case comparisons. If the value hasn't been set yet, it will get initialized in the first lookup.</param>
         /// <param name="equivalences">If <paramref name="c"/> is involved in case conversion, then equivalences will contain the
         /// span of character which should be considered equal to <paramref name="c"/> in a case-insensitive comparison.</param>
         /// <returns><see langword="true"/> if <paramref name="c"/> is involved in case conversion; otherwise, <see langword="false"/></returns>
-        public static bool TryFindCaseEquivalencesForCharWithIBehavior(char c, CultureInfo culture, out ReadOnlySpan<char> equivalences)
+        public static bool TryFindCaseEquivalencesForCharWithIBehavior(char c, CultureInfo culture, ref RegexCaseBehavior mappingBehavior, out ReadOnlySpan<char> equivalences)
         {
             if ((c | 0x20) == 'i' || (c | 0x01) == '\u0131')
             {
-                RegexCaseBehavior mappingBehavior = GetRegexBehavior(culture);
+                // If this is the first time that this method is being called then mappingBehavior will be set to default, so we calculate
+                // the behavior to use and cache the value for future lookups.
+                if (mappingBehavior == RegexCaseBehavior.NotSet)
+                    mappingBehavior = GetRegexBehavior(culture);
+
                 equivalences = c switch
                 {
                     // Invariant mappings

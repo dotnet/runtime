@@ -153,15 +153,15 @@ MethodTable g_FreeObjectEEType;
 bool RedhawkGCInterface::InitializeSubsystems()
 {
 #ifdef FEATURE_ETW
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the Redhawk event provider with the system.
     RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private();
     RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public();
 
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
 #endif // FEATURE_ETW
 
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
@@ -294,11 +294,11 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
 //  pTransitionFrame-  transition frame to make stack crawable
 // Returns a pointer to the object allocated or NULL on failure.
 
-COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, void* pTransitionFrame))
+COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
-    pThread->SetCurrentThreadPInvokeTunnelForGcAlloc(pTransitionFrame);
+    pThread->SetDeferredTransitionFrame(pTransitionFrame);
 
     return GcAllocInternal(pEEType, uFlags, numElements, pThread);
 }
@@ -352,161 +352,11 @@ struct EnumGcRefContext : GCEnumContext
     EnumGcRefScanContext * sc;
 };
 
-bool IsOnReadablePortionOfThread(EnumGcRefScanContext * pSc, PTR_VOID pointer)
-{
-    if (!pSc->thread_under_crawl->IsWithinStackBounds(pointer))
-    {
-        return false;
-    }
-
-    // If the stack_limit is 0, then it wasn't set properly, and the check below will not
-    // operate correctly.
-    ASSERT(pSc->stack_limit != 0);
-
-    // This ensures that the pointer is not in a currently-unused portion of the stack
-    // because the above check is only verifying against the entire stack bounds,
-    // but stack_limit is describing the current bound of the stack
-    if (PTR_TO_TADDR(pointer) < pSc->stack_limit)
-    {
-        return false;
-    }
-    return true;
-}
-
-#ifdef HOST_64BIT
-#define CONSERVATIVE_REGION_MAGIC_NUMBER 0x87DF7A104F09E0A9ULL
-#else
-#define CONSERVATIVE_REGION_MAGIC_NUMBER 0x4F09E0A9
-#endif
-
-// This is a structure that is created by executing runtime code in order to report a conservative
-// region. In managed code if there is a pinned byref pointer to one of this (with the appropriate
-// magic number set in it, and a hash that matches up) then the region from regionPointerLow to
-// regionPointerHigh will be reported conservatively. This can only be used to report memory regions
-// on the current stack and the structure must itself be located on the stack.
-struct ConservativelyReportedRegionDesc
-{
-    // If this is really a ConservativelyReportedRegionDesc then the magic value will be
-    // CONSERVATIVE_REGION_MAGIC_NUMBER, and the hash will be the result of CalculateHash
-    // across magic, regionPointerLow, and regionPointerHigh
-    uintptr_t magic;
-    PTR_VOID regionPointerLow;
-    PTR_VOID regionPointerHigh;
-    uintptr_t hash;
-
-    static uintptr_t CalculateHash(uintptr_t h1, uintptr_t h2, uintptr_t h3)
-    {
-        uintptr_t hash = h1;
-        hash = ((hash << 13) ^ hash) ^ h2;
-        hash = ((hash << 13) ^ hash) ^ h3;
-        return hash;
-    }
-};
-
-typedef DPTR(ConservativelyReportedRegionDesc) PTR_ConservativelyReportedRegionDesc;
-
-bool IsPtrAligned(TADDR value)
-{
-    return (value & (POINTER_SIZE - 1)) == 0;
-}
-
-// Logic to actually conservatively report a ConservativelyReportedRegionDesc
-// This logic is to be used when attempting to promote a pinned, interior pointer.
-// It will attempt to heuristically identify ConservativelyReportedRegionDesc structures
-// and if they exist, it will conservatively report a memory region.
-static void ReportExplicitConservativeReportedRegionIfValid(EnumGcRefContext * pCtx, PTR_PTR_VOID pObject)
-{
-    // If the stack_limit isn't set (which can only happen for frames which make a p/invoke call
-    // there cannot be a ConservativelyReportedRegionDesc
-    if (pCtx->sc->stack_limit == 0)
-        return;
-
-    PTR_ConservativelyReportedRegionDesc conservativeRegionDesc = (PTR_ConservativelyReportedRegionDesc)(*pObject);
-
-    // Ensure that conservativeRegionDesc pointer points at a readable memory region
-    if (!IsPtrAligned(PTR_TO_TADDR(conservativeRegionDesc)))
-    {
-        return;
-    }
-
-    if (!IsOnReadablePortionOfThread(pCtx->sc, conservativeRegionDesc))
-    {
-        return;
-    }
-    if (!IsOnReadablePortionOfThread(pCtx->sc, conservativeRegionDesc + 1))
-    {
-        return;
-    }
-
-    // Now, check to see if what we're pointing at is actually a ConservativeRegionDesc
-    // First: check the magic number. If that doesn't match, it cannot be one
-    if (conservativeRegionDesc->magic != CONSERVATIVE_REGION_MAGIC_NUMBER)
-    {
-        return;
-    }
-
-    // Second: check to see that the region pointers point at memory which is aligned
-    // such that the pointers could be pointers to object references
-    if (!IsPtrAligned(PTR_TO_TADDR(conservativeRegionDesc->regionPointerLow)))
-    {
-        return;
-    }
-    if (!IsPtrAligned(PTR_TO_TADDR(conservativeRegionDesc->regionPointerHigh)))
-    {
-        return;
-    }
-
-    // Third: check that start is before end.
-    if (conservativeRegionDesc->regionPointerLow >= conservativeRegionDesc->regionPointerHigh)
-    {
-        return;
-    }
-
-#ifndef DACCESS_COMPILE
-    // This fails for cross-bitness dac compiles and isn't really needed in the DAC anyways.
-
-    // Fourth: Compute a hash of the above numbers. Check to see that the hash matches the hash
-    // value stored
-    if (ConservativelyReportedRegionDesc::CalculateHash(CONSERVATIVE_REGION_MAGIC_NUMBER,
-                                                        (uintptr_t)PTR_TO_TADDR(conservativeRegionDesc->regionPointerLow),
-                                                        (uintptr_t)PTR_TO_TADDR(conservativeRegionDesc->regionPointerHigh))
-        != conservativeRegionDesc->hash)
-    {
-        return;
-    }
-#endif // DACCESS_COMPILE
-
-    // Fifth: Check to see that the region pointed at is within the bounds of the thread
-    if (!IsOnReadablePortionOfThread(pCtx->sc, conservativeRegionDesc->regionPointerLow))
-    {
-        return;
-    }
-    if (!IsOnReadablePortionOfThread(pCtx->sc, ((PTR_OBJECTREF)conservativeRegionDesc->regionPointerHigh) - 1))
-    {
-        return;
-    }
-
-    // At this point we're most likely working with a ConservativeRegionDesc. We'll assume
-    // that's true, and perform conservative reporting. (We've done enough checks to ensure that
-    // this conservative reporting won't itself cause an AV, even if our heuristics are wrong
-    // with the second and fifth set of checks)
-    GcEnumObjectsConservatively((PTR_OBJECTREF)conservativeRegionDesc->regionPointerLow, (PTR_OBJECTREF)conservativeRegionDesc->regionPointerHigh, pCtx->f, pCtx->sc);
-}
-
 static void EnumGcRefsCallback(void * hCallback, PTR_PTR_VOID pObject, uint32_t flags)
 {
     EnumGcRefContext * pCtx = (EnumGcRefContext *)hCallback;
 
     GcEnumObject((PTR_OBJECTREF)pObject, flags, pCtx->f, pCtx->sc);
-
-    const uint32_t interiorPinned = GC_CALL_INTERIOR | GC_CALL_PINNED;
-    // If this is an interior pinned pointer, check to see if we're working with a ConservativeRegionDesc
-    // and if so, report a conservative region. NOTE: do this only during promotion as conservative
-    // reporting has no value during other GC phases.
-    if (((flags & interiorPinned) == interiorPinned) && (pCtx->sc->promotion))
-    {
-        ReportExplicitConservativeReportedRegionIfValid(pCtx, pObject);
-    }
 }
 
 // static
@@ -515,7 +365,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
                                     PTR_VOID safePointAddress,
                                     REGDISPLAY * pRegisterSet,
                                     void * pfnEnumCallback,
-                                    void * pvCallbackData)
+                                    void * pvCallbackData,
+                                    bool   isActiveStackFrame)
 {
     EnumGcRefContext ctx;
     ctx.pCallback = EnumGcRefsCallback;
@@ -526,7 +377,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
     pCodeManager->EnumGcRefs(pMethodInfo,
                              safePointAddress,
                              pRegisterSet,
-                             &ctx);
+                             &ctx,
+                             isActiveStackFrame);
 }
 
 // static
@@ -679,16 +531,8 @@ void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnS
 // static
 void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
-#ifndef DACCESS_COMPILE
-    ScanRootsContext sContext;
-    sContext.m_pfnCallback = pfnScanCallback;
-    sContext.m_pContext = pContext;
-
-    GetRuntimeInstance()->EnumAllStaticGCRefs(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
-#else
     UNREFERENCED_PARAMETER(pfnScanCallback);
     UNREFERENCED_PARAMETER(pContext);
-#endif // !DACCESS_COMPILE
 }
 
 // Enumerate all the object roots located in handle tables. It is only safe to call this from the context of a
@@ -1180,7 +1024,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
-    // CoreRT doesn't patch the write barrier like CoreCLR does, but it
+    // NativeAOT doesn't patch the write barrier like CoreCLR does, but it
     // still needs to record the changes in the GC heap.
 
     bool is_runtime_suspended = args->is_runtime_suspended;
@@ -1399,7 +1243,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     return true;
 }
 
-// CoreRT does not use async pinned handles
+// NativeAOT does not use async pinned handles
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {
     UNREFERENCED_PARAMETER(object);

@@ -195,8 +195,10 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="ClaimsIdentity"/>.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        public ClaimsIdentity(BinaryReader reader!!)
+        public ClaimsIdentity(BinaryReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             Initialize(reader);
         }
 
@@ -205,8 +207,10 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="other"><see cref="ClaimsIdentity"/> to copy.</param>
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
-        protected ClaimsIdentity(ClaimsIdentity other!!)
+        protected ClaimsIdentity(ClaimsIdentity other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (other._actor != null)
             {
                 _actor = other._actor.Clone();
@@ -339,17 +343,7 @@ namespace System.Security.Claims
         /// Allow the association of claims with this instance of <see cref="ClaimsIdentity"/>.
         /// The claims will not be serialized or added in Clone(). They will be included in searches, finds and returned from the call to <see cref="ClaimsIdentity.Claims"/>.
         /// </summary>
-        internal List<List<Claim>> ExternalClaims
-        {
-            get
-            {
-                if (_externalClaims == null)
-                {
-                    _externalClaims = new List<List<Claim>>();
-                }
-                return _externalClaims;
-            }
-        }
+        internal List<List<Claim>> ExternalClaims => _externalClaims ??= new List<List<Claim>>();
 
         /// <summary>
         /// Gets or sets the label for this <see cref="ClaimsIdentity"/>
@@ -409,8 +403,10 @@ namespace System.Security.Claims
         /// <param name="claim">the <see cref="Claim"/>add.</param>
         /// <remarks>If <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claim' is null.</exception>
-        public virtual void AddClaim(Claim claim!!)
+        public virtual void AddClaim(Claim claim)
         {
+            ArgumentNullException.ThrowIfNull(claim);
+
             if (object.ReferenceEquals(claim.Subject, this))
             {
                 _instanceClaims.Add(claim);
@@ -427,8 +423,10 @@ namespace System.Security.Claims
         /// <param name="claims">Enumeration of claims to add.</param>
         /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claims' is null.</exception>
-        public virtual void AddClaims(IEnumerable<Claim?> claims!!)
+        public virtual void AddClaims(IEnumerable<Claim?> claims)
         {
+            ArgumentNullException.ThrowIfNull(claims);
+
             foreach (Claim? claim in claims)
             {
                 if (claim == null)
@@ -539,13 +537,19 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match!!)
+        public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
         {
-            foreach (Claim claim in Claims)
+            ArgumentNullException.ThrowIfNull(match);
+            return Core(match);
+
+            IEnumerable<Claim> Core(Predicate<Claim> match)
             {
-                if (match(claim))
+                foreach (Claim claim in Claims)
                 {
-                    yield return claim;
+                    if (match(claim))
+                    {
+                        yield return claim;
+                    }
                 }
             }
         }
@@ -557,15 +561,21 @@ namespace System.Security.Claims
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
-        public virtual IEnumerable<Claim> FindAll(string type!!)
+        public virtual IEnumerable<Claim> FindAll(string type)
         {
-            foreach (Claim claim in Claims)
+            ArgumentNullException.ThrowIfNull(type);
+            return Core(type);
+
+            IEnumerable<Claim> Core(string type)
             {
-                if (claim != null)
+                foreach (Claim claim in Claims)
                 {
-                    if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                    if (claim != null)
                     {
-                        yield return claim;
+                        if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                        {
+                            yield return claim;
+                        }
                     }
                 }
             }
@@ -577,8 +587,10 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual Claim? FindFirst(Predicate<Claim> match!!)
+        public virtual Claim? FindFirst(Predicate<Claim> match)
         {
+            ArgumentNullException.ThrowIfNull(match);
+
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -597,8 +609,10 @@ namespace System.Security.Claims
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
-        public virtual Claim? FindFirst(string type!!)
+        public virtual Claim? FindFirst(string type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             foreach (Claim claim in Claims)
             {
                 if (claim != null)
@@ -619,8 +633,10 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>true if a claim is found, false otherwise.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual bool HasClaim(Predicate<Claim> match!!)
+        public virtual bool HasClaim(Predicate<Claim> match)
         {
+            ArgumentNullException.ThrowIfNull(match);
+
             foreach (Claim claim in Claims)
             {
                 if (match(claim))
@@ -641,8 +657,11 @@ namespace System.Security.Claims
         /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase for Claim.Type, StringComparison.Ordinal for Claim.Value.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
-        public virtual bool HasClaim(string type!!, string value!!)
+        public virtual bool HasClaim(string type, string value)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(value);
+
             foreach (Claim claim in Claims)
             {
                 if (claim != null
@@ -662,8 +681,10 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="ClaimsIdentity"/>.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        private void Initialize(BinaryReader reader!!)
+        private void Initialize(BinaryReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             SerializationMask mask = (SerializationMask)reader.ReadInt32();
             int numPropertiesRead = 0;
             int numPropertiesToRead = reader.ReadInt32();
@@ -740,8 +761,10 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="reader">the <see cref="BinaryReader"/>that points at the claim.</param>
         /// <returns>a new <see cref="Claim"/>.</returns>
-        protected virtual Claim CreateClaim(BinaryReader reader!!)
+        protected virtual Claim CreateClaim(BinaryReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             return new Claim(reader, this);
         }
 
@@ -761,8 +784,10 @@ namespace System.Security.Claims
         /// <param name="writer">the <see cref="BinaryWriter"/> to use for data storage.</param>
         /// <param name="userData">additional data provided by derived type.</param>
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
-        protected virtual void WriteTo(BinaryWriter writer!!, byte[]? userData)
+        protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             int numberOfPropertiesWritten = 0;
             var mask = SerializationMask.None;
             if (_authenticationType != null)

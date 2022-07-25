@@ -16,9 +16,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {F8BFB824-C7D0-485F-A06E-07B6D1F1151B}
-.namespace JitTest
+.namespace JitTest_array1_refany_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -51,7 +51,7 @@
       IL_0018:  ldarg.0
       IL_0019:  refanyval  [mscorlib]System.Array
       IL_001e:  ldind.ref
-      IL_001f:  newobj     instance void JitTest.Test::.ctor()
+      IL_001f:  newobj     instance void JitTest_array1_refany_il.Test::.ctor()
       IL_0024:  ldloc.0
       IL_0025:  call       instance void [mscorlib]System.Array::SetValue(class [mscorlib]System.Object,
                                                                           int32)
@@ -208,7 +208,7 @@
       IL_011c:  ret
     } // end of method Test::TestRef
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -230,7 +230,7 @@
                unsigned int64[0...,0...] V_10,
                unsigned int64[][] V_11,
                unsigned int64[] V_12)
-      IL_0000:  ldtoken    JitTest.Test
+      IL_0000:  ldtoken    JitTest_array1_refany_il.Test
       IL_0005:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_000a:  ldc.i4.s   16
       IL_000c:  call       class [mscorlib]System.Array [mscorlib]System.Array::CreateInstance(class [mscorlib]System.Type,
@@ -238,7 +238,7 @@
       IL_0011:  stloc.0
       IL_0012:  ldloca.s   V_0
       IL_0014:  mkrefany   [mscorlib]System.Array
-      IL_0019:  call       void JitTest.Test::TestRef(typedref)
+      IL_0019:  call       void JitTest_array1_refany_il.Test::TestRef(typedref)
       IL_001e:  ldc.i4.0
       IL_001f:  stloc.1
       IL_0020:  br.s       IL_0049
@@ -252,7 +252,7 @@
       IL_002c:  ldloc.1
       IL_002d:  call       instance class [mscorlib]System.Object [mscorlib]System.Array::GetValue(int32)
       IL_0032:  call       instance class [mscorlib]System.Type [mscorlib]System.Object::GetType()
-      IL_0037:  ldtoken    JitTest.Test
+      IL_0037:  ldtoken    JitTest_array1_refany_il.Test
       IL_003c:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0041:  beq.s      IL_0045
 
@@ -289,7 +289,7 @@
       IL_006a:  stloc.2
       IL_006b:  ldloca.s   V_2
       IL_006d:  mkrefany   int64[]
-      IL_0072:  call       void JitTest.Test::TestRef(typedref)
+      IL_0072:  call       void JitTest_array1_refany_il.Test::TestRef(typedref)
       IL_0077:  ldloc.2
       IL_0078:  ldc.i4.0
       IL_0079:  ldelem.i8
@@ -371,7 +371,7 @@
       IL_00db:  stloc.3
       IL_00dc:  ldloca.s   V_3
       IL_00de:  mkrefany   unsigned int64[0...,0...]
-      IL_00e3:  call       void JitTest.Test::TestRef(typedref)
+      IL_00e3:  call       void JitTest_array1_refany_il.Test::TestRef(typedref)
       IL_00e8:  ldc.i4.0
       IL_00e9:  stloc.s    V_4
       IL_00eb:  br.s       IL_0119
@@ -463,7 +463,7 @@
       IL_0168:  stloc.s    V_6
       IL_016a:  ldloca.s   V_6
       IL_016c:  mkrefany   unsigned int64[][]
-      IL_0171:  call       void JitTest.Test::TestRef(typedref)
+      IL_0171:  call       void JitTest_array1_refany_il.Test::TestRef(typedref)
       IL_0176:  ldc.i4.0
       IL_0177:  stloc.s    V_7
       IL_0179:  br.s       IL_01a5
@@ -522,6 +522,6 @@
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_array1_refany_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

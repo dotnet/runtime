@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_s_ldc_mulovf_signed_cs
 {
-    internal class Test
+    public class Test
     {
         private static bool check(long op1, long op2, long product, bool overflow)
         {
@@ -24,7 +25,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (!check(0x000000007fffffff, 0x000000007fffffff, 0x3fffffff00000001, false))
                 goto fail;

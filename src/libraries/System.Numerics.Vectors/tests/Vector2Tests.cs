@@ -1133,7 +1133,7 @@ namespace System.Numerics.Tests
 
         // A test for Vector2f comparison involving NaN values
         [Fact]
-        public void Vector2EqualsNanTest()
+        public void Vector2EqualsNaNTest()
         {
             Vector2 a = new Vector2(float.NaN, 0);
             Vector2 b = new Vector2(0, float.NaN);
@@ -1147,9 +1147,8 @@ namespace System.Numerics.Tests
             Assert.False(a.Equals(Vector2.Zero));
             Assert.False(b.Equals(Vector2.Zero));
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
         }
 
         // A test for Reflect (Vector2f, Vector2f)

@@ -230,7 +230,7 @@ public class BestFitMapping
     //x86: Managed(Encoding: utf8)---->Marshaler(Encoding:ASCII)---->Native(Encoding:utf8)
     //MAC(x64):Managed(Encoding:utf8)----->Marshaler(Encoding:utf8)---->Native(Encoding:utf8)
     //Now  both side(Managed Side and native side) takes the utf8 encoding when comparing string
-    
+
     static bool Compare(string lstr, string rstr)
     {
         //Windows
@@ -267,15 +267,15 @@ public class BestFitMapping
     }
 
     //Result From Native Side, since the Return value and Parameter are used in TestScenario.
-    //So have to use an extra variable to record errors occured in Native Side.
-    
+    //So have to use an extra variable to record errors occurred in Native Side.
+
     [DllImport("BestFitMappingNative", CallingConvention = CallingConvention.Cdecl)]
     public static extern int GetResult();
 
     private static int Fails = 0;
     #region "TestMethod"
 
-    
+
     private static void TestMethod_CLPStr_In()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,In");
@@ -303,12 +303,12 @@ public class BestFitMapping
         catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e01", "TestMethod_CLPStr_In:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e01", "TestMethod_CLPStr_In:Unexpected Exception Occurred:" + e.ToString());
         }
 
     }
 
-    
+
     private static void TestMethod_CLPStr_Out()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,Out");
@@ -334,11 +334,11 @@ public class BestFitMapping
         catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e02", "TestMethod_CLPStr_Out:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e02", "TestMethod_CLPStr_Out:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_CLPStr_InOut()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,InOut");
@@ -362,14 +362,14 @@ public class BestFitMapping
                 TestFramework.LogError("006", "TestMethod_CLPStr_InOut:The Return value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e03", "TestMethod_CLPStr_InOut:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e03", "TestMethod_CLPStr_InOut:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_CLPStr_InRef()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,InRef");
@@ -392,14 +392,14 @@ public class BestFitMapping
                 TestFramework.LogError("008", "TestMethod_CLPStr_InRef:The Parameter value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e04", "TestMethod_CLPStr_InRef:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e04", "TestMethod_CLPStr_InRef:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_CLPStr_OutRef()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,OutRef");
@@ -423,14 +423,14 @@ public class BestFitMapping
                 TestFramework.LogError("010", "TestMethod_CLPStr_OutRef:The Parameter value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e05", "TestMethod_CLPStr_OutRef:Unexpected Exception Occured:" + e.ToString());    
+            TestFramework.LogError("e05", "TestMethod_CLPStr_OutRef:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_CLPStr_InOutRef()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,InOutRef");
@@ -454,14 +454,14 @@ public class BestFitMapping
                 TestFramework.LogError("012", "TestMethod_CLPStr_InOutRef:The Parameter value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e06", "TestMethod_CLPStr_InOutRef:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e06", "TestMethod_CLPStr_InOutRef:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_CLPStr_DelegatePInvoke()
     {
         TestFramework.BeginScenario("Cdecl,LPStr,DelegatePInvoke");
@@ -486,15 +486,15 @@ public class BestFitMapping
                 TestFramework.LogError("014", "TestMethod_CLPStr_DelegatePInvoke:The Parameter value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e07", "TestMethod_CLPStr_DelegatePInvoke:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e07", "TestMethod_CLPStr_DelegatePInvoke:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
     //Stdcall
-    
+
     private static void TestMethod_SLPStr_In()
     {
         TestFramework.BeginScenario("StdCall,LPStr,In");
@@ -516,14 +516,14 @@ public class BestFitMapping
                 TestFramework.LogError("016", "TestMethod_SLPStr_In:The Parameter value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e08", "TestMethod_SLPStr_In:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e08", "TestMethod_SLPStr_In:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_SLPStr_Out()
     {
         TestFramework.BeginScenario("StdCall,LPStr,Out");
@@ -548,14 +548,14 @@ public class BestFitMapping
                 TestFramework.LogError("018", "TestMethod_SLPStr_Out:The Parameter value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e09", "TestMethod_SLPStr_Out:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e09", "TestMethod_SLPStr_Out:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_SLPStr_InOut()
     {
         TestFramework.BeginScenario("StdCall,LPStr,InOut");
@@ -578,14 +578,14 @@ public class BestFitMapping
                 TestFramework.LogError("020", "TestMethod_SLPStr_InOut:The Return value is wrong.");
             }
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e10", "TestMethod_SLPStr_InOut:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e10", "TestMethod_SLPStr_InOut:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_SLPStr_InRef()
     {
         TestFramework.BeginScenario("StdCall,LPStr,InRef");
@@ -613,11 +613,11 @@ public class BestFitMapping
         catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e11", "TestMethod_SLPStr_InRef:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e11", "TestMethod_SLPStr_InRef:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_SLPStr_OutRef()
     {
         TestFramework.BeginScenario("StdCall,LPStr,OutRef");
@@ -647,11 +647,11 @@ public class BestFitMapping
         catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e12", "TestMethod_SLPStr_OutRef:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e12", "TestMethod_SLPStr_OutRef:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_SLPStr_InOutRef()
     {
         TestFramework.BeginScenario("StdCall,LPStr,InOutRef");
@@ -678,11 +678,11 @@ public class BestFitMapping
         catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e13", "TestMethod_SLPStr_InOutRef:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e13", "TestMethod_SLPStr_InOutRef:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
-    
+
     private static void TestMethod_SLPStr_DelegatePInvoke()
     {
         TestFramework.BeginScenario("StdCall,LPStr,DelegatePInvoke");
@@ -709,15 +709,15 @@ public class BestFitMapping
         catch (Exception e)
         {
             Fails++;
-            TestFramework.LogError("e14", "TestMethod_SLPStr_DelegatePInvoke:Unexpected Exception Occured:" + e.ToString());
+            TestFramework.LogError("e14", "TestMethod_SLPStr_DelegatePInvoke:Unexpected Exception Occurred:" + e.ToString());
         }
     }
 
     #endregion
 
     #region "Reverse Pinvoke"
-    
-    
+
+
     public static string TestMethod_CCallBackIn(string str)
     {
         //Check Input
@@ -731,16 +731,16 @@ public class BestFitMapping
         StringBuilder sb = GetInvalidString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_CCallBackOut(StringBuilder str)
     {
         StringBuilder sb = GetInvalidString();
         str.Append(sb.ToString());
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_CCallBackInOut(StringBuilder str)
     {
         //Check Input
@@ -758,8 +758,8 @@ public class BestFitMapping
 
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_CCallBackInByRef(ref string str)
     {
         //Check Input
@@ -772,8 +772,8 @@ public class BestFitMapping
         StringBuilder sb = GetInvalidString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_CCallBackOutByRef(out string str)
     {
         StringBuilder sb = GetInvalidString();
@@ -781,8 +781,8 @@ public class BestFitMapping
         str = sb.ToString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_CCallBackInOutByRef(ref string str)
     {
         //Check Input
@@ -797,8 +797,8 @@ public class BestFitMapping
         str = sb.ToString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_SCallBackIn(string str)
     {
         //Check Input
@@ -812,16 +812,16 @@ public class BestFitMapping
         StringBuilder sb = GetInvalidString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_SCallBackOut(StringBuilder str)
     {
         StringBuilder sb = GetInvalidString();
         str.Append(sb);
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_SCallBackInOut(StringBuilder str)
     {
         //Check Input
@@ -837,8 +837,8 @@ public class BestFitMapping
         str.Append(sb.ToString());
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_SCallBackInByRef(ref string str)
     {
         //Check Input
@@ -853,8 +853,8 @@ public class BestFitMapping
         str = sb.ToString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_SCallBackOutByRef(out string str)
     {
         StringBuilder sb = GetInvalidString();
@@ -862,8 +862,8 @@ public class BestFitMapping
         str = sb.ToString();
         return sb.ToString();
     }
-    
-    
+
+
     public static string TestMethod_SCallBackInOutByRef(ref string str)
     {
         //Check Input
@@ -882,7 +882,7 @@ public class BestFitMapping
 
 
 
-    
+
     public static int Main()
     {
 
@@ -926,7 +926,7 @@ public class BestFitMapping
         DoSCallBack_LPSTR_OutByRef(new SCallBackOutByRef(TestMethod_SCallBackOutByRef));
         DoSCallBack_LPSTR_InOutByRef(new SCallBackInOutByRef(TestMethod_SCallBackInOutByRef));
 
-        //GetResult() return error occured in Native Side,Fails is equal to errors occured in ManagedSide
+        //GetResult() return error occurred in Native Side,Fails is equal to errors occurred in ManagedSide
         if (GetResult() > 0 || Fails > 0)
         {
             Console.WriteLine("Failed!");

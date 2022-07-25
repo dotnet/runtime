@@ -236,7 +236,7 @@ EXTERN_C int32_t RhpPInvokeExceptionGuard()
 #endif
 
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
-EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhpThrowHwEx();
+EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhpThrowHwEx();
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
 {
@@ -390,7 +390,7 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
 {
     uintptr_t faultingIP = palContext->GetIp();
 
-    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress((PTR_VOID)faultingIP);
     bool translateToManagedException = false;
     if (pCodeManager != NULL)
     {
@@ -471,7 +471,7 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
     uintptr_t faultingIP = pExPtrs->ContextRecord->GetIp();
 
-    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress((PTR_VOID)faultingIP);
     bool translateToManagedException = false;
     if (pCodeManager != NULL)
     {

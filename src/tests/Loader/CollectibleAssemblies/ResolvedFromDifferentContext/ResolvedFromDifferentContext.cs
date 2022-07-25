@@ -30,8 +30,8 @@ class TestAssemblyLoadContext : AssemblyLoadContext
         if (assemblyName.Name == "TestInterface")
         {
             AssemblyLoadContext alc1 = new AssemblyLoadContext("Dependencies", true);
-            Console.WriteLine($"Loading TestInterface by alc {alc1} for alc {this}");
-            Assembly a = alc1.LoadFromAssemblyPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\TestInterface\TestInterface.dll"));
+            Console.WriteLine($"Loading TestInterface by alc {alc1} for {(IsCollectible ? "collectible" : "non-collectible")} alc {this}");
+            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestInterface\TestInterface.dll"));
             interfaceAssemblyRef = new WeakReference(a);
             return a;
         }
@@ -45,13 +45,18 @@ class Test
     static AssemblyLoadContext alc1 = null;
     static WeakReference interfaceAssemblyRef = null;
 
+    public static string GetTestAssemblyPath(string subPath)
+    {
+        return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), subPath);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Assembly LoadUsingResolvingEvent()
+    private static Assembly LoadUsingResolvingEvent(bool collectibleParent)
     {
         alc1 = new AssemblyLoadContext("Dependencies", true);
-        AssemblyLoadContext alc2 = new AssemblyLoadContext("Test1", true);
+        AssemblyLoadContext alc2 = new AssemblyLoadContext("Test1", collectibleParent);
         alc2.Resolving += Alc2_Resolving;
-        Assembly assembly = alc2.LoadFromAssemblyPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\TestClass\TestClass.dll"));
+        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestClass\TestClass.dll"));
 
         Type t = assembly.GetType("TestClass.Class");
         Console.WriteLine($"Type {t} obtained");
@@ -70,8 +75,8 @@ class Test
         Console.WriteLine($"Resolving event by alc {alc1} for alc {arg1}");
         if (alc1 != null && arg2.Name == "TestInterface")
         {
-            Console.WriteLine($"Loading TestInterface by alc {alc1} for alc {arg1}");
-            Assembly a = alc1.LoadFromAssemblyPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\TestInterface\TestInterface.dll"));
+            Console.WriteLine($"Loading TestInterface by alc {alc1} for {(arg1.IsCollectible ? "collectible" : "non-collectible")} alc {arg1}");
+            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestInterface\TestInterface.dll"));
             interfaceAssemblyRef = new WeakReference(a);
             return a;
         }
@@ -80,10 +85,10 @@ class Test
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static Assembly LoadUsingLoadOverride()
+    private static Assembly LoadUsingLoadOverride(bool collectibleParent)
     {
-        TestAssemblyLoadContext alc2 = new TestAssemblyLoadContext("Test2", true);
-        Assembly assembly = alc2.LoadFromAssemblyPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\TestClass\TestClass.dll"));
+        TestAssemblyLoadContext alc2 = new TestAssemblyLoadContext("Test2", collectibleParent);
+        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(@"..\TestClass\TestClass.dll"));
 
         Type t = assembly.GetType("TestClass.Class");
         
@@ -94,18 +99,33 @@ class Test
         return assembly;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference TestDependencies(string testCase)
+    private enum TestCase
     {
-        Assembly assembly;
+        ResolvingEvent,
+        LoadOverride,
+        ResolvingEventInNonCollectible,
+        LoadOverrideInNonCollectible
+    }
 
-        if (testCase == "ResolvingEvent")
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference TestDependencies(TestCase testCase)
+    {
+        Assembly assembly = null;
+
+        switch (testCase)
         {
-            assembly = LoadUsingResolvingEvent();
-        }
-        else
-        {
-            assembly = LoadUsingLoadOverride();
+            case TestCase.ResolvingEvent:
+                assembly = LoadUsingResolvingEvent(collectibleParent: true);
+                break;
+            case TestCase.LoadOverride:
+                assembly = LoadUsingLoadOverride(collectibleParent: true);
+                break;
+            case TestCase.ResolvingEventInNonCollectible:
+                assembly = LoadUsingResolvingEvent(collectibleParent: false);
+                break;
+            case TestCase.LoadOverrideInNonCollectible:
+                assembly = LoadUsingLoadOverride(collectibleParent: false);
+                break;
         }
 
         for (int i = 0; interfaceAssemblyRef.IsAlive && (i < 10); i++)
@@ -124,45 +144,78 @@ class Test
         return new WeakReference(assembly);
     }
 
-    public static int TestFullUnload(string testCase)
+    private static bool ShouldThrow(TestCase testCase)
+    {
+        return (testCase == TestCase.LoadOverrideInNonCollectible) || (testCase == TestCase.ResolvingEventInNonCollectible);
+    }
+
+    private static int TestFullUnload(TestCase testCase)
     {
         Console.WriteLine($"Running test case {testCase}");
 
-        WeakReference assemblyRef = TestDependencies(testCase);
-        if (assemblyRef == null)
+        try
         {
-            return 101;
+            WeakReference assemblyRef = TestDependencies(testCase);
+            if (assemblyRef == null)
+            {
+                return 101;
+            }
+
+            for (int i = 0; assemblyRef.IsAlive && (i < 10); i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            if (assemblyRef.IsAlive)
+            {
+                Console.WriteLine("Failed to unload alc2");
+                return 102;
+            }
+
+            if (interfaceAssemblyRef.IsAlive)
+            {
+                Console.WriteLine("Failed to unload alc1");
+                return 103;
+            }
+
+            Console.WriteLine();
+        }
+        catch (System.IO.FileLoadException e)
+        {
+            if (!ShouldThrow(testCase))
+            {
+                Console.WriteLine("Failure - unexpected exception");
+                return 104;
+            }
+            if ((e.InnerException == null) || e.InnerException.GetType() != typeof(System.NotSupportedException))
+            {
+                Console.WriteLine($"Failure - unexpected exception type {e.InnerException}");
+                return 105;
+            }
+
+            return 100;
         }
 
-        for (int i = 0; assemblyRef.IsAlive && (i < 10); i++)
+        if (ShouldThrow(testCase))
         {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            Console.WriteLine("Failure - resolved collectible assembly into non-collectible context without throwing exception");
+            return 106;
         }
 
-        if (assemblyRef.IsAlive)
-        {
-            Console.WriteLine("Failed to unload alc2");
-            return 102;
-        }
-
-        if (interfaceAssemblyRef.IsAlive)
-        {
-            Console.WriteLine("Failed to unload alc1");
-            return 103;
-        }
-
-        Console.WriteLine();
         return 100;
-         
     }
 
     public static int Main(string[] args)
     {
         int status = 100;
-        foreach (string testCase in new string[] {"LoadOverride", "ResolvingEvent"})
+        foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))
         {
             status = TestFullUnload(testCase);
+            if (status != 100)
+            {
+                break;
+            }
         }
 
         return status;

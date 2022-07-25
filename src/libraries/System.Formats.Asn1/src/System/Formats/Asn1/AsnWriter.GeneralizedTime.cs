@@ -67,7 +67,7 @@ namespace System.Formats.Asn1
             // We're only loading in sub-second ticks.
             // Ticks are defined as 1e-7 seconds, so their printed form
             // is at the longest "0.1234567", or 9 bytes.
-            Span<byte> fraction = stackalloc byte[0];
+            scoped Span<byte> fraction = default;
 
             if (!omitFractionalSeconds)
             {

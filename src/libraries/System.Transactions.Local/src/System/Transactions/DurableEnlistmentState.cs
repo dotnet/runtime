@@ -117,10 +117,7 @@ namespace System.Transactions
 
         internal override void Aborted(InternalEnlistment enlistment, Exception? e)
         {
-            if (enlistment.Transaction._innerException == null)
-            {
-                enlistment.Transaction._innerException = e;
-            }
+            enlistment.Transaction._innerException ??= e;
 
             // Transition to the ended state
             DurableEnlistmentEnded.EnterState(enlistment);
@@ -212,10 +209,7 @@ namespace System.Transactions
             // Transition to the ended state
             DurableEnlistmentEnded.EnterState(enlistment);
 
-            if (enlistment.Transaction._innerException == null)
-            {
-                enlistment.Transaction._innerException = e;
-            }
+            enlistment.Transaction._innerException ??= e;
 
             Debug.Assert(enlistment.Transaction.State != null);
             // Make the transaction in dobut
@@ -224,7 +218,7 @@ namespace System.Transactions
     }
 
     // Delegated state for a durable enlistment represents an enlistment that was
-    // origionally a PromotableSinglePhaseEnlisment that where promotion has happened.
+    // originally a PromotableSinglePhaseEnlisment that where promotion has happened.
     // These enlistments don't need to participate in the commit process anymore.
     internal sealed class DurableEnlistmentDelegated : DurableEnlistmentState
     {
@@ -252,10 +246,7 @@ namespace System.Transactions
             // Transition to the ended state
             DurableEnlistmentEnded.EnterState(enlistment);
 
-            if (enlistment.Transaction._innerException == null)
-            {
-                enlistment.Transaction._innerException = e;
-            }
+            enlistment.Transaction._innerException ??= e;
 
             Debug.Assert(enlistment.Transaction.State != null);
             // Start the transaction aborting
@@ -267,10 +258,7 @@ namespace System.Transactions
             // Transition to the ended state
             DurableEnlistmentEnded.EnterState(enlistment);
 
-            if (enlistment.Transaction._innerException == null)
-            {
-                enlistment.Transaction._innerException = e;
-            }
+            enlistment.Transaction._innerException ??= e;
 
             Debug.Assert(enlistment.Transaction.State != null);
             // Tell the transaction that the enlistment is InDoubt.  Note that

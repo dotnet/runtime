@@ -11,6 +11,8 @@ namespace System.IO.Tests
     {
         static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
+        static bool IsBindMountSupportedAndOnUnixAndSuperUser => IsBindMountSupported && PlatformDetection.IsUnixAndSuperUser;
+
         #region Utilities
 
         protected virtual void Delete(string path)
@@ -205,10 +207,9 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [ConditionalFact(nameof(IsBindMountSupported))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndSuperUser))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NotFoundDirectory_ReadOnlyVolume()
         {
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
@@ -246,7 +247,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40536", TestPlatforms.Browser)]
         public void RecursiveDeleteWithTrailingSlash()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

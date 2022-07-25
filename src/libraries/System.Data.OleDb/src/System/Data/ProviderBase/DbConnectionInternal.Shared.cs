@@ -338,10 +338,8 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == activateCount, "activated multiple times?");
 #endif // DEBUG
 
-            if (PerformanceCounters != null)
-            { // Pool.Clear will DestroyObject that will clean performanceCounters before going here
-                PerformanceCounters.NumberOfActiveConnections.Decrement();
-            }
+            // Pool.Clear will DestroyObject that will clean performanceCounters before going here
+            PerformanceCounters?.NumberOfActiveConnections.Decrement();
 
             if (!_connectionIsDoomed && Pool!.UseLoadBalancing)
             {
@@ -456,11 +454,7 @@ namespace System.Data.ProviderBase
 
         internal void NotifyWeakReference(int message)
         {
-            DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
-            {
-                referenceCollection.Notify(message);
-            }
+            ReferenceCollection?.Notify(message);
         }
 
         internal virtual void OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
@@ -497,7 +491,7 @@ namespace System.Data.ProviderBase
                 }
                 catch
                 {
-                    // This should occure for all exceptions, even ADP.UnCatchableExceptions.
+                    // This should occur for all exceptions, even ADP.UnCatchableExceptions.
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }
@@ -581,11 +575,7 @@ namespace System.Data.ProviderBase
 
         internal void RemoveWeakReference(object value)
         {
-            DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
-            {
-                referenceCollection.Remove(value);
-            }
+            ReferenceCollection?.Remove(value);
         }
 
         internal void DetachCurrentTransactionIfEnded()

@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.Tests
     /// Since RijndaelImplementation (from Rijndael.Create()) and RijndaelManaged classes wrap Aes,
     /// we only test minimally here.
     /// </summary>
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class RijndaelTests
     {
         [Fact]
@@ -90,6 +89,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void EncryptDecryptKnownECB192()
         {
             static void test(Rijndael alg)
@@ -300,6 +300,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(128)]
         [InlineData(8)]
         [InlineData(null)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void CfbFeedbackSizeIsRespected(int? feedbackSize)
         {
             // Windows 7 CFB only supports CFB8.

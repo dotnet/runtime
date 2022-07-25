@@ -29,8 +29,10 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName!!)
+        public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
         {
+            ArgumentNullException.ThrowIfNull(qualifiedName);
+
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
 
@@ -58,8 +60,10 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName!!)
+        public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName)
         {
+            ArgumentNullException.ThrowIfNull(qualifiedName);
+
             if (qualifiedName.Equals(XmlSchemaComplexType.AnyType.QualifiedName))
             {
                 return XmlSchemaComplexType.AnyType;
@@ -199,7 +203,7 @@ namespace System.Xml.Schema
             }
         }
 
-        [return: NotNullIfNotNull("schemaSet")]
+        [return: NotNullIfNotNull(nameof(schemaSet))]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)

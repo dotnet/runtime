@@ -60,8 +60,10 @@ namespace System.Globalization
         /// assembly for the specified culture.
         /// Warning: The assembly versioning mechanism is dead!
         /// </summary>
-        public static CompareInfo GetCompareInfo(int culture, Assembly assembly!!)
+        public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             // Parameter checking.
             if (assembly != typeof(object).Module.Assembly)
             {
@@ -76,8 +78,11 @@ namespace System.Globalization
         /// assembly for the specified culture.
         /// The purpose of this method is to provide version for CompareInfo tables.
         /// </summary>
-        public static CompareInfo GetCompareInfo(string name!!, Assembly assembly!!)
+        public static CompareInfo GetCompareInfo(string name, Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly != typeof(object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib, nameof(assembly));
@@ -103,8 +108,10 @@ namespace System.Globalization
         /// <summary>
         /// Get the CompareInfo for the specified culture.
         /// </summary>
-        public static CompareInfo GetCompareInfo(string name!!)
+        public static CompareInfo GetCompareInfo(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
@@ -113,8 +120,10 @@ namespace System.Globalization
             return IsSortable(new ReadOnlySpan<char>(in ch));
         }
 
-        public static bool IsSortable(string text!!)
+        public static bool IsSortable(string text)
         {
+            ArgumentNullException.ThrowIfNull(text);
+
             return IsSortable(text.AsSpan());
         }
 

@@ -21,6 +21,6 @@ void
 mono_marshal_noilgen_init (void);
 
 void
-mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb);
+mono_marshal_noilgen_init_blittable (MonoMarshalLightweightCallbacks *cb);
 
 #endif /* __MONO_METADATA_MARSHAL_INTERNALS_H__ */

@@ -165,16 +165,16 @@ internal static partial class Interop
 
         internal static unsafe string StrError(int platformErrno)
         {
-            int maxBufferLength = 1024; // should be long enough for most any UNIX error
-            byte* buffer = stackalloc byte[maxBufferLength];
-            byte* message = StrErrorR(platformErrno, buffer, maxBufferLength);
+            const int MaxBufferLength = 1024; // should be long enough for most any UNIX error
+            byte* buffer = stackalloc byte[MaxBufferLength];
+            byte* message = StrErrorR(platformErrno, buffer, MaxBufferLength);
 
             if (message == null)
             {
                 // This means the buffer was not large enough, but still contains
                 // as much of the error message as possible and is guaranteed to
                 // be null-terminated. We're not currently resizing/retrying because
-                // maxBufferLength is large enough in practice, but we could do
+                // MaxBufferLength is large enough in practice, but we could do
                 // so here in the future if necessary.
                 message = buffer;
             }

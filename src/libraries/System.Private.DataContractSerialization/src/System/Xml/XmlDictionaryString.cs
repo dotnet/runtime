@@ -21,8 +21,11 @@ namespace System.Xml
         private byte[]? _buffer;
         private static readonly EmptyStringDictionary s_emptyStringDictionary = new EmptyStringDictionary();
 
-        public XmlDictionaryString(IXmlDictionary dictionary!!, string value!!, int key)
+        public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
         {
+            ArgumentNullException.ThrowIfNull(dictionary);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (key < MinKey || key > MaxKey)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(key), SR.Format(SR.ValueMustBeInRange, MinKey, MaxKey)));
             _dictionary = dictionary;
@@ -30,7 +33,7 @@ namespace System.Xml
             _key = key;
         }
 
-        [return: NotNullIfNotNull("s")]
+        [return: NotNullIfNotNull(nameof(s))]
         internal static string? GetString(XmlDictionaryString? s)
         {
             if (s == null)
@@ -72,9 +75,7 @@ namespace System.Xml
 
         internal byte[] ToUTF8()
         {
-            if (_buffer == null)
-                _buffer = System.Text.Encoding.UTF8.GetBytes(_value);
-            return _buffer;
+            return _buffer ??= System.Text.Encoding.UTF8.GetBytes(_value);
         }
 
         public override string ToString()
@@ -99,8 +100,10 @@ namespace System.Xml
                 }
             }
 
-            public bool TryLookup(string value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
+            public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
+                ArgumentNullException.ThrowIfNull(value);
+
                 if (value.Length == 0)
                 {
                     result = _empty;
@@ -121,8 +124,10 @@ namespace System.Xml
                 return false;
             }
 
-            public bool TryLookup(XmlDictionaryString value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
+            public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
+                ArgumentNullException.ThrowIfNull(value);
+
                 if (value.Dictionary != this)
                 {
                     result = null;

@@ -7,15 +7,13 @@ namespace System.Buffers
 {
     internal sealed partial class ArrayMemoryPool<T> : MemoryPool<T>
     {
-        private const int MaximumBufferSize = int.MaxValue;
-
-        public sealed override int MaxBufferSize => MaximumBufferSize;
+        public sealed override int MaxBufferSize => Array.MaxLength;
 
         public sealed override IMemoryOwner<T> Rent(int minimumBufferSize = -1)
         {
             if (minimumBufferSize == -1)
                 minimumBufferSize = 1 + (4095 / Unsafe.SizeOf<T>());
-            else if (((uint)minimumBufferSize) > MaximumBufferSize)
+            else if (((uint)minimumBufferSize) > Array.MaxLength)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBufferSize);
 
             return new ArrayMemoryPoolBuffer(minimumBufferSize);

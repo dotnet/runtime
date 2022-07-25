@@ -24,10 +24,10 @@ namespace System.Text.RegularExpressions
         /// the <paramref name="pattern "/>with the <paramref name="replacement "/>
         /// pattern, starting at the first character in the input string.
         /// </summary>
-        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, string replacement, RegexOptions options) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, string replacement, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, replacement);
 
-        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, replacement);
 
         /// <summary>
@@ -94,10 +94,10 @@ namespace System.Text.RegularExpressions
         /// Replaces all occurrences of the <paramref name="pattern"/> with the recent
         /// replacement pattern, starting at the first character.
         /// </summary>
-        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, MatchEvaluator evaluator, RegexOptions options) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, MatchEvaluator evaluator, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, evaluator);
 
-        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout) =>
+        public static string Replace(string input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, evaluator);
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index + match.Length;
                     state.segments.Add(state.evaluator(match).AsMemory());
                     return --state.count != 0;
-                }, reuseMatchObject: false);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: false);
 
                 if (state.segments.Count == 0)
                 {
@@ -201,7 +201,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index;
                     state.segments.Add(state.evaluator(match).AsMemory());
                     return --state.count != 0;
-                }, reuseMatchObject: false);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: false);
 
                 if (state.segments.Count == 0)
                 {

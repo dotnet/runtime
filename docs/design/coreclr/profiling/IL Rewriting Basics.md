@@ -11,7 +11,7 @@ One of the common use cases of the `ICorProfiler*` interfaces is to perform IL r
 There are two ways to rewrite IL
 
 1. At Module load time with `ICorProfilerInfo::SetILFunctionBody`
-    This approach has the benefit that it is 'set it and forget it'. You can replace the IL at module load, and the runtime will treat this new IL as if the module contained that IL - you don't have to worry about any of the quirks of ReJIT. The downside is that is is unrevertable - once it is set, you cannot change your mind.
+    This approach has the benefit that it is 'set it and forget it'. You can replace the IL at module load, and the runtime will treat this new IL as if the module contained that IL - you don't have to worry about any of the quirks of ReJIT. The downside is that it is unrevertable - once it is set, you cannot change your mind.
 
 2. At any point during the process lifetime with `ICorProfilerInfo4::RequestReJIT` or `ICorProfilerInfo10::RequestReJITWithInliners`.
    This approach means that you can modify functions in response to changing conditions, and you can revert the modified code if you decide you are done with it. See the other entries about ReJIT in this folder for more information.

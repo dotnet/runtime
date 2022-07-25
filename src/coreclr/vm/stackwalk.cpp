@@ -303,7 +303,7 @@ bool CrawlFrame::IsGcSafe()
     return GetCodeManager()->IsGcSafe(&codeInfo, GetRelOffset());
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 bool CrawlFrame::HasTailCalls()
 {
     CONTRACTL {
@@ -314,7 +314,7 @@ bool CrawlFrame::HasTailCalls()
 
     return GetCodeManager()->HasTailCalls(&codeInfo);
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 inline void CrawlFrame::GotoNextFrame()
 {
@@ -635,10 +635,20 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = *(ULONGLONG*)pContext->Rsp;
     pContext->Rsp += sizeof(ULONGLONG);
+#ifdef TARGET_WINDOWS
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(ULONGLONG));
+    }
+#endif // TARGET_WINDOWS
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 
     uControlPc = TADDR(pContext->Lr);
+
+#elif defined(TARGET_LOONGARCH64)
+    uControlPc = TADDR(pContext->Ra);
 
 #else
     PORTABILITY_ASSERT("Thread::VirtualUnwindLeafCallFrame");
@@ -1286,7 +1296,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     PCODE curPc = GetControlPC(pRegDisp);
     ProcessIp(curPc);
 
-    // loop the frame chain to find the closet explicit frame which is lower than the specificed REGDISPLAY
+    // loop the frame chain to find the closet explicit frame which is lower than the specified REGDISPLAY
     // (stack grows up towards lower address)
     if (m_crawl.pFrame != FRAME_TOP)
     {
@@ -1691,7 +1701,7 @@ ProcessFuncletsForGCReporting:
                         // and so we can detect it just from walking the stack.
                         // The filter funclet frames are different, they behave the same way on Windows and Unix. They can be present
                         // on the stack when we reach their parent frame if the filter hasn't finished running yet or they can be
-                        // gone if the filter completed running, either succesfully or with unhandled exception.
+                        // gone if the filter completed running, either successfully or with unhandled exception.
                         // So the special handling below ignores trackers belonging to filter clauses.
                         bool fProcessingFilterFunclet = !m_sfFuncletParent.IsNull() && !(m_fProcessNonFilterFunclet || m_fProcessIntermediaryNonFilterFunclet);
                         if (!fRecheckCurrentFrame && !fSkippingFunclet && (pTracker != NULL) && !fProcessingFilterFunclet)
@@ -2829,7 +2839,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 //
                 // However, just comparing EBP is not enough.  The OS exception handler
                 // (KiUserExceptionDispatcher()) does not use an EBP frame.  So if we just compare the EBP
-                // we will think that the OS excpetion handler is the one we want to claim.  Instead,
+                // we will think that the OS exception handler is the one we want to claim.  Instead,
                 // we should also check the current IP, which because of the way unwinding work and
                 // how the OS exception handler behaves is actually going to be the stack limit of the
                 // current thread.  This is of course a workaround and is dependent on the OS behaviour.
@@ -3155,14 +3165,14 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     else if (hasReversePInvoke)
     {
         // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
-        // frame, that means that the method was called from managed code without any native frames in between. 
+        // frame, that means that the method was called from managed code without any native frames in between.
         // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
         // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
         // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
         _ASSERTE(InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame));
         m_crawl.isFrameless = false;
     }
-#endif    
+#endif
 } // StackFrameIterator::PostProcessingForManagedFrames()
 
 //---------------------------------------------------------------------------------------

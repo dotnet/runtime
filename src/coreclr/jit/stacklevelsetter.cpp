@@ -251,7 +251,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 
 #if !FEATURE_FIXED_OUT_ARGS
-                assert(slotCount == putArg->gtNumSlots);
+                assert((slotCount * TARGET_POINTER_SIZE) == putArg->GetStackByteSize());
 #endif // !FEATURE_FIXED_OUT_ARGS
 
                 putArgNumSlots.Set(putArg, slotCount);
@@ -298,7 +298,7 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 // Notes:
 //    CheckArgCnt records the maximum number of pushed arguments.
 //    Depending upon this value of the maximum number of pushed arguments
-//    we may need to use an EBP frame or be partially interuptible.
+//    we may need to use an EBP frame or be partially interruptible.
 //    This functionality has to be called after maxStackLevel is set.
 //
 // Assumptions:

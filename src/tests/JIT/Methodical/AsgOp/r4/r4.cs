@@ -3,8 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class test
+namespace Test_r4_cs
+{
+public class test
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static float f00(float x, float y)
@@ -182,7 +185,8 @@ internal class test
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float x;
         bool pass = true;
@@ -395,4 +399,5 @@ internal class test
         else
             return 1;
     }
+}
 }

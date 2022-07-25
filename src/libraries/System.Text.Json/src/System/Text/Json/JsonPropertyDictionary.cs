@@ -1,59 +1,60 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
     /// <summary>
-    /// Keeps both a List and Dictionary in sync to enable determinstic enumeration ordering of List
+    /// Keeps both a List and Dictionary in sync to enable deterministic enumeration ordering of List
     /// and performance benefits of Dictionary once a threshold is hit.
     /// </summary>
-    internal sealed partial class JsonPropertyDictionary<T> where T : class
+    internal sealed partial class JsonPropertyDictionary<T> where T : class?
     {
         private const int ListToDictionaryThreshold = 9;
 
-        private Dictionary<string, T?>? _propertyDictionary;
-        private readonly List<KeyValuePair<string, T?>> _propertyList;
+        private Dictionary<string, T>? _propertyDictionary;
+        private readonly List<KeyValuePair<string, T>> _propertyList;
 
-        private StringComparer _stringComparer;
+        private readonly StringComparer _stringComparer;
 
         public JsonPropertyDictionary(bool caseInsensitive)
         {
             _stringComparer = caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            _propertyList = new List<KeyValuePair<string, T?>>();
+            _propertyList = new List<KeyValuePair<string, T>>();
         }
 
         public JsonPropertyDictionary(bool caseInsensitive, int capacity)
         {
             _stringComparer = caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            _propertyList = new List<KeyValuePair<string, T?>>(capacity);
+            _propertyList = new List<KeyValuePair<string, T>>(capacity);
         }
 
         // Enable direct access to the List for performance reasons.
-        public List<KeyValuePair<string, T?>> List => _propertyList;
+        public List<KeyValuePair<string, T>> List => _propertyList;
 
-        public void Add(string propertyName, T? value)
+        public void Add(string propertyName, T value)
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             AddValue(propertyName, value);
         }
 
-        public void Add(KeyValuePair<string, T?> property)
+        public void Add(KeyValuePair<string, T> property)
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             Add(property.Key, property.Value);
@@ -63,7 +64,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             // A check for a null propertyName is not required since this method is only called by internal code.
@@ -76,15 +77,20 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             _propertyList.Clear();
             _propertyDictionary?.Clear();
         }
 
-        public bool ContainsKey(string propertyName!!)
+        public bool ContainsKey(string propertyName)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             return ContainsProperty(propertyName);
         }
 
@@ -100,20 +106,20 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             return TryRemoveProperty(propertyName, out _);
         }
 
-        public bool Contains(KeyValuePair<string, T?> item)
+        public bool Contains(KeyValuePair<string, T> item)
         {
-            foreach (KeyValuePair<string, T?> existing in this)
+            foreach (KeyValuePair<string, T> existing in this)
             {
                 if (ReferenceEquals(item.Value, existing.Value) && _stringComparer.Equals(item.Key, existing.Key))
                 {
@@ -124,45 +130,50 @@ namespace System.Text.Json
             return false;
         }
 
-        public void CopyTo(KeyValuePair<string, T?>[] array, int index)
+        public void CopyTo(KeyValuePair<string, T>[] array, int index)
         {
             if (index < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException_NodeArrayIndexNegative(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
             }
 
-            foreach (KeyValuePair<string, T?> item in _propertyList)
+            foreach (KeyValuePair<string, T> item in _propertyList)
             {
                 if (index >= array.Length)
                 {
-                    ThrowHelper.ThrowArgumentException_NodeArrayTooSmall(nameof(array));
+                    ThrowHelper.ThrowArgumentException_ArrayTooSmall(nameof(array));
                 }
 
                 array[index++] = item;
             }
         }
 
-        public IEnumerator<KeyValuePair<string, T?>> GetEnumerator()
+        public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
         {
-            foreach (KeyValuePair<string, T?> item in _propertyList)
+            foreach (KeyValuePair<string, T> item in _propertyList)
             {
                 yield return item;
             }
         }
 
-        public ICollection<string> Keys => GetKeyCollection();
+        public IList<string> Keys => GetKeyCollection();
 
-        public ICollection<T?> Values => GetValueCollection();
+        public IList<T> Values => GetValueCollection();
 
-        public bool TryGetValue(string propertyName!!, out T? value)
+        public bool TryGetValue(string propertyName, [MaybeNullWhen(false)] out T value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             if (_propertyDictionary != null)
             {
                 return _propertyDictionary.TryGetValue(propertyName, out value);
             }
             else
             {
-                foreach (KeyValuePair<string, T?> item in _propertyList)
+                foreach (KeyValuePair<string, T> item in _propertyList)
                 {
                     if (_stringComparer.Equals(propertyName, item.Key))
                     {
@@ -178,6 +189,7 @@ namespace System.Text.Json
 
         public bool IsReadOnly { get; set; }
 
+        [DisallowNull]
         public T? this[string propertyName]
         {
             get
@@ -197,16 +209,16 @@ namespace System.Text.Json
             }
         }
 
-        public T? SetValue(string propertyName, T? value, Action? assignParent = null)
+        public T? SetValue(string propertyName, T value, Action? assignParent = null)
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             CreateDictionaryIfThresholdMet();
@@ -219,7 +231,7 @@ namespace System.Text.Json
                 if (JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
                 {
                     assignParent?.Invoke();
-                    _propertyList.Add(new KeyValuePair<string, T?>(propertyName, value));
+                    _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
                     return null;
                 }
 
@@ -240,7 +252,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    KeyValuePair<string, T?> current = _propertyList[i];
+                    KeyValuePair<string, T> current = _propertyList[i];
                     if (ReferenceEquals(current.Value, value))
                     {
                         // Ignore if the same value.
@@ -251,32 +263,32 @@ namespace System.Text.Json
                 }
 
                 assignParent?.Invoke();
-                _propertyList[i] = new KeyValuePair<string, T?>(propertyName, value);
+                _propertyList[i] = new KeyValuePair<string, T>(propertyName, value);
             }
             else
             {
                 assignParent?.Invoke();
                 _propertyDictionary?.Add(propertyName, value);
-                _propertyList.Add(new KeyValuePair<string, T?>(propertyName, value));
+                _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
                 Debug.Assert(existing == null);
             }
 
             return existing;
         }
 
-        private void AddValue(string propertyName, T? value)
+        private void AddValue(string propertyName, T value)
         {
             if (!TryAddValue(propertyName, value))
             {
-                ThrowHelper.ThrowArgumentException_DuplicateKey(propertyName);
+                ThrowHelper.ThrowArgumentException_DuplicateKey(nameof(propertyName), propertyName);
             }
         }
 
-        private bool TryAddValue(string propertyName, T? value)
+        internal bool TryAddValue(string propertyName, T value)
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             CreateDictionaryIfThresholdMet();
@@ -297,7 +309,7 @@ namespace System.Text.Json
                 }
             }
 
-            _propertyList.Add(new KeyValuePair<string, T?>(propertyName, value));
+            _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
             return true;
         }
 
@@ -309,9 +321,9 @@ namespace System.Text.Json
             }
         }
 
-        private bool ContainsValue(T? value)
+        internal bool ContainsValue(T value)
         {
-            foreach (T? item in GetValueCollection())
+            foreach (T item in GetValueCollection())
             {
                 if (ReferenceEquals(item, value))
                 {
@@ -322,9 +334,9 @@ namespace System.Text.Json
             return false;
         }
 
-        public KeyValuePair<string, T?>? FindValue(T? value)
+        public KeyValuePair<string, T>? FindValue(T value)
         {
-            foreach (KeyValuePair<string, T?> item in this)
+            foreach (KeyValuePair<string, T> item in this)
             {
                 if (ReferenceEquals(item.Value, value))
                 {
@@ -342,7 +354,7 @@ namespace System.Text.Json
                 return _propertyDictionary.ContainsKey(propertyName);
             }
 
-            foreach (KeyValuePair<string, T?> item in _propertyList)
+            foreach (KeyValuePair<string, T> item in _propertyList)
             {
                 if (_stringComparer.Equals(propertyName, item.Key))
                 {
@@ -357,7 +369,7 @@ namespace System.Text.Json
         {
             for (int i = 0; i < _propertyList.Count; i++)
             {
-                KeyValuePair<string, T?> current = _propertyList[i];
+                KeyValuePair<string, T> current = _propertyList[i];
                 if (_stringComparer.Equals(propertyName, current.Key))
                 {
                     return i;
@@ -367,13 +379,13 @@ namespace System.Text.Json
             return -1;
         }
 
-        public bool TryGetPropertyValue(string propertyName, out T? value) => TryGetValue(propertyName, out value);
+        public bool TryGetPropertyValue(string propertyName, [MaybeNullWhen(false)] out T value) => TryGetValue(propertyName, out value);
 
-        public bool TryRemoveProperty(string propertyName, out T? existing)
+        public bool TryRemoveProperty(string propertyName, [MaybeNullWhen(false)] out T existing)
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (_propertyDictionary != null)
@@ -389,7 +401,7 @@ namespace System.Text.Json
 
             for (int i = 0; i < _propertyList.Count; i++)
             {
-                KeyValuePair<string, T?> current = _propertyList[i];
+                KeyValuePair<string, T> current = _propertyList[i];
 
                 if (_stringComparer.Equals(current.Key, propertyName))
                 {

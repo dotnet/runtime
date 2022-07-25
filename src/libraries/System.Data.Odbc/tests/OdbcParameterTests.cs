@@ -182,10 +182,7 @@ namespace System.Data.Odbc.Tests
 
             public bool connectSqlServer(string connStr)
             {
-                if (con == null)
-                {
-                    con = new OdbcConnection(connStr);
-                }
+                con ??= new OdbcConnection(connStr);
 
                 con.Open();
                 trn = con.BeginTransaction();

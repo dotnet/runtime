@@ -52,9 +52,9 @@ Namespace Microsoft.VisualBasic
                 ' as well as skipping over quotations used around embedded spaces within
                 ' the application name
                 '  examples:
-                '       f:\"Program Files"\Microsoft\foo.exe  a b  d   e  f 
-                '       "f:\"Program Files"\Microsoft\foo.exe" a b  d   e  f 
-                '       f:\Program Files\Microsoft\foo.exe                  a b  d   e  f 
+                '       f:\"Program Files"\Microsoft\foo.exe  a b  d   e  f
+                '       "f:\"Program Files"\Microsoft\foo.exe" a b  d   e  f
+                '       f:\Program Files\Microsoft\foo.exe                  a b  d   e  f
                 Dim LengthOfAppName, j As Integer
 
                 'Remove the app name from the arguments
@@ -150,7 +150,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
         Public Function Choose(ByVal Index As Double, ByVal ParamArray Choice() As Object) As Object
 
-            Dim FixedIndex As Integer = CInt(Fix(Index) - 1) 'ParamArray is 0 based, but Choose assumes 1 based 
+            Dim FixedIndex As Integer = CInt(Fix(Index) - 1) 'ParamArray is 0 based, but Choose assumes 1 based
 
             If Choice.Rank <> 1 Then
                 Throw New ArgumentException(SR.Format(SR.Argument_RankEQOne1, "Choice"))
@@ -228,7 +228,7 @@ Namespace Microsoft.VisualBasic
             End If
 
             'Build-up the string.  Calculate number of spaces needed: VB3 uses Stop + 1.
-            'This may seem bogus but it has to be this way for VB3 compatibilty.
+            'This may seem bogus but it has to be this way for VB3 compatibility.
             Buffer1 = CStr([Stop] + 1)
             Buffer2 = CStr(Start - 1)
 
@@ -253,7 +253,7 @@ Namespace Microsoft.VisualBasic
                 InsertNumber(Buffer, Lower, Spaces)
             End If
 
-            'Insert the partition 
+            'Insert the partition
             Buffer = Buffer & ":"
 
             'Insert upper-end of partition range

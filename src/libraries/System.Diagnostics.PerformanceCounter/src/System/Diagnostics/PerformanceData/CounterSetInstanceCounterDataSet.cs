@@ -221,14 +221,20 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         /// <param name="counterName">CounterName that matches one CounterSet::AddCounter() call</param>
         /// <returns>CounterData object with matched counterName</returns>
-        public CounterData this[string counterName!!]
+        public CounterData this[string counterName]
         {
             get
             {
+                if (counterName is null)
+                {
+                    throw new ArgumentNullException(nameof(counterName));
+                }
+
                 if (counterName.Length == 0)
                 {
                     throw new ArgumentNullException(nameof(counterName));
                 }
+
                 if (_disposed != 0)
                 {
                     return null;

@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {90803FD0-8E18-44C9-A242-98463ADD450D}
-.namespace JitTest
+.namespace JitTest_virtftn_fptr_il
 {
-  .class private auto ansi Test extends ['mscorlib']System.Object
+  .class public auto ansi Test extends ['mscorlib']System.Object
   {
     .method private hidebysig virtual instance int32 DoStuff(method instance int32 *()) il managed
     {
@@ -39,7 +39,7 @@
 			// Code size       1 (0x1)
 			.maxstack  8
 			ldarg.0
-			ldvirtftn 		instance int32 JitTest.Test::DummyMethod()
+			ldvirtftn 		instance int32 JitTest_virtftn_fptr_il.Test::DummyMethod()
 			ret
     } // end of method 'Test::DoStuff'
     .method private hidebysig virtual instance int32 DummyMethod() il managed
@@ -54,7 +54,7 @@
 			ret
     } // end of method 'Test::DoStuff'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
 			.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -62,21 +62,21 @@
 			)
 			.entrypoint
 			.maxstack  8
-			.locals (class JitTest.Test, int32)
-			newobj		instance void JitTest.Test::.ctor()
+			.locals (class JitTest_virtftn_fptr_il.Test, int32)
+			newobj		instance void JitTest_virtftn_fptr_il.Test::.ctor()
 			stloc.0
 			ldloc.0
 			dup
 			dup
 			dup
-			ldvirtftn 	instance int32 JitTest.Test::DummyMethod()
+			ldvirtftn 	instance int32 JitTest_virtftn_fptr_il.Test::DummyMethod()
 			ldloc.0
-			ldvirtftn	instance int32 JitTest.Test::DoStuff(method instance int32 *())
+			ldvirtftn	instance int32 JitTest_virtftn_fptr_il.Test::DoStuff(method instance int32 *())
 			calli		instance int32 (method instance int32 *())
 			stloc.1
 			
 			ldloc.0
-			ldvirtftn	instance method instance int32 *() JitTest.Test::RetStuff()
+			ldvirtftn	instance method instance int32 *() JitTest_virtftn_fptr_il.Test::RetStuff()
 			calli		instance method instance int32 *()()
 			calli		instance int32 ()
 			
@@ -100,5 +100,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_virtftn_fptr_il'
 //*********** DISASSEMBLY COMPLETE ***********************

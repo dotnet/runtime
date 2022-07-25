@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-
-    internal class SortAction : CompiledAction
+    internal sealed class SortAction : CompiledAction
     {
         private int _selectKey = Compiler.InvalidQueryKey;
         private Avt? _langAvt;
@@ -174,8 +174,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(processor != null && frame != null);
             Debug.Assert(frame.State == Initialized);
 
-            processor.AddSort(_sort != null ?
-                _sort :
+            processor.AddSort(_sort ??
                 new Sort(
                     _selectKey,
                     _langAvt == null ? _lang : ParseLang(_langAvt.Evaluate(processor, frame)),

@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -29,7 +31,7 @@ namespace System.Text.Json.Serialization
         internal bool CanUseDirectReadOrWrite { get; set; }
 
         /// <summary>
-        /// Can the converter have $id metadata.
+        /// The converter supports writing and reading metadata.
         /// </summary>
         internal virtual bool CanHaveMetadata => false;
 
@@ -47,14 +49,6 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
         /// </summary>
-        internal virtual object CreateObject(JsonSerializerOptions options)
-        {
-            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
-        }
-
-        /// <summary>
-        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
-        /// </summary>
         internal virtual void ReadElementAndSetProperty(
             object obj,
             string propertyName,
@@ -62,12 +56,14 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref ReadStack state)
         {
-            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
         }
 
-        internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
-
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
+
+        internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
 
         internal abstract Type? ElementType { get; }
 
@@ -103,6 +99,7 @@ namespace System.Text.Json.Serialization
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
         internal abstract Type TypeToConvert { get; }
 
+        internal abstract bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value);
         internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value);
 
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
@@ -120,6 +117,19 @@ namespace System.Text.Json.Serialization
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
 
+        /// <summary>
+        ///  For reflection-based metadata generation, indicates whether the
+        ///  converter avails of default constructors when deserializing types.
+        /// </summary>
+        internal bool UsesDefaultConstructor =>
+            ConverterStrategy switch
+            {
+                ConverterStrategy.Object => !ConstructorIsParameterized && this is not ObjectConverter,
+                ConverterStrategy.Enumerable or
+                ConverterStrategy.Dictionary => true,
+                _ => false
+            };
+
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
         /// <summary>
@@ -131,6 +141,7 @@ namespace System.Text.Json.Serialization
         /// Additional reflection-specific configuration required by certain collection converters.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal virtual void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
     }
 }

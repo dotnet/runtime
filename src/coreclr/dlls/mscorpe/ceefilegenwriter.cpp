@@ -591,7 +591,7 @@ HRESULT CeeFileGenWriter::addAddrReloc(CeeSection &thisSection, UCHAR *instrAddr
 //      // import lookup table: a set of entries for the methods of each DLL,
 //      // terminating each set with NULL
 //      IMAGE_THUNK_DATA32/64 ilt[];
-//      // hint/name table: an set of entries for each method of each DLL wiht
+//      // hint/name table: an set of entries for each method of each DLL with
 //      // no terminating entry
 //      struct {
 //          WORD Hint;
@@ -1219,7 +1219,7 @@ lDone: ;
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        //dbprintf("Exception occured manipulating .res file %S\n", szResFileName);
+        //dbprintf("Exception occurred manipulating .res file %S\n", szResFileName);
         param.hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
     }
     PAL_ENDTRY

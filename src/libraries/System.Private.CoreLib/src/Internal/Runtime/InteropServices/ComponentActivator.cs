@@ -194,7 +194,7 @@ namespace Internal.Runtime.InteropServices
                                                          IntPtr delegateTypeNative)
         {
             // Create a resolver callback for types.
-            Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
+            Func<AssemblyName, Assembly> resolver = alc.LoadFromAssemblyName;
 
             // Determine the signature of the type. There are 3 possibilities:
             //  * No delegate type was supplied - use the default (i.e. ComponentEntryPoint).

@@ -23,8 +23,11 @@ namespace System.IO.Enumeration
         {
         }
 
-        internal FileSystemEnumerable(string directory!!, FindTransform transform!!, EnumerationOptions? options, bool isNormalized)
+        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+            ArgumentNullException.ThrowIfNull(transform);
+
             _directory = directory;
             _transform = transform;
             _options = options ?? EnumerationOptions.Default;

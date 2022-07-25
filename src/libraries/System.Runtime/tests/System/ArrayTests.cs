@@ -1609,7 +1609,7 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Copy_UnreliableCoversion_CantPerform_TestData()
+        public static IEnumerable<object[]> Copy_UnreliableConversion_CantPerform_TestData()
         {
             yield return new object[] { new object[] { "1" }, new int[1] };
 
@@ -1633,8 +1633,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
-        public static void Copy_UnreliableConverson_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
+        [MemberData(nameof(Copy_UnreliableConversion_CantPerform_TestData))]
+        public static void Copy_UnreliableConversion_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, length));
@@ -1651,7 +1651,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
+        [MemberData(nameof(Copy_UnreliableConversion_CantPerform_TestData))]
         public static void ConstrainedCopy_UnreliableConversion_CantPerform_ThrowsArrayTypeMismatchException(Array sourceArray, Array destinationArray)
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
@@ -3331,7 +3331,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Sort_SZArray_TestData()
         {
-			    // Int
+            // Int
             yield return new object[] { new int[0], 0, 0, new IntegerComparer(), new int[0] };
             yield return new object[] { new int[] { 5 }, 0, 1, new IntegerComparer(), new int[] { 5 } };
             yield return new object[] { new int[] { 5, 2 }, 0, 2, new IntegerComparer(), new int[] { 2, 5 } };
@@ -3348,7 +3348,7 @@ namespace System.Tests
             yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, new IntegerComparer(), new int[] { 2, 3, 4 } };
             yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, null, new int[] { 2, 3, 4 } };
 
-			    // String
+			      // String
             yield return new object[] { new string[0], 0, 0, null, new string[0] };
             yield return new object[] { new string[0], 0, 0, new StringComparer(), new string[0] };
             yield return new object[] { new string[] { "5" }, 0, 1, null, new string[] { "5" } };

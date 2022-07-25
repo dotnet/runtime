@@ -877,11 +877,8 @@ namespace System.DirectoryServices.Protocols
                     NewDN = LdapPal.PtrToString(NewDNPtr);
                 }
 
-                var target = new StringBuilder();
-                target.Append(Marshal.PtrToStringUni(HostNamePtr));
-                target.Append(':');
-                target.Append(PortNumber);
-                var identifier = new LdapDirectoryIdentifier(target.ToString());
+                string target = $"{Marshal.PtrToStringUni(HostNamePtr)}:{PortNumber}";
+                var identifier = new LdapDirectoryIdentifier(target);
 
                 NetworkCredential cred = ProcessSecAuthIdentity(SecAuthIdentity);
                 LdapConnection tempReferralConnection = null;
@@ -944,11 +941,8 @@ namespace System.DirectoryServices.Protocols
                     newDN = LdapPal.PtrToString(newDNPtr);
                 }
 
-                var target = new StringBuilder();
-                target.Append(Marshal.PtrToStringUni(hostNamePtr));
-                target.Append(':');
-                target.Append(portNumber);
-                var identifier = new LdapDirectoryIdentifier(target.ToString());
+                string target = $"{Marshal.PtrToStringUni(hostNamePtr)}:{portNumber}";
+                var identifier = new LdapDirectoryIdentifier(target);
 
                 NetworkCredential cred = ProcessSecAuthIdentity(SecAuthIdentity);
                 LdapConnection tempNewConnection = null;

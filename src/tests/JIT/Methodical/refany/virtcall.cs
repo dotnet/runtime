@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_virtcall_cs
 {
-    internal class StressTest
+    public class StressTest
     {
         private const int ITERATIONS = 2000;
         private const ulong MAGIC = 0x7700001492000077;
@@ -40,7 +41,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

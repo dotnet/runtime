@@ -40,8 +40,8 @@ namespace System.Linq.Expressions.Compiler
 
         private TypeBuilder DefineType(string name, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, TypeAttributes attr)
         {
-            ContractUtils.RequiresNotNull(name, nameof(name));
-            ContractUtils.RequiresNotNull(parent, nameof(parent));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(parent);
 
             StringBuilder sb = new StringBuilder(name);
 

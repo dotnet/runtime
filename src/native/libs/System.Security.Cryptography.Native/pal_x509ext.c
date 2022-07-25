@@ -84,7 +84,7 @@ EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t* buf, int3
     return d2i_EXTENDED_KEY_USAGE(NULL, &buf, len);
 }
 
-void CryptoNative_ExtendedKeyUsageDestory(EXTENDED_KEY_USAGE* a)
+void CryptoNative_ExtendedKeyUsageDestroy(EXTENDED_KEY_USAGE* a)
 {
     if (a != NULL)
     {

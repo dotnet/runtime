@@ -109,7 +109,7 @@ void PERelocSection::AddBaseReloc(unsigned rva, int type, unsigned short highAdj
     relocSize++;
     unsigned short* offset = (unsigned short*) section->getBlock(2);
     if(offset) {
-        *offset = VAL16((rva & 0xFFF) | (type << 12));
+        *offset = VAL16((unsigned short)(rva & 0xFFF) | (unsigned short)(type << 12));
     }
 }
 
@@ -233,7 +233,7 @@ static inline HRESULT SubOvf_U_U32(UINT64 & a, unsigned int b)
 }
 
 #ifndef HOST_AMD64
-/* subtract two unsigned pointers yeilding a signed pointer sized int */
+/* subtract two unsigned pointers yielding a signed pointer sized int */
 static inline HRESULT SubOvf_U_U(INT64 & r, UINT64 a, UINT64 b)
 {
     r = a - b;
@@ -1308,7 +1308,7 @@ HRESULT PEWriter::linkSortSections(entry * entries,
         _ASSERTE(index == -1 || index == atoi(p));
 
         e->nameLength = (unsigned char)(p - e->name);
-        e->index = index;
+        e->index = (char)index;
         e->arrayIndex = (unsigned short)(cur - getSectStart());
         e++;
     }
@@ -1589,7 +1589,7 @@ HRESULT PEWriter::link() {
     iUniqueSections++; // One more for .reloc
     filePos = sizeof(IMAGE_DOS_HEADER)+sizeof(x86StubPgm) + m_ntHeadersSize;
 
-    m_ntHeaders->FileHeader.NumberOfSections = VAL16(iUniqueSections);
+    m_ntHeaders->FileHeader.NumberOfSections = (WORD)VAL16(iUniqueSections);
 
     filePos += iUniqueSections * sizeof(IMAGE_SECTION_HEADER);
     filePos  = roundUp(filePos, VAL32(m_ntHeaders->OptionalHeader.FileAlignment));

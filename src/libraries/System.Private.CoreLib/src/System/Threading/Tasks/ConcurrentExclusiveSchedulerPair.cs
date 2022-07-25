@@ -96,8 +96,10 @@ namespace System.Threading.Tasks
         /// <param name="taskScheduler">The target scheduler on which this pair should execute.</param>
         /// <param name="maxConcurrencyLevel">The maximum number of tasks to run concurrently.</param>
         /// <param name="maxItemsPerTask">The maximum number of tasks to process for each underlying scheduled task used by the pair.</param>
-        public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler!!, int maxConcurrencyLevel, int maxItemsPerTask)
+        public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler, int maxConcurrencyLevel, int maxItemsPerTask)
         {
+            ArgumentNullException.ThrowIfNull(taskScheduler);
+
             if (maxConcurrencyLevel == 0 || maxConcurrencyLevel < -1) throw new ArgumentOutOfRangeException(nameof(maxConcurrencyLevel));
             if (maxItemsPerTask == 0 || maxItemsPerTask < -1) throw new ArgumentOutOfRangeException(nameof(maxItemsPerTask));
 
@@ -468,7 +470,7 @@ namespace System.Threading.Tasks
         private sealed class CompletionState : Task
         {
             /// <summary>Whether the scheduler has had completion requested.</summary>
-            /// <remarks>This variable is not volatile, so to gurantee safe reading reads, Volatile.Read is used in TryExecuteTaskInline.</remarks>
+            /// <remarks>This variable is not volatile, so to guarantee safe reading reads, Volatile.Read is used in TryExecuteTaskInline.</remarks>
             internal bool m_completionRequested;
             /// <summary>Whether completion processing has been queued.</summary>
             internal bool m_completionQueued;

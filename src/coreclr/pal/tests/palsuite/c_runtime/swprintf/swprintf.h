@@ -5,7 +5,7 @@
 **
 ** Source:  swprintf.h
 **
-** Purpose: Containts common testing functions for swprintf.h
+** Purpose: Contains common testing functions for swprintf.h
 **
 **
 **==========================================================================*/

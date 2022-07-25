@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            private class CacheEntry
+            private sealed class CacheEntry
             {
                 public readonly object? Value;
                 public long LastUsedTicks;

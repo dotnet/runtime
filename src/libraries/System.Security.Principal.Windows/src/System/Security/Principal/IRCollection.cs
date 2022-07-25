@@ -66,13 +66,17 @@ namespace System.Security.Principal
             }
         }
 
-        public void Add(IdentityReference identity!!)
+        public void Add(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             _identities.Add(identity);
         }
 
-        public bool Remove(IdentityReference identity!!)
+        public bool Remove(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             if (Contains(identity))
             {
                 return _identities.Remove(identity);
@@ -86,8 +90,10 @@ namespace System.Security.Principal
             _identities.Clear();
         }
 
-        public bool Contains(IdentityReference identity!!)
+        public bool Contains(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             return _identities.Contains(identity);
         }
 
@@ -136,8 +142,10 @@ namespace System.Security.Principal
             return Translate(targetType, false);
         }
 
-        public IdentityReferenceCollection Translate(Type targetType!!, bool forceSuccess)
+        public IdentityReferenceCollection Translate(Type targetType, bool forceSuccess)
         {
+            ArgumentNullException.ThrowIfNull(targetType);
+
             //
             // Target type must be a subclass of IdentityReference
             //
@@ -371,8 +379,10 @@ namespace System.Security.Principal
 
         #region Constructors
 
-        internal IdentityReferenceEnumerator(IdentityReferenceCollection collection!!)
+        internal IdentityReferenceEnumerator(IdentityReferenceCollection collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _collection = collection;
             _current = -1;
         }

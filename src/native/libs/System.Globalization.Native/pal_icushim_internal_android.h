@@ -470,7 +470,7 @@ int32_t ucol_previous(UCollationElements * elems, UErrorCode * status);
 UCollator * ucol_open(const char * loc, UErrorCode * status);
 UCollationElements * ucol_openElements(const UCollator * coll, const UChar * text, int32_t textLength, UErrorCode * status);
 UCollator * ucol_openRules(const UChar * rules, int32_t rulesLength, UColAttributeValue normalizationMode, UCollationStrength strength, UParseError * parseError, UErrorCode * status);
-UCollator * ucol_safeClone(const UCollator * coll, void * stackBuffer, int32_t * pBufferSize, UErrorCode * status);
+UCollator * ucol_clone(const UCollator * coll, UErrorCode * status);
 void ucol_setAttribute(UCollator * coll, UColAttribute attr, UColAttributeValue value, UErrorCode * status);
 UCollationResult ucol_strcoll(const UCollator * coll, const UChar * source, int32_t sourceLength, const UChar * target, int32_t targetLength);
 int32_t ucurr_forLocale(const char * locale, UChar * buff, int32_t buffCapacity, UErrorCode * ec);

@@ -43,9 +43,9 @@ namespace System.Threading.RateLimiting
         /// Initializes the <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="TokenBucketRateLimiter"/>.</param>
-        public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options!!)
+        public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
         {
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _tokenCount = options.TokenLimit;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
@@ -91,7 +91,7 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int tokenCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int tokenCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (tokenCount > _options.TokenLimit)
@@ -126,7 +126,11 @@ namespace System.Threading.RateLimiting
                             RequestRegistration oldestRequest = _queue.DequeueHead();
                             _queueCount -= oldestRequest.Count;
                             Debug.Assert(_queueCount >= 0);
-                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                            if (!oldestRequest.Tcs.TrySetResult(FailedLease))
+                            {
+                                // Updating queue count is handled by the cancellation code
+                                _queueCount += oldestRequest.Count;
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
                     }
@@ -328,7 +332,7 @@ namespace System.Threading.RateLimiting
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
                     next.CancellationTokenRegistration.Dispose();
-                    next.Tcs.SetResult(FailedLease);
+                    next.Tcs.TrySetResult(FailedLease);
                 }
             }
         }

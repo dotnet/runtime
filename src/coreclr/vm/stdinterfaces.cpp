@@ -32,7 +32,7 @@
 #include "posterror.h"
 #include <corerror.h>
 #include <mscoree.h>
-#include "mtx.h"
+#include <mtx.h>
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
@@ -556,7 +556,7 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     ITypeLib *pTlb = pAssembly->GetTypeLib();
     if (pTlb != nullptr)
     {
-        // If the cached value is the invalid sentinal, an attempt was already made but failed.
+        // If the cached value is the invalid sentinel, an attempt was already made but failed.
         if (pTlb == Assembly::InvalidTypeLib)
             return TLBX_E_LIBNOTREGISTERED;
 
@@ -596,7 +596,7 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
         if (pTlb != Assembly::InvalidTypeLib)
             pTlb->Release();
 
-        // This call lost the race to set the TypeLib so recusively call
+        // This call lost the race to set the TypeLib so recursively call
         // this function again to get the one that is set.
         return GetITypeLibForAssembly(pAssembly, ppTlb);
     }
@@ -843,7 +843,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         IfFailThrow(hr);
 
         // If we successfully retrieved an IErrorInfo, we need to verify if
-        // it is for the specifed interface.
+        // it is for the specified interface.
         if (hr == S_OK)
         {
             // Make sure that the object we called follows the error info protocol,
@@ -2171,7 +2171,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
     {
         if(!pSimpleWrap->GetComCallWrapperTemplate()->IsSafeTypeForMarshalling())
         {
-            LogInterop(W("Unmarshal class blocked for reflection types."));
+            LogInterop("Unmarshal class blocked for reflection types.");
             hr = E_NOINTERFACE;
             return hr;
         }
@@ -2241,7 +2241,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
     {
         if(!pSimpleWrap->GetComCallWrapperTemplate()->IsSafeTypeForMarshalling())
         {
-            LogInterop(W("Marshal interface blocked for reflection types."));
+            LogInterop("Marshal interface blocked for reflection types.");
             hr = E_NOINTERFACE;
             return hr;
         }

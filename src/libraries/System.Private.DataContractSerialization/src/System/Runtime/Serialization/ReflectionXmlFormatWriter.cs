@@ -173,10 +173,7 @@ namespace System.Runtime.Serialization
                 if (shouldWriteValue)
                 {
                     bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                    if (memberValue == null)
-                    {
-                        memberValue = ReflectionGetMemberValue(obj, member);
-                    }
+                    memberValue ??= ReflectionGetMemberValue(obj, member);
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
 
                     if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))

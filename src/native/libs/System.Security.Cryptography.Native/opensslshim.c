@@ -36,7 +36,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define DYLIBNAME_SUFFIX ".dylib"
 #define MAKELIB(v) DYLIBNAME_PREFIX v DYLIBNAME_SUFFIX
 #else
-#define SONAME_BASE "libssl.so."
+#define LIBNAME "libssl.so"
+#define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
 #endif
 
@@ -75,6 +76,14 @@ static void OpenLibraryOnce()
 
         DlOpen(soName);
     }
+
+#ifdef TARGET_ANDROID
+    if (libssl == NULL)
+    {
+        // Android OpenSSL has no soname
+        DlOpen(LIBNAME);
+    }
+#endif
 
     if (libssl == NULL)
     {

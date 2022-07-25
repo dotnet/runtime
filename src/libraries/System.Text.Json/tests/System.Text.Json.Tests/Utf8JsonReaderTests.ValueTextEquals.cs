@@ -13,39 +13,32 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestTextEqualsBasic()
         {
-            byte[] connectionId = Encoding.UTF8.GetBytes("connectionId");
-            byte[] availableTransports = Encoding.UTF8.GetBytes("availableTransports");
-            byte[] value123 = Encoding.UTF8.GetBytes("123");
-            byte[] embeddedQuotes = Encoding.UTF8.GetBytes("My name is \"Ahson\"");
             bool foundId = false;
             bool foundTransports = false;
             bool foundValue = false;
             bool foundArrayValue = false;
 
-            string jsonString = "{\"conne\\u0063tionId\":\"123\",\"availableTransports\":[\"My name is \\\"Ahson\\\"\"]}";
-            byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
-
-            var json = new Utf8JsonReader(utf8Data, isFinalBlock: true, state: default);
+            var json = new Utf8JsonReader("{\"conne\\u0063tionId\":\"123\",\"availableTransports\":[\"My name is \\\"Ahson\\\"\"]}"u8, isFinalBlock: true, state: default);
             while (json.Read())
             {
                 if (json.TokenType == JsonTokenType.PropertyName)
                 {
-                    if (json.ValueTextEquals(connectionId) && json.ValueTextEquals("connectionId".AsSpan()))
+                    if (json.ValueTextEquals("connectionId"u8) && json.ValueTextEquals("connectionId".AsSpan()))
                     {
                         foundId = true;
                     }
-                    else if (json.ValueTextEquals(availableTransports) && json.ValueTextEquals("availableTransports".AsSpan()))
+                    else if (json.ValueTextEquals("availableTransports"u8) && json.ValueTextEquals("availableTransports".AsSpan()))
                     {
                         foundTransports = true;
                     }
                 }
                 else if (json.TokenType == JsonTokenType.String)
                 {
-                    if (json.ValueTextEquals(value123) && json.ValueTextEquals("123".AsSpan()))
+                    if (json.ValueTextEquals("123"u8) && json.ValueTextEquals("123".AsSpan()))
                     {
                         foundValue = true;
                     }
-                    else if (json.ValueTextEquals(embeddedQuotes) && json.ValueTextEquals("My name is \"Ahson\"".AsSpan()))
+                    else if (json.ValueTextEquals("My name is \"Ahson\""u8) && json.ValueTextEquals("My name is \"Ahson\"".AsSpan()))
                     {
                         foundArrayValue = true;
                     }
@@ -549,9 +542,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestTextEqualsMismatchMultiSegment()
         {
-            string jsonString = "\"Hi, \\\"Ahson\\\"!\"";
-            byte[] lookup = Encoding.UTF8.GetBytes("Hello, \"Ahson\"");
-            byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
+            byte[] utf8Data = "\"Hi, \\\"Ahson\\\"!\""u8.ToArray();
             bool found = false;
 
             // Segment 1: "Hi, \"A
@@ -563,7 +554,7 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.String)
                 {
-                    if (json.ValueTextEquals(lookup) ||
+                    if (json.ValueTextEquals("Hello, \"Ahson\""u8) ||
                         json.ValueTextEquals("Hello, \"Ahson\"".AsSpan()) ||
                         json.ValueTextEquals("Hello, \"Ahson\""))
                     {

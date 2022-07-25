@@ -15,7 +15,6 @@
 #define g_ArrayClassName "System.Array"
 
 #define g_NullableName "Nullable`1"
-#define g_ByReferenceName "ByReference`1"
 
 #define g_CollectionsEnumerableItfName "System.Collections.IEnumerable"
 #define g_CollectionsEnumeratorClassName "System.Collections.IEnumerator"
@@ -37,6 +36,12 @@
 #define g_DateClassName "System.DateTime"
 #define g_DateTimeOffsetClassName "System.DateTimeOffset"
 #define g_DecimalClassName "System.Decimal"
+
+#define g_Int128ClassName "System.Int128"
+#define g_Int128Name "Int128"
+
+#define g_UInt128ClassName "System.UInt128"
+#define g_UInt128Name "UInt128"
 
 #define g_Vector64ClassName "System.Runtime.Intrinsics.Vector64`1"
 #define g_Vector64Name "Vector64`1"

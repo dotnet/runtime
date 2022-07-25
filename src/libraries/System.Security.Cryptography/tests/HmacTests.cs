@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class HmacTests
     {
         // RFC2202 defines the test vectors for HMACMD5 and HMACSHA1
@@ -237,7 +236,11 @@ namespace System.Security.Cryptography.Tests
                 byte[] overSizedKey = new byte[BlockSize + 1];
                 hmac.Key = overSizedKey;
                 byte[] actualKey = hmac.Key;
-                byte[] expectedKey = CreateHashAlgorithm().ComputeHash(overSizedKey);
+                byte[] expectedKey;
+                using (HashAlgorithm hash = CreateHashAlgorithm())
+                {
+                    expectedKey = hash.ComputeHash(overSizedKey);
+                }
                 Assert.Equal<byte>(expectedKey, actualKey);
 
                 // Also ensure that the hashing operation uses the adjusted key.

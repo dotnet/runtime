@@ -97,14 +97,12 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             }
-            if (encoding == null)
-            {
-                encoding = UTF8NoBOM;
-            }
+
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
+
             if (bufferSize == -1)
             {
                 bufferSize = DefaultBufferSize;
@@ -115,7 +113,7 @@ namespace System.IO
             }
 
             _stream = stream;
-            _encoding = encoding;
+            _encoding = encoding ?? UTF8NoBOM;
             _encoder = _encoding.GetEncoder();
             if (bufferSize < MinBufferSize)
             {
@@ -297,7 +295,7 @@ namespace System.IO
 
             // For sufficiently small char data being flushed, try to encode to the stack.
             // For anything else, fall back to allocating the byte[] buffer.
-            Span<byte> byteBuffer = stackalloc byte[0];
+            scoped Span<byte> byteBuffer;
             if (_byteBuffer is not null)
             {
                 byteBuffer = _byteBuffer;
@@ -367,8 +365,10 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(char[] buffer!!, int index, int count)
+        public override void Write(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -503,7 +503,7 @@ namespace System.IO
             }
         }
 
-        private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
+        private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
             int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
             var vsb = estimatedLength <= 256 ?
@@ -521,7 +521,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: false);
+                WriteFormatHelper(format, new ReadOnlySpan<object?>(in arg0), appendNewLine: false);
             }
             else
             {
@@ -533,7 +533,8 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: false);
+                TwoObjects two = new TwoObjects(arg0, arg1);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: false);
             }
             else
             {
@@ -545,7 +546,8 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: false);
+                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: false);
             }
             else
             {
@@ -561,7 +563,7 @@ namespace System.IO
                 {
                     ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
+                WriteFormatHelper(format, arg, appendNewLine: false);
             }
             else
             {
@@ -573,7 +575,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: true);
+                WriteFormatHelper(format, new ReadOnlySpan<object?>(in arg0), appendNewLine: true);
             }
             else
             {
@@ -585,7 +587,8 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: true);
+                TwoObjects two = new TwoObjects(arg0, arg1);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: true);
             }
             else
             {
@@ -597,7 +600,8 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: true);
+                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: true);
             }
             else
             {
@@ -610,7 +614,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ArgumentNullException.ThrowIfNull(arg);
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
+                WriteFormatHelper(format, arg, appendNewLine: true);
             }
             else
             {
@@ -693,8 +697,10 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(char[] buffer!!, int index, int count)
+        public override Task WriteAsync(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -849,8 +855,10 @@ namespace System.IO
             return task;
         }
 
-        public override Task WriteLineAsync(char[] buffer!!, int index, int count)
+        public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

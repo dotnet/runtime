@@ -12,11 +12,11 @@ namespace System.Reflection.TypeLoading
     {
         protected RoCustomAttributeData() { }
 
-        public sealed override Type AttributeType => _lazyAttributeType ?? (_lazyAttributeType = ComputeAttributeType())!;
+        public sealed override Type AttributeType => _lazyAttributeType ??= ComputeAttributeType()!;
         protected abstract Type? ComputeAttributeType();
         private volatile Type? _lazyAttributeType;
 
-        public sealed override ConstructorInfo Constructor => _lazyConstructorInfo ?? (_lazyConstructorInfo = ComputeConstructor());
+        public sealed override ConstructorInfo Constructor => _lazyConstructorInfo ??= ComputeConstructor();
         protected abstract ConstructorInfo ComputeConstructor();
         private volatile ConstructorInfo? _lazyConstructorInfo;
 

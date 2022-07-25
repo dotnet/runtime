@@ -29,14 +29,16 @@ namespace System.DirectoryServices.Interop
         [LibraryImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
         public static partial int ADsSetLastError(int error, string? errorString, string? provider);
 
-        public class EnumVariant
+        public sealed class EnumVariant
         {
             private static readonly object s_noMoreValues = new object();
             private object _currentValue = s_noMoreValues;
             private readonly IEnumVariant _enumerator;
 
-            public EnumVariant(IEnumVariant en!!)
+            public EnumVariant(IEnumVariant en)
             {
+                ArgumentNullException.ThrowIfNull(en);
+
                 _enumerator = en;
             }
 

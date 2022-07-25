@@ -53,11 +53,6 @@
 #include "pal_compiler.h"
 
 #if !defined(STATIC_ICU)
-// ucol_setVariableTop is a deprecated function on the newer ICU versions and ucol_setMaxVariable should be used instead.
-// As can run against ICU versions which not supported ucol_setMaxVariable, we'll dynamically try to get the pointer to ucol_setVariableTop
-// when we couldn't get a pointer to ucol_setMaxVariable.
-typedef uint32_t (*ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
-extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
 
 #if !defined(TARGET_ANDROID)
 // (U_ICU_VERSION_MAJOR_NUM < 52)
@@ -66,7 +61,29 @@ extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
 U_CAPI void U_EXPORT2 ucol_setMaxVariable(UCollator* coll, UColReorderCode group, UErrorCode* pErrorCode);
 U_CAPI int32_t U_EXPORT2 ucal_getTimeZoneIDForWindowsID(const UChar* winid, int32_t len, const char* region, UChar* id, int32_t idCapacity, UErrorCode* status);
 U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len, UChar* winid, int32_t winidCapacity, UErrorCode* status);
-#endif
+
+// (U_ICU_VERSION_MAJOR_NUM < 71)
+// The following API is not supported in the ICU versions less than 71. We need to define it manually.
+// We have to do runtime check before using the pointers to this API. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
+U_CAPI UCollator* U_EXPORT2 ucol_clone(const UCollator* coll, UErrorCode* status);
+
+// ucol_setVariableTop is a deprecated function on the newer ICU versions and ucol_setMaxVariable should be used instead.
+// As we can run against ICU versions which do not support ucol_setMaxVariable, we will dynamically try to get the pointer
+// to ucol_setVariableTop when we could not get a pointer to ucol_setMaxVariable.
+typedef uint32_t (U_EXPORT2 *ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
+
+// ucol_safeClone is deprecated in ICU version 71. We have to handle it manually to avoid getting a build break when referencing it in the code.
+typedef UCollator* (U_EXPORT2 *ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
+
+#else // !defined(TARGET_ANDROID)
+
+typedef uint32_t (*ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
+typedef UCollator* (*ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
+
+#endif // !defined(TARGET_ANDROID)
+
+extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
+extern ucol_safeClone_func ucol_safeClone_ptr;
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
@@ -105,7 +122,6 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
     PER_FUNCTION_BLOCK(ucol_open, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_openElements, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_openRules, libicui18n, true) \
-    PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n, true) \
@@ -193,7 +209,8 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
 #define FOR_ALL_OPTIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, false) \
     PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, false) \
-    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, false)
+    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, false) \
+    PER_FUNCTION_BLOCK(ucol_clone, libicui18n, false)
 
 #define FOR_ALL_ICU_FUNCTIONS \
     FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
@@ -232,6 +249,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_openTimeZoneIDEnumeration(...) ucal_openTimeZoneIDEnumeration_ptr(__VA_ARGS__)
 #define ucal_set(...) ucal_set_ptr(__VA_ARGS__)
 #define ucal_setMillis(...) ucal_setMillis_ptr(__VA_ARGS__)
+#define ucol_clone(...) ucol_clone_ptr(__VA_ARGS__)
 #define ucol_close(...) ucol_close_ptr(__VA_ARGS__)
 #define ucol_closeElements(...) ucol_closeElements_ptr(__VA_ARGS__)
 #define ucol_getOffset(...) ucol_getOffset_ptr(__VA_ARGS__)
@@ -244,7 +262,6 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucol_open(...) ucol_open_ptr(__VA_ARGS__)
 #define ucol_openElements(...) ucol_openElements_ptr(__VA_ARGS__)
 #define ucol_openRules(...) ucol_openRules_ptr(__VA_ARGS__)
-#define ucol_safeClone(...) ucol_safeClone_ptr(__VA_ARGS__)
 #define ucol_setAttribute(...) ucol_setAttribute_ptr(__VA_ARGS__)
 #define ucol_setMaxVariable(...) ucol_setMaxVariable_ptr(__VA_ARGS__)
 #define ucol_strcoll(...) ucol_strcoll_ptr(__VA_ARGS__)

@@ -17,9 +17,11 @@ namespace System.Security.AccessControl
             return;
         }
 
-        protected DirectoryObjectSecurity(CommonSecurityDescriptor securityDescriptor!!)
+        protected DirectoryObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : base(securityDescriptor)
         {
+            ArgumentNullException.ThrowIfNull(securityDescriptor);
+
         }
 
         #region Private Methods
@@ -106,7 +108,7 @@ namespace System.Security.AccessControl
                             continue;
                         }
 
-                        if (ace.IsCallback == true)
+                        if (ace.IsCallback)
                         {
                             //
                             // Ignore callback ACEs
@@ -160,7 +162,7 @@ namespace System.Security.AccessControl
                         }
                     }
 
-                    if (ace.IsCallback == true)
+                    if (ace.IsCallback)
                     {
                         //
                         // Ignore callback ACEs
@@ -516,8 +518,10 @@ namespace System.Security.AccessControl
 
 #region Public Methods
 
-        protected void AddAccessRule(ObjectAccessRule rule!!)
+        protected void AddAccessRule(ObjectAccessRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -532,8 +536,10 @@ namespace System.Security.AccessControl
             return;
         }
 
-        protected void SetAccessRule(ObjectAccessRule rule!!)
+        protected void SetAccessRule(ObjectAccessRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -546,8 +552,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void ResetAccessRule(ObjectAccessRule rule!!)
+        protected void ResetAccessRule(ObjectAccessRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -560,8 +568,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected bool RemoveAccessRule(ObjectAccessRule rule!!)
+        protected bool RemoveAccessRule(ObjectAccessRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -579,8 +589,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAccessRuleAll(ObjectAccessRule rule!!)
+        protected void RemoveAccessRuleAll(ObjectAccessRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -598,8 +610,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAccessRuleSpecific(ObjectAccessRule rule!!)
+        protected void RemoveAccessRuleSpecific(ObjectAccessRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             if (SecurityDescriptor == null)
             {
                 return;
@@ -617,8 +631,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void AddAuditRule(ObjectAuditRule rule!!)
+        protected void AddAuditRule(ObjectAuditRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -631,8 +647,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void SetAuditRule(ObjectAuditRule rule!!)
+        protected void SetAuditRule(ObjectAuditRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -645,8 +663,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected bool RemoveAuditRule(ObjectAuditRule rule!!)
+        protected bool RemoveAuditRule(ObjectAuditRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -659,8 +679,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAuditRuleAll(ObjectAuditRule rule!!)
+        protected void RemoveAuditRuleAll(ObjectAuditRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try
@@ -673,8 +695,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        protected void RemoveAuditRuleSpecific(ObjectAuditRule rule!!)
+        protected void RemoveAuditRuleSpecific(ObjectAuditRule rule)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             WriteLock();
 
             try

@@ -141,5 +141,11 @@ namespace System
 
         internal const string EcDhPublicKeyBlobMessage = "ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead.";
         internal const string EcDhPublicKeyBlobDiagId = "SYSLIB0043";
+
+        internal const string AssemblyNameCodeBaseMessage = "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.";
+        internal const string AssemblyNameCodeBaseDiagId = "SYSLIB0044";
+
+        internal const string CryptoStringFactoryMessage = "Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.";
+        internal const string CryptoStringFactoryDiagId = "SYSLIB0045";
     }
 }

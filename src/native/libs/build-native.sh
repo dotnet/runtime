@@ -64,7 +64,7 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
+    if [[ "$__TargetOS" != linux-bionic && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__TargetArch build"
     fi
@@ -73,6 +73,9 @@ fi
 if [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
+elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
+    # Android SDK defaults to c++_static; we only need C support
+    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iOSSimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with src/mono/Directory.Build.props

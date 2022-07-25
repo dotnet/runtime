@@ -62,9 +62,13 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                short tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
             }
-            MemoryMarshal.Write(destination, ref value);
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
         }
 
         /// <summary>
@@ -75,9 +79,13 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                int tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
             }
-            MemoryMarshal.Write(destination, ref value);
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
         }
 
         /// <summary>
@@ -88,9 +96,13 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                long tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
             }
-            MemoryMarshal.Write(destination, ref value);
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
         }
 
         /// <summary>
@@ -125,9 +137,13 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                ushort tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
             }
-            MemoryMarshal.Write(destination, ref value);
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
         }
 
         /// <summary>
@@ -139,9 +155,13 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                uint tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
             }
-            MemoryMarshal.Write(destination, ref value);
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
         }
 
         /// <summary>
@@ -153,9 +173,13 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                ulong tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
             }
-            MemoryMarshal.Write(destination, ref value);
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
         }
 
         /// <summary>
@@ -209,8 +233,10 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                short tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
             }
+
             return MemoryMarshal.TryWrite(destination, ref value);
         }
 
@@ -223,8 +249,10 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                int tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
             }
+
             return MemoryMarshal.TryWrite(destination, ref value);
         }
 
@@ -237,8 +265,10 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                long tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
             }
+
             return MemoryMarshal.TryWrite(destination, ref value);
         }
 
@@ -273,8 +303,10 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                ushort tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
             }
+
             return MemoryMarshal.TryWrite(destination, ref value);
         }
 
@@ -288,8 +320,10 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                uint tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
             }
+
             return MemoryMarshal.TryWrite(destination, ref value);
         }
 
@@ -303,8 +337,10 @@ namespace System.Buffers.Binary
         {
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                ulong tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
             }
+
             return MemoryMarshal.TryWrite(destination, ref value);
         }
     }
