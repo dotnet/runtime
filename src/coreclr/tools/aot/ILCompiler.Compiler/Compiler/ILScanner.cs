@@ -368,100 +368,138 @@ namespace ILCompiler
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _abstractButNonabstractlyOverriddenTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
+            private HashSet<TypeDesc> _disqualifiedInterfaces = new();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 foreach (var node in markedNodes)
                 {
-                    if (node is ConstructedEETypeNode eetypeNode)
+                    TypeDesc type;
+
+                    if (node is CanonicalEETypeNode canonEETypeNode)
                     {
-                        TypeDesc type = eetypeNode.Type;
+                        type = canonEETypeNode.Type;
 
-                        if (!type.IsInterface)
+                        foreach (DefType baseInterface in type.RuntimeInterfaces)
                         {
-                            //
-                            // We collect this information:
-                            //
-                            // 1. What types got allocated
-                            // 2. What types are the base types of other types
-                            //    This is needed for optimizations. We use this information to effectively
-                            //    seal types that are not base types for any other type.
-                            // 3. What abstract types got derived by non-abstract types.
-                            //    This is needed for correctness. Abstract types that were never derived
-                            //    by non-abstract types should never be devirtualized into - we probably
-                            //    didn't scan the virtual methods on them.
-                            //
+                            // If the interface is implemented on a template type, there might be
+                            // no real upper bound on the number of actual classes implementing it
+                            // due to MakeGenericType.
+                            if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                _disqualifiedInterfaces.Add(baseInterface);
+                        }
+                    }
 
-                            _constructedTypes.Add(type);
+                    if (node is not ConstructedEETypeNode eetypeNode)
+                        continue;
 
-                            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    type = eetypeNode.Type;
 
-                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    if (type.IsInterface)
+                    {
+                        if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                        {
+                            foreach (DefType baseInterface in type.RuntimeInterfaces)
                             {
-                                // Record all interfaces this class implements to _interfaceImplementators
-                                foreach (DefType baseInterface in type.RuntimeInterfaces)
-                                {
-                                    bool skip = false;
-                                    Instantiation interfaceInstantiation = baseInterface.Instantiation;
-                                    if (!interfaceInstantiation.IsNull)
-                                    {
-                                        foreach (GenericParameterDesc genericParam in baseInterface.GetTypeDefinition().Instantiation)
-                                        {
-                                            if (genericParam.Variance != GenericVariance.None)
-                                            {
-                                                // If the interface has any variance, this gets complicated.
-                                                // Skip for now.
-                                                skip = true;
-                                                break;
-                                            }
-                                        }
-
-                                        // Interfaces implemented by arrays also behave covariantly on arrays even though
-                                        // they're not actually variant. Skip for now.
-                                        skip |= ((CompilerTypeSystemContext)type.Context).IsGenericArrayInterfaceType(baseInterface);
-
-                                        // If the interface has a canonical form, we might not have a full view of all implementers.
-                                        // E.g. if we have:
-                                        // class Fooer<T> : IFooable<T> { }
-                                        // class Doer<T> : IFooable<T> { }
-                                        // And we instantiated Fooer<string>, but not Doer<string>. But we do have code for Doer<__Canon>.
-                                        // We might think we can devirtualize IFooable<string> to Fooer<string>, but someone could
-                                        // typeof(Doer<>).MakeGenericType(typeof(string)) and break our whole program view.
-                                        // This is only a problem if canonical form of the interface exists.
-                                        skip |= baseInterface.ConvertToCanonForm(CanonicalFormKind.Specific) != baseInterface;
-
-                                        if (skip)
-                                            continue;
-                                    }
-
-                                    RecordImplementation(baseInterface, type);
-                                }
-                            }
-
-                            bool hasNonAbstractTypeInHierarchy = canonType is not MetadataType mdType || !mdType.IsAbstract;
-                            TypeDesc baseType = canonType.BaseType;
-                            bool added = true;
-                            while (baseType != null && added)
-                            {
-                                baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-                                Debug.Assert(!baseType.IsInterface);
-
-                                // Record all base types this class subclasses to _interfaceImplementators
-                                RecordImplementation(baseType, canonType);
-
-                                added = _unsealedTypes.Add(baseType);
-
-                                bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
-                                if (currentTypeIsAbstract && hasNonAbstractTypeInHierarchy)
-                                    added |= _abstractButNonabstractlyOverriddenTypes.Add(baseType);
-                                hasNonAbstractTypeInHierarchy |= !currentTypeIsAbstract;
-
-                                baseType = baseType.BaseType;
+                                // If the interface is implemented through IDynamicInterfaceCastable, there might be
+                                // no real upper bound on the number of actual classes implementing it.
+                                if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    _disqualifiedInterfaces.Add(baseInterface);
                             }
                         }
                     }
+                    else
+                    {
+                        //
+                        // We collect this information:
+                        //
+                        // 1. What types got allocated
+                        // 2. What types are the base types of other types
+                        //    This is needed for optimizations. We use this information to effectively
+                        //    seal types that are not base types for any other type.
+                        // 3. What abstract types got derived by non-abstract types.
+                        //    This is needed for correctness. Abstract types that were never derived
+                        //    by non-abstract types should never be devirtualized into - we probably
+                        //    didn't scan the virtual methods on them.
+                        // 4. What types implement interfaces for which use we can assume whole
+                        //    program view.
+                        //
+
+                        _constructedTypes.Add(type);
+
+                        if (type is not MetadataType { IsAbstract: true })
+                        {
+                            // Record all interfaces this class implements to _interfaceImplementators
+                            foreach (DefType baseInterface in type.RuntimeInterfaces)
+                            {
+                                if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                {
+                                    RecordImplementation(baseInterface, type);
+                                }
+                            }
+                        }
+
+                        TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                        bool hasNonAbstractTypeInHierarchy = canonType is not MetadataType mdType || !mdType.IsAbstract;
+                        TypeDesc baseType = canonType.BaseType;
+                        bool added = true;
+                        while (baseType != null && added)
+                        {
+                            baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            added = _unsealedTypes.Add(baseType);
+
+                            bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
+                            if (currentTypeIsAbstract && hasNonAbstractTypeInHierarchy)
+                                added |= _abstractButNonabstractlyOverriddenTypes.Add(baseType);
+                            hasNonAbstractTypeInHierarchy |= !currentTypeIsAbstract;
+
+                            baseType = baseType.BaseType;
+                        }
+                    }
                 }
+            }
+
+            private static bool CanAssumeWholeProgramViewOnInterfaceUse(DefType interfaceType)
+            {
+                if (!interfaceType.HasInstantiation)
+                {
+                    return true;
+                }
+
+                foreach (GenericParameterDesc genericParam in interfaceType.GetTypeDefinition().Instantiation)
+                {
+                    if (genericParam.Variance != GenericVariance.None)
+                    {
+                        // If the interface has any variance, this gets complicated.
+                        // Skip for now.
+                        return false;
+                    }
+                }
+
+                if (((CompilerTypeSystemContext)interfaceType.Context).IsGenericArrayInterfaceType(interfaceType))
+                {
+                    // Interfaces implemented by arrays also behave covariantly on arrays even though
+                    // they're not actually variant. Skip for now.
+                    return false;
+                }
+
+                if (interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != interfaceType
+                    || interfaceType.Context.SupportsUniversalCanon)
+                {
+                    // If the interface has a canonical form, we might not have a full view of all implementers.
+                    // E.g. if we have:
+                    // class Fooer<T> : IFooable<T> { }
+                    // class Doer<T> : IFooable<T> { }
+                    // And we instantiated Fooer<string>, but not Doer<string>. But we do have code for Doer<__Canon>.
+                    // We might think we can devirtualize IFooable<string> to Fooer<string>, but someone could
+                    // typeof(Doer<>).MakeGenericType(typeof(string)) and break our whole program view.
+                    // This is only a problem if canonical form of the interface exists.
+                    return false;
+                }
+
+                return true;
             }
 
             private void RecordImplementation(TypeDesc type, TypeDesc implType)
@@ -528,6 +566,9 @@ namespace ILCompiler
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {
+                if (_disqualifiedInterfaces.Contains(type))
+                    return null;
+
                 if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
                 {
                     var types = new TypeDesc[implementations.Count];
