@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
@@ -14,31 +15,73 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of seconds remaining during which this address is the preferred address.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract long AddressPreferredLifetime { get; }
 
         /// <summary>
         /// Gets the number of seconds remaining during which this address is valid.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract long AddressValidLifetime { get; }
 
         /// <summary>
         /// Specifies the amount of time remaining on the Dynamic Host Configuration Protocol (DHCP) lease for this IP address.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract long DhcpLeaseLifetime { get; }
 
         /// <summary>
         /// Gets a value that indicates the state of the duplicate address detection algorithm.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract DuplicateAddressDetectionState DuplicateAddressDetectionState { get; }
 
         /// <summary>
         /// Gets a value that identifies the source of a unicast IP address prefix.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract PrefixOrigin PrefixOrigin { get; }
 
         /// <summary>
         /// Gets a value that identifies the source of a unicast IP address suffix.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract SuffixOrigin SuffixOrigin { get; }
 
         public abstract IPAddress IPv4Mask { get; }

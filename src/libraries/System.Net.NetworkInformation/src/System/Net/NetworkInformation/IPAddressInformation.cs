@@ -30,6 +30,13 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets a bool value that indicates whether the Internet Protocol (IP) address is transient.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract bool IsTransient { get; }
     }
 }
