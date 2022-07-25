@@ -248,8 +248,7 @@ namespace System.IO.Enumeration
                             {
                                 try
                                 {
-                                    if (_pending == null)
-                                        _pending = new Queue<(IntPtr, string, int)>();
+                                    _pending ??= new Queue<(IntPtr, string, int)>();
                                     _pending.Enqueue((subDirectoryHandle, subDirectory, _remainingRecursionDepth - 1));
                                 }
                                 catch

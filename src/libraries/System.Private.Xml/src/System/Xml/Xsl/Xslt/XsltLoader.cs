@@ -1295,10 +1295,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (scriptNs == null)
-            {
-                scriptNs = _compiler.CreatePhantomNamespace();
-            }
+            scriptNs ??= _compiler.CreatePhantomNamespace();
             ParseStringAttribute(1, "language");
 
             if (!_compiler.Settings.EnableScript)
@@ -1550,11 +1547,7 @@ namespace System.Xml.Xsl.Xslt
         {
             ContextInfo ctxInfo = _input.GetAttributes(_applyTemplatesAttributes);
 
-            string? select = ParseStringAttribute(0, "select");
-            if (select == null)
-            {
-                select = "node()";
-            }
+            string select = ParseStringAttribute(0, "select") ?? "node()";
             QilName mode = ParseModeAttribute(1);
 
             List<XslNode> content = LoadWithParams(InstructionFlags.AllowSort);
@@ -1818,10 +1811,7 @@ namespace System.Xml.Xsl.Xslt
             string? groupingSize = ParseStringAttribute(10, "grouping-size");
 
             // Default values for xsl:number :  level="single"  format="1"
-            if (format == null)
-            {
-                format = "1";
-            }
+            format ??= "1";
 
             CheckNoContent();
             return SetInfo(
@@ -2147,10 +2137,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (select == null /*&& content.Count == 0*/)
-            {
-                select = ".";
-            }
+            select ??= ".";
 
             return SetInfo(F.Sort(select, lang, dataType, order, caseOrder, _input.XslVersion),
                 null, ctxInfo
@@ -2187,10 +2174,7 @@ namespace System.Xml.Xsl.Xslt
 
             string select = ParseStringAttribute(0, "select");
             string regex  = ParseStringAttribute(1, "regex" );
-            string flags  = ParseStringAttribute(2, "flags" );
-            if (flags == null) {
-                flags = "";
-            }
+            string flags  = ParseStringAttribute(2, "flags" ) ?? "";
 
             ReportNYI("xsl:analyze-string");
 
@@ -2412,9 +2396,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (format != null) ReportNYI("xsl:result-document/@format");
 
-            if (href == null) {
-                href = string.Empty;
-            }
+            href ??= string.Empty;
             // attHref is a BaseUri of new output tree. It should be resolved relative to "base output URI"
 
 
@@ -2847,11 +2829,7 @@ namespace System.Xml.Xsl.Xslt
                     }
                     else
                     {
-                        namespaceName = _input.LookupXmlNamespace(prefix);
-                        if (namespaceName == null)
-                        {
-                            namespaceName = _compiler.CreatePhantomNamespace();
-                        }
+                        namespaceName = _input.LookupXmlNamespace(prefix) ?? _compiler.CreatePhantomNamespace();
                     }
                     int index = (
                         (localName == null ? 1 : 0) +
@@ -3071,10 +3049,7 @@ namespace System.Xml.Xsl.Xslt
                     // NOTE: XmlNodeType.SignificantWhitespace is not allowed here
                     if (_input.NodeType != XmlNodeType.Whitespace)
                     {
-                        if (result == null)
-                        {
-                            result = _input.BuildNameLineInfo();
-                        }
+                        result ??= _input.BuildNameLineInfo();
                         _input.SkipNode();
                     }
                 } while (_input.MoveToNextSibling());

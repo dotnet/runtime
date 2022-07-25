@@ -7163,11 +7163,10 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     //
 #if defined(_DEBUG)
                     const char * pStack = "<stack not available>";
-                    StackScratchBuffer buffer;
                     SString sStack;
                     if (GetStackTraceAtContext(sStack, pContext))
                     {
-                        pStack = sStack.GetANSI(buffer);
+                        pStack = sStack.GetUTF8();
                     }
 
                     DWORD tid = GetCurrentThreadId();

@@ -58,24 +58,24 @@ namespace System.Threading.RateLimiting
             _timer.Dispose();
         }
 
-        public override int GetAvailablePermits(TResource resourceID)
+        public override int GetAvailablePermits(TResource resource)
         {
-            return GetRateLimiter(resourceID).GetAvailablePermits();
+            return GetRateLimiter(resource).GetAvailablePermits();
         }
 
-        protected override RateLimitLease AcquireCore(TResource resourceID, int permitCount)
+        protected override RateLimitLease AcquireCore(TResource resource, int permitCount)
         {
-            return GetRateLimiter(resourceID).Acquire(permitCount);
+            return GetRateLimiter(resource).Acquire(permitCount);
         }
 
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
         {
-            return GetRateLimiter(resourceID).WaitAsync(permitCount, cancellationToken);
+            return GetRateLimiter(resource).WaitAndAcquireAsync(permitCount, cancellationToken);
         }
 
-        private RateLimiter GetRateLimiter(TResource resourceID)
+        private RateLimiter GetRateLimiter(TResource resource)
         {
-            RateLimitPartition<TKey> partition = _partitioner(resourceID);
+            RateLimitPartition<TKey> partition = _partitioner(resource);
             Lazy<RateLimiter>? limiter;
             lock (Lock)
             {

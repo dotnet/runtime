@@ -48,6 +48,33 @@
 #include "stringarraylist.h"
 
 
+NameHandle::NameHandle(ModuleBase* pModule, mdToken token) :
+    m_nameSpace(NULL),
+    m_name(NULL),
+    m_pTypeScope(pModule),
+    m_mdType(token),
+    m_mdTokenNotToLoad(tdNoTypes),
+    m_WhichTable(nhCaseSensitive),
+    m_Bucket()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+}
+
+NameHandle::NameHandle(Module* pModule, mdToken token) :
+    m_nameSpace(NULL),
+    m_name(NULL),
+    m_pTypeScope(pModule),
+    m_mdType(token),
+    m_mdTokenNotToLoad(tdNoTypes),
+    m_WhichTable(nhCaseSensitive),
+    m_Bucket()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+}
+
+
 // This method determines the "loader module" for an instantiated type
 // or method. The rule must ensure that any types involved in the
 // instantiated type or method do not outlive the loader module itself
@@ -248,11 +275,22 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
     return TRUE;
 }
 
-// External class loader entry point: load a type by name
 /*static*/
 TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
                                                LPCUTF8 nameSpace,
                                                LPCUTF8 name,
+                                               NotFoundAction fNotFound,
+                                               ClassLoader::LoadTypesFlag fLoadTypes,
+                                               ClassLoadLevel level)
+{
+    WRAPPER_NO_CONTRACT;
+    NameHandle nameHandle(nameSpace, name);
+    return LoadTypeByNameThrowing(pAssembly, &nameHandle, fNotFound, fLoadTypes, level);
+}
+
+/*static*/
+TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
+                                               NameHandle *pNameHandle,
                                                NotFoundAction fNotFound,
                                                ClassLoader::LoadTypesFlag fLoadTypes,
                                                ClassLoadLevel level)
@@ -267,6 +305,7 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
 
         PRECONDITION(CheckPointer(pAssembly));
+        PRECONDITION(pNameHandle != NULL);
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         POSTCONDITION(CheckPointer(RETVAL,
                      (fNotFound == ThrowIfNotFound && fLoadTypes == LoadTypes )? NULL_NOT_OK : NULL_OK));
@@ -278,13 +317,14 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
     }
     CONTRACT_END
 
-    NameHandle nameHandle(nameSpace, name);
-    if (fLoadTypes == DontLoadTypes)
-        nameHandle.SetTokenNotToLoad(tdAllTypes);
-    if (fNotFound == ThrowIfNotFound)
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&nameHandle, level);
+    if (fLoadTypes == ClassLoader::DontLoadTypes)
+        pNameHandle->SetTokenNotToLoad(tdAllTypes);
+
+    ClassLoader* classLoader = pAssembly->GetLoader();
+    if (fNotFound == ClassLoader::ThrowIfNotFound)
+        RETURN classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
     else
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowing(&nameHandle, level);
+        RETURN classLoader->LoadTypeHandleThrowing(pNameHandle, level);
 }
 
 #ifndef DACCESS_COMPILE
@@ -539,7 +579,7 @@ BOOL ClassLoader::CompareNestedEntryWithTypeRef(IMDInternalImport *  pImport,
 
 
 /*static*/
-BOOL ClassLoader::IsNested(Module *pModule, mdToken token, mdToken *mdEncloser)
+BOOL ClassLoader::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdEncloser)
 {
     CONTRACTL
     {
@@ -561,7 +601,8 @@ BOOL ClassLoader::IsNested(Module *pModule, mdToken token, mdToken *mdEncloser)
                     (*mdEncloser != mdTypeRefNil));
 
         case mdtExportedType:
-            IfFailThrow(pModule->GetAssembly()->GetMDImport()->GetExportedTypeProps(
+            _ASSERTE(pModule->IsFullModule());
+            IfFailThrow(((Module*)pModule)->GetAssembly()->GetMDImport()->GetExportedTypeProps(
                 token,
                 NULL,   // namespace
                 NULL,   // name
@@ -713,7 +754,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
 
             if (isNested)
             {
-                Module *pNameModule = pName->GetTypeModule();
+                ModuleBase *pNameModule = pName->GetTypeModule();
                 PREFIX_ASSUME(pNameModule != NULL);
 
                 EEClassHashTable::LookupContext sContext;
@@ -736,7 +777,8 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                                                                (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
                         break;
                     case mdtExportedType:
-                        while ((!CompareNestedEntryWithExportedType(pNameModule->GetAssembly()->GetMDImport(),
+                        _ASSERTE(pNameModule->IsFullModule());
+                        while ((!CompareNestedEntryWithExportedType(((Module*)pNameModule)->GetAssembly()->GetMDImport(),
                                                                     mdEncloser,
                                                                     pCurrentClsModule->GetAvailableClassHash(),
                                                                     pBucket->GetEncloser())) &&
@@ -1779,7 +1821,7 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
 // Only for type refs and type defs (not type specs)
 //
 /*static*/
-TypeHandle ClassLoader::LookupTypeDefOrRefInModule(Module *pModule, mdToken cl, ClassLoadLevel *pLoadLevel)
+TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken cl, ClassLoadLevel *pLoadLevel)
 {
     CONTRACT(TypeHandle)
     {
@@ -1800,7 +1842,7 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(Module *pModule, mdToken cl, 
     TypeHandle typeHandle;
 
     if (TypeFromToken(cl) == mdtTypeDef)
-        typeHandle = pModule->LookupTypeDef(cl, pLoadLevel);
+        typeHandle = static_cast<Module*>(pModule)->LookupTypeDef(cl, pLoadLevel);
     else if (TypeFromToken(cl) == mdtTypeRef)
     {
         typeHandle = pModule->LookupTypeRef(cl);
@@ -2244,7 +2286,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 // handle.
 //
 /*static*/
-TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
+TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                                                  mdToken typeDefOrRef,
                                                  NotFoundAction fNotFoundAction /* = ThrowIfNotFound */ ,
                                                  PermitUninstantiatedFlag fUninstantiated /* = FailIfUninstDefOrRef */,
@@ -2260,8 +2302,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        PRECONDITION(FORBIDGC_LOADER_USE_ENABLED()
-                     || GetAppDomain()->CheckCanLoadTypes(pModule->GetAssembly()));
 
         POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
         POSTCONDITION(level <= CLASS_LOAD_UNRESTORED || RETVAL.IsNull() || RETVAL.IsRestored());
@@ -2324,10 +2364,10 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
         {
             BOOL fNoResolutionScope;
             Module *pFoundModule = Assembly::FindModuleByTypeRef(pModule, typeDefOrRef,
-                                                                  tokenNotToLoad==tdAllTypes ?
+                                                                 tokenNotToLoad==tdAllTypes ?
                                                                                   Loader::DontLoad :
                                                                                   Loader::Load,
-                                                                 &fNoResolutionScope);
+                                                                &fNoResolutionScope);
 
             if (pFoundModule != NULL)
             {
@@ -2346,13 +2386,13 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
                 }
                 else
                 {
-                    if (fNoResolutionScope)
+                    if (fNoResolutionScope && pFoundModule->IsFullModule())
                     {
                         // Everett C++ compiler can generate a TypeRef with RS=0
                         // without respective TypeDef for unmanaged valuetypes,
                         // referenced only by pointers to them,
                         // so we can fail to load legally w/ no exception
-                        typeHnd = ClassLoader::LoadTypeByNameThrowing(pFoundModule->GetAssembly(),
+                        typeHnd = ClassLoader::LoadTypeByNameThrowing(static_cast<Module*>(pFoundModule)->GetAssembly(),
                                                                       pszNameSpace,
                                                                       pszClassName,
                                                                       ClassLoader::ReturnNullIfNotFound,
@@ -2372,7 +2412,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);
                         typeHnd = pFoundModule->GetClassLoader()->
                             LoadTypeHandleThrowIfFailed(&nameHandle, level,
-                                                        pFoundModule->IsReflection() ? NULL : pFoundModule);
+                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflection() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
                     }
                 }
 
@@ -2385,7 +2425,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
         else
         {
             // This is the mdtTypeDef case...
-            typeHnd = LoadTypeDefThrowing(pModule, typeDefOrRef,
+            typeHnd = LoadTypeDefThrowing(static_cast<Module*>(pModule), typeDefOrRef,
                                           fNotFoundAction,
                                           fUninstantiated,
                                           tokenNotToLoad,
@@ -2403,9 +2443,9 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
     if ((fNotFoundAction == ThrowIfNotFound) && thRes.IsNull() && (tokenNotToLoad != tdAllTypes))
     {
 #ifndef DACCESS_COMPILE
-        pModule->GetAssembly()->ThrowTypeLoadException(pModule->GetMDImport(),
-                                                       typeDefOrRef,
-                                                       IDS_CLASSLOAD_GENERAL);
+        pModule->ThrowTypeLoadException(pModule->GetMDImport(),
+                                        typeDefOrRef,
+                                        IDS_CLASSLOAD_GENERAL);
 #else
         DacNotImpl();
 #endif
@@ -2417,7 +2457,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(Module *pModule,
 /*static*/
 BOOL
 ClassLoader::ResolveTokenToTypeDefThrowing(
-    Module *         pTypeRefModule,
+    ModuleBase *     pTypeRefModule,
     mdTypeRef        typeRefToken,
     Module **        ppTypeDefModule,
     mdTypeDef *      pTypeDefToken,
@@ -2438,8 +2478,11 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
     // It's a TypeDef already
     if (TypeFromToken(typeRefToken) == mdtTypeDef)
     {
+        if (!pTypeRefModule->IsFullModule())
+            return FALSE;
+
         if (ppTypeDefModule != NULL)
-            *ppTypeDefModule = pTypeRefModule;
+            *ppTypeDefModule = static_cast<Module*>(pTypeRefModule);
         if (pTypeDefToken != NULL)
             *pTypeDefToken = typeRefToken;
         RETURN TRUE;

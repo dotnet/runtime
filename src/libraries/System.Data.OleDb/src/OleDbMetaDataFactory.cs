@@ -319,10 +319,7 @@ namespace System.Data.OleDb
             {
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
-                {
-                    quoteSuffix = quotePrefix;
-                }
+                quoteSuffix ??= quotePrefix;
 
                 // only know how to build the parttern if the suffix is 1 character
                 // in all other cases just leave the field null
@@ -540,7 +537,7 @@ namespace System.Data.OleDb
                             DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
                             int numberOfSupportedRestictions = -1;
                             // prepare colletion is called with the exact collection name so
-                            // we can do an exact string comparision here
+                            // we can do an exact string comparison here
                             foreach (DataRow row in metaDataCollectionsTable.Rows)
                             {
                                 string candidateCollectionName = ((string)row[DbMetaDataColumnNames.CollectionName, DataRowVersion.Current]);

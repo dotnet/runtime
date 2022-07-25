@@ -316,7 +316,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public long AddParticipants(int participantCount)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (participantCount < 1)
             {
@@ -420,7 +420,7 @@ namespace System.Threading
         /// disposed.</exception>
         public void RemoveParticipants(int participantCount)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (participantCount < 1)
             {
@@ -620,7 +620,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool SignalAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             cancellationToken.ThrowIfCancellationRequested();
 
             if (millisecondsTimeout < -1)
@@ -930,17 +930,6 @@ namespace System.Threading
                     _evenEvent.Dispose();
                 }
                 _disposed = true;
-            }
-        }
-
-        /// <summary>
-        /// Throw ObjectDisposedException if the barrier is disposed
-        /// </summary>
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Barrier), SR.Barrier_Dispose);
             }
         }
     }

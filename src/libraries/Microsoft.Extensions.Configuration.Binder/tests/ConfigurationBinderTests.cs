@@ -1751,20 +1751,45 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void CanBindVirtualPropertiesWithoutDuplicates()
+        public void CanBindVirtualProperties()
         {
             ConfigurationBuilder configurationBuilder = new();
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { "Test:0", "1" }
+                { $"{nameof(BaseClassWithVirtualProperty.Test)}:0", "1" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestGetSetOverriden)}", "2" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestGetOverriden)}", "3" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestSetOverriden)}", "4" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestNoOverriden)}", "5" },
+                { $"{nameof(BaseClassWithVirtualProperty.TestVirtualSet)}", "6" }
             });
             IConfiguration config = configurationBuilder.Build();
 
             var test = new ClassOverridingVirtualProperty();
             config.Bind(test);
+
             Assert.Equal("1", Assert.Single(test.Test));
+            Assert.Equal("2", test.TestGetSetOverriden);
+            Assert.Equal("3", test.TestGetOverriden);
+            Assert.Equal("4", test.TestSetOverriden);
+            Assert.Equal("5", test.TestNoOverriden);
+            Assert.Null(test.ExposeTestVirtualSet());
         }
 
+        [Fact]
+        public void CanBindPrivatePropertiesFromBaseClass()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "PrivateProperty", "a" }
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            var test = new ClassOverridingVirtualProperty();
+            config.Bind(test, b => b.BindNonPublicProperties = true);
+            Assert.Equal("a", test.ExposePrivatePropertyValue());
+        }
 
         private interface ISomeInterface
         {
@@ -1845,12 +1870,43 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public class BaseClassWithVirtualProperty
         {
+            private string? PrivateProperty { get; set; }
+
             public virtual string[] Test { get; set; } = System.Array.Empty<string>();
+
+            public virtual string? TestGetSetOverriden { get; set; }
+            public virtual string? TestGetOverriden { get; set; }
+            public virtual string? TestSetOverriden { get; set; }
+
+            private string? _testVirtualSet;
+            public virtual string? TestVirtualSet
+            {
+                set => _testVirtualSet = value;
+            }
+
+            public virtual string? TestNoOverriden { get; set; }
+
+            public string? ExposePrivatePropertyValue() => PrivateProperty;
         }
 
         public class ClassOverridingVirtualProperty : BaseClassWithVirtualProperty
         {
             public override string[] Test { get => base.Test; set => base.Test = value; }
+
+            public override string? TestGetSetOverriden { get; set; }
+            public override string? TestGetOverriden => base.TestGetOverriden;
+            public override string? TestSetOverriden
+            {
+                set => base.TestSetOverriden = value;
+            }
+
+            private string? _testVirtualSet;
+            public override string? TestVirtualSet
+            {
+                set => _testVirtualSet = value;
+            }
+
+            public string? ExposeTestVirtualSet() => _testVirtualSet;
         }
     }
 }

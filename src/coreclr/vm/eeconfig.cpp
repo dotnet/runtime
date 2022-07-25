@@ -237,6 +237,10 @@ HRESULT EEConfig::Init()
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
 
+#if defined(FEATURE_PGO)
+    fTieredPGO = false;
+#endif
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = 10;
     dwOSR_CounterBump = 5000;
@@ -767,6 +771,10 @@ HRESULT EEConfig::sync()
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#endif
+
+#if defined(FEATURE_PGO)
+    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

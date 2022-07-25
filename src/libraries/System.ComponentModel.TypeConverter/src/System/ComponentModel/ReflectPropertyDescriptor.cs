@@ -910,10 +910,7 @@ namespace System.ComponentModel
                         name = site.Name;
                     }
 
-                    if (name == null)
-                    {
-                        name = component.GetType().FullName;
-                    }
+                    name ??= component.GetType().FullName;
 
                     if (t is TargetInvocationException)
                     {

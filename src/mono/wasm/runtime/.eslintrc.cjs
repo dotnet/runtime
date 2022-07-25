@@ -29,7 +29,10 @@ module.exports = {
         "indent": [
             "error",
             4,
-            { SwitchCase: 1 }
+            {
+                SwitchCase: 1,
+                "ignoredNodes": ["VariableDeclaration[declarations.length=0]"] // fixes https://github.com/microsoft/vscode-eslint/issues/1149
+            }
         ],
         "linebreak-style": "off",
         "quotes": [

@@ -38,6 +38,7 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
+        public static bool IsNotAndroidX86 => !(IsAndroid && IsX86Process);
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -151,6 +152,8 @@ namespace System
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
         public static bool IsMethodBodySupported => !IsNativeAot;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
+        public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
+        public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -204,8 +207,8 @@ namespace System
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
-        // Changed to `true` when linking
-        public static bool IsBuiltWithAggressiveTrimming => false;
+        // Changed to `true` when trimming
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
@@ -240,7 +243,7 @@ namespace System
 
         public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
-        public static bool SupportsHardLinkCreation => !IsAndroid;
+        public static bool SupportsHardLinkCreation => !IsAndroid && !IsLinuxBionic;
 
         private static readonly Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
         private static readonly Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);

@@ -59,6 +59,10 @@ internal sealed class JSEngineHost
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
 
+        var runArgsJson = new RunArgumentsJson(applicationArguments: Array.Empty<string>(),
+                                               runtimeArguments: _args.CommonConfig.RuntimeArguments);
+        runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
+
         var args = new List<string>();
 
         if (_args.Host == WasmHost.V8)
@@ -75,8 +79,6 @@ internal sealed class JSEngineHost
             // v8/jsc want arguments to the script separated by "--", others don't
             args.Add("--");
         }
-        foreach (var rarg in _args.CommonConfig.RuntimeArguments)
-            args.Add($"--runtime-arg={rarg}");
 
         args.AddRange(_args.AppArgs);
 

@@ -151,6 +151,45 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR ep_rt_redefine
 
 /*
+ * Little-Endian Conversion.
+ */
+
+static
+inline
+uint16_t
+ep_rt_val_uint16_t (uint16_t value);
+
+static
+inline
+uint32_t
+ep_rt_val_uint32_t (uint32_t value);
+
+static
+inline
+uint64_t
+ep_rt_val_uint64_t (uint64_t value);
+
+static
+inline
+int16_t
+ep_rt_val_int16_t (int16_t value);
+
+static
+inline
+int32_t
+ep_rt_val_int32_t (int32_t value);
+
+static
+inline
+int64_t
+ep_rt_val_int64_t (int64_t value);
+
+static
+inline
+uintptr_t
+ep_rt_val_uintptr_t (uintptr_t value);
+
+/*
 * Atomics.
 */
 
@@ -725,7 +764,7 @@ ep_rt_utf8_string_replace (
 
 static
 ep_char16_t *
-ep_rt_utf8_to_utf16_string (
+ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
 	size_t len);
 
@@ -744,6 +783,12 @@ ep_rt_utf16_string_len (const ep_char16_t *str);
 static
 ep_char8_t *
 ep_rt_utf16_to_utf8_string (
+	const ep_char16_t *str,
+	size_t len);
+
+static
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string (
 	const ep_char16_t *str,
 	size_t len);
 

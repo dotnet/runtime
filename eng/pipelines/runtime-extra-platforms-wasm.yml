@@ -57,11 +57,21 @@ jobs:
     parameters:
       platforms:
         - Browser_wasm
-        - Browser_wasm_win
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+  # Library tests - Windows
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm_win
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
         - WasmTestOnBrowser
         - WasmTestOnNodeJs
 

@@ -323,7 +323,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             _output?.WriteLine("ProcessIncomingFramesAsync finished");
-            _connection.Dispose();
+            await _connection.DisposeAsync();
         }
 
         private void DisablePingResponse() => Interlocked.Exchange(ref _sendPingResponse, 0);

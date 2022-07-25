@@ -11,33 +11,6 @@ include AsmMacros.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn
-;;
-;;
-;; INPUT: none
-;;
-;; TRASHES: none
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-_RhpWaitForSuspend proc public
-        push        ebp
-        mov         ebp, esp
-        push        eax
-        push        ecx
-        push        edx
-
-        call        RhpWaitForSuspend2
-
-        pop         edx
-        pop         ecx
-        pop         eax
-        pop         ebp
-        ret
-_RhpWaitForSuspend endp
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; RhpWaitForGCNoAbort
 ;;
 ;;

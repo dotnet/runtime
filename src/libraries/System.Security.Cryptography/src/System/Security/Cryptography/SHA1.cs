@@ -36,6 +36,7 @@ namespace System.Security.Cryptography
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA1? Create(string hashName) => (SHA1?)CryptoConfig.CreateFromName(hashName);
 

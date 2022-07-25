@@ -741,11 +741,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                string debugName;
-                debugName = this.ToString();
-                if (debugName == null)
-                    debugName = "";
-                _debugName = debugName;
+                _debugName = ToString() ?? "";
             }
             return;
         }

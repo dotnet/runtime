@@ -50,14 +50,6 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                // Validate that the project is not using top-level statements, since if it were, the code-fixer
-                // can't easily convert to the source generator without having to make the program not use top-level
-                // statements any longer.
-                if (ProjectUsesTopLevelStatements(compilation))
-                {
-                    return;
-                }
-
                 // Pre-compute a hash with all of the method symbols that we want to analyze for possibly emitting
                 // a diagnostic.
                 HashSet<IMethodSymbol> staticMethodsToDetect = GetMethodSymbolHash(regexTypeSymbol,
@@ -249,15 +241,6 @@ namespace System.Text.RegularExpressions.Generator
         /// <returns><see langword="true"/> if the argument is constant; otherwise, <see langword="false"/>.</returns>
         private static bool IsConstant(IArgumentOperation argument)
             => argument.Value.ConstantValue.HasValue;
-
-        /// <summary>
-        /// Detects whether or not the current project is using top-level statements.
-        /// </summary>
-        private static bool ProjectUsesTopLevelStatements(Compilation compilation)
-        {
-            INamedTypeSymbol? programType = compilation.GetTypeByMetadataName("Program");
-            return programType is not null && !programType.GetMembers("<Main>$").IsEmpty;
-        }
 
         /// <summary>
         /// Ensures that the compilation can find the Regex and RegexAttribute types, and also validates that the

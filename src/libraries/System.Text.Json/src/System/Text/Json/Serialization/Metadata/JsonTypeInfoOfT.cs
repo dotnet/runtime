@@ -32,13 +32,13 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(createObject is null or Func<object> or Func<T>);
 
-            CheckMutable();
+            VerifyMutable();
 
             if (Kind == JsonTypeInfoKind.None)
             {
                 Debug.Assert(_createObject == null);
                 Debug.Assert(_typedCreateObject == null);
-                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKindNone();
+                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
             }
 
             Func<object>? untypedCreateObject;
@@ -83,9 +83,50 @@ namespace System.Text.Json.Serialization.Metadata
             }
             private protected set
             {
-                Debug.Assert(!_isConfigured, "We should not mutate configured JsonTypeInfo");
+                Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
                 _serialize = value;
                 HasSerialize = value != null;
+            }
+        }
+
+        private protected override JsonPropertyInfo CreatePropertyInfoForTypeInfo()
+        {
+            return new JsonPropertyInfo<T>(
+                declaringType: typeof(T),
+                declaringTypeInfo: null,
+                Options)
+            {
+                DefaultConverterForType = Converter,
+                JsonTypeInfo = this,
+                IsForTypeInfo = true,
+            };
+        }
+
+        private protected void MapInterfaceTypesToCallbacks()
+        {
+            // Callbacks currently only supported in object kinds
+            // TODO: extend to collections/dictionaries
+            if (Kind == JsonTypeInfoKind.Object)
+            {
+                if (typeof(IJsonOnSerializing).IsAssignableFrom(typeof(T)))
+                {
+                    OnSerializing = static obj => ((IJsonOnSerializing)obj).OnSerializing();
+                }
+
+                if (typeof(IJsonOnSerialized).IsAssignableFrom(typeof(T)))
+                {
+                    OnSerialized = static obj => ((IJsonOnSerialized)obj).OnSerialized();
+                }
+
+                if (typeof(IJsonOnDeserializing).IsAssignableFrom(typeof(T)))
+                {
+                    OnDeserializing = static obj => ((IJsonOnDeserializing)obj).OnDeserializing();
+                }
+
+                if (typeof(IJsonOnDeserialized).IsAssignableFrom(typeof(T)))
+                {
+                    OnDeserialized = static obj => ((IJsonOnDeserialized)obj).OnDeserialized();
+                }
             }
         }
     }

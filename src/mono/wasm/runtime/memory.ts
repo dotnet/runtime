@@ -103,7 +103,7 @@ export function setI32(offset: _MemOffset, value: number): void {
     Module.HEAP32[<any>offset >>> 2] = value;
 }
 
-function autoThrowI52 (error: I52Error) {
+function autoThrowI52(error: I52Error) {
     if (error === I52Error.NONE)
         return;
 
@@ -138,14 +138,19 @@ export function setU52(offset: _MemOffset, value: number): void {
 
 export function setI64Big(offset: _MemOffset, value: bigint): void {
     mono_assert(is_bigint_supported, "BigInt is not supported.");
+    mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
+    mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
+
     HEAPI64[<any>offset >>> 3] = value;
 }
 
 export function setF32(offset: _MemOffset, value: number): void {
+    mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     Module.HEAPF32[<any>offset >>> 2] = value;
 }
 
 export function setF64(offset: _MemOffset, value: number): void {
+    mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
@@ -211,8 +216,12 @@ export function getF64(offset: _MemOffset): number {
     return Module.HEAPF64[<any>offset >>> 3];
 }
 
-export function afterUpdateGlobalBufferAndViews(buffer: Buffer): void {
+let max_int64_big: BigInt;
+let min_int64_big: BigInt;
+export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
     if (is_bigint_supported) {
+        max_int64_big = BigInt("9223372036854775807");
+        min_int64_big = BigInt("-9223372036854775808");
         HEAPI64 = new BigInt64Array(buffer);
     }
 }

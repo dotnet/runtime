@@ -84,9 +84,9 @@ internal static partial class Interop
 
             if (key == null || key.IsInvalid)
             {
-                if (key != null)
-                    key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                key?.Dispose();
+                throw e;
             }
 
             // EcKeyCreateByExplicitParameters may have polluted the error queue, but key was good in the end.

@@ -44,6 +44,9 @@ public class Interfaces
         TestStaticInterfaceMethodsAnalysis.Run();
         TestStaticInterfaceMethods.Run();
         TestSimpleStaticDefaultInterfaceMethods.Run();
+        TestSimpleDynamicStaticVirtualMethods.Run();
+        TestGenericDynamicStaticVirtualMethods.Run();
+        TestVariantGenericDynamicStaticVirtualMethods.Run();
 
         return Pass;
     }
@@ -1094,4 +1097,195 @@ public class Interfaces
                 throw new Exception();
         }
     }
+
+    class TestSimpleDynamicStaticVirtualMethods
+    {
+        public interface IFoo
+        {
+            static abstract int CallMeDirect();
+            static abstract int CallMeIndirect();
+            static virtual int DefaultImplemented() => 42;
+        }
+
+        class Foo : IFoo
+        {
+            public static int CallMeDirect() => 2019;
+            public static int CallMeIndirect() => 2022;
+        }
+
+        class FrobCaller<T> where T : IFoo
+        {
+            public static int CallDirect() => T.CallMeDirect();
+            public static int CallIndirect()
+            {
+                Func<int> d = T.CallMeIndirect;
+                return d();
+            }
+            public static int CallDefault() => T.DefaultImplemented();
+        }
+
+        static Type s_fooType = typeof(Foo);
+
+        public static void Run()
+        {
+            Type t = typeof(FrobCaller<>).MakeGenericType(s_fooType);
+
+            {
+                var mi = t.GetMethod("CallDirect");
+                int result = (int)mi.Invoke(null, Array.Empty<object>());
+                if (result != 2019)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallIndirect");
+                int result = (int)mi.Invoke(null, Array.Empty<object>());
+                if (result != 2022)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallDefault");
+                int result = (int)mi.Invoke(null, Array.Empty<object>());
+                if (result != 42)
+                    throw new Exception();
+            }
+        }
+    }
+
+    class TestGenericDynamicStaticVirtualMethods
+    {
+        public interface IFoo<T>
+        {
+            static abstract (int, Type) CallMeDirect();
+            static abstract (int, Type) CallMeIndirect();
+            static virtual (int, Type) DefaultImplemented() => (42, typeof(T[]));
+        }
+
+        class Foo<T> : IFoo<T>
+        {
+            public static (int, Type) CallMeDirect() => (2019, typeof(T[,]));
+            public static (int, Type) CallMeIndirect() => (2022, typeof(T[,,]));
+        }
+
+        class FrobCaller<T, U> where T : IFoo<U>
+        {
+            public static (int, Type) CallDirect() => T.CallMeDirect();
+            public static (int, Type) CallIndirect()
+            {
+                Func<(int, Type)> d = T.CallMeIndirect;
+                return d();
+            }
+            public static (int, Type) CallDefault() => T.DefaultImplemented();
+        }
+
+        class Wrapper<T>
+        {
+            public static (int, Type) CallDirect() => FrobCaller<Foo<T>, T>.CallDirect();
+            public static (int, Type) CallIndirect() => FrobCaller<Foo<T>, T>.CallIndirect();
+            public static (int, Type) CallDefault() => FrobCaller<Foo<T>, T>.CallDefault();
+        }
+
+        class Atom { }
+
+        static Type s_atomType = typeof(Atom);
+
+        public static void Run()
+        {
+            Type t = typeof(Wrapper<>).MakeGenericType(s_atomType);
+
+            {
+                var mi = t.GetMethod("CallDirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2019)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 2 || result.Item2.GetElementType() != s_atomType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallIndirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2022)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 3 || result.Item2.GetElementType() != s_atomType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallDefault");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 42)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 1 || result.Item2.GetElementType() != s_atomType)
+                    throw new Exception();
+            }
+        }
+    }
+
+    class TestVariantGenericDynamicStaticVirtualMethods
+    {
+        public interface IFoo<in T>
+        {
+            static abstract (int, Type) CallMeDirect();
+            static abstract (int, Type) CallMeIndirect();
+            static virtual (int, Type) DefaultImplemented() => (42, typeof(T[]));
+        }
+
+        class AbjectFail<T> : IFoo<T>
+        {
+            public static (int, Type) CallMeDirect() => (2019, typeof(T[,]));
+            public static (int, Type) CallMeIndirect() => (2022, typeof(T[,,]));
+        }
+
+        class FrobCaller<T, U> where T : IFoo<U>
+        {
+            public static (int, Type) CallDirect() => T.CallMeDirect();
+            public static (int, Type) CallIndirect()
+            {
+                Func<(int, Type)> d = T.CallMeIndirect;
+                return d();
+            }
+            public static (int, Type) CallDefault() => T.DefaultImplemented();
+        }
+
+        class AtomBase { }
+        class Atom : AtomBase { }
+
+        static Type s_atomType = typeof(Atom);
+        static Type s_atomBaseType = typeof(AtomBase);
+
+        public static void Run()
+        {
+            Type t = typeof(FrobCaller<,>).MakeGenericType(typeof(AbjectFail<AtomBase>), s_atomType);
+
+            {
+                var mi = t.GetMethod("CallDirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2019)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 2 || result.Item2.GetElementType() != s_atomBaseType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallIndirect");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 2022)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 3 || result.Item2.GetElementType() != s_atomBaseType)
+                    throw new Exception();
+            }
+
+            {
+                var mi = t.GetMethod("CallDefault");
+                var result = ((int, Type))mi.Invoke(null, Array.Empty<object>());
+                if (result.Item1 != 42)
+                    throw new Exception();
+                if (result.Item2.GetArrayRank() != 1 || result.Item2.GetElementType() != s_atomBaseType)
+                    throw new Exception();
+            }
+        }
+    }
+
 }

@@ -1743,10 +1743,7 @@ namespace System.Linq.Expressions.Interpreter
                 Debug.Assert(label != null);
             }
 
-            if (label == null)
-            {
-                label = DefineLabel(node.Target);
-            }
+            label ??= DefineLabel(node.Target);
 
             if (node.DefaultValue != null)
             {
@@ -2166,10 +2163,7 @@ namespace System.Linq.Expressions.Interpreter
                     ByRefUpdater? updater = CompileAddress(arg, i);
                     if (updater != null)
                     {
-                        if (updaters == null)
-                        {
-                            updaters = new List<ByRefUpdater>();
-                        }
+                        updaters ??= new List<ByRefUpdater>();
 
                         updaters.Add(updater);
                     }
@@ -2406,10 +2400,7 @@ namespace System.Linq.Expressions.Interpreter
                         ByRefUpdater? updater = CompileAddress(arg, i);
                         if (updater != null)
                         {
-                            if (updaters == null)
-                            {
-                                updaters = new List<ByRefUpdater>();
-                            }
+                            updaters ??= new List<ByRefUpdater>();
                             updaters.Add(updater);
                         }
                     }

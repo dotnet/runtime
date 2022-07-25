@@ -463,8 +463,7 @@ namespace System.Dynamic
 
                     if (variable.IsByRef)
                     {
-                        if (block == null)
-                            block = new ReadOnlyCollectionBuilder<Expression>();
+                        block ??= new ReadOnlyCollectionBuilder<Expression>();
 
                         block.Add(
                             Expression.Assign(

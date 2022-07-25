@@ -249,21 +249,11 @@ namespace System.ServiceProcess
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog
-        {
-            get
+        public virtual EventLog EventLog =>
+            _eventLog ??= new EventLog("Application")
             {
-                if (_eventLog == null)
-                {
-                    _eventLog = new EventLog("Application")
-                    {
-                        Source = ServiceName
-                    };
-                }
-
-                return _eventLog;
-            }
-        }
+                Source = ServiceName
+            };
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected IntPtr ServiceHandle

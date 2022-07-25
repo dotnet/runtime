@@ -603,6 +603,13 @@ void DomainAssembly::Activate()
     }
 #endif //_DEBUG
 
+#ifdef FEATURE_READYTORUN
+    if (m_pModule->IsReadyToRun())
+    {
+        m_pModule->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
+    }
+#endif
+
     RETURN;
 }
 

@@ -1889,6 +1889,23 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
+    // We cannot compact a block that participates in loop
+    // alignment.
+    //
+    if ((bNext->countOfInEdges() > 1) && bNext->isLoopAlign())
+    {
+        return false;
+    }
+
+    // If we are trying to compact blocks from different loops
+    // that don't do it.
+    //
+    if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
+        (block->bbNatLoopNum != bNext->bbNatLoopNum))
+    {
+        return false;
+    }
+
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
     for (BasicBlock* const predBlock : bNext->PredBlocks())
@@ -1949,8 +1966,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     if (bNext->countOfInEdges() > 1)
     {
         JITDUMP("Second block has multiple incoming edges\n");
-
         assert(block->isEmpty());
+
         for (BasicBlock* const predBlock : bNext->PredBlocks())
         {
             fgReplaceJumpTarget(predBlock, block, bNext);
@@ -3328,7 +3345,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
                 {
                     GenTree* const op2 = tree->AsOp()->gtOp2;
 
-                    if (op2->OperIs(GT_ARR_LENGTH) || op2->OperIsConst() || op2->OperIsCompare())
+                    if (op2->OperIsArrLength() || op2->OperIsConst() || op2->OperIsCompare())
                     {
                         return true;
                     }
@@ -4108,7 +4125,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->bbFlags |= (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN));
+    bJump->bbFlags |= (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN));
 
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;

@@ -4412,6 +4412,60 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_CEQ/GT_CNE node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForConditional(GenTreeConditional* tree)
+{
+    emitter* emit = GetEmitter();
+
+    GenTree*  opcond  = tree->gtCond;
+    GenTree*  op1     = tree->gtOp1;
+    GenTree*  op2     = tree->gtOp2;
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+    emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
+    insCond   cond    = InsCondForCompareOp(opcond);
+
+    assert(!op1->isUsedFromMemory());
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
+
+    regNumber targetReg = tree->GetRegNum();
+    regNumber srcReg1   = genConsumeReg(op1);
+
+    if (tree->OperIs(GT_SELECT))
+    {
+        regNumber srcReg2 = genConsumeReg(op2);
+        emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, cond);
+        regSet.verifyRegUsed(targetReg);
+    }
+    else
+    {
+        assert(!varTypeIsFloating(op2Type));
+        // We don't support swapping op1 and op2 to generate cmp reg, imm.
+        assert(!op1->isContainedIntOrIImmed());
+        // This should not be generating into a register.
+        assert(targetReg == REG_NA);
+
+        // For the ccmp flags, get the condition of the compare.
+        insCflags cflags = InsCflagsForCcmp(InsCondForCompareOp(tree));
+
+        if (op2->isContainedIntOrIImmed())
+        {
+            GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+            emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, cond);
+        }
+        else
+        {
+            regNumber srcReg2 = genConsumeReg(op2);
+            emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, cond);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
 // A GT_JCMP node is created when a comparison and conditional branch
@@ -10379,6 +10433,125 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     }
 
     genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// InsCondForCompareOp: Map the condition in a Compare/Conditional op to a insCond.
+//
+// Arguments:
+//    tree - the node
+//
+insCond CodeGen::InsCondForCompareOp(GenTree* tree)
+{
+    assert(tree->OperIsCompare() || tree->OperIsConditionalCompare());
+
+    if (tree->OperIsCompare())
+    {
+        switch (tree->AsOp()->OperGet())
+        {
+            case GT_EQ:
+            case GT_TEST_EQ:
+                return INS_COND_EQ;
+            case GT_NE:
+            case GT_TEST_NE:
+                return INS_COND_NE;
+            case GT_GE:
+                return INS_COND_GE;
+            case GT_GT:
+                return INS_COND_GT;
+            case GT_LT:
+                return INS_COND_LT;
+            case GT_LE:
+                return INS_COND_LE;
+            default:
+                assert(false && "Invalid condition");
+                return INS_COND_EQ;
+        }
+    }
+    else
+    {
+        switch (tree->AsConditional()->OperGet())
+        {
+            case GT_CEQ:
+                return INS_COND_EQ;
+            case GT_CNE:
+                return INS_COND_NE;
+            case GT_CGE:
+                return INS_COND_GE;
+            case GT_CGT:
+                return INS_COND_GT;
+            case GT_CLT:
+                return INS_COND_LT;
+            case GT_CLE:
+                return INS_COND_LE;
+            default:
+                assert(false && "Invalid condition");
+                return INS_COND_EQ;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// InvertInsCond: Invert an insCond
+//
+// Arguments:
+//    cond - the insCond.
+//
+insCond CodeGen::InvertInsCond(insCond cond)
+{
+    switch (cond)
+    {
+        case INS_COND_EQ:
+            return INS_COND_NE;
+        case INS_COND_NE:
+            return INS_COND_EQ;
+        case INS_COND_GE:
+            return INS_COND_LT;
+        case INS_COND_GT:
+            return INS_COND_LE;
+        case INS_COND_LT:
+            return INS_COND_GE;
+        case INS_COND_LE:
+            return INS_COND_GT;
+        default:
+            assert(false && "Invalid condition");
+            return INS_COND_EQ;
+    }
+}
+
+//------------------------------------------------------------------------
+// InsCflagsForCcmp: Get the Cflags for a required for a CCMP instruction.
+//
+// Consider:
+//   cmp w, x
+//   ccmp y, z, A, COND
+// This is: compare w and x, if this matches condition COND, then compare y and z.
+// Otherwise set flags to A - this should match the case where cmp failed.
+// Given COND, this function returns A.
+//
+// Arguments:
+//    cond - the insCond.
+//
+insCflags CodeGen::InsCflagsForCcmp(insCond cond)
+{
+    switch (InvertInsCond(cond))
+    {
+        case INS_COND_EQ:
+            return INS_FLAGS_Z;
+        case INS_COND_NE:
+            return INS_FLAGS_NONE;
+        case INS_COND_GE:
+            return INS_FLAGS_Z;
+        case INS_COND_GT:
+            return INS_FLAGS_NONE;
+        case INS_COND_LT:
+            return INS_FLAGS_NC;
+        case INS_COND_LE:
+            return INS_FLAGS_NZC;
+        default:
+            assert(false && "Invalid condition");
+            return INS_FLAGS_NONE;
+    }
 }
 
 #endif // TARGET_ARM64

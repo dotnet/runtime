@@ -69,9 +69,12 @@ namespace System.Text.Json.Serialization
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
 
-        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo parentTypeInfo)
+        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
         {
-            return new JsonPropertyInfo<T>(parentTypeInfo);
+            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
+            {
+                DefaultConverterForType = this
+            };
         }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()
@@ -81,6 +84,7 @@ namespace System.Text.Json.Serialization
 
         internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
+            JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
             return new CastingConverter<TTarget, T>(this);
         }
 

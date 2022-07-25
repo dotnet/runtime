@@ -48,7 +48,7 @@ namespace System.Text.Json
             // Determine if we should use the extension property.
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                JsonPropertyInfo? dataExtProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtProperty = state.Current.JsonTypeInfo.ExtensionDataProperty;
                 if (dataExtProperty != null && dataExtProperty.HasGetter && dataExtProperty.HasSetter)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);

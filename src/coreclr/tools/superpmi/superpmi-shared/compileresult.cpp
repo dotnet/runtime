@@ -1051,9 +1051,18 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     }
                 }
 
-                if (delta != (INT64)(int)delta)
+                if (IsSpmiTarget32Bit())
                 {
-                    LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                    // Only 32 bits matters. And we don't care about sign. Note that SuperPMI will sometimes return
+                    // arbitrary values, such as 0xCAFE0003 from MethodContext::repGetHelperFtn().
+                    delta &= 0xFFFFFFFF;
+                }
+                else
+                {
+                    if (delta != (INT64)(int)delta)
+                    {
+                        LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                    }
                 }
 
                 if ((targetArch == SPMI_TARGET_ARCHITECTURE_AMD64) && !deltaIsFinal)

@@ -163,21 +163,6 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* 
     Compiler*        comp      = walkData->compiler;
     optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
 
-    if (IS_CSE_INDEX(tree->gtCSEnum))
-    {
-        unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
-        // Note that we DO NOT use getCSEAvailBit() here, for the CSE_defMask/CSE_useMask
-        unsigned cseBit = genCSEnum2bit(cseIndex);
-        if (IS_CSE_DEF(tree->gtCSEnum))
-        {
-            BitVecOps::AddElemD(comp->cseMaskTraits, pUserData->CSE_defMask, cseBit);
-        }
-        else
-        {
-            BitVecOps::AddElemD(comp->cseMaskTraits, pUserData->CSE_useMask, cseBit);
-        }
-    }
-
     return WALK_CONTINUE;
 }
 
@@ -186,9 +171,45 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* 
 //
 void Compiler::optCSE_GetMaskData(GenTree* tree, optCSE_MaskData* pMaskData)
 {
+    class MaskDataWalker : public GenTreeVisitor<MaskDataWalker>
+    {
+        optCSE_MaskData* m_maskData;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData) : GenTreeVisitor(comp), m_maskData(maskData)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            if (IS_CSE_INDEX(tree->gtCSEnum))
+            {
+                unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
+                // Note that we DO NOT use getCSEAvailBit() here, for the CSE_defMask/CSE_useMask
+                unsigned cseBit = genCSEnum2bit(cseIndex);
+                if (IS_CSE_DEF(tree->gtCSEnum))
+                {
+                    BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_defMask, cseBit);
+                }
+                else
+                {
+                    BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_useMask, cseBit);
+                }
+            }
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
     pMaskData->CSE_defMask = BitVecOps::MakeEmpty(cseMaskTraits);
     pMaskData->CSE_useMask = BitVecOps::MakeEmpty(cseMaskTraits);
-    fgWalkTreePre(&tree, optCSE_MaskHelper, (void*)pMaskData);
+    MaskDataWalker walker(this, pMaskData);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -706,7 +727,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nCSE candidate #%02u, key=", CSEindex);
+            printf("\nCandidate " FMT_CSE ", key=", CSEindex);
             if (!Compiler::Is_Shared_Const_CSE(key))
             {
                 vnPrint((unsigned)key, 0);
@@ -840,7 +861,7 @@ bool Compiler::optValnumCSE_Locate()
                     noway_assert(((unsigned)tree->gtCSEnum) == CSEindex);
                 }
 
-                if (IS_CSE_INDEX(CSEindex) && (tree->OperGet() == GT_ARR_LENGTH))
+                if (IS_CSE_INDEX(CSEindex) && tree->OperIsArrLength())
                 {
                     stmtHasArrLenCandidate = true;
                 }
@@ -1320,11 +1341,11 @@ void Compiler::optValnumCSE_DataFlow()
 
         for (BasicBlock* const block : Blocks())
         {
-            printf(FMT_BB " in gen out\n", block->bbNum);
+            printf(FMT_BB "\n in: ", block->bbNum);
             optPrintCSEDataFlowSet(block->bbCseIn);
-            printf("\n");
+            printf("\ngen: ");
             optPrintCSEDataFlowSet(block->bbCseGen);
-            printf("\n");
+            printf("\nout: ");
             optPrintCSEDataFlowSet(block->bbCseOut);
             printf("\n");
         }
@@ -1726,11 +1747,9 @@ public:
         return codeOptKind;
     }
 
-    // Perform the Initialization step for our CSE Heuristics
-    // determine the various cut off values to use for
-    // the aggressive, moderate and conservative CSE promotions
-    // count the number of enregisterable variables
-    // determine if the method has a large or huge stack frame.
+    // Perform the Initialization step for our CSE Heuristics. Determine the various cut off values to use for
+    // the aggressive, moderate and conservative CSE promotions. Count the number of enregisterable variables.
+    // Determine if the method has a large or huge stack frame.
     //
     void Initialize()
     {
@@ -1820,16 +1839,17 @@ public:
                     }
                 }
             }
+
 #ifdef TARGET_XARCH
             if (frameSize > 0x080)
             {
                 // We likely have a large stack frame.
                 //
-                // On XARCH stack frame displacements can either use a 1-byte or a 4-byte displacement
-                // with a large franme we will need to use some 4-byte displacements.
+                // On XARCH stack frame displacements can either use a 1-byte or a 4-byte displacement.
+                // With a large frame we will need to use some 4-byte displacements.
                 //
                 largeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
             }
 #elif defined(TARGET_ARM)
             if (frameSize > 0x0400)
@@ -1837,14 +1857,14 @@ public:
                 // We likely have a large stack frame.
                 //
                 // Thus we might need to use large displacements when loading or storing
-                // to CSE LclVars that are not enregistered
+                // to CSE LclVars that are not enregistered.
                 // On ARM32 this means using rsGetRsvdReg() to hold the large displacement
                 largeFrame = true;
             }
             if (frameSize > 0x10000)
             {
                 hugeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
             }
 #elif defined(TARGET_ARM64)
             if (frameSize > 0x1000)
@@ -1852,11 +1872,11 @@ public:
                 // We likely have a large stack frame.
                 //
                 // Thus we might need to use large displacements when loading or storing
-                // to CSE LclVars that are not enregistered
+                // to CSE LclVars that are not enregistered.
                 // On ARM64 this means using rsGetRsvdReg() or R21 to hold the large displacement
                 //
                 largeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
             }
 #elif defined(TARGET_LOONGARCH64)
             if (frameSize > 0x7ff)
@@ -1864,22 +1884,19 @@ public:
                 // We likely have a large stack frame.
                 //
                 // Thus we might need to use large displacements when loading or storing
-                // to CSE LclVars that are not enregistered
-                // On LoongArch64 this means using rsGetRsvdReg() to hold the large displacement
+                // to CSE LclVars that are not enregistered.
+                // On LoongArch64 this means using rsGetRsvdReg() to hold the large displacement.
                 //
                 largeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
             }
 #endif
         }
 
-        // Iterate over the sorted list of tracked local variables
-        // these are the register candidates for LSRA
-        // We normally vist the LclVar in order of their weighted ref counts
-        // and our hueristic assumes that the highest weighted ref count
-        // LclVars will be enregistered and that the lowest weighted ref count
-        // are likely be allocated in the stack frame.
-        // The value of enregCount is incremented when we visit a LclVar
+        // Iterate over the sorted list of tracked local variables. These are the register candidates for LSRA.
+        // We normally visit the LclVars in order of their weighted ref counts and our heuristic assumes that the
+        // highest weighted ref count LclVars will be enregistered and that the lowest weighted ref count
+        // are likely be allocated in the stack frame. The value of enregCount is incremented when we visit a LclVar
         // that can be enregistered.
         //
         for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
@@ -1899,7 +1916,7 @@ public:
                 continue;
             }
 
-            // The enregCount only tracks the uses of integer registers
+            // enregCount only tracks the uses of integer registers.
             //
             // We could track floating point register usage separately
             // but it isn't worth the additional complexity as floating point CSEs
@@ -2311,8 +2328,8 @@ public:
 
             (def + use) * cost
 
-            If we introduce a CSE temp are each definition and
-            replace the use with a CSE temp then our cost is:
+            If we introduce a CSE temp at each definition and
+            replace each use with a CSE temp then our cost is:
 
             (def * (cost + cse-def-cost)) + (use * cse-use-cost)
 
@@ -2336,7 +2353,7 @@ public:
             If we want to be aggressive we use 1 as the values for both
             cse-def-cost and cse-use-cost.
 
-            If we believe that the CSE very valuable in terms of weighted ref counts
+            If we believe that the CSE is very valuable in terms of weighted ref counts
             such that it would always be enregistered by the register allocator we choose
             the aggressive use def costs.
 
@@ -2344,7 +2361,7 @@ public:
             such that it could be likely be enregistered by the register allocator we choose
             the moderate use def costs.
 
-            otherwise we choose the conservative use def costs.
+            Otherwise we choose the conservative use def costs.
 
         */
 
@@ -2995,12 +3012,8 @@ public:
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
             //
-            GenTree*      cse = nullptr;
-            bool          isDef;
-            FieldSeqNode* fldSeq               = nullptr;
-            bool          commaOnly            = true;
-            GenTree*      effectiveExp         = exp->gtEffectiveVal(commaOnly);
-            const bool    hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
+            GenTree* cse = nullptr;
+            bool     isDef;
 
             if (IS_CSE_USE(exp->gtCSEnum))
             {
@@ -3304,12 +3317,6 @@ public:
             //
             *link = cse;
 
-            // If it has a zero-offset field seq, copy annotation.
-            if (hasZeroMapAnnotation)
-            {
-                m_pCompiler->fgAddFieldSeqForZeroOffset(cse, fldSeq);
-            }
-
             assert(m_pCompiler->fgRemoveRestOfBlock == false);
 
             /* re-morph the statement */
@@ -3584,6 +3591,8 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
 
         case GT_LCL_VAR:

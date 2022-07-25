@@ -731,11 +731,11 @@ namespace System.Xml.Linq
             {
                 return false;
             }
-            XAttribute? a = _source as XAttribute;
-            if (a == null)
-            {
-                a = _parent as XAttribute;
-            }
+
+            XAttribute? a =
+                _source as XAttribute ??
+                _parent as XAttribute;
+
             if (a != null)
             {
                 if (a.parent != null)
@@ -813,11 +813,11 @@ namespace System.Xml.Linq
                 }
                 return false;
             }
-            XAttribute? a = _source as XAttribute;
-            if (a == null)
-            {
-                a = _parent as XAttribute;
-            }
+
+            XAttribute? a =
+                _source as XAttribute ??
+                _parent as XAttribute;
+
             if (a != null)
             {
                 if (a.parent != null && ((XElement)a.parent).lastAttr != a)

@@ -1622,10 +1622,7 @@ namespace System.Data.Common
             }
             if (null == command)
             {
-                if (null != datarow)
-                {
-                    datarow.AcceptChanges();
-                }
+                datarow?.AcceptChanges();
                 rowUpdatingEvent.Status = UpdateStatus.SkipCurrentRow;
             }
             rowUpdatingEvent.Command = command;

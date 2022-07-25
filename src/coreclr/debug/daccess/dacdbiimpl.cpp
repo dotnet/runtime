@@ -681,7 +681,6 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     }
 
     // Very important that this either sets pStrName or Throws.
-    // Don't set it and then then throw.
     IfFailThrow(hrStatus);
 }
 

@@ -1467,20 +1467,7 @@ namespace System.Security.AccessControl
                 return aceOpaque == newAceOpaque;
             }
 
-            if (aceOpaque.Length != newAceOpaque.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < aceOpaque.Length; ++i)
-            {
-                if (aceOpaque[i] != newAceOpaque[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return aceOpaque.AsSpan().SequenceEqual(newAceOpaque);
         }
 
         private static bool AcesAreMergeable(QualifiedAce ace, QualifiedAce newAce)

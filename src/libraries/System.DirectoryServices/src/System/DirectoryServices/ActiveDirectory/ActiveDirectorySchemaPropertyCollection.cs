@@ -256,10 +256,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -281,10 +278,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -303,10 +297,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 // because this collection can contain values from the superior classes,
                 // these values would not exist in the classEntry

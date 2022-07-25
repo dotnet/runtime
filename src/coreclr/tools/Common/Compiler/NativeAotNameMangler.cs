@@ -302,6 +302,23 @@ namespace ILCompiler
                 case TypeFlags.Pointer:
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
+                case TypeFlags.FunctionPointer:
+                    // TODO: need to also encode calling convention (or all modopts?)
+                    var fnPtrType = (FunctionPointerType)type;
+                    mangledName = "__FnPtr" + EnterNameScopeSequence;
+                    mangledName += GetMangledTypeName(fnPtrType.Signature.ReturnType);
+
+                    mangledName += EnterNameScopeSequence;
+                    for (int i = 0; i < fnPtrType.Signature.Length; i++)
+                    {
+                        if (i != 0)
+                            mangledName += DelimitNameScopeSequence;
+                        mangledName += GetMangledTypeName(fnPtrType.Signature[i]);
+                    }
+                    mangledName += ExitNameScopeSequence;
+
+                    mangledName += ExitNameScopeSequence;
+                    break;
                 default:
                     // Case of a generic type. If `type' is a type definition we use the type name
                     // for mangling, otherwise we use the mangling of the type and its generic type

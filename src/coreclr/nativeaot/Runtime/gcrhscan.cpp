@@ -30,11 +30,6 @@
 
 void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 
-void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
-{
-    GetRuntimeInstance()->EnumAllStaticGCRefs(reinterpret_cast<void*>(fn), sc);
-}
-
 /*
  * Scan all stack and statics roots
  */
@@ -75,14 +70,6 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
     END_FOREACH_THREAD
 
     sc->thread_under_crawl = NULL;
-
-    if ((!GCHeapUtilities::IsServerHeap() || sc->thread_number == 0) ||(condemned == max_gen && sc->promotion))
-    {
-#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-        sc->dwEtwRootKind = kEtwGCRootKindHandle;
-#endif
-        EnumAllStaticGCRefs(fn, sc);
-    }
 }
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)

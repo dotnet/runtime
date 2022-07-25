@@ -87,11 +87,22 @@ namespace ILCompiler
         /// </summary>
         public static bool CanMethodBeInSealedVTable(this MethodDesc method)
         {
+            bool isInterfaceMethod = method.OwningType.IsInterface;
+
             // Methods on interfaces never go into sealed vtable
             // We would hit this code path for default implementations of interface methods (they are newslot+final).
             // Inteface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
             // attempt to place final+newslot methods differently.
-            return method.IsFinal && method.IsNewSlot && !method.OwningType.IsInterface;
+            if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
+                return true;
+
+            // Implementations of static virtual method also go into the sealed vtable.
+            // Again, we don't let that happen for interface methods because the slot numbers are only logical,
+            // not physical.
+            if (method.Signature.IsStatic && !isInterfaceMethod)
+                return true;
+
+            return false;
         }
 
         public static bool NotCallableWithoutOwningEEType(this MethodDesc method)

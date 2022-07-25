@@ -3898,16 +3898,6 @@ inline BOOL IsGateSpecialThread ()
     return !!(t_ThreadType & ThreadType_Gate);
 }
 
-// check if current thread is a Timer thread
-inline BOOL IsTimerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Timer);
-}
-
 // check if current thread is a debugger helper thread
 inline BOOL IsDbgHelperSpecialThread ()
 {

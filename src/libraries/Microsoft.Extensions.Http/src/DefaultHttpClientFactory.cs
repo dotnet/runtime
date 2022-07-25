@@ -214,10 +214,7 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                if (_cleanupTimer == null)
-                {
-                    _cleanupTimer = NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
-                }
+                _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
             }
         }
 

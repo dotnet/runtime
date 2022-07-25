@@ -155,8 +155,6 @@
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
-      <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
-      <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
@@ -434,7 +432,7 @@
     </ItemGroup>
 
     <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
-    <Exec Command="wasm-opt$(_ExeExt) --enable-exception-handling @(WasmOptConfigurationFlags, ' ') --strip-dwarf &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot; -o &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot;"
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling @(WasmOptConfigurationFlags, ' ') --strip-dwarf &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot; -o &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot;"
           Condition="'$(WasmNativeStrip)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />

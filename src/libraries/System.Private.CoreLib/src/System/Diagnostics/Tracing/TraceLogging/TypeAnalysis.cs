@@ -97,10 +97,7 @@ namespace System.Diagnostics.Tracing
                 this.name = eventAttrib.Name;
             }
 
-            if (this.name == null)
-            {
-                this.name = dataType.Name;
-            }
+            this.name ??= dataType.Name;
         }
     }
 }

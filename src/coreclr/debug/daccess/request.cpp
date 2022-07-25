@@ -348,20 +348,9 @@ ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
     threadpoolData->MaxLimitTotalCPThreads = ThreadpoolMgr::MaxLimitTotalCPThreads;
     threadpoolData->CurrentLimitTotalCPThreads = (LONG)(counts.NumActive); //legacy: currently has no meaning
     threadpoolData->MinLimitTotalCPThreads = ThreadpoolMgr::MinLimitTotalCPThreads;
-
-    TADDR pEntry = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::TimerQueue,true);
-    ThreadpoolMgr::LIST_ENTRY entry;
-    DacReadAll(pEntry,&entry,sizeof(ThreadpoolMgr::LIST_ENTRY),true);
-    TADDR node = (TADDR) entry.Flink;
     threadpoolData->NumTimers = 0;
-    while (node && node != pEntry)
-    {
-        threadpoolData->NumTimers++;
-        DacReadAll(node,&entry,sizeof(ThreadpoolMgr::LIST_ENTRY),true);
-        node = (TADDR) entry.Flink;
-    }
+    threadpoolData->AsyncTimerCallbackCompletionFPtr = NULL;
 
-    threadpoolData->AsyncTimerCallbackCompletionFPtr = (CLRDATA_ADDRESS) GFN_TADDR(ThreadpoolMgr__AsyncTimerCallbackCompletion);
     SOSDacLeave();
     return hr;
 }
@@ -1706,7 +1695,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
         ModuleData->TypeRefToMethodTableMap = PTR_CDADDR(pModule->m_TypeRefToMethodTableMap.pTable);
         ModuleData->MethodDefToDescMap = PTR_CDADDR(pModule->m_MethodDefToDescMap.pTable);
         ModuleData->FieldDefToDescMap = PTR_CDADDR(pModule->m_FieldDefToDescMap.pTable);
-        ModuleData->MemberRefToDescMap = NULL;
+        ModuleData->MemberRefToDescMap = PTR_CDADDR(pModule->m_MemberRefMap.pTable);
         ModuleData->FileReferencesMap = PTR_CDADDR(pModule->m_FileReferencesMap.pTable);
         ModuleData->ManifestModuleReferencesMap = PTR_CDADDR(pModule->m_ManifestModuleReferencesMap.pTable);
 

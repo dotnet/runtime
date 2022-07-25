@@ -672,7 +672,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
         OBJECTHANDLE handle = GetMainWrapper()->GetObjectHandle();
         _UNCHECKED_OBJECTREF obj = NULL;
 
-        // Force retriving the handle without using OBJECTREF and under cooperative mode
+        // Force retrieving the handle without using OBJECTREF and under cooperative mode
         // We only need the value in ETW events and it doesn't matter if it is super accurate
         if (handle != NULL)
             obj = *((_UNCHECKED_OBJECTREF *)(handle));

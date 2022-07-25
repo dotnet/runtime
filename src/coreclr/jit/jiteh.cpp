@@ -1663,7 +1663,7 @@ void Compiler::fgRemoveEH()
     assert(!fgDomsComputed);
     assert(!fgFuncletsCreated);
     assert(fgFirstFuncletBB == nullptr); // this should follow from "!fgFuncletsCreated"
-    assert(!optLoopsMarked);
+    assert(!optLoopTableValid);
 
     unsigned  XTnum;
     EHblkDsc* HBtab;

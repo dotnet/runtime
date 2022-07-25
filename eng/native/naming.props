@@ -21,15 +21,6 @@
         <SymbolsSuffix>.dwarf</SymbolsSuffix>
       </PropertyGroup>
     </When>
-    <When Condition="$(PackageRID.StartsWith('android'))">
-      <PropertyGroup>
-        <LibPrefix>lib</LibPrefix>
-        <LibSuffix>.so</LibSuffix>
-        <StaticLibSuffix>.a</StaticLibSuffix>
-        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
-        <SymbolsSuffix>.debug</SymbolsSuffix>
-      </PropertyGroup>
-    </When>
     <Otherwise>
       <PropertyGroup>
         <LibPrefix>lib</LibPrefix>

@@ -262,11 +262,8 @@ namespace System.Configuration
             if (source._lockedAttributesList != null)
             {
                 // Mark entry as from the parent - read only
-                if (_lockedAttributesList == null)
-                {
-                    _lockedAttributesList = new ConfigurationLockCollection(this,
-                        ConfigurationLockCollectionType.LockedAttributes);
-                }
+                _lockedAttributesList ??= new ConfigurationLockCollection(this,
+                    ConfigurationLockCollectionType.LockedAttributes);
 
                 foreach (string key in source._lockedAttributesList)
                     _lockedAttributesList.Add(key, ConfigurationValueFlags.Inherited);
@@ -274,12 +271,9 @@ namespace System.Configuration
 
             if (source._lockedAllExceptAttributesList != null)
             {
-                if (_lockedAllExceptAttributesList == null)
-                {
-                    _lockedAllExceptAttributesList = new ConfigurationLockCollection(this,
-                        ConfigurationLockCollectionType.LockedExceptionList, string.Empty,
-                        source._lockedAllExceptAttributesList);
-                }
+                _lockedAllExceptAttributesList ??= new ConfigurationLockCollection(this,
+                    ConfigurationLockCollectionType.LockedExceptionList, string.Empty,
+                    source._lockedAllExceptAttributesList);
 
                 StringCollection intersectionCollection = IntersectLockCollections(_lockedAllExceptAttributesList,
                     source._lockedAllExceptAttributesList);
@@ -291,11 +285,8 @@ namespace System.Configuration
 
             if (source._lockedElementsList != null)
             {
-                if (_lockedElementsList == null)
-                {
-                    _lockedElementsList = new ConfigurationLockCollection(this,
-                        ConfigurationLockCollectionType.LockedElements);
-                }
+                _lockedElementsList ??= new ConfigurationLockCollection(this,
+                    ConfigurationLockCollectionType.LockedElements);
 
                 ConfigurationElementCollection collection = null;
                 if (Properties.DefaultCollectionProperty != null)
@@ -307,8 +298,7 @@ namespace System.Configuration
                         // Default collections don't know their tag name
                         collection.InternalElementTagName = source.ElementTagName;
                         //point to the same instance of the collection from parent
-                        if (collection._lockedElementsList == null)
-                            collection._lockedElementsList = _lockedElementsList;
+                        collection._lockedElementsList ??= _lockedElementsList;
                     }
                 }
 
@@ -586,8 +576,7 @@ namespace System.Configuration
                     {
                         collection.InternalElementTagName = parentElement.ElementTagName;
                         // Default collections don't know there tag name
-                        if (collection._lockedElementsList == null)
-                            collection._lockedElementsList = _lockedElementsList;
+                        collection._lockedElementsList ??= _lockedElementsList;
                     }
                 }
 
@@ -801,7 +790,7 @@ namespace System.Configuration
 
             // NOTE[ Thread Safety ]: Non-guarded access to static variable - since this code is called only from CreatePropertyBagFromType
             // which in turn is done onle once per type and is guarded by the s_propertyBag.SyncRoot then this call is thread safe as well
-            if (s_perTypeValidators == null) s_perTypeValidators = new Dictionary<Type, ConfigurationValidatorBase>();
+            s_perTypeValidators ??= new Dictionary<Type, ConfigurationValidatorBase>();
 
             // A type validator should be cached only once. If it isn't then attribute parsing is done more then once which should be avoided
             Debug.Assert(!s_perTypeValidators.ContainsKey(type));
@@ -1593,11 +1582,9 @@ namespace System.Configuration
 
             if (lockedAttributesList != null)
             {
-                if (_lockedAttributesList == null)
-                {
-                    _lockedAttributesList = new ConfigurationLockCollection(this,
-                        ConfigurationLockCollectionType.LockedAttributes);
-                }
+                _lockedAttributesList ??= new ConfigurationLockCollection(this,
+                    ConfigurationLockCollectionType.LockedAttributes);
+
                 foreach (
                     string key in
                     ParseLockedAttributes(lockedAttributesList, ConfigurationLockCollectionType.LockedAttributes))
@@ -1632,11 +1619,8 @@ namespace System.Configuration
 
             if (lockedElementList != null)
             {
-                if (_lockedElementsList == null)
-                {
-                    _lockedElementsList = new ConfigurationLockCollection(this,
-                        ConfigurationLockCollectionType.LockedElements);
-                }
+                _lockedElementsList ??= new ConfigurationLockCollection(this,
+                    ConfigurationLockCollectionType.LockedElements);
 
                 ConfigurationLockCollection localLockedElementList = ParseLockedAttributes(lockedElementList,
                     ConfigurationLockCollectionType.LockedElements);
@@ -1704,11 +1688,9 @@ namespace System.Configuration
             if (defaultCollectionProperty != null)
             {
                 defaultCollection = (ConfigurationElement)this[defaultCollectionProperty];
-                if (_lockedElementsList == null)
-                {
-                    _lockedElementsList = new ConfigurationLockCollection(this,
-                        ConfigurationLockCollectionType.LockedElements);
-                }
+                _lockedElementsList ??= new ConfigurationLockCollection(this,
+                    ConfigurationLockCollectionType.LockedElements);
+
                 defaultCollection._lockedElementsList = _lockedElementsList;
                 if (_lockedAllExceptElementsList == null)
                 {

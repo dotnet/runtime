@@ -769,6 +769,7 @@ namespace ETW
                 MethodDCEndILToNativeMap=           0x00020000,
                 JitMethodILToNativeMap=             0x00040000,
                 TypeUnload=                         0x00080000,
+                JittedMethodRichDebugInfo=          0x00100000,
 
                 // Helpers
                 ModuleRangeEnabledAny = ModuleRangeLoad | ModuleRangeDCStart | ModuleRangeDCEnd | ModuleRangeLoadPrivate,
@@ -897,13 +898,14 @@ namespace ETW
             BOOL fUnloadOrDCEnd,
             BOOL fSendMethodEvent,
             BOOL fSendILToNativeMapEvent,
+            BOOL fSendRichDebugInfoEvent,
             BOOL fGetCodeIds);
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
         static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
-        static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, ReJITID ilCodeId);
+        static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
+        static VOID SendMethodRichDebugInfo(MethodDesc * pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
         static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL);
         static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
-        static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
     public:
         typedef union _MethodStructs
         {
@@ -934,6 +936,7 @@ namespace ETW
         static VOID GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPoint);
         static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
+        static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
         static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static VOID MethodRestored(MethodDesc * pMethodDesc);
@@ -1169,7 +1172,8 @@ namespace ETW
             typedef enum _Sku
             {
                 DesktopCLR=0x1,
-                CoreCLR=0x2
+                CoreCLR=0x2,
+                Mono=0x4
             }Sku;
 
             typedef enum _EtwMode

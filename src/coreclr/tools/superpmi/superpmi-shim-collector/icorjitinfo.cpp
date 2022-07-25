@@ -1167,6 +1167,16 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
+void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+                                          uint32_t                          numInlineTreeNodes,
+                                          ICorDebugInfo::RichOffsetMapping* mappings,
+                                          uint32_t                          numMappings)
+{
+    mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,

@@ -13,6 +13,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -26,7 +28,6 @@
     <Compile Include="System\Security\Authentication\InvalidCredentialExceptionTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <Compile Include="MD4Tests.cs" />
-    <Compile Include="NTAuthenticationTests.cs" />
     <Compile Include="NegotiateAuthenticationTests.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />

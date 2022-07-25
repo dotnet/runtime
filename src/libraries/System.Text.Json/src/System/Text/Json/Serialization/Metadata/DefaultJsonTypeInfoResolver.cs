@@ -40,17 +40,17 @@ namespace System.Text.Json.Serialization.Metadata
         {
             if (type == null)
             {
-                throw new ArgumentNullException(nameof(type));
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
             }
 
             if (options == null)
             {
-                throw new ArgumentNullException(nameof(options));
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
             _mutable = false;
 
-            JsonTypeInfo.ValidateType(type, null, null, options);
+            JsonTypeInfo.ValidateType(type);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
 
             if (_modifiers != null)
@@ -118,7 +118,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal static DefaultJsonTypeInfoResolver? DefaultInstance => s_defaultInstance;
+        internal static bool IsDefaultInstanceRooted => s_defaultInstance is not null;
         private static DefaultJsonTypeInfoResolver? s_defaultInstance;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

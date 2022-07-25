@@ -307,10 +307,7 @@ namespace System.Diagnostics.Tracing
             this.bufferedArrayFieldCount++;
             this.impl.fields.Add(fieldMetadata);
 
-            if (this.currentGroup != null)
-            {
-                this.currentGroup.IncrementStructFieldCount();
-            }
+            this.currentGroup?.IncrementStructFieldCount();
         }
 
         private sealed class Impl

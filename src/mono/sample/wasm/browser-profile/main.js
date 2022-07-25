@@ -36,7 +36,7 @@ try {
             if (MONO.config.enable_profiler) {
                 MONO.config.aot_profiler_options = {
                     write_at: "Sample.Test::StopProfile",
-                    send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
+                    send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
                 }
             }
         },

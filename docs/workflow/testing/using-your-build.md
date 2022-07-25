@@ -14,7 +14,7 @@ standard 'dotnet' host that installs with .NET SDK.
 The released version of 'dotnet' tool may not be compatible with the live repository. The following steps
 assume use of a dogfood build of the .NET SDK.
 
-## Acquire the latest nightly .NET SDK
+## Acquire the latest development .NET SDK
 
 - [Win 64-bit Latest](https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x64.zip)
 - [macOS 64-bit Latest](https://aka.ms/dotnet/6.0/daily/dotnet-sdk-osx-x64.tar.gz)

@@ -3247,14 +3247,6 @@ void Compiler::fgFindBasicBlocks()
             BADCODE("Handler Clause is invalid");
         }
 
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        // This will change the block weight from 0 to 1
-        // and clear the rarely run flag
-        hndBegBB->makeBlockHot();
-#else
-        hndBegBB->bbSetRunRarely();   // handler entry points are rarely executed
-#endif
-
         if (hndEndOff < info.compILCodeSize)
         {
             hndEndBB = fgLookupBB(hndEndOff);
@@ -3265,14 +3257,6 @@ void Compiler::fgFindBasicBlocks()
             filtBB = HBtab->ebdFilter = fgLookupBB(clause.FilterOffset);
             filtBB->bbCatchTyp        = BBCT_FILTER;
             hndBegBB->bbCatchTyp      = BBCT_FILTER_HANDLER;
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-            // This will change the block weight from 0 to 1
-            // and clear the rarely run flag
-            filtBB->makeBlockHot();
-#else
-            filtBB->bbSetRunRarely(); // filter entry points are rarely executed
-#endif
 
             // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
             for (block = filtBB; /**/; block = block->bbNext)
@@ -4687,33 +4671,10 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         bool skipUnmarkLoop = false;
 
-        // If block is the backedge for a loop and succBlock precedes block
-        // then the succBlock becomes the new LOOP HEAD
-        // NOTE: there's an assumption here that the blocks are numbered in increasing bbNext order.
-        // NOTE 2: if fgDomsComputed is false, then we can't check reachability. However, if this is
-        // the case, then the loop structures probably are also invalid, and shouldn't be used. This
-        // can be the case late in compilation (such as Lower), where remnants of earlier created
-        // structures exist, but haven't been maintained.
-        if (block->isLoopHead() && (succBlock->bbNum <= block->bbNum))
+        if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
         {
-            succBlock->bbFlags |= BBF_LOOP_HEAD;
-
-            if (block->isLoopAlign())
-            {
-                loopAlignCandidates++;
-                succBlock->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for " FMT_LP "\n ", block->bbNum,
-                        succBlock->bbNum, block->bbNatLoopNum);
-            }
-
-            if (fgDomsComputed && fgReachable(succBlock, block))
-            {
-                // Mark all the reachable blocks between 'succBlock' and 'bPrev'
-                optScaleLoopBlocks(succBlock, bPrev);
-            }
-        }
-        else if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
-        {
+            // It looks like `block` is the source of a back edge of a loop, and once we remove `block` the
+            // loop will still exist because we'll move the edge to `bPrev`. So, don't unscale the loop blocks.
             skipUnmarkLoop = true;
         }
 

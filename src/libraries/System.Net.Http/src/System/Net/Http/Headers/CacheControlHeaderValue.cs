@@ -413,11 +413,7 @@ namespace System.Net.Http.Headers
             // Cache-Control is a header supporting lists of values. However, expose the header as an instance of
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
             // from this string to the existing instances.
-            CacheControlHeaderValue? result = storeValue;
-            if (result == null)
-            {
-                result = new CacheControlHeaderValue();
-            }
+            CacheControlHeaderValue? result = storeValue ?? new CacheControlHeaderValue();
 
             if (!TrySetCacheControlValues(result, nameValueList))
             {

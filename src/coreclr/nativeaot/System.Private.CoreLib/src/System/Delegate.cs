@@ -157,7 +157,7 @@ namespace System
         private void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
         {
             if (firstParameter is null)
-                throw new ArgumentException(SR.Arg_DlgtNullInst);
+                throw new NullReferenceException();
 
             IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
 
@@ -185,7 +185,7 @@ namespace System
         private void InitializeClosedInstanceToInterface(object firstParameter, IntPtr dispatchCell)
         {
             if (firstParameter is null)
-                throw new ArgumentException(SR.Arg_DlgtNullInst);
+                throw new NullReferenceException();
 
             m_functionPointer = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
             m_firstParameter = firstParameter;

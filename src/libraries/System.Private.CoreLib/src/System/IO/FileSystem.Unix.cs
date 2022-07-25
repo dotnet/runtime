@@ -35,7 +35,7 @@ namespace System.IO
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
-                                            (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
+                                            CreateOpenException);
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
 
@@ -600,8 +600,14 @@ namespace System.IO
             return attributes;
         }
 
+        public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
+            => default(FileStatus).GetAttributes(fileHandle);
+
         public static void SetAttributes(string fullPath, FileAttributes attributes)
             => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
+
+        public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
+            => default(FileStatus).SetAttributes(fileHandle, attributes, asDirectory: false);
 
         public static UnixFileMode GetUnixFileMode(string fullPath)
         {
@@ -625,20 +631,38 @@ namespace System.IO
         public static DateTimeOffset GetCreationTime(string fullPath)
             => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
+        public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetCreationTime(fileHandle).UtcDateTime;
+
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
+
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetCreationTime(fileHandle, time, asDirectory: false);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
             => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
 
+        public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetLastAccessTime(fileHandle).UtcDateTime;
+
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
+
+        public static unsafe void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetLastAccessTime(fileHandle, time, asDirectory: false);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
             => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
 
+        public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetLastWriteTime(fileHandle).UtcDateTime;
+
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
+
+        public static unsafe void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetLastWriteTime(fileHandle, time, asDirectory: false);
 
         public static string[] GetLogicalDrives()
         {

@@ -19,6 +19,12 @@ Build using "arm" as the architecture. For example:
 
     C:\runtime> src\coreclr\build-runtime.cmd -arm -debug
 
+Cross Compilation for ARM64 on macOS
+================================================
+
+The toolset required to do native compilation described in [macOS requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md) has cross compilation capabilities with no additional installs required. The only needed change is to use the `-cross` flag in the build scripts. For example, a release CoreCLR runtime that targets ARM64 can be built using the following commandline from the root of the repo:
+
+    ./build.sh -subset clr.runtime -c release -cross -arch arm64 /p:CrossBuild=true
 
 Cross Compilation for ARM, ARM64 or x86 on Linux
 ================================================

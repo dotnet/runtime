@@ -343,7 +343,7 @@ namespace System.Configuration
                     if (string.IsNullOrEmpty(ProductName) && (mainType != null)) ProductName = mainType.Name.Trim();
 
                     // give up, return empty string
-                    if (ProductName == null) ProductName = string.Empty;
+                    ProductName ??= string.Empty;
                 }
 
                 if (string.IsNullOrEmpty(_companyName))

@@ -445,7 +445,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
     CORINFO_HELP_ARRADDR_ST,        // assign to element of object array with type-checking
-    CORINFO_HELP_LDELEMA_REF,       // does a precise type comparision and returns address
+    CORINFO_HELP_LDELEMA_REF,       // does a precise type comparison and returns address
 
     /* Exceptions */
 
@@ -2732,6 +2732,16 @@ public:
             uint32_t                        cVars,          // [IN] size of 'vars'
             ICorDebugInfo::NativeVarInfo   *vars            // [IN] map telling where local vars are stored at what points
                                                             //      jit allocated with allocateArray, EE frees
+            ) = 0;
+
+    // Report inline tree and rich offset mappings to EE.
+    // The arrays are expected to be allocated with allocateArray
+    // and ownership is transferred to the EE with this call.
+    virtual void reportRichMappings(
+            ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,    // [IN] Nodes of the inline tree
+            uint32_t                          numInlineTreeNodes, // [IN] Number of nodes in the inline tree
+            ICorDebugInfo::RichOffsetMapping* mappings,           // [IN] Rich mappings
+            uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
     /*-------------------------- Misc ---------------------------------------*/

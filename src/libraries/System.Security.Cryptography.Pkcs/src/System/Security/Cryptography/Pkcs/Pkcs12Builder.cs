@@ -57,10 +57,7 @@ namespace System.Security.Cryptography.Pkcs
 
             byte[] encrypted = safeContents.Encrypt(ReadOnlySpan<char>.Empty, passwordBytes, pbeParameters);
 
-            if (_contents == null)
-            {
-                _contents = new List<ContentInfoAsn>();
-            }
+            _contents ??= new List<ContentInfoAsn>();
 
             _contents.Add(
                 new ContentInfoAsn
@@ -110,10 +107,7 @@ namespace System.Security.Cryptography.Pkcs
 
             byte[] encrypted = safeContents.Encrypt(password, ReadOnlySpan<byte>.Empty, pbeParameters);
 
-            if (_contents == null)
-            {
-                _contents = new List<ContentInfoAsn>();
-            }
+            _contents ??= new List<ContentInfoAsn>();
 
             _contents.Add(
                 new ContentInfoAsn
@@ -133,10 +127,7 @@ namespace System.Security.Cryptography.Pkcs
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            if (_contents == null)
-            {
-                _contents = new List<ContentInfoAsn>();
-            }
+            _contents ??= new List<ContentInfoAsn>();
 
             _contents.Add(safeContents.EncodeToContentInfo());
         }
@@ -177,7 +168,7 @@ namespace System.Security.Cryptography.Pkcs
             Span<byte> authSafeSpan = default;
             byte[]? rentedMac = null;
             Span<byte> macSpan = default;
-            Span<byte> salt = stackalloc byte[0];
+            scoped Span<byte> salt = default;
 
             try
             {

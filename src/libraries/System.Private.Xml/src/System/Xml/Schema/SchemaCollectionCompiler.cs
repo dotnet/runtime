@@ -513,10 +513,7 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                if (group.CanonicalParticle == null)
-                {
-                    group.CanonicalParticle = CannonicalizeParticle(group.Particle, true, true);
-                }
+                group.CanonicalParticle ??= CannonicalizeParticle(group.Particle, true, true);
                 Debug.Assert(group.CanonicalParticle != null);
                 group.IsProcessing = false;
             }
@@ -2068,10 +2065,7 @@ namespace System.Xml.Schema
                         xa.SetAttributeType(DatatypeImplementation.AnySimpleType);
                     }
                 }
-                if (decl.Datatype != null)
-                {
-                    decl.Datatype.VerifySchemaValid(_schema!.Notations, xa);
-                }
+                decl.Datatype?.VerifySchemaValid(_schema!.Notations, xa);
                 if (xa.DefaultValue != null || xa.FixedValue != null)
                 {
                     if (xa.DefaultValue != null)
@@ -2288,10 +2282,7 @@ namespace System.Xml.Schema
                     decl.IsNillable = xe.IsNillable;
                     decl.Block |= xe.BlockResolved;
                 }
-                if (decl.Datatype != null)
-                {
-                    decl.Datatype.VerifySchemaValid(_schema!.Notations, xe);
-                }
+                decl.Datatype?.VerifySchemaValid(_schema!.Notations, xe);
 
                 if (xe.DefaultValue != null || xe.FixedValue != null)
                 {

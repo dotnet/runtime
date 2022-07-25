@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class ConfigurationList<TItem> : IList<TItem>
     {
-        private readonly List<TItem> _list;
+        protected readonly List<TItem> _list;
 
         public ConfigurationList(IList<TItem>? source = null)
         {
@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
 
         protected abstract bool IsLockedInstance { get; }
         protected abstract void VerifyMutable();
-        protected virtual void OnItemAdded(TItem item) { }
+        protected virtual void OnAddingElement(TItem item) { }
 
         public TItem this[int index]
         {
@@ -38,8 +38,8 @@ namespace System.Text.Json.Serialization
                 }
 
                 VerifyMutable();
+                OnAddingElement(value);
                 _list[index] = value;
-                OnItemAdded(value);
             }
         }
 
@@ -55,8 +55,8 @@ namespace System.Text.Json.Serialization
             }
 
             VerifyMutable();
+            OnAddingElement(item);
             _list.Add(item);
-            OnItemAdded(item);
         }
 
         public void Clear()
@@ -93,8 +93,8 @@ namespace System.Text.Json.Serialization
             }
 
             VerifyMutable();
+            OnAddingElement(item);
             _list.Insert(index, item);
-            OnItemAdded(item);
         }
 
         public bool Remove(TItem item)

@@ -130,6 +130,8 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_FIELD:
 
             newState.isUnderIndir = true;

@@ -669,10 +669,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 ds.Dispose();
-                if (src != null)
-                {
-                    src.Dispose();
-                }
+                src?.Dispose();
             }
         }
 
@@ -1510,8 +1507,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                     finally
                     {
-                        if (copyOfDe != null)
-                            copyOfDe.Dispose();
+                        copyOfDe?.Dispose();
                     }
                 }
 
@@ -1637,8 +1633,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != groupDe)
-                    groupDe.Dispose();
+                groupDe?.Dispose();
             }
         }
 

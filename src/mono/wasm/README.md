@@ -125,7 +125,7 @@ The wrapper script used to actually run these tests, accepts:
 
 ### Using a local build of xharness
 
-* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 

@@ -1262,6 +1262,30 @@ namespace Internal.JitInterface
         public uint varNumber;
     };
 
+    public unsafe struct InlineTreeNode
+    {
+        // Method handle for inlinee (or root)
+        public CORINFO_METHOD_STRUCT_* Method;
+        // IL offset of IL instruction resulting in the inline
+        public uint ILOffset;
+        // Index of child in tree, 0 if no children
+        public uint Child;
+        // Index of sibling in tree, 0 if no sibling
+        public uint Sibling;
+    }
+
+    public struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        public uint NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        public uint Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        public uint ILOffset;
+        // Source information about the IL instruction in the inlinee
+        public SourceTypes Source;
+    }
+
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or
     // return different types of handles (e.g. boxed vs. regular entrypoints)

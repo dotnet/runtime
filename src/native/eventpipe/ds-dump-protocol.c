@@ -106,7 +106,7 @@ dump_protocol_generate_core_dump_response_init(
 
 	payload->error = error;
 	// If this conversion failures it will set error_message to NULL which will send an empty message
-	payload->error_message = ep_rt_utf8_to_utf16_string (errorText, -1);
+	payload->error_message = ep_rt_utf8_to_utf16le_string (errorText, -1);
 }
 
 static

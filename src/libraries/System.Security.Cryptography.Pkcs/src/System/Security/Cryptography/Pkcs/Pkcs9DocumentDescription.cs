@@ -30,6 +30,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9DocumentDescription(ReadOnlySpan<byte> encodedDocumentDescription)
+            : base(Oids.DocumentDescriptionOid.CopyOid(), encodedDocumentDescription)
+        {
+        }
+
         //
         // Public methods.
         //

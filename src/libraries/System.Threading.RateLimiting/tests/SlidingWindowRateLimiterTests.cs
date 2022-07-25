@@ -44,17 +44,17 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 4,
                 TimeSpan.Zero, 2, autoReplenishment: false));
 
-            using var lease = await limiter.WaitAsync();
+            using var lease = await limiter.WaitAndAcquireAsync();
 
             Assert.True(lease.IsAcquired);
-            var wait = limiter.WaitAsync(2);
+            var wait = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait.IsCompleted);
 
             Assert.True(limiter.TryReplenish());
 
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(2);
+            var wait2 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait2.IsCompleted);
 
             Assert.True(limiter.TryReplenish());
@@ -71,22 +71,22 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(4, QueueProcessingOrder.NewestFirst, 4,
                 TimeSpan.Zero, 3, autoReplenishment: false));
 
-            using var lease = await limiter.WaitAsync(2);
+            using var lease = await limiter.WaitAndAcquireAsync(2);
 
             Assert.True(lease.IsAcquired);
-            var wait = limiter.WaitAsync(3);
+            var wait = limiter.WaitAndAcquireAsync(3);
             Assert.False(wait.IsCompleted);
 
             Assert.True(limiter.TryReplenish());
 
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(2);
+            var wait2 = limiter.WaitAndAcquireAsync(2);
             Assert.True(wait2.IsCompleted);
 
             Assert.True(limiter.TryReplenish());
 
-            var wait3 = limiter.WaitAsync(2);
+            var wait3 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait3.IsCompleted);
 
             Assert.True(limiter.TryReplenish());
@@ -101,11 +101,11 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 3,
                 TimeSpan.FromMinutes(0), 2, autoReplenishment: false));
-            var lease = await limiter.WaitAsync(2);
+            var lease = await limiter.WaitAndAcquireAsync(2);
 
             Assert.True(lease.IsAcquired);
-            var wait1 = limiter.WaitAsync();
-            var wait2 = limiter.WaitAsync(2);
+            var wait1 = limiter.WaitAndAcquireAsync();
+            var wait2 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -134,11 +134,11 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3,
                 TimeSpan.FromMinutes(0), 2, autoReplenishment: false));
 
-            var lease = await limiter.WaitAsync(2);
+            var lease = await limiter.WaitAndAcquireAsync(2);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(2);
-            var wait2 = limiter.WaitAsync();
+            var wait1 = limiter.WaitAndAcquireAsync(2);
+            var wait2 = limiter.WaitAndAcquireAsync();
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -167,9 +167,9 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.Zero, 2, autoReplenishment: false));
             using var lease = limiter.Acquire(1);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
 
-            var failedLease = await limiter.WaitAsync(1);
+            var failedLease = await limiter.WaitAndAcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
         }
 
@@ -179,10 +179,10 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                    TimeSpan.Zero, 2, autoReplenishment: false));
             var lease = limiter.Acquire(1);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             var lease1 = await wait;
             Assert.False(lease1.IsAcquired);
             Assert.False(wait2.IsCompleted);
@@ -201,13 +201,13 @@ namespace System.Threading.RateLimiting.Test
                    TimeSpan.Zero, 2, autoReplenishment: false));
             var lease = limiter.Acquire(2);
             Assert.True(lease.IsAcquired);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait2.IsCompleted);
 
-            var wait3 = limiter.WaitAsync(2);
+            var wait3 = limiter.WaitAndAcquireAsync(2);
             var lease1 = await wait;
             var lease2 = await wait2;
             Assert.False(lease1.IsAcquired);
@@ -230,10 +230,10 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
 
             // Fill queue
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var lease1 = await limiter.WaitAsync(2);
+            var lease1 = await limiter.WaitAndAcquireAsync(2);
             Assert.False(lease1.IsAcquired);
 
             limiter.TryReplenish();
@@ -249,9 +249,9 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.Zero, 3, autoReplenishment: false));
             var lease = limiter.Acquire(2);
-            var wait = limiter.WaitAsync(2);
+            var wait = limiter.WaitAndAcquireAsync(2);
 
-            var failedLease = await limiter.WaitAsync(2);
+            var failedLease = await limiter.WaitAndAcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
 
             limiter.TryReplenish();
@@ -262,7 +262,7 @@ namespace System.Threading.RateLimiting.Test
             lease = await wait;
             Assert.True(lease.IsAcquired);
 
-            wait = limiter.WaitAsync(2);
+            wait = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait.IsCompleted);
 
             limiter.TryReplenish();
@@ -282,10 +282,10 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
 
             // Fill queue
-            var wait = limiter.WaitAsync(3);
+            var wait = limiter.WaitAndAcquireAsync(3);
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(int.MaxValue);
+            var wait2 = limiter.WaitAndAcquireAsync(int.MaxValue);
             Assert.False(wait2.IsCompleted);
 
             var lease1 = await wait;
@@ -310,7 +310,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(2));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAndAcquireAsync(2));
         }
 
         [Fact]
@@ -326,7 +326,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(-1));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAndAcquireAsync(-1));
         }
 
         [Fact]
@@ -353,24 +353,24 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task WaitAsyncZero_WithAvailability()
+        public override async Task WaitAndAcquireAsyncZero_WithAvailability()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
 
-            using var lease = await limiter.WaitAsync(0);
+            using var lease = await limiter.WaitAndAcquireAsync(0);
             Assert.True(lease.IsAcquired);
         }
 
         [Fact]
-        public override async Task WaitAsyncZero_WithoutAvailabilityWaitsForAvailability()
+        public override async Task WaitAndAcquireAsyncZero_WithoutAvailabilityWaitsForAvailability()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 2, autoReplenishment: false));
-            var lease = await limiter.WaitAsync(1);
+            var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(0);
+            var wait = limiter.WaitAndAcquireAsync(0);
             Assert.False(wait.IsCompleted);
 
             lease.Dispose();
@@ -385,11 +385,11 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 4,
                 TimeSpan.Zero, 2, autoReplenishment: false));
-            using var lease = await limiter.WaitAsync(2);
+            using var lease = await limiter.WaitAndAcquireAsync(2);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(1);
-            var wait2 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -404,7 +404,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CanCancelWaitAsyncAfterQueuing()
+        public override async Task CanCancelWaitAndAcquireAsyncAfterQueuing()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.Zero, 2, autoReplenishment: false));
@@ -412,7 +412,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
@@ -425,7 +425,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CanCancelWaitAsyncBeforeQueuing()
+        public override async Task CanCancelWaitAndAcquireAsyncBeforeQueuing()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1,
                 TimeSpan.Zero, 2, autoReplenishment: false));
@@ -435,7 +435,7 @@ namespace System.Threading.RateLimiting.Test
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAndAcquireAsync(1, cts.Token).AsTask());
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
@@ -453,13 +453,13 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
             Assert.Equal(cts.Token, ex.CancellationToken);
 
-            wait = limiter.WaitAsync(1);
+            wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
             limiter.TryReplenish();
@@ -494,9 +494,9 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3,
                 TimeSpan.Zero, 1, autoReplenishment: false));
             var lease = limiter.Acquire(1);
-            var wait1 = limiter.WaitAsync(1);
-            var wait2 = limiter.WaitAsync(1);
-            var wait3 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
+            var wait3 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
@@ -512,7 +512,7 @@ namespace System.Threading.RateLimiting.Test
 
             // Throws after disposal
             Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAndAcquireAsync(1).AsTask());
         }
 
         [Fact]
@@ -521,9 +521,9 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3,
                 TimeSpan.Zero, 2, autoReplenishment: false));
             var lease = limiter.Acquire(1);
-            var wait1 = limiter.WaitAsync(1);
-            var wait2 = limiter.WaitAsync(1);
-            var wait3 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
+            var wait3 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
@@ -539,7 +539,7 @@ namespace System.Threading.RateLimiting.Test
 
             // Throws after disposal
             Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAndAcquireAsync(1).AsTask());
         }
 
         [Fact]
@@ -560,12 +560,12 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(2, limiter.GetAvailablePermits());
             limiter.Acquire(2);
 
-            var lease = await limiter.WaitAsync(1);
+            var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
         }
 
         [Fact]
-        public override async Task CanAcquireResourcesWithWaitAsyncWithQueuedItemsIfNewestFirst()
+        public override async Task CanAcquireResourcesWithWaitAndAcquireAsyncWithQueuedItemsIfNewestFirst()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 2,
                 TimeSpan.Zero, 3, autoReplenishment: false));
@@ -573,11 +573,11 @@ namespace System.Threading.RateLimiting.Test
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(2);
+            var wait = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait.IsCompleted);
 
             Assert.Equal(1, limiter.GetAvailablePermits());
-            lease = await limiter.WaitAsync(1);
+            lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
             Assert.False(wait.IsCompleted);
 
@@ -592,7 +592,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CannotAcquireResourcesWithWaitAsyncWithQueuedItemsIfOldestFirst()
+        public override async Task CannotAcquireResourcesWithWaitAndAcquireAsyncWithQueuedItemsIfOldestFirst()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions(3, QueueProcessingOrder.OldestFirst, 5,
                 TimeSpan.Zero, 2, autoReplenishment: false));
@@ -600,8 +600,8 @@ namespace System.Threading.RateLimiting.Test
             var lease = limiter.Acquire(3);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(2);
-            var wait2 = limiter.WaitAsync(2);
+            var wait = limiter.WaitAndAcquireAsync(2);
+            var wait2 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -631,7 +631,7 @@ namespace System.Threading.RateLimiting.Test
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(2);
+            var wait = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait.IsCompleted);
 
             lease = limiter.Acquire(1);
@@ -654,7 +654,7 @@ namespace System.Threading.RateLimiting.Test
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(2);
+            var wait = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait.IsCompleted);
 
             lease = limiter.Acquire(1);
@@ -723,10 +723,10 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             // Add another item to queue, will be completed as failed later when we queue another item
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
             cts.Cancel();
@@ -736,7 +736,7 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
             limiter.TryReplenish();
 
-            var wait3 = limiter.WaitAsync(2);
+            var wait3 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait3.IsCompleted);
 
             // will be kicked by wait3 because we're using NewestFirst
@@ -757,7 +757,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());

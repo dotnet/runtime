@@ -2459,7 +2459,7 @@ PROCCreateCrashDump(
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            ERROR("PROCCreateCrashDump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
+            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
                 result, wstatus, strerror(errno), errno);
             return false;
         }
@@ -2797,6 +2797,9 @@ FlushProcessWriteBuffers()
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
             }
+
+            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+            CHECK_MACH("mach_port_deallocate()", machret);
         }
         // Deallocate the thread list now we're done with it.
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));

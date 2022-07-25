@@ -549,14 +549,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -817,14 +811,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             dataTypesTable.AcceptChanges();
             return dataTypesTable;
@@ -872,14 +860,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -915,14 +897,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -977,14 +953,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -1067,14 +1037,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }

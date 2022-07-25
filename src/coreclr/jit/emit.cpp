@@ -473,13 +473,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) asze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -4646,6 +4646,14 @@ AGAIN:
         {
             // Reference to JIT data
             assert(jmp->idIsBound());
+
+            // Already the smallest size?
+            if (jmp->idjShort)
+            {
+                assert(jmp->idCodeSize() == ssz);
+                continue;
+            }
+
             UNATIVE_OFFSET srcOffs = jmpIG->igOffs + jmp->idjOffs;
 
             int doff = jmp->idAddr()->iiaGetJitDataOffset();
@@ -6608,8 +6616,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
 #ifdef DEBUG
-    *instrCount                                          = 0;
-    jitstd::list<PreciseIPMapping>::iterator nextMapping = emitComp->genPreciseIPmappings.begin();
+    *instrCount                                       = 0;
+    jitstd::list<RichIPMapping>::iterator nextMapping = emitComp->genRichIPmappings.begin();
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6784,7 +6792,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 (id->idCodeSize() > 0))
             {
                 UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
-                while (nextMapping != emitComp->genPreciseIPmappings.end())
+                while (nextMapping != emitComp->genRichIPmappings.end())
                 {
                     UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
 

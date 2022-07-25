@@ -625,10 +625,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                string hostname = _name;
-
-                if (hostname == null)
-                    hostname = Utils.GetComputerFlatName();
+                string hostname = _name ?? Utils.GetComputerFlatName();
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoMachineInit: hostname is " + hostname);
 
@@ -661,8 +658,7 @@ namespace System.DirectoryServices.AccountManagement
                                                    " and message " + e.Message);
 
                 // Cleanup the DE on failure
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
 
                 throw;
             }
@@ -768,8 +764,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 // Cleanup the DE on failure
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
         }
 
@@ -825,8 +820,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 // Don't allow the DE to leak
-                if (deRootDse != null)
-                    deRootDse.Dispose();
+                deRootDse?.Dispose();
             }
 
             try
@@ -922,23 +916,12 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Cleanup on failure.  Once a DE has been successfully handed off to a ADStoreCtx,
                 // that ADStoreCtx will handle Dispose()'ing it
-                if (deUserGroupOrg != null)
-                    deUserGroupOrg.Dispose();
-
-                if (deComputer != null)
-                    deComputer.Dispose();
-
-                if (deBase != null)
-                    deBase.Dispose();
-
-                if (storeCtxUserGroupOrg != null)
-                    storeCtxUserGroupOrg.Dispose();
-
-                if (storeCtxComputer != null)
-                    storeCtxComputer.Dispose();
-
-                if (storeCtxBase != null)
-                    storeCtxBase.Dispose();
+                deUserGroupOrg?.Dispose();
+                deComputer?.Dispose();
+                deBase?.Dispose();
+                storeCtxUserGroupOrg?.Dispose();
+                storeCtxComputer?.Dispose();
+                storeCtxBase?.Dispose();
 
                 throw;
             }
@@ -1007,17 +990,10 @@ namespace System.DirectoryServices.AccountManagement
                 // This is okay, since StoreCtxs allow multiple Dispose() calls, and ignore
                 // all but the first call.
 
-                if (_userCtx != null)
-                    _userCtx.Dispose();
-
-                if (_groupCtx != null)
-                    _groupCtx.Dispose();
-
-                if (_computerCtx != null)
-                    _computerCtx.Dispose();
-
-                if (_queryCtx != null)
-                    _queryCtx.Dispose();
+                _userCtx?.Dispose();
+                _groupCtx?.Dispose();
+                _computerCtx?.Dispose();
+                _queryCtx?.Dispose();
 
                 _credValidate.Dispose();
 
@@ -1184,10 +1160,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (ldapConnection != null)
-                {
-                    ldapConnection.Dispose();
-                }
+                ldapConnection?.Dispose();
             }
         }
 

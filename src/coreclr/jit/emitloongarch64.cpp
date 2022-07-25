@@ -3498,7 +3498,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs;
-                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)dstRW;
+                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)(dstRW - writeableOffset);
                 assert((imm & 3) == 0);
 
                 int doff = (int)(imm & 0x800);
@@ -6284,14 +6284,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         {
             // If the local var is a gcref or byref, the local var better be untracked, because we have
             // no logic here to track local variable lifetime changes, like we do in the contained case
-            // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
+            // above. E.g., for a `st a0,[a1]` for byref `a1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
+
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R_I(ins, attr, dataReg, addr->GetRegNum(), 0);
     }

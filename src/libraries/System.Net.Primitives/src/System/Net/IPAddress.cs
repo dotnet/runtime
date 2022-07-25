@@ -362,17 +362,10 @@ namespace System.Net
         ///     or standard IPv6 representation.
         ///   </para>
         /// </devdoc>
-        public override string ToString()
-        {
-            if (_toString == null)
-            {
-                _toString = IsIPv4 ?
-                    IPAddressParser.IPv4AddressToString(PrivateAddress) :
-                    IPAddressParser.IPv6AddressToString(_numbers!, PrivateScopeId);
-            }
-
-            return _toString;
-        }
+        public override string ToString() =>
+            _toString ??= IsIPv4 ?
+                IPAddressParser.IPv4AddressToString(PrivateAddress) :
+                IPAddressParser.IPv6AddressToString(_numbers!, PrivateScopeId);
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {

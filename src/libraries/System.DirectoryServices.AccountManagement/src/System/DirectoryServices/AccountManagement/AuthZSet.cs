@@ -192,14 +192,9 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "AuthZSet", "Caught exception {0} with message {1}", e.GetType(), e.Message);
 
-                if (_psBuffer != null && !_psBuffer.IsInvalid)
-                    _psBuffer.Close();
-
-                if (_psUserSid != null && !_psUserSid.IsInvalid)
-                    _psUserSid.Close();
-
-                if (_psMachineSid != null && !_psMachineSid.IsInvalid)
-                    _psMachineSid.Close();
+                _psBuffer?.Dispose();
+                _psUserSid?.Dispose();
+                _psMachineSid?.Dispose();
 
                 // We're on a platform that doesn't have the AuthZ library
                 if (e is DllNotFoundException)

@@ -38,11 +38,7 @@ namespace System.IO.Pipelines
             {
                 lock (_lockObject)
                 {
-                    if (_internalTokenSource == null)
-                    {
-                        _internalTokenSource = new CancellationTokenSource();
-                    }
-                    return _internalTokenSource;
+                    return _internalTokenSource ??= new CancellationTokenSource();
                 }
             }
         }

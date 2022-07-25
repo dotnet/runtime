@@ -155,14 +155,12 @@ namespace System.DirectoryServices.AccountManagement
                 // (it's probably read-only, e.g., "lastLogon").
                 if (toLdap != null)
                 {
-                    if (mappingTableByProperty[propertyName] == null)
-                        mappingTableByProperty[propertyName] = new ArrayList();
+                    mappingTableByProperty[propertyName] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByProperty[propertyName]).Add(propertyEntry);
                 }
 
-                if (mappingTableByPropertyFull[propertyName] == null)
-                    mappingTableByPropertyFull[propertyName] = new ArrayList();
+                mappingTableByPropertyFull[propertyName] ??= new ArrayList();
 
                 ((ArrayList)mappingTableByPropertyFull[propertyName]).Add(propertyEntry);
 
@@ -173,8 +171,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     string ldapAttributeLower = ldapAttribute.ToLowerInvariant();
 
-                    if (mappingTableByLDAP[ldapAttributeLower] == null)
-                        mappingTableByLDAP[ldapAttributeLower] = new ArrayList();
+                    mappingTableByLDAP[ldapAttributeLower] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByLDAP[ldapAttributeLower]).Add(propertyEntry);
                 }
@@ -1251,14 +1248,8 @@ namespace System.DirectoryServices.AccountManagement
                     }
                     finally
                     {
-                        if (gc != null)
-                        {
-                            gc.Dispose();
-                        }
-                        if (forest != null)
-                        {
-                            forest.Dispose();
-                        }
+                        gc?.Dispose();
+                        forest?.Dispose();
                     }
                 }
 
@@ -1362,15 +1353,8 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != gcPrincipalDe)
-                {
-                    gcPrincipalDe.Dispose();
-                }
-
-                if (null != memberOfSearcher)
-                {
-                    memberOfSearcher.Dispose();
-                }
+                gcPrincipalDe?.Dispose();
+                memberOfSearcher?.Dispose();
             }
         }
 
@@ -1540,12 +1524,9 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != fspContainer)
-                    fspContainer.Dispose();
-                if (null != ds)
-                    ds.Dispose();
-                if (null != dncContainer)
-                    dncContainer.Dispose();
+                fspContainer?.Dispose();
+                ds?.Dispose();
+                dncContainer?.Dispose();
             }
         }
 
@@ -1873,14 +1854,8 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (ds != null)
-                {
-                    ds.Dispose();
-                }
-                if (defaultNCDirEntry != null)
-                {
-                    defaultNCDirEntry.Dispose();
-                }
+                ds?.Dispose();
+                defaultNCDirEntry?.Dispose();
             }
         }
 
@@ -1955,8 +1930,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (ds != null)
-                    ds.Dispose();
+                ds?.Dispose();
             }
         }
 

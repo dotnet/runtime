@@ -166,10 +166,7 @@ namespace System.Management
         {
             get
             {
-                if (context == null)
-                    return context = new ManagementNamedValueCollection();
-                else
-                    return context;
+                return context ??= new ManagementNamedValueCollection();
             }
             set
             {

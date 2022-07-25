@@ -964,8 +964,7 @@ namespace System.Management
             //Clear out previous property values
             className = null;
             condition = null;
-            if (selectedProperties != null)
-                selectedProperties.Clear();
+            selectedProperties?.Clear();
 
             //Trim whitespaces
             string q = query.Trim();
@@ -3024,8 +3023,7 @@ namespace System.Management
             withinInterval = TimeSpan.Zero;
             condition = null;
             groupWithinInterval = TimeSpan.Zero;
-            if (groupByPropertyList != null)
-                groupByPropertyList.Clear();
+            groupByPropertyList?.Clear();
             havingCondition = null;
 
             //Trim whitespaces

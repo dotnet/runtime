@@ -42,10 +42,7 @@ namespace System.ComponentModel
                 {
                     lock (s_internalSyncObject)
                     {
-                        if (s_context == null)
-                        {
-                            s_context = new RuntimeLicenseContext();
-                        }
+                        s_context ??= new RuntimeLicenseContext();
                     }
                 }
                 return s_context;

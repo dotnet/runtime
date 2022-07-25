@@ -126,6 +126,18 @@
         <Method Name=".ctor" Dynamic="Required All" />
       </Type>
 
+      <Type Name="ThreadLocalStatics.T1">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="ThreadLocalStatics.T2">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="ThreadLocalStatics.T4">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="ThreadLocalStatics.T5">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
 
       <Type Name="ConstraintsTests+TypeWithPublicCtor">
         <Method Name=".ctor" Dynamic="Required All" />

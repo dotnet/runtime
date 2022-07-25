@@ -182,7 +182,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 		uint32_t provider_name_byte_array_len = 0;
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &provider_name_byte_array, &provider_name_byte_array_len));
 
-		provider_name_utf8 = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)provider_name_byte_array, -1);
+		provider_name_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)provider_name_byte_array, -1);
 		ep_raise_error_if_nok (provider_name_utf8 != NULL);
 
 		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name_utf8));
@@ -195,7 +195,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 
 		// This parameter is optional.
 		if (filter_data_byte_array) {
-			filter_data_utf8 = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)filter_data_byte_array, -1);
+			filter_data_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)filter_data_byte_array, -1);
 			ep_raise_error_if_nok (filter_data_utf8 != NULL);
 
 			ep_rt_byte_array_free (filter_data_byte_array);

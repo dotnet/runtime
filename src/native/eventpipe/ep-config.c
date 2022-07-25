@@ -367,11 +367,9 @@ ep_config_build_event_metadata_event (
 	uint8_t *current;
 	current = instance_payload;
 
-	memcpy(current, &metadata_id, sizeof(metadata_id));
-	current += sizeof(metadata_id);
+	ep_write_buffer_uint32_t (&current, metadata_id);
 
-	memcpy(current, provider_name_utf16, provider_name_len);
-	current += provider_name_len;
+	ep_write_buffer_string_utf16_t (&current, provider_name_utf16, provider_name_len);
 
 	// Write the incoming payload data.
 	memcpy(current, payload_data, payload_data_len);

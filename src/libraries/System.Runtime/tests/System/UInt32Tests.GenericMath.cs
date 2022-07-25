@@ -195,6 +195,14 @@ namespace System.Tests
         // IBinaryNumber
         //
 
+
+        [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal(0xFFFF_FFFF, BinaryNumberHelper<uint>.AllBitsSet);
+            Assert.Equal(0U, ~BinaryNumberHelper<uint>.AllBitsSet);
+        }
+
         [Fact]
         public static void IsPow2Test()
         {
@@ -266,41 +274,41 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_GreaterThan((uint)0x00000000, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_GreaterThan((uint)0x00000001, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThan((uint)0x7FFFFFFF, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThan((uint)0x80000000, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThan((uint)0xFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThan((uint)0x00000000, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThan((uint)0x00000001, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThan((uint)0x7FFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThan((uint)0x80000000, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThan((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_GreaterThanOrEqual((uint)0x00000000, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThanOrEqual((uint)0x00000001, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThanOrEqual((uint)0x7FFFFFFF, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThanOrEqual((uint)0x80000000, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_GreaterThanOrEqual((uint)0xFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThanOrEqual((uint)0x00000000, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThanOrEqual((uint)0x00000001, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThanOrEqual((uint)0x7FFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThanOrEqual((uint)0x80000000, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_GreaterThanOrEqual((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_LessThan((uint)0x00000000, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThan((uint)0x00000001, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThan((uint)0x7FFFFFFF, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThan((uint)0x80000000, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThan((uint)0xFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThan((uint)0x00000000, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThan((uint)0x00000001, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThan((uint)0x7FFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThan((uint)0x80000000, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThan((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_LessThanOrEqual((uint)0x00000000, 1));
-            Assert.True(ComparisonOperatorsHelper<uint, uint>.op_LessThanOrEqual((uint)0x00000001, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThanOrEqual((uint)0x7FFFFFFF, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThanOrEqual((uint)0x80000000, 1));
-            Assert.False(ComparisonOperatorsHelper<uint, uint>.op_LessThanOrEqual((uint)0xFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThanOrEqual((uint)0x00000000, 1));
+            Assert.True(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThanOrEqual((uint)0x00000001, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThanOrEqual((uint)0x7FFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThanOrEqual((uint)0x80000000, 1));
+            Assert.False(ComparisonOperatorsHelper<uint, uint, bool>.op_LessThanOrEqual((uint)0xFFFFFFFF, 1));
         }
 
         //
@@ -363,21 +371,21 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<uint, uint>.op_Equality((uint)0x00000000, 1));
-            Assert.True(EqualityOperatorsHelper<uint, uint>.op_Equality((uint)0x00000001, 1));
-            Assert.False(EqualityOperatorsHelper<uint, uint>.op_Equality((uint)0x7FFFFFFF, 1));
-            Assert.False(EqualityOperatorsHelper<uint, uint>.op_Equality((uint)0x80000000, 1));
-            Assert.False(EqualityOperatorsHelper<uint, uint>.op_Equality((uint)0xFFFFFFFF, 1));
+            Assert.False(EqualityOperatorsHelper<uint, uint, bool>.op_Equality((uint)0x00000000, 1));
+            Assert.True(EqualityOperatorsHelper<uint, uint, bool>.op_Equality((uint)0x00000001, 1));
+            Assert.False(EqualityOperatorsHelper<uint, uint, bool>.op_Equality((uint)0x7FFFFFFF, 1));
+            Assert.False(EqualityOperatorsHelper<uint, uint, bool>.op_Equality((uint)0x80000000, 1));
+            Assert.False(EqualityOperatorsHelper<uint, uint, bool>.op_Equality((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<uint, uint>.op_Inequality((uint)0x00000000, 1));
-            Assert.False(EqualityOperatorsHelper<uint, uint>.op_Inequality((uint)0x00000001, 1));
-            Assert.True(EqualityOperatorsHelper<uint, uint>.op_Inequality((uint)0x7FFFFFFF, 1));
-            Assert.True(EqualityOperatorsHelper<uint, uint>.op_Inequality((uint)0x80000000, 1));
-            Assert.True(EqualityOperatorsHelper<uint, uint>.op_Inequality((uint)0xFFFFFFFF, 1));
+            Assert.True(EqualityOperatorsHelper<uint, uint, bool>.op_Inequality((uint)0x00000000, 1));
+            Assert.False(EqualityOperatorsHelper<uint, uint, bool>.op_Inequality((uint)0x00000001, 1));
+            Assert.True(EqualityOperatorsHelper<uint, uint, bool>.op_Inequality((uint)0x7FFFFFFF, 1));
+            Assert.True(EqualityOperatorsHelper<uint, uint, bool>.op_Inequality((uint)0x80000000, 1));
+            Assert.True(EqualityOperatorsHelper<uint, uint, bool>.op_Inequality((uint)0xFFFFFFFF, 1));
         }
 
         //
@@ -1592,31 +1600,31 @@ namespace System.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, uint>.op_LeftShift((uint)0x00000000, 1));
-            Assert.Equal((uint)0x00000002, ShiftOperatorsHelper<uint, uint>.op_LeftShift((uint)0x00000001, 1));
-            Assert.Equal((uint)0xFFFFFFFE, ShiftOperatorsHelper<uint, uint>.op_LeftShift((uint)0x7FFFFFFF, 1));
-            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, uint>.op_LeftShift((uint)0x80000000, 1));
-            Assert.Equal((uint)0xFFFFFFFE, ShiftOperatorsHelper<uint, uint>.op_LeftShift((uint)0xFFFFFFFF, 1));
+            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, int, uint>.op_LeftShift((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000002, ShiftOperatorsHelper<uint, int, uint>.op_LeftShift((uint)0x00000001, 1));
+            Assert.Equal((uint)0xFFFFFFFE, ShiftOperatorsHelper<uint, int, uint>.op_LeftShift((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, int, uint>.op_LeftShift((uint)0x80000000, 1));
+            Assert.Equal((uint)0xFFFFFFFE, ShiftOperatorsHelper<uint, int, uint>.op_LeftShift((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, uint>.op_RightShift((uint)0x00000000, 1));
-            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, uint>.op_RightShift((uint)0x00000001, 1));
-            Assert.Equal((uint)0x3FFFFFFF, ShiftOperatorsHelper<uint, uint>.op_RightShift((uint)0x7FFFFFFF, 1));
-            Assert.Equal((uint)0x40000000, ShiftOperatorsHelper<uint, uint>.op_RightShift((uint)0x80000000, 1));
-            Assert.Equal((uint)0x7FFFFFFF, ShiftOperatorsHelper<uint, uint>.op_RightShift((uint)0xFFFFFFFF, 1));
+            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, int, uint>.op_RightShift((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, int, uint>.op_RightShift((uint)0x00000001, 1));
+            Assert.Equal((uint)0x3FFFFFFF, ShiftOperatorsHelper<uint, int, uint>.op_RightShift((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x40000000, ShiftOperatorsHelper<uint, int, uint>.op_RightShift((uint)0x80000000, 1));
+            Assert.Equal((uint)0x7FFFFFFF, ShiftOperatorsHelper<uint, int, uint>.op_RightShift((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, uint>.op_UnsignedRightShift((uint)0x00000000, 1));
-            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, uint>.op_UnsignedRightShift((uint)0x00000001, 1));
-            Assert.Equal((uint)0x3FFFFFFF, ShiftOperatorsHelper<uint, uint>.op_UnsignedRightShift((uint)0x7FFFFFFF, 1));
-            Assert.Equal((uint)0x40000000, ShiftOperatorsHelper<uint, uint>.op_UnsignedRightShift((uint)0x80000000, 1));
-            Assert.Equal((uint)0x7FFFFFFF, ShiftOperatorsHelper<uint, uint>.op_UnsignedRightShift((uint)0xFFFFFFFF, 1));
+            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, int, uint>.op_UnsignedRightShift((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000000, ShiftOperatorsHelper<uint, int, uint>.op_UnsignedRightShift((uint)0x00000001, 1));
+            Assert.Equal((uint)0x3FFFFFFF, ShiftOperatorsHelper<uint, int, uint>.op_UnsignedRightShift((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x40000000, ShiftOperatorsHelper<uint, int, uint>.op_UnsignedRightShift((uint)0x80000000, 1));
+            Assert.Equal((uint)0x7FFFFFFF, ShiftOperatorsHelper<uint, int, uint>.op_UnsignedRightShift((uint)0xFFFFFFFF, 1));
         }
 
         //

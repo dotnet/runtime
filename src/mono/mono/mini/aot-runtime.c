@@ -287,7 +287,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 
-	g_assert (index < amodule->image_table_len);
+	g_assert (GINT_TO_UINT32(index) < amodule->image_table_len);
 
 	error_init (error);
 
@@ -2782,7 +2782,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 	guint8 *fde, *cie, *code_start, *code_end;
 	int version, fde_count;
 	gint32 *table;
-	int i, pos, left, right;
+	int pos, left, right;
 	MonoJitExceptionInfo *ei;
 	MonoMemoryManager *mem_manager;
 	guint32 fde_len, ei_len, nested_len, nindex;
@@ -2895,7 +2895,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 
 	/* Count number of nested clauses */
 	nested_len = 0;
-	for (i = 0; i < ei_len; ++i) {
+	for (guint32 i = 0; i < ei_len; ++i) {
 		/* This might be unaligned */
 		gint32 cindex1 = read32 (type_info [i]);
 		GSList *l;
@@ -2915,7 +2915,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 	jinfo_unwind->unw_info = unw_info;
 	jinfo_unwind->unw_info_len = info.unw_info_len;
 
-	for (i = 0; i < ei_len; ++i) {
+	for (guint32 i = 0; i < ei_len; ++i) {
 		/*
 		 * clauses contains the original IL exception info saved by the AOT
 		 * compiler, we have to combine that with the information produced by LLVM
@@ -2944,11 +2944,10 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 
 	/* See exception_cb () in mini-llvm.c as to why this is needed */
 	nindex = ei_len;
-	for (i = 0; i < ei_len; ++i) {
+	for (guint32 i = 0; i < ei_len; ++i) {
 		gint32 cindex1 = read32 (type_info [i]);
-		GSList *l;
 
-		for (l = nesting [cindex1]; l; l = l->next) {
+		for (GSList *l = nesting [cindex1]; l; l = l->next) {
 			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
 			MonoJitExceptionInfo *nesting_ei;
 			MonoJitExceptionInfo *nesting_clause = &clauses [nesting_cindex];
@@ -3583,7 +3582,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		}
 
 		if (!method) {
-			if (method_index >= table_info_get_rows (&image->tables [MONO_TABLE_METHOD])) {
+			if (GINT_TO_UINT32(method_index) >= table_info_get_rows (&image->tables [MONO_TABLE_METHOD])) {
 				/*
 				 * This is hit for extra methods which are called directly, so they are
 				 * not in amodule->extra_methods.
@@ -3600,9 +3599,9 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 					g_assert (pos < table_len);
 
-					if (table [pos * 2] < method_index)
+					if (table [pos * 2] < GINT_TO_UINT32(method_index))
 						left = pos + 1;
-					else if (table [pos * 2] > method_index)
+					else if (table [pos * 2] > GINT_TO_UINT32(method_index))
 						right = pos;
 					else
 						break;
@@ -4152,7 +4151,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 	}
 
 	if (!code) {
-		if (method_index < amodule->info.nmethods)
+		if (GINT_TO_UINT32(method_index) < amodule->info.nmethods)
 			code = (guint8*)MINI_ADDR_TO_FTNPTR ((guint8 *)amodule->methods [method_index]);
 		else
 			return NULL;
@@ -4486,7 +4485,6 @@ find_aot_method (MonoMethod *method, MonoAotModule **out_amodule)
 {
 	guint32 index;
 	GPtrArray *modules;
-	int i;
 	guint32 hash = mono_aot_method_hash (method);
 
 	/* Try the place we expect to have moved the method only
@@ -4518,7 +4516,7 @@ find_aot_method (MonoMethod *method, MonoAotModule **out_amodule)
 	mono_aot_unlock ();
 
 	index = 0xffffff;
-	for (i = 0; i < modules->len; ++i) {
+	for (guint i = 0; i < modules->len; ++i) {
 		MonoAotModule *amodule = (MonoAotModule *)g_ptr_array_index (modules, i);
 
 		if (amodule != m_class_get_image (method->klass)->aot_module)
@@ -5169,7 +5167,6 @@ mono_aot_plt_resolve (gpointer aot_module, host_mgreg_t *regs, guint8 *code, Mon
 static void
 init_plt (MonoAotModule *amodule)
 {
-	int i;
 	gpointer tramp;
 
 	if (amodule->plt_inited)
@@ -5194,7 +5191,7 @@ init_plt (MonoAotModule *amodule)
 	/*
 	 * Initialize the PLT entries in the GOT to point to the default targets.
 	 */
-	for (i = 1; i < amodule->info.plt_size; ++i)
+	for (guint32 i = 1; i < amodule->info.plt_size; ++i)
 		/* All the default entries point to the AOT trampoline */
 		((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = tramp;
 
@@ -5980,7 +5977,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 			g_assert (*(guint16*)ptr == method_index);
 			unbox_tramp_idx = (guint16*)ptr - (guint16*)amodule->info.llvm_unbox_tramp_indexes;
 		}
-		g_assert (unbox_tramp_idx < amodule->info.llvm_unbox_tramp_num);
+		g_assert (GPTRDIFF_TO_UINT32(unbox_tramp_idx) < amodule->info.llvm_unbox_tramp_num);
 		code = ((gpointer*)(amodule->info.llvm_unbox_trampolines))[unbox_tramp_idx];
 		g_assert (code);
 

@@ -255,6 +255,20 @@ jobs:
           artifactFileName: 'MauiiOSPodcastIPA.tar.gz'
           artifactName: 'MauiiOSPodcastIPA'
           displayName: 'Maui iOS Podcast IPA'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiBlazoriOSDefaultIPA
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazoriOSDefaultIPA.tar.gz'
+          artifactName: 'MauiBlazoriOSDefaultIPA'
+          displayName: 'Maui Blazor iOS IPA'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiBlazorMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazorMacCatalystDefault.tar.gz'
+          artifactName: 'MauiBlazorMacCatalystDefault'
+          displayName: 'Maui Blazor MacCatalyst App'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

@@ -213,8 +213,7 @@ void HandleTerminationRequest(int terminationExitCode)
     {
         SetLatchedExitCode(terminationExitCode);
 
-        DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableDumpOnSigTerm);
-        ForceEEShutdown(enabled == 1 ? SCA_TerminateProcessWhenShutdownComplete : SCA_ExitProcessWhenShutdownComplete);
+        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
     }
 }
 #endif

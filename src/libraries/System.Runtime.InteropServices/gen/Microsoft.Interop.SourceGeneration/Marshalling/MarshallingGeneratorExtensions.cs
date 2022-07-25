@@ -117,14 +117,21 @@ namespace Microsoft.Interop
             {
                 CountInfo countInfo;
                 MarshallingInfo elementMarshallingInfo;
-                if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo_V1 collectionMarshalling
-                    && collectionMarshalling.UseDefaultMarshalling
-                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo
-                    && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }
-                    )
+                if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshalling
+                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo)
                 {
-                    countInfo = collectionMarshalling.ElementCountInfo;
-                    elementMarshallingInfo = collectionMarshalling.ElementMarshallingInfo;
+                    CustomTypeMarshallerData defaultMarshallerData = collectionMarshalling.Marshallers.GetModeOrDefault(MarshalMode.Default);
+                    if ((defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_ArrayMarshaller}<")
+                        || defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller}<"))
+                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo {  UnmanagedType: not UnmanagedType.CustomMarshaler })
+                    {
+                        countInfo = collectionMarshalling.ElementCountInfo;
+                        elementMarshallingInfo = defaultMarshallerData.CollectionElementMarshallingInfo;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else if (info.MarshallingAttributeInfo is MissingSupportCollectionMarshallingInfo missingSupport)
                 {

@@ -209,7 +209,7 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 	time_restart_world += restart_world_tv_elapsed;
 
 	gint64 stw_pause_time = TV_ELAPSED (stop_world_time, end_sw);
-	max_stw_pause_time = MAX (stw_pause_time, max_stw_pause_time);
+	max_stw_pause_time = MAX (GINT64_TO_UINT64(stw_pause_time), max_stw_pause_time);
 	end_of_last_stw = end_sw;
 
 	SGEN_LOG (1, "restarted (pause time: %d usec, max: %d usec)", (int)stw_pause_time / 10, (int)max_stw_pause_time / 10);

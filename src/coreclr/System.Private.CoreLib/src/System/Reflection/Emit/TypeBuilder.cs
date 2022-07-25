@@ -1430,10 +1430,7 @@ namespace System.Reflection.Emit
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
-            if (con == null)
-            {
-                con = m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
-            }
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);

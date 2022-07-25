@@ -3,10 +3,11 @@
 
 import { Module, runtimeHelpers } from "./imports";
 import {
+    assert_not_disposed,
     cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle_ref,
     get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
-    mono_wasm_release_cs_owned_object, _js_owned_object_registry, _use_finalization_registry
+    mono_wasm_release_cs_owned_object, setup_managed_proxy, teardown_managed_proxy
 } from "./gc-handles";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
@@ -76,7 +77,7 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             result.clear();
             return;
         case typeof js_obj === "number": {
-            let box_class : MonoClass;
+            let box_class: MonoClass;
             if ((js_obj | 0) === js_obj) {
                 setI32_unchecked(runtimeHelpers._box_buffer, js_obj);
                 box_class = runtimeHelpers._class_int32;
@@ -121,9 +122,10 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
     if (js_obj === null || typeof js_obj === "undefined")
         return;
 
-    if (js_obj[js_owned_gc_handle_symbol]) {
+    if (js_obj[js_owned_gc_handle_symbol] !== undefined) {
         // for js_owned_gc_handle we don't want to create new proxy
         // since this is strong gc_handle we don't need to in-flight reference
+        assert_not_disposed(js_obj);
         get_js_owned_object_by_gc_handle_ref(js_obj[js_owned_gc_handle_symbol], result.address);
         return;
     }
@@ -166,8 +168,8 @@ export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoA
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
     //  is an object representing a chunk of data; it has no format to speak of, and offers no
     // mechanism for accessing its contents. In order to access the memory contained in a buffer,
-    // you need to use a view. A view provides a context — that is, a data type, starting offset,
-    // and number of elements — that turns the data into an actual typed array.
+    // you need to use a view. A view provides a context - that is, a data type, starting offset,
+    // and number of elements - that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
     if (has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT) {
         const arrayType = js_obj[wasm_type_symbol];
@@ -244,30 +246,18 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
     // With more complexity we could recover original instance when this Task is marshaled back to JS.
     // TODO optimization: return the tcs.Task on this same call instead of _get_tcs_task
     const tcs_gc_handle = corebindings._create_tcs();
+    const holder: any = { tcs_gc_handle };
+    setup_managed_proxy(holder, tcs_gc_handle);
     thenable.then((result) => {
         corebindings._set_tcs_result_ref(tcs_gc_handle, result);
-        // let go of the thenable reference
-        mono_wasm_release_cs_owned_object(thenable_js_handle);
-
-        // when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after promise resolve/reject
-        if (!_use_finalization_registry) {
-            corebindings._release_js_owned_object_by_gc_handle(tcs_gc_handle);
-        }
     }, (reason) => {
         corebindings._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
+    }).finally(() => {
         // let go of the thenable reference
         mono_wasm_release_cs_owned_object(thenable_js_handle);
-
-        // when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after promise resolve/reject
-        if (!_use_finalization_registry) {
-            corebindings._release_js_owned_object_by_gc_handle(tcs_gc_handle);
-        }
+        teardown_managed_proxy(holder, tcs_gc_handle); // this holds holder alive for finalizer, until the promise is freed
     });
 
-    // collect the TaskCompletionSource with its Task after js doesn't hold the thenable anymore
-    if (_use_finalization_registry) {
-        _js_owned_object_registry.register(thenable, tcs_gc_handle);
-    }
 
     corebindings._get_tcs_task_ref(tcs_gc_handle, resultRoot.address);
 

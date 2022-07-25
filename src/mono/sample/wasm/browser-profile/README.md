@@ -17,7 +17,7 @@ await createDotnetRuntime(() => ({
         if (config.enable_profiler) {
             config.aot_profiler_options = {
                 write_at: "<Namespace.Class::StopProfile>",
-                send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
+                send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
             }
         }
     },

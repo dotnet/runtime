@@ -2255,10 +2255,7 @@ namespace System.ComponentModel
                         TypeDescriptionNode? node = (TypeDescriptionNode?)de.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
                         {
-                            if (refreshedTypes == null)
-                            {
-                                refreshedTypes = new Hashtable();
-                            }
+                            refreshedTypes ??= new Hashtable();
                             refreshedTypes[nodeType] = nodeType;
                             node = node.Next;
                         }
@@ -2271,10 +2268,7 @@ namespace System.ComponentModel
                             foreach (Type populatedType in populatedTypes)
                             {
                                 provider.Refresh(populatedType);
-                                if (refreshedTypes == null)
-                                {
-                                    refreshedTypes = new Hashtable();
-                                }
+                                refreshedTypes ??= new Hashtable();
                                 refreshedTypes[populatedType] = populatedType;
                             }
                         }
@@ -2974,11 +2968,9 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
             {
-                PropertyDescriptorCollection properties = _primary.GetProperties(attributes);
-                if (properties == null)
-                {
-                    properties = _secondary.GetProperties(attributes);
-                }
+                PropertyDescriptorCollection properties =
+                    _primary.GetProperties(attributes) ??
+                    _secondary.GetProperties(attributes);
 
                 Debug.Assert(properties != null, "Someone should have handled this");
                 return properties;

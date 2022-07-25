@@ -256,9 +256,13 @@ namespace System.Management
         {
             // Test/utilize isWbemPathShared *only* on public + internal members!
             if (wmiPath == null)
+            {
                 wmiPath = CreateWbemPath(path);
+            }
             else
+            {
                 SetWbemPath(wmiPath, path);
+            }
         }
 
         private static void SetWbemPath(IWbemPath wbemPath, string path)
@@ -676,7 +680,9 @@ namespace System.Management
 
             wmiPathTmp = CreateWbemPath(nsPath);
             if (wmiPath == null)
+            {
                 wmiPath = this.CreateWbemPath("");
+            }
             else if (isWbemPathShared)
             {
                 // Check if this IWbemPath is shared among multiple managed objects.
@@ -926,7 +932,9 @@ namespace System.Management
                 int status = (int)ManagementStatus.NoError;
 
                 if (wmiPath == null)
+                {
                     wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath();
+                }
                 else if (isWbemPathShared)
                 {
                     // Check if this IWbemPath is shared among multiple managed objects.

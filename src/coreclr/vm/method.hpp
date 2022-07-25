@@ -1566,7 +1566,7 @@ public:
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
-    // an NGEN image then then other will be, and if one is "used" at runtime then
+    // an NGEN image then the other will be, and if one is "used" at runtime then
     // the other will be too.
     BOOL IsTightlyBoundToMethodTable();
 
@@ -3704,6 +3704,34 @@ public:
     CalledMethod * GetNext() { return m_pNext; }
 };
 #endif
+
+#ifdef FEATURE_READYTORUN
+struct ReadyToRunStandaloneMethodMetadata
+{
+    ReadyToRunStandaloneMethodMetadata() :
+        pByteData(nullptr),
+        cByteData(0),
+        pTypes(nullptr),
+        cTypes(0)
+    {}
+
+    ~ReadyToRunStandaloneMethodMetadata()
+    {
+        if (pByteData != nullptr)
+            delete[] pByteData;
+        if (pTypes != nullptr)
+            delete[] pTypes;
+    }
+
+    const uint8_t * pByteData;
+    size_t cByteData;
+    const TypeHandle * pTypes;
+    size_t cTypes;
+};
+
+ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
+void InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 
 #include "method.inl"
 

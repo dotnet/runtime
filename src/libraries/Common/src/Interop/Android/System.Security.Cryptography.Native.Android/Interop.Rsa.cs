@@ -197,7 +197,9 @@ internal static partial class Interop
         {
             Pkcs1 = 0,
             OaepSHA1 = 1,
-            NoPadding = 2,
+            OaepSHA256 = 2,
+            OaepSHA384 = 3,
+            OaepSHA512 = 4,
         }
     }
 }

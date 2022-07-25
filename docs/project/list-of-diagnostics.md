@@ -99,6 +99,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0042`__ | ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys. |
 |  __`SYSLIB0043`__ | ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead. |
 |  __`SYSLIB0044`__ | AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported. |
+|  __`SYSLIB0045`__ | Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead. |
 
 ## Analyzer Warnings
 
@@ -172,3 +173,9 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1062`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
 |  __`SYSLIB1063`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
 |  __`SYSLIB1064`__ | *_`SYSLIB1062`-`SYSLIB1064` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+
+### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
+
+| Suppression ID     | Suppressed Diagnostic ID | Description |
+| :----------------- | :----------------------- | :---------- |
+| __`SYSLIBSUPPRESS0001`__ | CA1822 | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |

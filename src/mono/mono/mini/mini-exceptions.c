@@ -459,8 +459,8 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 				/* Find try clause containing IL offset */
 				int il_offset = ((MonoMethodILState*)frame->il_state)->il_offset;
 				int clause_index = -1;
-				for (int i = 0; i < header->num_clauses; ++i) {
-					if (il_offset >= header->clauses [i].try_offset && il_offset < header->clauses [i].try_offset + header->clauses [i].try_len) {
+				for (guint i = 0; i < header->num_clauses; ++i) {
+					if (GINT_TO_UINT32(il_offset) >= header->clauses [i].try_offset && GINT_TO_UINT32(il_offset) < header->clauses [i].try_offset + header->clauses [i].try_len) {
 						clause_index = i;
 						break;
 					}
@@ -472,7 +472,7 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 					frame->native_offset = 0xffffff;
 				} else {
 					/* Set ctx->ip to the beginning of the corresponding interpreter try clause */
-					g_assert (clause_index < frame->ji->num_clauses);
+					g_assert (GINT_TO_UINT32(clause_index) < frame->ji->num_clauses);
 					frame->native_offset = GPTRDIFF_TO_INT ((guint8*)frame->ji->clauses [clause_index].try_start - (guint8*)frame->ji->code_start);
 				}
 			} else {
@@ -835,7 +835,7 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 		for (i = 0; i < gi->nlocs; ++i) {
 			MonoDwarfLocListEntry *entry = &gi->locations [i];
 
-			if (offset >= entry->from && (offset < entry->to || entry->to == 0)) {
+			if (offset >= GINT_TO_SIZE(entry->from) && (offset < GINT_TO_UINT(entry->to) || entry->to == 0)) {
 				if (entry->is_reg)
 					info = (gpointer)mono_arch_context_get_int_reg (ctx, entry->reg);
 				else
@@ -1803,7 +1803,6 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 	MonoMethod *method;
 	int frame_count = 0;
 	gint32 filter_idx;
-	int i;
 	MonoObject *ex_obj;
 	Unwinder unwinder;
 	gboolean in_interp;
@@ -1824,7 +1823,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		if (!mono_ex->caught_in_unmanaged)
 			len -= 1;
 
-		for (i = 0; i < len; i++) {
+		for (int i = 0; i < len; i++) {
 			for (int j = 0; j < TRACE_IP_ENTRY_SIZE; ++j) {
 				gpointer p = mono_array_get_internal (initial_trace_ips, gpointer, (i * TRACE_IP_ENTRY_SIZE) + j);
 				trace_ips = g_list_prepend (trace_ips, p);
@@ -1860,8 +1859,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 	while (1) {
 		MonoContext new_ctx;
-		guint32 free_stack;
-		int clause_index_start = 0;
+		guint32 free_stack, clause_index_start = 0;
 		gboolean unwind_res = TRUE;
 
 		StackFrameInfo frame;
@@ -1939,7 +1937,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			result = MONO_FIRST_PASS_CALLBACK_TO_NATIVE;
 		}
 
-		for (i = clause_index_start; i < ji->num_clauses; i++) {
+		for (guint32 i = clause_index_start; i < ji->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
 
@@ -2111,7 +2109,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	MonoMethod *method;
 	int frame_count = 0;
 	gint32 filter_idx, first_filter_idx = 0;
-	int i;
 	MonoObject *ex_obj = NULL;
 	MonoObject *non_exception = NULL;
 	Unwinder unwinder;
@@ -2372,7 +2369,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			g_error ("Did not expect ftnptr_eh_callback to return.");
 		}
 
-		for (i = clause_index_start; i < ji->num_clauses; i++) {
+		for (int i = clause_index_start; GINT_TO_UINT32(i) < ji->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
 
@@ -2621,7 +2618,6 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoContext ctx, new_ctx;
 	MonoJitInfo *ji, rji;
-	int i;
 
 	ctx = *start_ctx;
 
@@ -2632,7 +2628,7 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	if (!call_filter)
 		call_filter = (int (*)(MonoContext *, void *))mono_get_call_filter ();
 
-	for (i = 0; i < ji->num_clauses; i++) {
+	for (guint32 i = 0; i < ji->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &ji->clauses [i];
 
 		if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (&ctx)) &&
@@ -3116,7 +3112,6 @@ typedef struct {
 static gboolean
 find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
-	int i;
 	gpointer ip;
 	FindHandlerBlockData *pdata = (FindHandlerBlockData *)data;
 	MonoJitInfo *ji = frame->ji;
@@ -3126,7 +3121,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 
 	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 
-	for (i = 0; i < ji->num_clauses; ++i) {
+	for (guint32 i = 0; i < ji->num_clauses; ++i) {
 		MonoJitExceptionInfo *ei = ji->clauses + i;
 		if (ei->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 			continue;
@@ -3146,7 +3141,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 static void
 install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 {
-	int i;
+	guint32 i;
 	MonoJitExceptionInfo *clause = NULL;
 	gpointer ip;
 	guint8 *bp;
@@ -3610,7 +3605,7 @@ mini_llvmonly_load_exception (void)
 
 		size_t upper = mono_array_length_internal (ta);
 
-		for (int i = 0; i < upper; i += TRACE_IP_ENTRY_SIZE) {
+		for (guint i = 0; i < upper; i += TRACE_IP_ENTRY_SIZE) {
 			gpointer curr_ip = mono_array_get_internal (ta, gpointer, i);
 			for (int j = 0; j < TRACE_IP_ENTRY_SIZE; ++j) {
 				gpointer p = mono_array_get_internal (ta, gpointer, i + j);

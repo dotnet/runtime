@@ -153,10 +153,11 @@ namespace System.Net.Security.Tests
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
             using (NetworkStream ns = new NetworkStream(s))
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (SslStream ssl = new SslStream(ns, true, validationCallback))
             {
                 X509CertificateCollection certBundle = new X509CertificateCollection();
-                certBundle.Add(Configuration.Certificates.GetClientCertificate());
+                certBundle.Add(clientCert);
 
                 // Perform handshake to establish secure connection.
                 await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
@@ -256,6 +257,8 @@ namespace System.Net.Security.Tests
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -333,6 +336,8 @@ namespace System.Net.Security.Tests
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -560,6 +565,8 @@ namespace System.Net.Security.Tests
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -619,6 +626,8 @@ namespace System.Net.Security.Tests
                 await t;
 
                 await Assert.ThrowsAsync<InvalidOperationException>(() => server.NegotiateClientCertificateAsync());
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -745,32 +754,23 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
-        public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
+        public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            clientOptions.RemoteCertificateValidationCallback =
-                (sender, certificate, chain, sslPolicyErrors) =>
+            clientOptions.CertificateChainPolicy = new X509ChainPolicy() { RevocationMode = X509RevocationMode.NoCheck,
+                                                                     TrustMode = X509ChainTrustMode.CustomRootTrust };
+            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
+            // Add only one CA to verify that peer did send intermediate CA cert.
+            // In case of partial chain, we need to make missing certs available.
+            if (usePartialChain)
+            {
+                for (int i = split; i < certificates.serverChain.Count - 1; i++)
                 {
-                    // add our custom root CA
-                    chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    // Add only one CA to verify that peer did send intermediate CA cert.
-                    // In case of partial chain, we need to make missing certs available.
-                    if (usePartialChain)
-                    {
-                        for (int i = split; i < certificates.serverChain.Count - 1; i++)
-                        {
-                            chain.ChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
-                        }
-                    }
-
-                    bool result = chain.Build((X509Certificate2)certificate);
-                    Assert.True(result);
-
-                    return result;
-                };
+                    clientOptions.CertificateChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
+                }
+            }
 
             var serverOptions = new SslServerAuthenticationOptions();
             X509Certificate2Collection serverChain;

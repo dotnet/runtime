@@ -703,7 +703,7 @@ Thread* SetupThread()
                 pThread->SetThreadState(Thread::TS_CompletionPortThread);
                 pThread->SetBackground(TRUE);
             }
-            else if (IsTimerSpecialThread() || IsWaitSpecialThread())
+            else if (IsWaitSpecialThread())
             {
                 pThread->SetThreadState(Thread::TS_TPWorkerThread);
                 pThread->SetBackground(TRUE);
@@ -794,7 +794,7 @@ Thread* SetupThread()
     {
         pThread->SetThreadState(Thread::TS_CompletionPortThread);
     }
-    else if (IsTimerSpecialThread() || IsWaitSpecialThread())
+    else if (IsWaitSpecialThread())
     {
         pThread->SetThreadState(Thread::TS_TPWorkerThread);
     }
@@ -7183,7 +7183,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
     LIMITED_METHOD_CONTRACT;
 
     return RequireSyncBlockCleanup()
-        || ThreadpoolMgr::HaveTimerInfosToFlush()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -7230,9 +7229,6 @@ void Thread::DoExtraWorkForFinalizer()
     {
         Thread::CleanupDetachedThreads();
     }
-
-    // If there were any TimerInfos waiting to be released, they'll get flushed now
-    ThreadpoolMgr::FlushQueueOfTimerInfos();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
@@ -7585,7 +7581,7 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
     ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
 }
 
-// The IOCompletion, QueueUserWorkItem, AddTimer, RegisterWaitForSingleObject cases in the ThreadPool
+// The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in the ThreadPool
 void ManagedThreadBase::ThreadPool(ADCallBackFcnType pTarget, LPVOID args)
 {
     WRAPPER_NO_CONTRACT;

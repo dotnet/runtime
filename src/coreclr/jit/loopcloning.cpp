@@ -456,14 +456,17 @@ JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* LoopCloneContext::Ensur
 {
     if (blockConditions[loopNum] == nullptr)
     {
-        blockConditions[loopNum] =
-            new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc, condBlocks);
+        blockConditions[loopNum] = new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc);
     }
+
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = blockConditions[loopNum];
-    for (unsigned i = 0; i < condBlocks; ++i)
+    // Iterate backwards to make sure the expand array stack reallocs just once here.
+    unsigned prevSize = levelCond->Size();
+    for (unsigned i = condBlocks; i > prevSize; i--)
     {
-        levelCond->Set(i, new (alloc) JitExpandArrayStack<LC_Condition>(alloc));
+        levelCond->Set(i - 1, new (alloc) JitExpandArrayStack<LC_Condition>(alloc));
     }
+
     return levelCond;
 }
 
@@ -3003,14 +3006,6 @@ PhaseStatus Compiler::optCloneLoops()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nBefore loop cloning:\n");
-        fgDispBasicBlocks(/*dumpTrees*/ true);
-    }
-#endif
-
     LoopCloneContext context(optLoopCount, getAllocator(CMK_LoopClone));
 
     // Obtain array optimization candidates in the context.
@@ -3116,7 +3111,6 @@ PhaseStatus Compiler::optCloneLoops()
         fgDispBasicBlocks(/*dumpTrees*/ true);
     }
 
-    fgDebugCheckLoopTable();
 #endif
 
     return PhaseStatus::MODIFIED_EVERYTHING;

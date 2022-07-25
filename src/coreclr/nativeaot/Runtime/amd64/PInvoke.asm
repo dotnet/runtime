@@ -3,57 +3,6 @@
 
 include asmmacros.inc
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn
-;;
-;;
-;; INPUT: none
-;;
-;; TRASHES: none
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpWaitForSuspend, _TEXT
-        push_vol_reg    rax
-        alloc_stack     60h
-
-        ; save the arg regs in the caller's scratch space
-        save_reg_postrsp        rcx, 70h
-        save_reg_postrsp        rdx, 78h
-        save_reg_postrsp        r8, 80h
-        save_reg_postrsp        r9, 88h
-
-        ; save the FP arg regs in our stack frame
-        save_xmm128_postrsp     xmm0, (20h + 0*10h)
-        save_xmm128_postrsp     xmm1, (20h + 1*10h)
-        save_xmm128_postrsp     xmm2, (20h + 2*10h)
-        save_xmm128_postrsp     xmm3, (20h + 3*10h)
-
-        END_PROLOGUE
-
-        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
-        jz          NoWait
-
-        call        RhpWaitForSuspend2
-
-NoWait:
-        movdqa      xmm0, [rsp + 20h + 0*10h]
-        movdqa      xmm1, [rsp + 20h + 1*10h]
-        movdqa      xmm2, [rsp + 20h + 2*10h]
-        movdqa      xmm3, [rsp + 20h + 3*10h]
-
-        mov         rcx, [rsp + 70h]
-        mov         rdx, [rsp + 78h]
-        mov         r8,  [rsp + 80h]
-        mov         r9,  [rsp + 88h]
-
-        add         rsp, 60h
-        pop         rax
-        ret
-
-NESTED_END RhpWaitForSuspend, _TEXT
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpWaitForGCNoAbort -- rare path for RhpPInvokeReturn
@@ -201,12 +150,7 @@ LEAF_ENTRY RhpPInvoke, _TEXT
         mov         qword ptr [rcx + OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs], r11
 
         mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], rcx
-
-        cmp         [RhpTrapThreads], TrapThreadsFlags_None
-        jne         @F                  ; forward branch - predicted not taken
         ret
-@@:
-        jmp         RhpWaitForSuspend
 LEAF_END RhpPInvoke, _TEXT
 
 

@@ -55,7 +55,8 @@ namespace System.Security.Cryptography
             byte[]? rented = null;
             try
             {
-                Span<byte> ciphertextAndTag = stackalloc byte[0];
+                scoped Span<byte> ciphertextAndTag;
+
                 // Arbitrary limit.
                 const int StackAllocMax = 128;
                 if (checked(ciphertext.Length + tag.Length) <= StackAllocMax)

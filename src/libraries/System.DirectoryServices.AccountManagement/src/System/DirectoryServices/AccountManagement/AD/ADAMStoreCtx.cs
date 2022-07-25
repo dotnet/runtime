@@ -37,8 +37,7 @@ namespace System.DirectoryServices.AccountManagement
             LoadFilterMappingTable(mappingIndex, s_filterPropertiesTableRaw);
             LoadPropertyMappingTable(mappingIndex, s_propertyMappingTableRaw);
 
-            if (NonPresentAttrDefaultStateMapping == null)
-                NonPresentAttrDefaultStateMapping = new Dictionary<string, bool>();
+            NonPresentAttrDefaultStateMapping ??= new Dictionary<string, bool>();
 
             for (int i = 0; i < s_presenceStateTable.GetLength(0); i++)
             {

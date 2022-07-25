@@ -363,7 +363,6 @@ GPTR_DECL(MethodTable,      g_pStringClass);
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
-GPTR_DECL(MethodTable,      g_pByReferenceClass);
 GPTR_DECL(MethodTable,      g_pExceptionClass);
 GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);

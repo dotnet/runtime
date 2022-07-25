@@ -52,9 +52,13 @@ namespace System.Net.Security
         // Established signing and sealing keys
         private byte[]? _clientSigningKey;
         private byte[]? _serverSigningKey;
+        private byte[]? _clientSealingKey;
+        private byte[]? _serverSealingKey;
         internal RC4? _clientSeal;
         internal RC4? _serverSeal;
         private Flags _negotiatedFlags;
+        private uint _clientSequence;
+        private uint _serverSequence;
 
         private MessageType _expectedMessageType = MessageType.Negotiate;
 
@@ -383,10 +387,17 @@ namespace System.Net.Security
             // Derive signing keys
             _clientSigningKey = DeriveKey(exportedSessionKey, ClientSigningKeyMagic);
             _serverSigningKey = DeriveKey(exportedSessionKey, ServerSigningKeyMagic);
-            _clientSeal = new RC4(DeriveKey(exportedSessionKey, ClientSealingKeyMagic));
-            _serverSeal = new RC4(DeriveKey(exportedSessionKey, ServerSealingKeyMagic));
+            _clientSealingKey = DeriveKey(exportedSessionKey, ClientSealingKeyMagic);
+            _serverSealingKey = DeriveKey(exportedSessionKey, ServerSealingKeyMagic);
+            ResetKeys();
             _negotiatedFlags = flags;
             CryptographicOperations.ZeroMemory(exportedSessionKey);
+        }
+
+        public void ResetKeys()
+        {
+            _clientSeal = new RC4(_clientSealingKey);
+            _serverSeal = new RC4(_serverSealingKey);
         }
 
         private void CalculateSignature(
@@ -415,7 +426,7 @@ namespace System.Net.Security
             }
         }
 
-        public void VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, uint sequenceNumber)
+        public void VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
         {
             Assert.Equal(16, signature.Length);
             // Check version
@@ -425,27 +436,43 @@ namespace System.Net.Security
             Assert.NotNull(_clientSigningKey);
 
             Span<byte> expectedSignature = stackalloc byte[16];
-            CalculateSignature(message, sequenceNumber, _clientSigningKey, _clientSeal, expectedSignature);
+            CalculateSignature(message, _clientSequence, _clientSigningKey, _clientSeal, expectedSignature);
+            _clientSequence++;
             Assert.True(signature.SequenceEqual(expectedSignature));
         }
 
-        public void GetMIC(ReadOnlySpan<byte> message, Span<byte> signature, uint sequenceNumber)
+        public void GetMIC(ReadOnlySpan<byte> message, Span<byte> signature)
         {
             // Make sure the authentication finished
             Assert.NotNull(_serverSeal);
             Assert.NotNull(_serverSigningKey);
 
-            CalculateSignature(message, sequenceNumber, _serverSigningKey, _serverSeal, signature);
+            CalculateSignature(message, _serverSequence, _serverSigningKey, _serverSeal, signature);
+            _serverSequence++;
         }
 
-        public void Unseal(ReadOnlySpan<byte> sealedMessage, Span<byte> message)
+        private void Unseal(ReadOnlySpan<byte> sealedMessage, Span<byte> message)
         {
             _clientSeal.Transform(sealedMessage, message);
         }
 
-        public void Seal(ReadOnlySpan<byte> message, Span<byte> sealedMessage)
+        private void Seal(ReadOnlySpan<byte> message, Span<byte> sealedMessage)
         {
             _serverSeal.Transform(message, sealedMessage);
+        }
+
+        public void Wrap(ReadOnlySpan<byte> message, Span<byte> wrappedMessage)
+        {
+            Assert.Equal(wrappedMessage.Length, message.Length + 16);
+            Seal(message, wrappedMessage.Slice(16));
+            GetMIC(message, wrappedMessage.Slice(0, 16));
+        }
+
+        public void Unwrap(ReadOnlySpan<byte> wrappedMessage, Span<byte> message)
+        {
+            Assert.Equal(wrappedMessage.Length, message.Length + 16);
+            Unseal(wrappedMessage.Slice(16), message);
+            VerifyMIC(message, wrappedMessage.Slice(0, 16));
         }
     }
 }

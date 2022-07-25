@@ -528,10 +528,7 @@ namespace System.Xml
         internal XmlTextReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
-            if (xmlFragment == null)
-            {
-                xmlFragment = string.Empty;
-            }
+            xmlFragment ??= string.Empty;
 
             if (context == null)
             {
@@ -2265,10 +2262,7 @@ namespace System.Xml
             {
                 if (_incReadDecoder != _readCharsDecoder)
                 { // mixing ReadChars with ReadBase64 or ReadBinHex
-                    if (_readCharsDecoder == null)
-                    {
-                        _readCharsDecoder = new IncrementalReadCharsDecoder();
-                    }
+                    _readCharsDecoder ??= new IncrementalReadCharsDecoder();
                     _readCharsDecoder.Reset();
                     _incReadDecoder = _readCharsDecoder;
                 }
@@ -2286,10 +2280,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_readCharsDecoder == null)
-                {
-                    _readCharsDecoder = new IncrementalReadCharsDecoder();
-                }
+                _readCharsDecoder ??= new IncrementalReadCharsDecoder();
 
                 InitIncrementalRead(_readCharsDecoder);
                 return IncrementalRead(buffer, index, count);
@@ -2323,10 +2314,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_base64Decoder == null)
-                {
-                    _base64Decoder = new Base64Decoder();
-                }
+                _base64Decoder ??= new Base64Decoder();
 
                 InitIncrementalRead(_base64Decoder);
                 return IncrementalRead(array, offset, len);
@@ -2360,10 +2348,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_binHexDecoder == null)
-                {
-                    _binHexDecoder = new BinHexDecoder();
-                }
+                _binHexDecoder ??= new BinHexDecoder();
 
                 InitIncrementalRead(_binHexDecoder);
                 return IncrementalRead(array, offset, len);
@@ -2836,10 +2821,7 @@ namespace System.Xml
 
         private void SendValidationEvent(XmlSeverityType severity, XmlSchemaException exception)
         {
-            if (_validationEventHandling != null)
-            {
-                _validationEventHandling.SendEvent(exception, severity);
-            }
+            _validationEventHandling?.SendEvent(exception, severity);
         }
 
         //
@@ -2962,11 +2944,7 @@ namespace System.Xml
             }
 
             // detect & setup encoding
-            if (encoding == null)
-            {
-                encoding = DetectEncoding();
-            }
-
+            encoding ??= DetectEncoding();
             SetupEncoding(encoding);
 
             // eat preamble
@@ -7193,10 +7171,7 @@ namespace System.Xml
                                 int tmp2 = pos - _ps.charPos;
                                 if (tmp2 > 0)
                                 {
-                                    if (sb != null)
-                                    {
-                                        sb.Append(_ps.chars, _ps.charPos, tmp2);
-                                    }
+                                    sb?.Append(_ps.chars, _ps.charPos, tmp2);
                                     _ps.charPos = pos;
                                     wsCount += tmp2;
                                 }
@@ -7209,10 +7184,7 @@ namespace System.Xml
                 int tmp3 = pos - _ps.charPos;
                 if (tmp3 > 0)
                 {
-                    if (sb != null)
-                    {
-                        sb.Append(_ps.chars, _ps.charPos, tmp3);
-                    }
+                    sb?.Append(_ps.chars, _ps.charPos, tmp3);
                     _ps.charPos = pos;
                     wsCount += tmp3;
                 }
@@ -7375,10 +7347,7 @@ namespace System.Xml
 
                 if (expand)
                 {
-                    if (internalSubsetBuilder != null)
-                    {
-                        internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
-                    }
+                    internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
                     chars[pos] = ch;
                 }
                 charCount = 1;
@@ -7406,10 +7375,7 @@ namespace System.Xml
                 Debug.Assert(pos > 0);
                 if (expand)
                 {
-                    if (internalSubsetBuilder != null)
-                    {
-                        internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
-                    }
+                    internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
                     chars[pos - 1] = (char)high;
                     chars[pos] = (char)low;
                 }
@@ -7575,10 +7541,7 @@ namespace System.Xml
             Debug.Assert(pos > 0);
             if (expand)
             {
-                if (internalSubsetBuilder != null)
-                {
-                    internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos);
-                }
+                internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos);
                 _ps.chars[pos - 1] = ch;
             }
             return pos;
@@ -7734,12 +7697,7 @@ namespace System.Xml
             }
             Debug.Assert(nodeIndex < _nodes.Length);
 
-            NodeData node = _nodes[nodeIndex];
-            if (node == null)
-            {
-                node = new NodeData();
-                _nodes[nodeIndex] = node;
-            }
+            NodeData node = _nodes[nodeIndex] ??= new NodeData();
             node.depth = nodeDepth;
             return node;
         }
@@ -8146,10 +8104,7 @@ namespace System.Xml
 
         private void PopEntity()
         {
-            if (_ps.stream != null)
-            {
-                _ps.stream.Dispose();
-            }
+            _ps.stream?.Dispose();
 
             UnregisterEntity();
             PopParsingState();
@@ -8175,10 +8130,7 @@ namespace System.Xml
             // register entity for recursion checkes
             if (entity != null)
             {
-                if (_currentEntities == null)
-                {
-                    _currentEntities = new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
-                }
+                _currentEntities ??= new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
 
                 _currentEntities.Add(entity, entity);
             }
@@ -9142,10 +9094,7 @@ namespace System.Xml
             _nameTable = nt;
 
             // make sure we have namespace manager
-            if (_namespaceManager == null)
-            {
-                _namespaceManager = new XmlNamespaceManager(nt);
-            }
+            _namespaceManager ??= new XmlNamespaceManager(nt);
 
             // copy xml:space and xml:lang
             _xmlContext.xmlSpace = context.XmlSpace;
@@ -9350,10 +9299,7 @@ namespace System.Xml
                 prefix = _namespaceManager.LookupPrefix(ns);
 
                 Debug.Assert(prefix != null);
-                if (prefix == null)
-                {
-                    prefix = string.Empty;
-                }
+                prefix ??= string.Empty;
             }
 
             // find out if the attribute is already there
@@ -9609,10 +9555,7 @@ namespace System.Xml
                 return uri1Str == uri2Str;
             }
 
-            if (uri1 == null)
-            {
-                uri1 = resolver.ResolveUri(null, uri1Str);
-            }
+            uri1 ??= resolver.ResolveUri(null, uri1Str);
 
             Uri uri2 = resolver.ResolveUri(null, uri2Str);
             return uri1.Equals(uri2);
@@ -9763,10 +9706,7 @@ namespace System.Xml
                     }
                     if (j > i + 1)
                     {
-                        if (norValue == null)
-                        {
-                            norValue = new StringBuilder(len);
-                        }
+                        norValue ??= new StringBuilder(len);
                         norValue.Append(value, startPos, i - startPos + 1);
                         startPos = j;
                         i = j - 1;

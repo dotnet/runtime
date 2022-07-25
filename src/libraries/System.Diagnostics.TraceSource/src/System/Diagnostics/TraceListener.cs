@@ -42,15 +42,7 @@ namespace System.Diagnostics
             _listenerName = name;
         }
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
-            }
-        }
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
         /// <devdoc>
         /// <para> Gets or sets a name for this <see cref='System.Diagnostics.TraceListener'/>.</para>

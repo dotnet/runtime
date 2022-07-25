@@ -145,7 +145,7 @@ namespace System
             return (ushort)(bits & TrailingSignificandMask);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -167,13 +167,13 @@ namespace System
             return (left._value != right._value) && ((left._value < right._value) ^ leftIsNegative);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Half left, Half right)
         {
             return right < left;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -195,13 +195,13 @@ namespace System
             return (left._value == right._value) || ((left._value < right._value) ^ leftIsNegative);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Half left, Half right)
         {
             return right <= left;
         }
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -214,7 +214,7 @@ namespace System
             return (left._value == right._value) || AreZero(left, right);
         }
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(Half left, Half right)
         {
             return !(left == right);
@@ -1009,6 +1009,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static Half IBinaryNumber<Half>.AllBitsSet => BitConverter.UInt16BitsToHalf(0xFFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Half value)
         {
@@ -1232,20 +1235,30 @@ namespace System
         }
 
         //
-        // IFloatingPointIeee754
+        // IFloatingPointConstants
         //
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
         public static Half E => new Half(EBits);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        public static Half Pi => new Half(PiBits);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        public static Half Tau => new Half(TauBits);
+
+        //
+        // IFloatingPointIeee754
+        //
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         public static Half NegativeZero => new Half(NegativeZeroBits);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
-        public static Half Pi => new Half(PiBits);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Half Atan2(Half y, Half x) => (Half)MathF.Atan2((float)y, (float)x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
-        public static Half Tau => new Half(TauBits);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Half Atan2Pi(Half y, Half x) => (Half)float.Atan2Pi((float)y, (float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Half BitDecrement(Half x) => (Half)MathF.BitDecrement((float)x);
@@ -1429,6 +1442,63 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Half>.IsCanonical(Half value) => true;
@@ -1791,8 +1861,8 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
         public static Half Hypot(Half x, Half y) => (Half)float.Hypot((float)x, (float)y);
 
-        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
-        public static Half Root(Half x, int n) => (Half)float.Root((float)x, n);
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Half RootN(Half x, int n) => (Half)float.RootN((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
@@ -1840,12 +1910,6 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Half Atan(Half x) => (Half)MathF.Atan((float)x);
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
-        public static Half Atan2(Half y, Half x) => (Half)MathF.Atan2((float)y, (float)x);
-
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
-        public static Half Atan2Pi(Half y, Half x) => (Half)float.Atan2Pi((float)y, (float)x);
-
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static Half AtanPi(Half x) => (Half)float.AtanPi((float)x);
 
@@ -1863,6 +1927,13 @@ namespace System
         {
             var (sin, cos) = MathF.SinCos((float)x);
             return ((Half)sin, (Half)cos);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Half SinPi, Half CosPi) SinCosPi(Half x)
+        {
+            var (sinPi, cosPi) = float.SinCosPi((float)x);
+            return ((Half)sinPi, (Half)cosPi);
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />

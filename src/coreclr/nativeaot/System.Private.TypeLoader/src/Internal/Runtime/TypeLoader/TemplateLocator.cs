@@ -31,8 +31,7 @@ namespace Internal.Runtime.TypeLoader
             TypeDesc result = TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Specific, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
 
             // If not found, see if there's a universal canonical template
-            if (result == null)
-                result = TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
+            result ??= TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
 
             return result;
 #endif
@@ -218,8 +217,7 @@ namespace Internal.Runtime.TypeLoader
             InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
 
             // If not found, see if there's a universal canonical template
-            if (result == null)
-                result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
+            result ??= TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
 
             return result;
         }

@@ -390,10 +390,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void CacheRecord(RecordBuilder record)
         {
-            if (_outputCache == null)
-            {
-                _outputCache = new ArrayList();
-            }
+            _outputCache ??= new ArrayList();
 
             _outputCache.Add(record.MainNode.Clone());
         }

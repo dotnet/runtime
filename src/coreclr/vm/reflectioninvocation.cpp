@@ -1901,32 +1901,9 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::
 //*************************************************************************************************
 //*************************************************************************************************
 
-FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBaseObject *target) {
+FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, MethodTable* pMT) {
     FCALL_CONTRACT;
 
-    VALIDATEOBJECT(target);
-    TypeHandle th = target->GetType();
-    _ASSERTE(th.IsEnum());
-
-    OBJECTREF result = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    MethodTable *pMT = CoreLibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
-    result = pMT->GetManagedClassObject();
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(result);
-}
-FCIMPLEND
-
-FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, Object *pRefThis) {
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(pRefThis);
-    if (pRefThis == NULL)
-        FCThrowArgumentNull(NULL);
-
-    MethodTable* pMT = pRefThis->GetMethodTable();
     _ASSERTE(pMT->IsEnum());
 
     // MethodTable::GetInternalCorElementType has unnecessary overhead for enums

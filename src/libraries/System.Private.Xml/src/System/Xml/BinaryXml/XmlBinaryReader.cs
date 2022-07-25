@@ -2766,11 +2766,7 @@ namespace System.Xml
             while (PeekToken() == BinXmlToken.CData)
             {
                 _pos++; // skip over token byte
-                if (sb == null)
-                {
-                    sb = new StringBuilder(value.Length + value.Length / 2);
-                    sb.Append(value);
-                }
+                sb ??= new StringBuilder(value.Length + value.Length / 2).Append(value);
                 sb.Append(ParseText());
             }
             if (sb != null)

@@ -253,7 +253,7 @@ namespace ILCompiler
                     size = fieldType.GetElementSize().AsInt;
                     alignment = size;
                 }
-                else if (fieldType.IsByRef || fieldType.IsByRefLike || fieldType.IsByReferenceOfT)
+                else if (fieldType.IsByRef || fieldType.IsByRefLike)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                 }

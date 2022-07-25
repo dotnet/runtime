@@ -2521,7 +2521,7 @@ namespace System.Management
             cpde.Name = strLateBoundObject;
             cctor.Parameters.Add(cpde);
 
-            // call this to call function to initialize memeber variables
+            // call this to call function to initialize member variables
             InitPrivateMemberVariables(cctor);
 
             cis = new CodeConditionStatement();
@@ -2591,7 +2591,7 @@ namespace System.Management
             cpde.Name = strLateBoundObject;
             cctor.Parameters.Add(cpde);
 
-            // call this to call function to initialize memeber variables
+            // call this to call function to initialize member variables
             InitPrivateMemberVariables(cctor);
 
             cmie = new CodeMethodInvokeExpression();
@@ -2671,7 +2671,7 @@ namespace System.Management
             cmmInit.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()), strPathObject));
             cmmInit.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["GetOptionsClass"].ToString()), strGetOptions));
 
-            // call this to call function to initialize memeber variables
+            // call this to call function to initialize member variables
             InitPrivateMemberVariables(cmmInit);
 
             //First if path is not null, then we will check whether the class name is the same.
@@ -5775,10 +5775,7 @@ namespace System.Management
         /// </summary>
         private void AddPropertySet(CodeIndexerExpression prop, bool bArray, CodeStatementCollection statColl, string strType, CodeVariableReferenceExpression varValue)
         {
-            if (varValue == null)
-            {
-                varValue = new CodeVariableReferenceExpression("value");
-            }
+            varValue ??= new CodeVariableReferenceExpression("value");
 
             if (bArray == false)
             {

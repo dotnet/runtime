@@ -45,17 +45,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlSchemaObjectTable AttributeUses
-        {
-            get
-            {
-                if (_attributeUses == null)
-                {
-                    _attributeUses = new XmlSchemaObjectTable();
-                }
-                return _attributeUses;
-            }
-        }
+        internal XmlSchemaObjectTable AttributeUses => _attributeUses ??= new XmlSchemaObjectTable();
 
         [XmlIgnore]
         internal XmlSchemaAnyAttribute? AttributeWildcard
