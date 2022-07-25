@@ -33,8 +33,8 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
     {
 #region Sync with MonoReflectionModuleBuilder in object-internals.h
 
-#region This class inherits from Module, but the runtime expects it to have the same layout as MonoModule
+#region This class inherits from Module, but the runtime expects it to have the same layout as RuntimeModule
         internal IntPtr _impl; /* a pointer to a MonoImage */
         internal Assembly assembly;
         internal string fqname;
@@ -505,6 +505,16 @@ namespace System.Reflection.Emit
             return field.MetadataToken;
         }
 
+        internal static RuntimeModule GetRuntimeModuleFromModule(Module? m)
+        {
+            if (m is ModuleBuilder)
+            {
+                throw new NotImplementedException();
+            }
+
+            return (m as RuntimeModule)!;
+        }
+
         // FIXME:
         internal int GetSignatureToken(byte[] sigBytes, int sigLength)
         {
@@ -947,5 +957,3 @@ namespace System.Reflection.Emit
         }
     }
 }
-
-#endif

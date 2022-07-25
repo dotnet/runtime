@@ -741,6 +741,42 @@ namespace System.Reflection
             return usageAttribute;
         }
 
+        internal static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
+        {
+            bool useAttributeArray = false;
+            bool useObjectArray = false;
+
+            if (caType == typeof(Attribute))
+            {
+                useAttributeArray = true;
+            }
+            else if (caType.IsValueType)
+            {
+                useObjectArray = true;
+            }
+            else if (caType.ContainsGenericParameters)
+            {
+                if (caType.IsSubclassOf(typeof(Attribute)))
+                {
+                    useAttributeArray = true;
+                }
+                else
+                {
+                    useObjectArray = true;
+                }
+            }
+
+            if (useAttributeArray)
+            {
+                return elementCount == 0 ? Array.Empty<Attribute>() : new Attribute[elementCount];
+            }
+            if (useObjectArray)
+            {
+                return elementCount == 0 ? Array.Empty<object>() : new object[elementCount];
+            }
+            return /*elementCount == 0 ? caType.GetEmptyArray() :*/ (object[])Array.CreateInstance(caType, elementCount);
+        }
+
         private static readonly AttributeUsageAttribute DefaultAttributeUsage =
             new AttributeUsageAttribute(AttributeTargets.All);
 
