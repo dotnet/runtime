@@ -775,6 +775,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetRuntimeTypeHandle;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_SIMPLEISINSTANCEOF:
+                    id = ReadyToRunHelper.SimpleIsInstanceOf;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
                     id = ReadyToRunHelper.Box;
                     break;

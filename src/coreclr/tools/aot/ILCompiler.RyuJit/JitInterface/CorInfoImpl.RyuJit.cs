@@ -543,6 +543,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AreTypesEquivalent;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_SIMPLEISINSTANCEOF:
+                    id = ReadyToRunHelper.SimpleIsInstanceOf;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
                     id = ReadyToRunHelper.Box;
                     break;
@@ -698,6 +701,9 @@ namespace Internal.JitInterface
                     // TODO: separate helper for the _SPECIAL case
                     id = ReadyToRunHelper.CheckCastClass;
                     break;
+                // case CorInfoHelpFunc.CORINFO_HELP_SIMPLEISINSTANCEOF:
+                //     id = ReadyToRunHelper.SimpleIsInstanceOf;
+                //     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS:
                     id = ReadyToRunHelper.CheckInstanceClass;
                     break;

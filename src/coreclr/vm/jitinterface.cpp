@@ -10661,6 +10661,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTINTERFACE ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS_SPECIAL ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_SIMPLEISINSTANCEOF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);

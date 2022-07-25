@@ -2562,9 +2562,8 @@ void Compiler::fgCreateFiltersForGenericExceptions()
             {
                 runtimeLookup = getTokenHandleTree(&resolvedToken, true);
             }
-            GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOFANY, TYP_REF, runtimeLookup, arg);
-            GenTree* cmp       = gtNewOperNode(GT_NE, TYP_INT, isInstOfT, gtNewNull());
-            GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, cmp);
+            GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_SIMPLEISINSTANCEOF, TYP_INT, runtimeLookup, arg);
+            GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, isInstOfT);
 
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);

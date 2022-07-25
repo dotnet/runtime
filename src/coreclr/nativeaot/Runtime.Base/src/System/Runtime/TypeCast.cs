@@ -908,6 +908,26 @@ assigningNull:
                 return IsInstanceOfClass(pTargetType, obj);
         }
 
+        [RuntimeExport("RhTypeCast_IsSimpleInstanceOf")]
+        public static unsafe bool IsSimpleInstanceOf(MethodTable* typeHnd, object obj)
+        {
+            if (obj == null)
+                return false;
+
+            MethodTable* mt = obj.GetMethodTable();
+
+            if (typeHnd == mt)
+                return true;
+
+            while (mt != null)
+            {
+                mt = mt->RawBaseType;
+                if (mt == typeHnd)
+                    return true;
+            }
+            return false;
+        }
+
         [RuntimeExport("RhTypeCast_CheckCast")]
         public static unsafe object CheckCast(MethodTable* pTargetType, object obj)
         {
