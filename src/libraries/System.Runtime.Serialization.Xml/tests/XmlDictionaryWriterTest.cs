@@ -349,6 +349,7 @@ public static class XmlDictionaryWriterTest
         double d = 1.0 / 3.0;
         Guid guid = Guid.NewGuid();
 
+        // Remarks: Of these types only timespan handles BigEndian/LittleEndian so for other types compare against bare bytes
         AssertBytesWritten(x => x.WriteValue(decimal.MaxValue), XmlBinaryNodeType.DecimalText, MemoryMarshal.AsBytes(new ReadOnlySpan<decimal>(in decMax)));
         AssertBytesWritten(x => x.WriteValue(f), XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
         AssertBytesWritten(x => x.WriteValue(guid), XmlBinaryNodeType.GuidText, guid.ToByteArray());
@@ -381,7 +382,7 @@ public static class XmlDictionaryWriterTest
 
 
     [Fact]
-    public static void BinaryWriter_Array()
+    public static void BinaryWriter_Arrays()
     {
         using var ms = new MemoryStream();
         using var writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
@@ -392,6 +393,10 @@ public static class XmlDictionaryWriterTest
         int[] ints = new int[] {-1, 0x01020304, 0x11223344, -1 };
 
         AssertBytesWritten(x => x.WriteArray(null, "a", null, ints, offset, count), XmlBinaryNodeType.Int32TextWithEndElement, count, new byte[] { 4, 3, 2, 1, 0x44, 0x33, 0x22, 0x11 });
+
+        // Write more than 512 bytes in a single call to trigger different writing logic in XmlStreamNodeWriter.WriteBytes
+        long[] longs = Enumerable.Range(0x01020304, 127).Select(i => (long)i | (long)(~i << 32)).ToArray();
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, longs, 0, longs.Length), XmlBinaryNodeType.Int64TextWithEndElement, longs.Length, MemoryMarshal.AsBytes(longs.AsSpan()));
 
         void AssertBytesWritten(Action<XmlDictionaryWriter> action, XmlBinaryNodeType nodeType, int count, ReadOnlySpan<byte> expected)
         {
@@ -407,11 +412,9 @@ public static class XmlDictionaryWriterTest
 
             var actual = segement.AsSpan(); 
             Assert.Equal(XmlBinaryNodeType.Array, (XmlBinaryNodeType)actual[0]);
-
-            //// start element: ShortDictionaryElement + lenght of str + str
             Assert.Equal(XmlBinaryNodeType.ShortElement, (XmlBinaryNodeType)actual[1]);
             int elementLenght = actual[2];
-            Assert.InRange(actual[2], 0, 0x8f);
+            Assert.InRange(elementLenght, 0, 0x8f); // verify count is single byte
             Assert.Equal(XmlBinaryNodeType.EndElement, (XmlBinaryNodeType)actual[3 + elementLenght]);
 
             actual = actual.Slice(4 + elementLenght);
@@ -420,7 +423,6 @@ public static class XmlDictionaryWriterTest
             Assert.Equal(checked((sbyte)count), (sbyte)actual[1]);
 
             AssertExtensions.SequenceEqual(expected, actual.Slice(2));
-            writer.WriteEndElement();
         }
     }
 
