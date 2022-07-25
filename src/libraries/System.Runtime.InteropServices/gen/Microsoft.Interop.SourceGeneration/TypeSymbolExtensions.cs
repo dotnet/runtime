@@ -281,11 +281,15 @@ namespace Microsoft.Interop
 
         public static (ImmutableArray<ITypeSymbol> TypeArguments, ImmutableArray<NullableAnnotation> TypeArgumentNullableAnnotations) GetAllTypeArgumentsIncludingInContainingTypes(this INamedTypeSymbol genericType)
         {
+            // Get the type arguments of the passed in type and all containing types
+            // with the outermost type on the top of the stack and the innermost type on the bottom of the stack.
             Stack<(ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>)> genericTypesToSubstitute = new();
             for (INamedTypeSymbol instantiatedType = genericType; instantiatedType is not null; instantiatedType = instantiatedType.ContainingType)
             {
                 genericTypesToSubstitute.Push((instantiatedType.TypeArguments, instantiatedType.TypeArgumentNullableAnnotations));
             }
+            // Turn our stack of lists of type arguments into one list,
+            // going from the first type argument of the outermost type to the last type argument of the innermost type.
             ImmutableArray<ITypeSymbol>.Builder typeArguments = ImmutableArray.CreateBuilder<ITypeSymbol>();
             ImmutableArray<NullableAnnotation>.Builder nullableAnnotations = ImmutableArray.CreateBuilder<NullableAnnotation>();
             while (genericTypesToSubstitute.Count != 0)

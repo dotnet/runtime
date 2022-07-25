@@ -38,8 +38,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
-        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">La configuración de “{0}” no está admitida por P/Invokes de un generador de código fuente. Si se requiere la configuración, use un “DllImport” normal en su lugar.</target>
+        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="needs-review-translation">La configuración de “{0}” no está admitida por P/Invokes de un generador de código fuente. Si se requiere la configuración, use un “DllImport” normal en su lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
@@ -48,18 +48,18 @@
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
-        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">La configuración de “{0}” especificada para el parámetro “{1}” no es compatible con P/Invokes de un generador de código fuente. Si se requiere la configuración especificada, use un “DllImport” normal en su lugar.</target>
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="needs-review-translation">La configuración de “{0}” especificada para el parámetro “{1}” no es compatible con P/Invokes de un generador de código fuente. Si se requiere la configuración especificada, use un “DllImport” normal en su lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
-        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
-        <target state="translated">La configuración de “{0}” especificada para el valor devuelto del método “{1}” no es compatible con P/Invokes generados por origen. Si se requiere la configuración especificada, use un “DllImport” normal en su lugar.</target>
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="needs-review-translation">La configuración de “{0}” especificada para el valor devuelto del método “{1}” no es compatible con P/Invokes generados por origen. Si se requiere la configuración especificada, use un “DllImport” normal en su lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
-        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
-        <target state="translated">El valor especificado de \"{0}\" para \"{1}\" no es compatible con P/Invokes de un generador de código fuente. Si se requiere el valor especificado, use un \"DllImport\" normal en su lugar.</target>
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
+        <target state="needs-review-translation">El valor especificado de \"{0}\" para \"{1}\" no es compatible con P/Invokes de un generador de código fuente. Si se requiere el valor especificado, use un \"DllImport\" normal en su lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -183,8 +183,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
-        <source>Invalid `CustomMarshallerAttribute` usage</source>
-        <target state="new">Invalid `CustomMarshallerAttribute` usage</target>
+        <source>Invalid 'CustomMarshallerAttribute' usage</source>
+        <target state="new">Invalid 'CustomMarshallerAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -203,8 +203,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
-        <source>Invalid `NativeMarshallingAttribute` usage</source>
-        <target state="new">Invalid `NativeMarshallingAttribute` usage</target>
+        <source>Invalid 'NativeMarshallingAttribute' usage</source>
+        <target state="new">Invalid 'NativeMarshallingAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -408,8 +408,8 @@
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
-        <source>A statelss contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
-        <target state="new">A statelss contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</target>
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
+        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
@@ -418,8 +418,8 @@
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
-        <source>A statelss contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
-        <target state="new">A statelss contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</target>
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
+        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
@@ -438,13 +438,13 @@
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
-        <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
-        <target state="new">A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</target>
+        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the first parameter and returns a value of the 'unmanaged' type.</source>
+        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the first parameter and returns a value of the 'unmanaged' type.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
-        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type.</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type.</target>
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
@@ -458,8 +458,8 @@
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
-        <source>An unmanaged type for a marshaller must be unmanaged.</source>
-        <target state="new">An unmanaged type for a marshaller must be unmanaged.</target>
+        <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
+        <target state="new">The unmanaged type for a custom marshaller must be a C# unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedMessage">

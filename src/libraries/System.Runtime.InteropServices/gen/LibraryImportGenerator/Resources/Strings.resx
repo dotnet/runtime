@@ -142,19 +142,19 @@
     <value>Source-generated P/Invokes will ignore any configuration that is not supported.</value>
   </data>
   <data name="ConfigurationNotSupportedMessage" xml:space="preserve">
-    <value>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
+    <value>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
   </data>
   <data name="ConfigurationNotSupportedMessageMarshallingInfo" xml:space="preserve">
     <value>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</value>
   </data>
   <data name="ConfigurationNotSupportedMessageParameter" xml:space="preserve">
-    <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
+    <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
   </data>
   <data name="ConfigurationNotSupportedMessageReturn" xml:space="preserve">
-    <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
+    <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
   </data>
   <data name="ConfigurationNotSupportedMessageValue" xml:space="preserve">
-    <value>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</value>
+    <value>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</value>
   </data>
   <data name="ConfigurationNotSupportedTitle" xml:space="preserve">
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
@@ -237,7 +237,7 @@
     <value>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</value>
   </data>
   <data name="TypeMustBeUnmanagedDescription" xml:space="preserve">
-    <value>An unmanaged type for a marshaller must be unmanaged.</value>
+    <value>The unmanaged type for a custom marshaller must be a C# unmanaged type.</value>
   </data>
   <data name="TypeMustBeUnmanagedMessage" xml:space="preserve">
     <value>The return type of '{0}' must be unmanaged</value>
@@ -295,13 +295,13 @@
     <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</value>
   </data>
   <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription" xml:space="preserve">
-    <value>A statelss contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</value>
+    <value>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</value>
   </data>
   <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage" xml:space="preserve">
     <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</value>
   </data>
   <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription" xml:space="preserve">
-    <value>A statelss contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</value>
+    <value>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</value>
   </data>
   <data name="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage" xml:space="preserve">
     <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</value>
@@ -319,10 +319,10 @@
     <value>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</value>
   </data>
   <data name="StatelessValueInRequiresConvertToUnmanagedDescription" xml:space="preserve">
-    <value>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</value>
+    <value>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the first parameter and returns a value of the 'unmanaged' type.</value>
   </data>
   <data name="StatelessValueInRequiresConvertToUnmanagedMessage" xml:space="preserve">
-    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type.</value>
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</value>
   </data>
   <data name="LinearCollectionInRequiresCollectionMethodsDescription" xml:space="preserve">
     <value>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</value>
@@ -391,10 +391,10 @@
     <value>Marshaller type does not have the required shape</value>
   </data>
   <data name="InvalidCustomMarshallerAttributeUsageTitle" xml:space="preserve">
-    <value>Invalid `CustomMarshallerAttribute` usage</value>
+    <value>Invalid 'CustomMarshallerAttribute' usage</value>
   </data>
   <data name="InvalidNativeMarshallingAttributeUsageTitle" xml:space="preserve">
-    <value>Invalid `NativeMarshallingAttribute` usage</value>
+    <value>Invalid 'NativeMarshallingAttribute' usage</value>
   </data>
   <data name="InvalidMarshallerTypeTitle" xml:space="preserve">
     <value>Specified marshaller type is invalid</value>

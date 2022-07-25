@@ -317,7 +317,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ManagedTypeMustBeNonNullDescription)));
 
-        // We are intentionally using the same diagnostic ids as the parent type.
+        // We are intentionally using the same diagnostic IDs as the parent type.
         // These diagnostics are the same diagnostics, but with a different severity,
         // as the Default marshaller shape can have support for the managed-to-unmanaged shape
         // the unmanaged-to-managed shape, or both.
