@@ -775,16 +775,14 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
 
 #if defined(DEBUGGING_SUPPORTED)
     // Don't honour thread abort requests at this time for intercepted exceptions.
-    if (fIntercepted)
-    {
-        uAbortAddr = 0;
-    }
-    else
-#endif // !DEBUGGING_SUPPORTED
+    if (!fIntercepted)
+#endif // DEBUGGING_SUPPORTED
     {
         CopyOSContext(pThread->m_OSContext, pContextRecord);
         SetIP(pThread->m_OSContext, (PCODE)uResumePC);
+#ifndef TARGET_UNIX
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(uResumePC);
+#endif // TARGET_UNIX
     }
 
     if (uAbortAddr)

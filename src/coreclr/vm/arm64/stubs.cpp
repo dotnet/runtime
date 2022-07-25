@@ -918,13 +918,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
-#ifndef TARGET_WINDOWS
-void RedirectForThreadAbort()
-{
-    throw "NYI";
-}
-#endif // TARGET_WINDOWS
-
 #if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
