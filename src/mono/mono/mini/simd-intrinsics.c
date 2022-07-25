@@ -517,7 +517,7 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	int element_size;
 	if (!strcmp ("Vector4", m_class_get_name (vector_class)))
 		element_size = vector_size / 4;
-	else if (!strcmp ("Vector4", m_class_get_name (vector_class)))
+	else if (!strcmp ("Vector2", m_class_get_name (vector_class)))
 		element_size = vector_size / 2;
 	else {
 		MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
@@ -1560,12 +1560,16 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 static guint16 vector2_methods[] = {
 	SN_ctor,
 	SN_Abs,
+	SN_Add,
 	SN_CopyTo,
+	SN_Divide,
 	SN_Dot,
 	SN_GetElement,
 	SN_Max,
 	SN_Min,
+	SN_Multiply,
 	SN_SquareRoot,
+	SN_Subtract,
 	SN_WithElement,
 	SN_get_Item,
 	SN_get_One,
@@ -1718,6 +1722,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		return ins;
 	}
+	case SN_Add:
+	case SN_Divide:
+	case SN_Multiply:
+	case SN_Subtract:
 	case SN_op_Addition:
 	case SN_op_Division:
 	case SN_op_Multiply:

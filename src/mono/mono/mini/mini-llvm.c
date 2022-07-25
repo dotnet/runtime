@@ -6009,16 +6009,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					g_assert (lhs);
 					int align = mono_class_value_size (klass, NULL);
 					retval = build_alloca_llvm_type_name (ctx, ret_type, align, "struct_ret");
-					retval = LLVMBuildLoad2 (builder, ret_type, retval, "struct_ret");
 
-					int len;
-					if (!strcmp ("Vector4", m_class_get_name (klass)))
-						len = 4;
-					else if (!strcmp ("Vector2", m_class_get_name (klass)))
-						len = 2;
-					else
-						g_assert_not_reached ();
-					
+					int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
 					for (int i = 0; i < len; i++)
 					{
 						elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
