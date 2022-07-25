@@ -864,49 +864,6 @@ namespace System.Collections
                         normalizedHigher.StoreUnsafe(ref destination, (nuint)(i + Vector128<byte>.Count));
                     }
                 }
-                else if (AdvSimd.Arm64.IsSupported)
-                {
-                    Vector128<byte> ones = Vector128.Create((byte)1);
-                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                                                 Vector128.Create(0x80402010_08040201).AsByte() :
-                                                 Vector128.Create(0x01020408_10204080).AsByte();
-
-                    fixed (bool* destination = &boolArray[index])
-                    {
-                        for (; (i + Vector128ByteCount * 2u) <= (uint)m_length; i += Vector128ByteCount * 2u)
-                        {
-                            int bits = m_array[i / (uint)BitsPerInt32];
-                            // Same logic as SSSE3 path, except we do not have Shuffle instruction.
-                            // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
-                            // Instead we use chained ZIP1/2 instructions:
-                            // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits (on Big endian)                 - A3 A2 A1 A0
-                            // bits (Little endian) / Byte reversal - A0 A1 A2 A3
-                            // v1 = Vector128.Create                - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
-                            // v2 = ZipLow(v1, v1)                  - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
-                            // v3 = ZipLow(v2, v2)                  - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
-                            // shuffledLower = ZipLow(v3, v3)       - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
-                            // shuffledHigher = ZipHigh(v3, v3)     - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-                            if (!BitConverter.IsLittleEndian)
-                            {
-                                bits = BinaryPrimitives.ReverseEndianness(bits);
-                            }
-                            Vector128<byte> vector = Vector128.Create(bits).AsByte();
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
-
-                            Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
-                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask128);
-                            Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
-
-                            Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
-                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask128);
-                            Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
-
-                            AdvSimd.Arm64.StorePair((byte*)destination + i, normalizedLower, normalizedHigher);
-                        }
-                    }
-                }
 
             LessThan32:
                 for (; i < (uint)m_length; i++)
