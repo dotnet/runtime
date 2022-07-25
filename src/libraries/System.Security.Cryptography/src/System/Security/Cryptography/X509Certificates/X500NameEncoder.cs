@@ -12,20 +12,6 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private const string OidTagPrefix = "OID.";
 
-        private static readonly char[] s_quoteNeedingChars =
-        {
-            ',',
-            '+',
-            '=',
-            '\"',
-            '\n',
-            // \r is NOT in this list, because it isn't in Windows.
-            '<',
-            '>',
-            '#',
-            ';',
-        };
-
         private static readonly List<char> s_useSemicolonSeparators = new List<char>(1) { ';' };
         private static readonly List<char> s_useCommaSeparators = new List<char>(1) { ',' };
         private static readonly List<char> s_useNewlineSeparators = new List<char>(2) { '\r', '\n' };
@@ -84,6 +70,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             bool reverse = (flags & X500DistinguishedNameFlags.Reversed) == X500DistinguishedNameFlags.Reversed;
             bool noQuotes = (flags & X500DistinguishedNameFlags.DoNotUseQuotes) == X500DistinguishedNameFlags.DoNotUseQuotes;
+            bool forceUtf8Encoding = (flags & X500DistinguishedNameFlags.ForceUTF8Encoding) == X500DistinguishedNameFlags.ForceUTF8Encoding;
 
             List<char> dnSeparators;
 
@@ -111,7 +98,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             Debug.Assert(dnSeparators.Count != 0);
 
-            List<byte[]> encodedSets = ParseDistinguishedName(stringForm, dnSeparators, noQuotes);
+            List<byte[]> encodedSets = ParseDistinguishedName(stringForm, dnSeparators, noQuotes, forceUtf8Encoding);
 
             if (reverse)
             {
@@ -131,22 +118,17 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static bool NeedsQuoting(string rdnValue)
+        private static bool NeedsQuoting(ReadOnlySpan<char> rdnValue)
         {
-            if (string.IsNullOrEmpty(rdnValue))
+            if (rdnValue.IsEmpty ||
+                IsQuotableWhitespace(rdnValue[0]) ||
+                IsQuotableWhitespace(rdnValue[^1]))
             {
                 return true;
             }
 
-            if (IsQuotableWhitespace(rdnValue[0]) ||
-                IsQuotableWhitespace(rdnValue[rdnValue.Length - 1]))
-            {
-                return true;
-            }
-
-            int index = rdnValue.IndexOfAny(s_quoteNeedingChars);
-
-            return index != -1;
+            const string QuoteNeedingChars = ",+=\"\n<>#;"; // \r is NOT in this list, because it isn't in Windows.
+            return rdnValue.IndexOfAny(QuoteNeedingChars) >= 0;
         }
 
         private static bool IsQuotableWhitespace(char c)
@@ -197,7 +179,8 @@ namespace System.Security.Cryptography.X509Certificates
         private static List<byte[]> ParseDistinguishedName(
             string stringForm,
             List<char> dnSeparators,
-            bool noQuotes)
+            bool noQuotes,
+            bool forceUtf8Encoding)
         {
             // 16 is way more RDNs than we should ever need. A fairly standard set of values is
             // { E, CN, O, OU, L, S, C } = 7;
@@ -400,7 +383,7 @@ namespace System.Security.Cryptography.X509Certificates
                             Debug.Assert(valueEnd != -1);
                             Debug.Assert(valueStart != -1);
 
-                            encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
+                            encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote, forceUtf8Encoding));
                             hasTagOid = false;
                             valueStart = -1;
                             valueEnd = -1;
@@ -469,7 +452,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Debug.Assert(valueStart != -1);
                     Debug.Assert(valueEnd != -1);
 
-                    encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
+                    encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote, forceUtf8Encoding));
                     break;
 
                 // If the entire string was empty, or ended in a dnSeparator.
@@ -499,7 +482,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new Oid(str.ToString()).Value; // Value can be null, but permit the null-to-empty conversion.
         }
 
-        private static byte[] ParseRdn(ReadOnlySpan<char> tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
+        private static byte[] ParseRdn(ReadOnlySpan<char> tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote, bool forceUtf8Encoding)
         {
             scoped ReadOnlySpan<char> data;
 
@@ -543,6 +526,10 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
                     }
+                }
+                else if (forceUtf8Encoding)
+                {
+                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
                 }
                 else
                 {

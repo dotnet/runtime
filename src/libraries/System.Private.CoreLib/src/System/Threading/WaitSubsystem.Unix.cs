@@ -56,7 +56,7 @@ namespace System.Threading
     ///   - Signaling
     ///     - A signaler iterates over waiters and tries to release waiters based on the signal count
     ///     - For each waiter, the signaler checks if the waiter's wait can be terminated
-    ///     - When a waiter's wait can be terminated, the signaler does everything necesary before waking the waiter, such that
+    ///     - When a waiter's wait can be terminated, the signaler does everything necessary before waking the waiter, such that
     ///       the waiter can simply continue after awakening, including unregistering the wait and assigning ownership if
     ///       applicable
     ///   - Interrupting

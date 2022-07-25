@@ -391,7 +391,7 @@ namespace System.Reflection.Runtime.General
 
                 Type fieldType = field.FieldType;
                 if (fieldType.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_TypeRefPrimitve);  // This check exists for compatibility (why such an ad-hoc restriction?)
+                    throw new ArgumentException(SR.Arg_TypeRefPrimitive);  // This check exists for compatibility (why such an ad-hoc restriction?)
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(SR.MissingMemberNestErr); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
 

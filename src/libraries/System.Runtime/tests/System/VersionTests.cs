@@ -23,7 +23,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
-        public static void CtorInvalidVerionString_ThrowsException(string input, Type exceptionType)
+        public static void CtorInvalidVersionString_ThrowsException(string input, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new Version(input));
         }

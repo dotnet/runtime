@@ -63,8 +63,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
-    
       <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)" 
                            Condition="'%(_AndroidAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
@@ -123,6 +121,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(_AndroidAssembliesInternal)"
         MainLibraryFileName="$(MainLibraryFileName)"
+        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         EnvironmentVariables="@(AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"

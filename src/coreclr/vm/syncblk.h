@@ -102,7 +102,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
 
-// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is layed out as follows:
+// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
 // - lower ten bits (bits 0 thru 9) is thread id used for the thin locks
 //   value is zero if no thread is holding the lock
 // - following six bits (bits 10 thru 15) is recursion level used for the thin locks

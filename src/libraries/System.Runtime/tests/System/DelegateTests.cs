@@ -106,7 +106,7 @@ namespace System.Tests
         private class SomeCustomConstantAttribute : CustomConstantAttribute
         {
             public static object Do(object o) => o;
-          
+
             public override object Value => "SomeValue";
         }
 
@@ -913,7 +913,7 @@ namespace System.Tests
         [Fact]
         public static void CreateDelegate4_Method_CaseMismatch()
         {
-            // instance method, case mismatch, do not igore case
+            // instance method, case mismatch, do not ignore case
             ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => Delegate.CreateDelegate(typeof(E), new B(), "ExecutE", false));
             // Error binding to target method
             Assert.Null(ex.InnerException);

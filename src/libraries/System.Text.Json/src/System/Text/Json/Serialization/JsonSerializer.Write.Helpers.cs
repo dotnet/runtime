@@ -39,7 +39,7 @@ namespace System.Text.Json
         {
             Debug.Assert(writer != null);
 
-            if (jsonTypeInfo.HasSerialize &&
+            if (jsonTypeInfo.HasSerializeHandler &&
                 jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
                 typedInfo.Options.SerializerContext?.CanUseSerializationLogic == true)
             {

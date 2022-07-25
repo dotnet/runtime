@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -14,6 +15,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
     {
         public class ComplexOptions
         {
+            private static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
             public ComplexOptions()
             {
                 Nested = new NestedOptions();
@@ -49,7 +56,57 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 get { return null; }
             }
 
+            public ISet<string> NonInstantiatedISet { get; set; } = null!;
+            public HashSet<string> NonInstantiatedHashSet { get; set; } = null!;
+            public IDictionary<string, ISet<string>> NonInstantiatedDictionaryWithISet { get; set; } = null!;
+            public IDictionary<string, HashSet<string>> InstantiatedDictionaryWithHashSet { get; set; } =
+                new Dictionary<string, HashSet<string>>();
+
+            public IDictionary<string, HashSet<string>> InstantiatedDictionaryWithHashSetWithSomeValues { get; set; } =
+                new Dictionary<string, HashSet<string>>
+                {
+                    {"item1", new HashSet<string>(new[] {"existing1", "existing2"})}
+                };
+
             public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
+
+            public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
+
+            public HashSet<string> InstantiatedHashSetWithSomeValues { get; set; } =
+                new HashSet<string>(new[] {"existing1", "existing2"});
+
+            public SortedSet<string> InstantiatedSortedSetWithSomeValues { get; set; } =
+                new SortedSet<string>(new[] {"existing1", "existing2"});
+
+            public SortedSet<string> NonInstantiatedSortedSetWithSomeValues { get; set; } = null!;
+
+            public ISet<string> InstantiatedISetWithSomeValues { get; set; } =
+                new HashSet<string>(new[] { "existing1", "existing2" });
+            
+            public ISet<UnsupportedTypeInHashSet> HashSetWithUnsupportedKey { get; set; } =
+                new HashSet<UnsupportedTypeInHashSet>();
+
+            public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; } 
+
+#if NETCOREAPP
+            public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
+            public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
+                new HashSet<string>(new[] { "existing1", "existing2" });
+            public IReadOnlySet<string> NonInstantiatedIReadOnlySet { get; set; }
+            public IDictionary<string, IReadOnlySet<string>> InstantiatedDictionaryWithReadOnlySetWithSomeValues { get; set; } =
+                new Dictionary<string, IReadOnlySet<string>>
+                {
+                    {"item1", new HashSet<string>(new[] {"existing1", "existing2"})}
+                };
+#endif
+            public IReadOnlyDictionary<string, int> InstantiatedReadOnlyDictionaryWithWithSomeValues { get; set; } =
+                _existingDictionary;
+
+            public IReadOnlyDictionary<string, int> NonInstantiatedReadOnlyDictionary { get; set; }
+
+            public CustomICollectionWithoutAnAddMethod InstantiatedCustomICollectionWithoutAnAddMethod { get; set; } = new();
+            public CustomICollectionWithoutAnAddMethod NonInstantiatedCustomICollectionWithoutAnAddMethod { get; set; }
+
             public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
             public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
             public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
@@ -73,6 +130,85 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                     base.Virtual = "Derived:" + value;
                 }
             }
+        }
+
+        public class UnsupportedTypeInHashSet { }
+
+        public interface ICustomCollectionDerivedFromIEnumerableT<out T> : IEnumerable<T> { }
+        public interface ICustomCollectionDerivedFromICollectionT<T> : ICollection<T> { }
+
+        public class MyClassWithCustomCollections
+        {
+            public ICustomCollectionDerivedFromIEnumerableT<string> CustomIEnumerableCollection { get; set; }
+            public ICustomCollectionDerivedFromICollectionT<string> CustomCollection { get; set; }
+        }
+
+        public class CustomICollectionWithoutAnAddMethod : ICollection<string>
+        {
+            private readonly List<string> _items = new();
+            public IEnumerator<string> GetEnumerator() => _items.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            void ICollection<string>.Add(string item) => _items.Add(item);
+
+            public void Clear() => _items.Clear();
+
+            public bool Contains(string item) => _items.Contains(item);
+
+            public void CopyTo(string[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+
+            public bool Remove(string item) => _items.Remove(item);
+
+            public int Count => _items.Count;
+            public bool IsReadOnly => false;
+        }
+
+        public interface ICustomSet<T> : ISet<T>
+        {
+        }
+
+        public class MyClassWithCustomSet
+        {
+            public ICustomSet<string> CustomSet { get; set; }
+        }
+
+        public class MyClassWithCustomDictionary
+        {
+            public ICustomDictionary<string, int> CustomDictionary { get; set; }
+        }
+
+        public class ConfigWithInstantiatedIReadOnlyDictionary
+        {
+            public static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
+            public IReadOnlyDictionary<string, int> Dictionary { get; set; } =
+                _existingDictionary;
+        }
+
+        public class ConfigWithNonInstantiatedReadOnlyDictionary
+        {
+            public IReadOnlyDictionary<string, int> Dictionary { get; set; } = null!;
+        }
+
+        public class ConfigWithInstantiatedConcreteDictionary
+        {
+            public static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
+            public Dictionary<string, int> Dictionary { get; set; } =
+                _existingDictionary;
+        }
+
+        public interface ICustomDictionary<T, T1> : IDictionary<T, T1>
+        {
         }
 
         public class NullableOptions
@@ -479,6 +615,569 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindNonInstantiatedISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedISet:0", "Yo1"},
+                {"NonInstantiatedISet:1", "Yo2"},
+                {"NonInstantiatedISet:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedISet.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedISet.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
+        }
+
+#if NETCOREAPP
+        [Fact]
+        public void CanBindInstantiatedIReadOnlySet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIReadOnlySet:0", "Yo1"},
+                {"InstantiatedIReadOnlySet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedIReadOnlySet.Count);
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlySet.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlySet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedIReadOnlyWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedIReadOnlySetWithSomeValues:0", "Yo1"},
+                {"InstantiatedIReadOnlySetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedIReadOnlySetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedIReadOnlySet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedIReadOnlySet:0", "Yo1"},
+                {"NonInstantiatedIReadOnlySet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedIReadOnlySet.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedIReadOnlySet.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedIReadOnlySet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedDictionaryOfIReadOnlySetWithSomeExistingValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:foo:0", "foo-1"},
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:foo:1", "foo-2"},
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:bar:0", "bar-1"},
+                {"InstantiatedDictionaryWithReadOnlySetWithSomeValues:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(3, options.InstantiatedDictionaryWithReadOnlySetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["item1"].ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["item1"].ElementAt(1));
+
+            Assert.Equal("foo-1", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.InstantiatedDictionaryWithReadOnlySetWithSomeValues["bar"].ElementAt(1));
+        }
+#endif
+
+        public class Foo
+        {
+            public IReadOnlyDictionary<string, int> Items { get; set; } =
+                new Dictionary<string, int> {{"existing-item1", 1}, {"existing-item2", 2}};
+
+        }
+
+        [Fact]
+        public void CanBindInstantiatedReadOnlyDictionary2()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Items:item3", "3"},
+                {"Items:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<Foo>()!;
+
+            Assert.Equal(4, options.Items.Count);
+            Assert.Equal(1, options.Items["existing-item1"]);
+            Assert.Equal(2, options.Items["existing-item2"]);
+            Assert.Equal(3, options.Items["item3"]);
+            Assert.Equal(4, options.Items["item4"]);
+
+            
+        }
+
+        [Fact]
+        public void BindInstantiatedIReadOnlyDictionary_CreatesCopyOfOriginal()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Dictionary:existing-item1", "666"},
+                {"Dictionary:item3", "3"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigWithInstantiatedIReadOnlyDictionary>()!;
+
+            Assert.Equal(3, options.Dictionary.Count);
+
+            // does not overwrite original
+            Assert.Equal(1, ConfigWithInstantiatedIReadOnlyDictionary._existingDictionary["existing-item1"]);
+
+            Assert.Equal(666, options.Dictionary["existing-item1"]);
+            Assert.Equal(2, options.Dictionary["existing-item2"]);
+            Assert.Equal(3, options.Dictionary["item3"]);
+        }
+
+        [Fact]
+        public void BindNonInstantiatedIReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Dictionary:item1", "1"},
+                {"Dictionary:item2", "2"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigWithNonInstantiatedReadOnlyDictionary>()!;
+
+            Assert.Equal(2, options.Dictionary.Count);
+
+            Assert.Equal(1, options.Dictionary["item1"]);
+            Assert.Equal(2, options.Dictionary["item2"]);
+        }
+
+        [Fact]
+        public void BindInstantiatedConcreteDictionary_OverwritesOriginal()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Dictionary:existing-item1", "666"},
+                {"Dictionary:item3", "3"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigWithInstantiatedConcreteDictionary>()!;
+
+            Assert.Equal(3, options.Dictionary.Count);
+
+            // overwrites original
+            Assert.Equal(666, ConfigWithInstantiatedConcreteDictionary._existingDictionary["existing-item1"]);
+            Assert.Equal(666, options.Dictionary["existing-item1"]);
+            Assert.Equal(2, options.Dictionary["existing-item2"]);
+            Assert.Equal(3, options.Dictionary["item3"]);
+        }
+
+        [Fact]
+        public void CanBindInstantiatedReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedReadOnlyDictionaryWithWithSomeValues:item3", "3"},
+                {"InstantiatedReadOnlyDictionaryWithWithSomeValues:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            var resultingDictionary = options.InstantiatedReadOnlyDictionaryWithWithSomeValues;
+            Assert.Equal(4, resultingDictionary.Count);
+            Assert.Equal(1, resultingDictionary["existing-item1"]);
+            Assert.Equal(2, resultingDictionary["existing-item2"]);
+            Assert.Equal(3, resultingDictionary["item3"]);
+            Assert.Equal(4, resultingDictionary["item4"]);
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedReadOnlyDictionary:item3", "3"},
+                {"NonInstantiatedReadOnlyDictionary:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedReadOnlyDictionary.Count);
+            Assert.Equal(3, options.NonInstantiatedReadOnlyDictionary["item3"]);
+            Assert.Equal(4, options.NonInstantiatedReadOnlyDictionary["item4"]);
+        }
+        
+
+        [Fact]
+        public void CanBindNonInstantiatedDictionaryOfISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedDictionaryWithISet:foo:0", "foo-1"},
+                {"NonInstantiatedDictionaryWithISet:foo:1", "foo-2"},
+                {"NonInstantiatedDictionaryWithISet:bar:0", "bar-1"},
+                {"NonInstantiatedDictionaryWithISet:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedDictionaryWithISet.Count);
+            Assert.Equal("foo-1", options.NonInstantiatedDictionaryWithISet["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.NonInstantiatedDictionaryWithISet["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.NonInstantiatedDictionaryWithISet["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.NonInstantiatedDictionaryWithISet["bar"].ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedDictionaryOfISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedDictionaryWithHashSet:foo:0", "foo-1"},
+                {"InstantiatedDictionaryWithHashSet:foo:1", "foo-2"},
+                {"InstantiatedDictionaryWithHashSet:bar:0", "bar-1"},
+                {"InstantiatedDictionaryWithHashSet:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedDictionaryWithHashSet.Count);
+            Assert.Equal("foo-1", options.InstantiatedDictionaryWithHashSet["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.InstantiatedDictionaryWithHashSet["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.InstantiatedDictionaryWithHashSet["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSet["bar"].ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedDictionaryOfISetWithSomeExistingValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:foo:0", "foo-1"},
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:foo:1", "foo-2"},
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:bar:0", "bar-1"},
+                {"InstantiatedDictionaryWithHashSetWithSomeValues:bar:1", "bar-2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(3, options.InstantiatedDictionaryWithHashSetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedDictionaryWithHashSetWithSomeValues["item1"].ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedDictionaryWithHashSetWithSomeValues["item1"].ElementAt(1));
+
+            Assert.Equal("foo-1", options.InstantiatedDictionaryWithHashSetWithSomeValues["foo"].ElementAt(0));
+            Assert.Equal("foo-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["foo"].ElementAt(1));
+            Assert.Equal("bar-1", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(0));
+            Assert.Equal("bar-2", options.InstantiatedDictionaryWithHashSetWithSomeValues["bar"].ElementAt(1));
+        }
+
+        [Fact]
+        public void ThrowsForCustomIEnumerableCollection()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["CustomIEnumerableCollection:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomCollections>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomCollectionDerivedFromIEnumerableT<string>)),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ThrowsForCustomICollection()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["CustomCollection:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomCollections>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomCollectionDerivedFromICollectionT<string>)),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ThrowsForCustomDictionary()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["CustomDictionary:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomDictionary>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomDictionary<string, int>)),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ThrowsForCustomSet()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                ["CustomSet:0"] = "Yo!",
+            });
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomSet>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomSet<string>)),
+                exception.Message);
+        }
+
+        [Fact]
+        public void CanBindInstantiatedISet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedISet:0", "Yo1"},
+                {"InstantiatedISet:1", "Yo2"},
+                {"InstantiatedISet:2", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedISet.Count());
+            Assert.Equal("Yo1", options.InstantiatedISet.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedISet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedISetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedISetWithSomeValues:0", "Yo1"},
+                {"InstantiatedISetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedISetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedISetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedISetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedISetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedISetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedHashSetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedHashSetWithSomeValues:0", "Yo1"},
+                {"InstantiatedHashSetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedHashSetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedHashSetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedHashSetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedHashSetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedHashSetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedHashSet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedHashSet:0", "Yo1"},
+                {"NonInstantiatedHashSet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedHashSet.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedHashSet.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedHashSet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedSortedSetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedSortedSetWithSomeValues:0", "Yo1"},
+                {"InstantiatedSortedSetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedSortedSetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedSortedSetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedSortedSetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedSortedSetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedSortedSetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedSortedSetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedSortedSetWithSomeValues:0", "Yo1"},
+                {"NonInstantiatedSortedSetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedSortedSetWithSomeValues.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedSortedSetWithSomeValues.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedSortedSetWithSomeValues.ElementAt(1));
+        }
+
+        [Fact]
+        public void DoesNotBindInstantiatedISetWithUnsupportedKeys()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"HashSetWithUnsupportedKey:0", "Yo1"},
+                {"HashSetWithUnsupportedKey:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(0, options.HashSetWithUnsupportedKey.Count);
+        }
+
+        [Fact]
+        public void DoesNotBindUninstantiatedISetWithUnsupportedKeys()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"UninstantiatedHashSetWithUnsupportedKey:0", "Yo1"},
+                {"UninstantiatedHashSetWithUnsupportedKey:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Null(options.UninstantiatedHashSetWithUnsupportedKey);
+        }
+
+        [Fact]
         public void CanBindInstantiatedIEnumerableWithItems()
         {
             var dic = new Dictionary<string, string>
@@ -496,6 +1195,46 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.InstantiatedIEnumerable.Count());
             Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
             Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCustomICollectionWithoutAnAddMethodWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCustomICollectionWithoutAnAddMethod:0", "Yo1"},
+                {"InstantiatedCustomICollectionWithoutAnAddMethod:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedCustomICollectionWithoutAnAddMethod.Count);
+            Assert.Equal("Yo1", options.InstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedCustomICollectionWithoutAnAddMethodWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedCustomICollectionWithoutAnAddMethod:0", "Yo1"},
+                {"NonInstantiatedCustomICollectionWithoutAnAddMethod:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedCustomICollectionWithoutAnAddMethod.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(1));
         }
 
         [Fact]
@@ -1107,7 +1846,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = new ComplexOptions();
-            config.Bind(options, o => o.BindNonPublicProperties = true );
+            config.Bind(options, o => o.BindNonPublicProperties = true);
             Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
         }
 
