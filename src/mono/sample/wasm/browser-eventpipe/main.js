@@ -56,24 +56,31 @@ async function doWork(startWork, stopWork, getIterationsDone) {
 
 function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
-        const options = MONO.diagnostics.SessionOptionsBuilder
-            .Empty
-            .setRundownEnabled(false)
-            .addProvider({ name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1' })
-            .build();
-        console.log('starting providers', options.providers);
+        let sessions = MONO.diagnostics.getStartupSessions();
 
-        const eventSession = MONO.diagnostics.createEventPipeSession(options);
+        if (typeof (sessions) !== "object" || sessions.length === "undefined")
+            console.error("expected an array of sessions, got ", sessions);
+        let eventSession = null;
+        if (sessions.length !== 0) {
+            if (sessions.length != 1)
+                console.error("expected one startup session, got ", sessions);
+            eventSession = sessions[0];
+            console.debug("eventSession state is ", eventSession._state); // ooh protected member access
+        }
 
-        eventSession.start();
         const ret = await doWork(startWork, stopWork, getIterationsDone);
-        eventSession.stop();
 
-        const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
+        if (eventSession !== null) {
+            eventSession.stop();
 
-        const blob = eventSession.getTraceBlob();
-        const uri = URL.createObjectURL(blob);
-        downloadData(uri, filename);
+            const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
+
+            const blob = eventSession.getTraceBlob();
+            const uri = URL.createObjectURL(blob);
+            downloadData(uri, filename);
+        }
+
+        console.debug("sample onclick handler done");
     }
 }
 

@@ -133,14 +133,15 @@ namespace System.IO.Pipes.Tests
                 Task<int> clientTask = readable.ReadAsync(received1, 0, received1.Length);
                 using (NamedPipeServerStream server = new NamedPipeServerStream(PipeDirection.Out, false, true, serverBase.SafePipeHandle))
                 {
-                    if (OperatingSystem.IsWindows())
-                    {
-                        Assert.Equal(1, ((NamedPipeClientStream)readable).NumberOfServerInstances);
-                    }
                     server.Write(msg1, 0, msg1.Length);
                     int receivedLength = await clientTask;
                     Assert.Equal(msg1.Length, receivedLength);
                     Assert.Equal(msg1, received1);
+
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Assert.Equal(1, ((NamedPipeClientStream)readable).NumberOfServerInstances);
+                    }
                 }
             }
             else

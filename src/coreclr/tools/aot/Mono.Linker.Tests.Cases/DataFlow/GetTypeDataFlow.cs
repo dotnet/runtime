@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2057", nameof (GetType))]
 		static void TestUnknownType ()
 		{
-			Type type = Type.GetType (GetStringUnkownType ());
+			Type type = Type.GetType (GetStringUnknownType ());
 		}
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
@@ -155,7 +155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeName = "Mono.Linker.Tests.Cases.DataFlow.GetTypeDataFlow";
 				break;
 			case 3:
-				typeName = GetStringUnkownType ();
+				typeName = GetStringUnknownType ();
 				break;
 			}
 
@@ -212,7 +212,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return null;
 		}
 
-		private static string GetStringUnkownType ()
+		private static string GetStringUnknownType ()
 		{
 			return null;
 		}

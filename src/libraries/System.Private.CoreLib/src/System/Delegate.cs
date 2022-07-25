@@ -12,8 +12,8 @@ namespace System
     {
         public virtual object Clone() => MemberwiseClone();
 
-        [return: NotNullIfNotNull("a")]
-        [return: NotNullIfNotNull("b")]
+        [return: NotNullIfNotNull(nameof(a))]
+        [return: NotNullIfNotNull(nameof(b))]
         public static Delegate? Combine(Delegate? a, Delegate? b)
         {
             if (a is null)

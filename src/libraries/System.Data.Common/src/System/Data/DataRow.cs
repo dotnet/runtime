@@ -682,7 +682,7 @@ namespace System.Data
 
             if (_newRecord == -1)
             {
-                return; // this is meaningless, detatched row case
+                return; // this is meaningless, detached row case
             }
 
             if (_tempRecord != -1)

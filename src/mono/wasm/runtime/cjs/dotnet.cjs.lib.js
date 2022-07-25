@@ -59,6 +59,7 @@ const linked_functions = [
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
     "mono_wasm_set_entrypoint_breakpoint",
+    "mono_wasm_event_pipe_early_startup_callback",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args_ref",
@@ -90,9 +91,13 @@ const linked_functions = [
     "dotnet_browser_encrypt_decrypt",
     "dotnet_browser_derive_bits",
 
-    /// mono-threads-wasm.c
     #if USE_PTHREADS
+    /// mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_attached",
+    /// diagnostics_server.c
+    "mono_wasm_diagnostic_server_on_server_thread_created",
+    "mono_wasm_diagnostic_server_on_runtime_server_init",
+    "mono_wasm_diagnostic_server_stream_signal_work_available",
     #endif
 ];
 

@@ -1054,6 +1054,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
+
                 Assert.IsType<AuthenticationException>(ex.InnerException);
 
                 clientDone.Release();
@@ -1061,6 +1062,36 @@ namespace System.Net.Http.Functional.Tests
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
+
+        [Fact]
+        public async Task Alpn_NonH3_FailureEstablishConnection()
+        {
+            var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            using HttpRequestMessage request2 = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
+
+            // second request should throw the same exception as inner as the first one
+            HttpRequestException ex2 = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request2).WaitAsync(TimeSpan.FromSeconds(10)));
+
+            Assert.Equal(ex, ex2.InnerException);
+        }
+
 
         private SslApplicationProtocol ExtractMsQuicNegotiatedAlpn(Http3LoopbackConnection loopbackConnection)
         {

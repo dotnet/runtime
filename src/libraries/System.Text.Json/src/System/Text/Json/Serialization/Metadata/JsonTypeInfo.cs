@@ -267,16 +267,16 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonTypeInfo? _elementTypeInfo;
 
         // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
-        internal bool HasSerialize { get; private protected set; }
+        internal bool HasSerializeHandler { get; private protected set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
-        // so it is allowed to be used for serialization but it will throw if used for deserialization
-        internal bool ThrowOnDeserialize { get; private protected set; }
+        // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
+        internal bool MetadataSerializationNotSupported { get; private protected set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ValidateCanBeUsedForDeserialization()
+        internal void ValidateCanBeUsedForMetadataSerialization()
         {
-            if (ThrowOnDeserialize)
+            if (MetadataSerializationNotSupported)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }

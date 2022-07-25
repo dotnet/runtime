@@ -354,7 +354,7 @@ namespace System.Net.NetworkInformation
         // First number corresponds to lower address part
         // E.g. IP-address:                           fe80::215:5dff:fe00:402
         //      It's bytes in direct order:           FE-80-00-00  00-00-00-00  02-15-5D-FF  FE-00-04-02
-        //      It's represenation in /proc/net/tcp6: 00-00-80-FE  00-00-00-00  FF-5D-15-02  02-04-00-FE
+        //      It's representation in /proc/net/tcp6: 00-00-80-FE  00-00-00-00  FF-5D-15-02  02-04-00-FE
         //                                             (dashes and spaces added above for readability)
         // Strings passed to this must be 32 characters in length.
         private static IPAddress ParseIPv6HexString(ReadOnlySpan<char> hexAddress, bool isNetworkOrder = false)

@@ -1436,7 +1436,7 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
     else
     {
         //  MOV <Xd>, <Xm>
-        // which is eqivalent to
+        // which is equivalent to
         //  ORR <Xd>. XZR, <Xm>
         // Encoding: sf|0|1|0|1|0|1|0|shift(2)|0|Xm|imm(6)|Xn|Xd
         // where

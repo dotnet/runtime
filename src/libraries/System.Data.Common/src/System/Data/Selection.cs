@@ -782,7 +782,7 @@ namespace System.Data
             return pos;
         }
 
-        // existing functionality, it calls the overlaod with fireEvent== true, so it still fires the event
+        // existing functionality, it calls the overload with fireEvent== true, so it still fires the event
         private int InsertRecord(int record, bool fireEvent)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.InsertRecord|INFO> {0}, record={1}, fireEvent={2}", ObjectID, record, fireEvent);

@@ -3,13 +3,10 @@
 
 using System;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-
 
 #nullable enable
 
@@ -32,6 +29,7 @@ namespace Wasm.Build.Tests
             var path = Path.Combine(_projectDir!, "Program.cs");
             string text = File.ReadAllText(path);
             text = text.Replace(@"Console.WriteLine(""Hello, Console!"");", programText);
+            text = text.Replace("return 0;", "return 42;");
             File.WriteAllText(path, text);
         }
 
@@ -162,7 +160,7 @@ namespace Wasm.Build.Tests
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
-            Assert.Equal(0, exitCode);
+            Assert.Equal(42, exitCode);
             Assert.Contains("args[0] = x", output);
             Assert.Contains("args[1] = y", output);
             Assert.Contains("args[2] = z", output);
@@ -209,7 +207,7 @@ namespace Wasm.Build.Tests
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
                                 .ExecuteWithCapturedOutput(runArgs)
-                                .EnsureSuccessful();
+                                .EnsureExitCode(42);
 
             if (aot)
                 Assert.Contains($"AOT: image '{Path.GetFileNameWithoutExtension(projectFile)}' found", res.Output);

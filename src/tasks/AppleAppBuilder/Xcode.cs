@@ -299,7 +299,7 @@ internal sealed class Xcode
                 }
             }
 
-            // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+            // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
             if (!File.Exists(componentLibToLink))
             {
                 Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");

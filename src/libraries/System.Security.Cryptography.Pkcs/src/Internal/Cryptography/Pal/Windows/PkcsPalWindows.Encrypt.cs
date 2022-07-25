@@ -412,7 +412,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                     case SubjectIdentifierType.SubjectKeyIdentifier:
                         {
-                            byte[] ski = hCertContext.GetSubjectKeyIdentifer();
+                            byte[] ski = hCertContext.GetSubjectKeyIdentifier();
                             IntPtr pSki = hb.AllocBytes(ski);
 
                             recipientId.dwIdChoice = CertIdChoice.CERT_ID_KEY_IDENTIFIER;
