@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     public enum DuplicateAddressDetectionState
@@ -103,6 +105,13 @@ namespace System.Net.NetworkInformation
     {
         protected IPAddressInformation() { }
         public abstract System.Net.IPAddress Address { get; }
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract bool IsDnsEligible { get; }
         public abstract bool IsTransient { get; }
     }
