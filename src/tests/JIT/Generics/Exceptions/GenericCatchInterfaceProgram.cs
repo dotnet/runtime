@@ -18,7 +18,7 @@
 //             {
 //                 throw new MyException();
 //             }
-//             catch (MyException) // IL edit: Change to catch (IMyException)
+//             catch (MyException) // IL edit: Change to catch (IMyInterface)
 //             {
 //                 Console.WriteLine("FAIL");
 //                 retCode++;
@@ -30,7 +30,7 @@
 //             retCode += 50;
 //         }
 //
-//         GenericCatch<MyException>(); // IL edit: Change to GenericCatch<IMyException>()
+//         GenericCatch<MyException>(); // IL edit: Change to GenericCatch<IMyInterface>()
 //
 //         return retCode;
 //     }
