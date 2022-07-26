@@ -21,7 +21,14 @@ namespace System.ServiceModel.Syndication
         private static readonly XmlQualifiedName s_rss20Url = new XmlQualifiedName(Rss20Constants.UrlTag, string.Empty);
         private const string Rfc822OutputLocalDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss zzz";
         private const string Rfc822OutputUtcDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss Z";
-        private static readonly Regex PersonDisplayRegex = new Regex(@"(.*@[^ ]+)[ ]*\((.*)\)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private const string PersonDisplayRegexPattern = @"(.*@[^ ]+)[ ]*\((.*)\)";
+#if NET_7_OR_GREATER
+        [RegexGenerator(PersonDisplayRegexPattern)]
+        private static partial Regex PersonDisplayRegex();
+#else
+        private static Regex PersonDisplayRegex() => s_personDisplayRegex;
+        private static readonly Regex s_personDisplayRegex = new Regex(PersonDisplayRegexPattern, RegexOptions.Compiled);
+#endif
 
         private readonly Atom10FeedFormatter _atomSerializer;
         private readonly int _maxExtensionSize;
@@ -594,7 +601,7 @@ namespace System.ServiceModel.Syndication
                 
                 if (!string.IsNullOrWhiteSpace(s))
                 {
-                    var m = PersonDisplayRegex.Match(s);
+                    var m = PersonDisplayRegex().Match(s);
                     if (m.Success && m.Groups.Count == 3)
                     {
                         person.Email = m.Groups[1].Value;
