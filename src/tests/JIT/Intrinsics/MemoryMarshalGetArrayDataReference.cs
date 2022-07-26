@@ -89,6 +89,30 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             ThrowsNRE(() => { _ = ref ptrByte(NoInline<byte[]>(null)); });
             ThrowsNRE(() => { _ = ref ptrString(NoInline<string[]>(null)); });
 
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<byte>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<string>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<Half>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<Vector128<byte>>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<StructWithByte>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<SimpleEnum>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<GenericStruct<byte>>(null));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference<GenericStruct<string>>(null));
+
+            ThrowsNRE(() => ref ptrByte(null));
+            ThrowsNRE(() => ref ptrString(null));
+
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<byte[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<string[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<Half[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<Vector128<byte>[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<StructWithByte[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<SimpleEnum[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<GenericStruct<byte>[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<GenericStruct<string>[]>(null)));
+
+            ThrowsNRE(() => ref ptrByte(NoInline<byte[]>(null)));
+            ThrowsNRE(() => ref ptrString(NoInline<string[]>(null)));
+
             // from https://github.com/dotnet/runtime/issues/58312#issuecomment-993491291
             [MethodImpl(MethodImplOptions.NoInlining)]
             static int Problem1(StructWithByte[] a)
@@ -103,7 +127,19 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             Equals(Problem1(new StructWithByte[] { new StructWithByte { Byte = 1 } }), 2);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static int Problem2(byte[] a)
+            static int Problem2(StructWithByte[] a)
+            {
+                Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), 1).Byte = 1;
+
+                a[1].Byte = 2;
+
+                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), 1).Byte;
+            }
+
+            Equals(Problem2(new StructWithByte[] { new StructWithByte { Byte = 1 }, new StructWithByte { Byte = 1 } }), 2);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int Problem3(byte[] a)
             {
                 if (MemoryMarshal.GetArrayDataReference(a) == 1)
                 {
@@ -117,7 +153,24 @@ namespace MemoryMarshalGetArrayDataReferenceTest
                 return 0;
             }
 
-            Equals(Problem2(new byte[] { 1 }), 0);
+            Equals(Problem3(new byte[] { 1 }), 0);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int Problem4(byte[] a)
+            {
+                if (Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), 1) == 1)
+                {
+                    a[1] = 2;
+                    if (Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(a), 1) == 1)
+                    {
+                        return -1;
+                    }
+                }
+
+                return 0;
+            }
+
+            Equals(Problem4(new byte[] { 1, 1 }), 0);
 
             return 100 + _errors;
         }
@@ -171,6 +224,25 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             _errors++;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ThrowsNRE<T>(RefFunction<T> function, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
+        {
+            try
+            {
+                _ = function();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine($"{file}:L{line} {exc}");
+            }
+            Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
+            _errors++;
+        }
+
         public struct GenericStruct<T>
         {
             public T field;
@@ -185,5 +257,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
         {
             public byte Byte;
         }
+
+        delegate ref T RefFunction<T>();
     }
 }

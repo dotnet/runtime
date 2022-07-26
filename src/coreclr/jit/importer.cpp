@@ -3892,10 +3892,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 array = impCloneExpr(array, &arrayClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                      nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
 
-                impAppendTree(gtNewNullCheck(arrayClone, compCurBB), (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
+                impAppendTree(gtNewNullCheck(array, compCurBB), (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
 
                 GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
-                GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, elemType, elemHnd);
+                GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(arrayClone, index, elemType, elemHnd);
                 indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
                 indexAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
                 retNode = indexAddr;
