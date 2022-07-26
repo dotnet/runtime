@@ -179,7 +179,7 @@ CrashInfo::InitializeOtherMappings()
     // to include all the native and managed module regions.
     for (const MemoryRegion& region : m_allMemoryRegions)
     {
-        std::set<MemoryRegion>::iterator found = m_moduleMappings.find(region);
+        std::set<ModuleRegion>::iterator found = m_moduleMappings.find(ModuleRegion(region));
         if (found == m_moduleMappings.end())
         {
             m_otherMappings.insert(region);
@@ -315,8 +315,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             assert(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion newModule(regionFlags, start, end, offset, module.Name());
-            std::set<MemoryRegion>::iterator existingModule = m_moduleMappings.find(newModule);
+            ModuleRegion newModule(regionFlags, start, end, offset, module.Name());
+            std::set<ModuleRegion>::iterator existingModule = m_moduleMappings.find(newModule);
             if (existingModule == m_moduleMappings.end())
             {
                 if (g_diagnosticsVerbose)
@@ -340,7 +340,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                     uint64_t numberPages = newModule.SizeInPages();
                     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
                     {
-                        MemoryRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+                        ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
 
                         const auto& found = m_moduleMappings.find(gap);
                         if (found != m_moduleMappings.end())

@@ -529,9 +529,9 @@ CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, 
 
     uint32_t flags = GetMemoryRegionFlags((ULONG_PTR)baseAddress);
 
-    // Make sure that the page containing the PE header for the managed asseblies is in the dump
+    // Make sure that the page containing the PE header for the managed assemblies is in the dump
     // especially on MacOS where they are added artificially.
-    MemoryRegion header(flags, start, start + PAGE_SIZE);
+    ModuleRegion header(flags, start, start + PAGE_SIZE);
     InsertMemoryRegion(header);
 
     // Add or change the module mapping for this PE image. The managed assembly images may already
@@ -541,7 +541,7 @@ CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, 
     if (found == m_moduleMappings.end())
     {
         // On MacOS the assemblies are always added.
-        MemoryRegion newRegion(flags, start, end, 0, name);
+        ModuleRegion newRegion(flags, start, end, 0, name);
         m_moduleMappings.insert(newRegion);
         m_cbModuleMappings += newRegion.Size();
 
@@ -552,7 +552,7 @@ CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, 
     else if (found->FileName().compare(name) != 0)
     {
         // Create the new memory region with the managed assembly name.
-        MemoryRegion newRegion(*found, name);
+        ModuleRegion newRegion(*found, name);
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
@@ -887,6 +887,23 @@ CrashInfo::CombineMemoryRegions()
             region.Trace();
         }
     }
+}
+
+//
+// Searches for a module region for a given address.
+//
+const ModuleRegion*
+CrashInfo::SearchModuleRegions(const ModuleRegion& search)
+{
+    std::set<ModuleRegion>::iterator found = m_moduleMappings.find(search);
+    for (; found != m_moduleMappings.end(); found++)
+    {
+        if (search.StartAddress() >= found->StartAddress() && search.StartAddress() < found->EndAddress())
+        {
+            return &*found;
+        }
+    }
+    return nullptr;
 }
 
 //

@@ -267,20 +267,20 @@ CrashInfo::EnumerateMemoryRegions()
             if (strchr(permissions, 'p')) {
                 regionFlags |= MEMORY_REGION_FLAG_PRIVATE;
             }
-            MemoryRegion memoryRegion(regionFlags, start, end, offset, std::string(moduleName != nullptr ? moduleName : ""));
+            ModuleRegion moduleRegion(regionFlags, start, end, offset, std::string(moduleName != nullptr ? moduleName : ""));
 
             if (moduleName != nullptr && *moduleName == '/')
             {
-                m_moduleMappings.insert(memoryRegion);
-                m_cbModuleMappings += memoryRegion.Size();
+                m_moduleMappings.insert(moduleRegion);
+                m_cbModuleMappings += moduleRegion.Size();
             }
             else
             {
-                m_otherMappings.insert(memoryRegion);
+                m_otherMappings.insert(moduleRegion);
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
-                InsertMemoryRegion(memoryRegion);
+                InsertMemoryRegion(moduleRegion);
             }
             free(moduleName);
             free(permissions);
@@ -290,7 +290,7 @@ CrashInfo::EnumerateMemoryRegions()
     if (g_diagnostics)
     {
         TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
-        for (const MemoryRegion& region : m_moduleMappings)
+        for (const ModuleRegion& region : m_moduleMappings)
         {
             region.Trace();
         }
@@ -333,8 +333,8 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     // it with the one found in the /proc/<pid>/maps.
     if (moduleName.empty())
     {
-        MemoryRegion search(0, baseAddress, baseAddress + PAGE_SIZE);
-        const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
+        ModuleRegion search(0, baseAddress, baseAddress + PAGE_SIZE);
+        const ModuleRegion* region = SearchModuleRegions(search);
         if (region != nullptr)
         {
             moduleName = region->FileName();
@@ -477,12 +477,12 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    MemoryRegion search(0, start, start + PAGE_SIZE, 0);
-    const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
-    if (region != nullptr) {
-        return region->Flags();
+    ModuleRegion search(0, start, start + PAGE_SIZE, 0);
+    const ModuleRegion* moduleRegion = SearchModuleRegions(search);
+    if (moduleRegion != nullptr) {
+        return moduleRegion->Flags();
     }
-    region = SearchMemoryRegions(m_otherMappings, search);
+    const MemoryRegion* region = SearchMemoryRegions(m_otherMappings, search);
     if (region != nullptr) {
         return region->Flags();
     }
