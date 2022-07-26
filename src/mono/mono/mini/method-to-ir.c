@@ -6224,6 +6224,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	gboolean emitted_funccall_seq_point = FALSE;
 	gboolean detached_before_ret = FALSE;
 	gboolean ins_has_side_effect;
+	MonoMethod* cmethod_override = NULL; // this is ised in call/callvirt handler to override the method to be called (e.g. from box handler)
 
 	if (!cfg->disable_inline)
 		cfg->disable_inline = (method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION) || is_jit_optimizer_disabled (method);
@@ -7463,7 +7464,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			HandleCallData cdata;
 			memset (&cdata, 0, sizeof (HandleCallData));
 
-			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			// The method to be called may have already been resolved when handling a previous opcode. In that
+			// case, we ignore the operand and act as CALL, instead of CALLVIRT.
+			// E.g. #32166 (box+callvirt optimization)
+			if(cmethod_override) {
+				cmethod = cmethod_override;
+				cmethod_override = NULL;
+				virtual_ = FALSE;
+				il_op = MONO_CEE_CALL;
+			} else {
+				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			}
+
 			CHECK_CFG_ERROR;
 
 			if (cfg->verbose_level > 3)
@@ -9545,6 +9557,24 @@ calli_end:
 					}
 				}
 			}
+
+			// ASSUME
+			//   interface ISomeIface { void Method(); }
+			//   struct SomeStruct : ISomeIface {...}
+			// OPTIMIZE
+			//   box SomeStruct
+			//   callvirt instance ISomeIface::Method()
+			// TO
+			//   call SomeStruct::Method()
+			guchar* callvirt_ip;
+			if((callvirt_ip = il_read_callvirt(next_ip, end, &gettype_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip))
+			{
+				MonoMethod* iface_method = mini_get_method(cfg, method, gettype_token, NULL, generic_context);
+				MonoMethod* struct_method = mono_class_get_method_from_name(klass, iface_method->name, iface_method->signature->param_count);
+				*(sp++) = val;
+				cmethod_override = struct_method;
+				break;
+			}			
 
 			gboolean is_true;
 
