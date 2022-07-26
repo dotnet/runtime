@@ -467,6 +467,11 @@ namespace System.Reflection.Emit
                 return parameters;
             }
 
+            internal override ParameterInfo[] GetParametersNoCopy()
+            {
+                return LoadParameters();
+            }
+
             public override MethodImplAttributes GetMethodImplementationFlags()
             {
                 return MethodImplAttributes.IL | MethodImplAttributes.NoInlining;

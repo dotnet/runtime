@@ -147,6 +147,8 @@ namespace System.Reflection.Emit
             return nrefs - 1;
         }
 
+        internal override ParameterInfo[] GetParametersNoCopy() => m_dynMethod.GetParametersNoCopy();
+
         private sealed class DynamicMethodTokenGenerator : ITokenGenerator
         {
             private readonly DynamicMethod m;
