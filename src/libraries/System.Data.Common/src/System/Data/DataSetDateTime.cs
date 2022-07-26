@@ -9,7 +9,7 @@ namespace System.Data
     public enum DataSetDateTime
     {
         /// <summary>
-        /// The datetime column in Local DateTimeMode stores datetime in Local. Adjusts Utc/Unspecifed to Local. Serializes as Local
+        /// The datetime column in Local DateTimeMode stores datetime in Local. Adjusts Utc/Unspecified to Local. Serializes as Local
         /// </summary>
         Local = 1,
         /// <summary>

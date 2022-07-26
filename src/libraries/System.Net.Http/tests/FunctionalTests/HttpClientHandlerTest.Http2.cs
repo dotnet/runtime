@@ -2987,7 +2987,7 @@ namespace System.Net.Http.Functional.Tests
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId));
 
-                    // Client should NOT send RST_STREAM. The stream was completed succesfully, but the remaining response data was discarded.
+                    // Client should NOT send RST_STREAM. The stream was completed successfully, but the remaining response data was discarded.
                 }
 
                 // On handler dispose, client should shutdown the connection without sending additional frames.

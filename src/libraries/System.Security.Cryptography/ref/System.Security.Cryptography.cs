@@ -2605,6 +2605,25 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Collections.Generic.IEnumerable<string> EnumerateUris(System.Security.Cryptography.Oid accessMethodOid) { throw null; }
         public System.Collections.Generic.IEnumerable<string> EnumerateUris(string accessMethodOid) { throw null; }
     }
+    public sealed partial class X509AuthorityKeyIdentifierExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509AuthorityKeyIdentifierExtension() { }
+        public X509AuthorityKeyIdentifierExtension(byte[] rawData, bool critical = false) { }
+        public X509AuthorityKeyIdentifierExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public System.ReadOnlyMemory<byte>? KeyIdentifier { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName? NamedIssuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte>? RawIssuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte>? SerialNumber { get { throw null; } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension Create(byte[] keyIdentifier, System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, byte[] serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension Create(System.ReadOnlySpan<byte> keyIdentifier, System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.ReadOnlySpan<byte> serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, bool includeKeyIdentifier, bool includeIssuerAndSerial) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, byte[] serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.ReadOnlySpan<byte> serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(byte[] subjectKeyIdentifier) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(System.ReadOnlySpan<byte> subjectKeyIdentifier) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension subjectKeyIdentifier) { throw null; }
+    }
     public sealed partial class X509BasicConstraintsExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509BasicConstraintsExtension() { }
@@ -2614,6 +2633,8 @@ namespace System.Security.Cryptography.X509Certificates
         public bool HasPathLengthConstraint { get { throw null; } }
         public int PathLengthConstraint { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public static System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension CreateForCertificateAuthority(int? pathLengthConstraint = default(int?)) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension CreateForEndEntity(bool critical = false) { throw null; }
     }
     public partial class X509Certificate : System.IDisposable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
@@ -2651,6 +2672,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public System.IntPtr Handle { get { throw null; } }
         public string Issuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte> SerialNumberBytes { get { throw null; } }
         public string Subject { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.X509Certificates.X509Certificate CreateFromCertFile(string filename) { throw null; }
@@ -3178,6 +3200,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509SubjectKeyIdentifierExtension(System.Security.Cryptography.X509Certificates.PublicKey key, System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierHashAlgorithm algorithm, bool critical) { }
         public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical) { }
         public string? SubjectKeyIdentifier { get { throw null; } }
+        public System.ReadOnlyMemory<byte> SubjectKeyIdentifierBytes { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public enum X509SubjectKeyIdentifierHashAlgorithm

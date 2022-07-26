@@ -241,7 +241,7 @@ namespace System.UnitTesting
         {
             //
             // Get the InnerException from the error object
-            // Can be one of two types currently a ComposablePartException or a CompostionError
+            // Can be one of two types currently a ComposablePartException or a CompositionError
             // Done this clunky way to avoid shipping dead code to retrieve it from ICompositionException
             //
             Exception exception = null;

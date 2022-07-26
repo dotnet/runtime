@@ -1915,7 +1915,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("FLT_ROUND");
                     break;
 
-                // Personality rountines
+                // Personality routines
                 case ReadyToRunHelper.PersonalityRoutine:
                     builder.Append("PERSONALITY_ROUTINE");
                     break;

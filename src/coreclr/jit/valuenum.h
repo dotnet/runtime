@@ -314,6 +314,9 @@ private:
     // Returns "true" iff "vnf" should be folded by evaluating the func with constant arguments.
     bool VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
 
+    // Value number a type comparison
+    ValueNum VNEvalFoldTypeCompare(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
+
     // return vnf(v0)
     template <typename T>
     static T EvalOp(VNFunc vnf, T v0);
@@ -458,6 +461,11 @@ public:
     // that happens to be the same...
     ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
 
+    void AddToEmbeddedHandleMap(ssize_t embeddedHandle, ssize_t compileTimeHandle)
+    {
+        m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
+    }
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -526,7 +534,7 @@ public:
 
     ValueNumPair VNPExcSetIntersection(ValueNumPair xs0vnp, ValueNumPair xs1vnp);
 
-    // Returns true if every exeception singleton in the vnCandidateSet is also present
+    // Returns true if every exception singleton in the vnCandidateSet is also present
     // in the vnFullSet.
     // Both arguments must be either VNForEmptyExcSet() or applications of VNF_ExcSetCons.
     bool VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet);
@@ -603,7 +611,7 @@ public:
 
     // If "vn" is a "VNF_ValWithExc(norm, excSet)" value, returns the "excSet" argument; otherwise,
     // we return a special Value Number representing the empty exception set.
-    // The exeception set value is the value number of the set of possible exceptions.
+    // The exception set value is the value number of the set of possible exceptions.
     ValueNum VNExceptionSet(ValueNum vn);
 
     ValueNumPair VNPExceptionSet(ValueNumPair vn);
@@ -1108,8 +1116,8 @@ public:
     // Prints a representation of a MemOpaque state on standard out.
     void vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque);
 
-    // Requires "valWithExc" to be a value with an exeception set VNFuncApp.
-    // Prints a representation of the exeception set on standard out.
+    // Requires "valWithExc" to be a value with an exception set VNFuncApp.
+    // Prints a representation of the exception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
 
     // Requires "excSeq" to be a ExcSetCons sequence.
@@ -1379,6 +1387,9 @@ private:
         }
         return m_handleMap;
     }
+
+    typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
+    EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {

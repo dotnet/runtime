@@ -43,7 +43,7 @@ namespace Microsoft.Interop
         /// Is the type strictly blittable.
         /// </summary>
         /// <remarks>
-        /// Source generation uses a heavily restricted defintion for strictly blittable.
+        /// Source generation uses a heavily restricted definition for strictly blittable.
         /// The definition is based on the built-in marshallers blittable definition but further
         /// restricts the definition to require only uses primitive types (not including char or bool)
         /// and do types defined in the source being compiled.
@@ -84,7 +84,7 @@ namespace Microsoft.Interop
         private static unsafe bool IsBlittableWorker(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes, delegate*<ITypeSymbol, ImmutableHashSet<ITypeSymbol>, bool> isBlittable)
         {
             // Assume that type parameters that can be blittable are blittable.
-            // We'll re-evaluate blittability for generic fields of generic types at instantation time.
+            // We'll re-evaluate blittability for generic fields of generic types at instantiation time.
             if (type.TypeKind == TypeKind.TypeParameter && !type.IsReferenceType)
             {
                 return true;

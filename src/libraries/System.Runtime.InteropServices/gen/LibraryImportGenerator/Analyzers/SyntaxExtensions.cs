@@ -42,7 +42,11 @@ namespace Microsoft.Interop.Analyzers
                         return null;
                 }
             }
-            return targetSymbol.GetAttributes().First(attributeSyntaxLocationMatches);
+            // Sometimes an attribute is put on a symbol that is nested within the containing symbol.
+            // For example, the ContainingSymbol for an AttributeSyntax on a parameter have a ContainingSymbol of the method.
+            // Since this method is internal and the callers don't care about attributes on parameters, we just allow
+            // this method to return null in those cases.
+            return targetSymbol.GetAttributes().FirstOrDefault(attributeSyntaxLocationMatches);
 
             bool attributeSyntaxLocationMatches(AttributeData attrData)
             {

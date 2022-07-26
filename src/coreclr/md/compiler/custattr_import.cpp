@@ -121,7 +121,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
-        CLookUpHash     *pHashTable = pMiniMd->m_pLookUpHashs[TBL_CustomAttribute];
+        CLookUpHash     *pHashTable = pMiniMd->m_pLookUpHashes[TBL_CustomAttribute];
 
         // Does caller want all custom Values?
         if (IsNilToken(tk))

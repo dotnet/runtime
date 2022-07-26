@@ -1224,7 +1224,7 @@ HRESULT ShimProcess::DebugActiveProcess(
         // bit indicating managed attach is coming.
         // However in interop debugging we can't do that because there are debug events which come before the
         // loader breakpoint (which is how far we need to get to set the debuggee bit). If we blocked
-        // DebugActiveProcess there then the debug events would be refering to an ICorDebugProcess that hasn't
+        // DebugActiveProcess there then the debug events would be referring to an ICorDebugProcess that hasn't
         // yet been returned to the caller of DebugActiveProcess. Instead, for interop debugging we force the
         // native debugger to wait until it gets the loader breakpoint to set the event. Note we can't converge
         // on that solution for the pure managed case because there is no loader breakpoint event. Hence pure
@@ -1470,7 +1470,7 @@ void CordbProcess::CloseIPCHandles()
 //-----------------------------------------------------------------------------
 // Create new OS Thread for the Win32 Event Thread (the thread used in interop-debugging to sniff
 // native debug events). This is 1:1 w/ a CordbProcess object.
-// This will then be used to actuall create the CordbProcess object.
+// This will then be used to actually create the CordbProcess object.
 // The process object will then take ownership of the thread.
 //
 // Arguments:
@@ -2005,7 +2005,7 @@ void SendAttachProcessWorkItem::Do()
 
     // This just acts like an async-break, which will kick off things.
     // This will not induce any faked attach events from the VM (like it did in V2).
-    // The Left-side will still slip foward allowing the async-break to happen, so
+    // The Left-side will still slip forward allowing the async-break to happen, so
     // we may get normal debug events in addition to the sync-complete.
     //
     // 1. In the common attach case, we should just get a sync-complete.
@@ -2963,7 +2963,7 @@ void CordbProcess::FlushAll()
 //
 //
 // Return Value:
-//    S_OK on successful detach. Else errror.
+//    S_OK on successful detach. Else error.
 //
 // Assumptions:
 //    Target is stopped.
@@ -5499,7 +5499,7 @@ void CordbProcess::RawDispatchEvent(
                 ("AppDomain changed from Func-Eval. Eval=%p, Started=%p, Now=%p\n",
                 pEval, pEval->m_DbgAppDomainStarted, (void*) pAppDomain));
 
-            // If we did this func eval with this thread stopped at an excpetion, then we need to pretend as if we
+            // If we did this func eval with this thread stopped at an exception, then we need to pretend as if we
             // really didn't continue from the exception, since, of course, we really didn't on the Left Side.
             if (pEval->IsEvalDuringException())
             {
@@ -10485,7 +10485,7 @@ void CordbRCEventThread::ThreadProc()
                 // Only listen to unsynchronized processes. Processes that are synchronized will not send events without
                 // being asked by us first, so there is no need to async listen to them.
                 //
-                // Note: if a process is not synchronized then there is no way for it to transition to the syncrhonized
+                // Note: if a process is not synchronized then there is no way for it to transition to the synchronized
                 // state without this thread receiving an event and taking action. So there is no need to lock the
                 // per-process mutex when checking the process's synchronized flag here.
                 if (!pProcess->GetSynchronized() && pProcess->IsSafeToSendEvents())
@@ -11277,7 +11277,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
 //    pRawRecord - non-null raw bytes of the exception
 //    countBytes - number of bytes in pRawRecord buffer.
 //    format - format of pRawRecord
-//    dwFlags - flags providing auxillary info for exception record.
+//    dwFlags - flags providing auxiliary info for exception record.
 //    dwThreadId - thread that exception occurred on.
 //    pCallback - callback to dispatch potential managed events on.
 //    pContinueStatus - Continuation status for exception. This dictates what
@@ -12350,7 +12350,7 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
 
             // These breakpoint and single step exceptions have to be dispatched to the debugger as
             // out-of-band events. This tells the debugger that they must continue from these events
-            // immediatly, and that no interaction with the Left Side is allowed until they do so. This
+            // immediately, and that no interaction with the Left Side is allowed until they do so. This
             // makes sense, since these events are on the helper thread.
             return REACTION(cOOB);
         }
@@ -12565,7 +12565,7 @@ Reaction CordbProcess::TriageWin32DebugEvent(CordbUnmanagedThread * pUnmanagedTh
     _ASSERTE(ThreadHoldsProcessLock());
 
     // Lots of special cases for exception events. The vast majority of hybrid debugging work that takes
-    // place is in response to exception events. The work below will consider certian exception events
+    // place is in response to exception events. The work below will consider certain exception events
     // special cases and rather than letting them be queued and dispatched, they will be handled right
     // here.
     if (pEvent->dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
@@ -12658,7 +12658,7 @@ Reaction CordbProcess::TriageWin32DebugEvent(CordbUnmanagedThread * pUnmanagedTh
 //    The process just got a native debug event via WaitForDebugEvent
 //
 // Notes:
-//    The function will Triage the excpetion and then handle it based on the
+//    The function will Triage the exception and then handle it based on the
 //    appropriate reaction (see: code:Reaction).
 //
 // @dbgtodo interop: this should all go into the shim.
@@ -13754,7 +13754,7 @@ void CordbWin32EventThread::CreateProcess()
 
     if (SUCCEEDED(hr))
     {
-        // Process ID is filled in after process is succesfully created.
+        // Process ID is filled in after process is successfully created.
         DWORD dwProcessId = m_actionData.createData.lpProcessInformation->dwProcessId;
         ProcessDescriptor pd = ProcessDescriptor::FromPid(dwProcessId);
 
@@ -14365,7 +14365,7 @@ void ExitProcessWorkItem::Do()
         GetProcess()->IncStopCount();
 
         // By the time we release the SG + Process locks here, the process object has been
-        // marked as exiting + terminated (by the w32et which queued us). Future attemps to
+        // marked as exiting + terminated (by the w32et which queued us). Future attempts to
         // continue should fail, and thus we should remain synchronized.
     }
 
@@ -14788,8 +14788,8 @@ LONG CordbProcess::OutstandingHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Increment the outstanding handle count for code:CordbProces::OutstandingHandles
-// This is the inverse of code:CordbProces::DecrementOutstandingHandles
+// Increment the outstanding handle count for code:CordbProcess::OutstandingHandles
+// This is the inverse of code:CordbProcess::DecrementOutstandingHandles
 void CordbProcess::IncrementOutstandingHandles()
 {
     _ASSERTE(ThreadHoldsProcessLock());
@@ -14797,8 +14797,8 @@ void CordbProcess::IncrementOutstandingHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Decrement the outstanding handle count for code:CordbProces::OutstandingHandles
-// This is the inverse of code:CordbProces::IncrementOutstandingHandles
+// Decrement the outstanding handle count for code:CordbProcess::OutstandingHandles
+// This is the inverse of code:CordbProcess::IncrementOutstandingHandles
 void CordbProcess::DecrementOutstandingHandles()
 {
     _ASSERTE(ThreadHoldsProcessLock());

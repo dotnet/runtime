@@ -211,7 +211,7 @@ namespace System.Formats.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.4 says the contents are the same as for integers.
-            int sizeLimit = Marshal.SizeOf(backingType);
+            int sizeLimit = GetPrimitiveIntegerSize(backingType);
 
             if (backingType == typeof(int) ||
                 backingType == typeof(long) ||
