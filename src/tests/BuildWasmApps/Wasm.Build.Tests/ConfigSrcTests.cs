@@ -16,10 +16,7 @@ namespace Wasm.Build.Tests
 
         // NOTE: port number determinizes dynamically, so could not generate absolute URI
         [Theory]
-        [BuildAndRun(aot: false, host: RunHost.V8)]
-        [BuildAndRun(aot: true, host: RunHost.V8)]
-        [BuildAndRun(aot: false, host: RunHost.NodeJS)]
-        [BuildAndRun(aot: true, host: RunHost.NodeJS)]
+        [BuildAndRun(host: RunHost.V8 | RunHost.NodeJS)]
         public void ConfigSrcAbsolutePath(BuildArgs buildArgs, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };
