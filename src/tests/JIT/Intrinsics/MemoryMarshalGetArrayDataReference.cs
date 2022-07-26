@@ -229,7 +229,9 @@ namespace MemoryMarshalGetArrayDataReferenceTest
         {
             try
             {
-                _ = function();
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void Use(ref T t) { }
+                Use(ref function());
             }
             catch (NullReferenceException)
             {
