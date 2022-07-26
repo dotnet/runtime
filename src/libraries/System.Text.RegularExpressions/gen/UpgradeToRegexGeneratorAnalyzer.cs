@@ -108,7 +108,7 @@ namespace System.Text.RegularExpressions.Generator
             if (staticMethodsToDetect.Contains(method))
             {
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!TryValidateParametersAndExtractArgumentIndices(invocationOperation.Arguments))
+                if (!ValidateParameters(invocationOperation.Arguments))
                 {
                     return;
                 }
@@ -140,7 +140,7 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            if (!TryValidateParametersAndExtractArgumentIndices(operation.Arguments))
+            if (!ValidateParameters(operation.Arguments))
             {
                 return;
             }
@@ -155,7 +155,7 @@ namespace System.Text.RegularExpressions.Generator
         /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
         /// indices for the pattern and options. If timeout argument was used, then this returns false.
         /// </summary>
-        private static bool TryValidateParametersAndExtractArgumentIndices(ImmutableArray<IArgumentOperation> arguments)
+        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";
