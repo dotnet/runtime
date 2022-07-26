@@ -169,9 +169,6 @@ namespace System.Xml
             return _buffer;
         }
 
-        private Span<byte> GetBufferSpan(int size)
-            => GetBuffer(size, out int offset).AsSpan(offset, size);
-
         public byte[] GetBuffer(out int offset, out int offsetMax)
         {
             offset = _offset;
@@ -686,7 +683,6 @@ namespace System.Xml
 
         private int GetApostropheCharEntity(int offset, int length)
         {
-            // TODO: "constant span " and ends with ..
             byte[] buffer = _buffer;
             if (length != 6 ||
                 buffer[offset + 1] != (byte)'a' ||
@@ -945,24 +941,18 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-
         private T ReadRawBytes<T>() where T : unmanaged
         {
-            // Unsafe
-            ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetBuffer(Unsafe.SizeOf<T>(), out int offset)), offset);
-            var value = Unsafe.ReadUnaligned<T>(ref bytePtr);
-
-            // SAFE
-            // var value = MemoryMarshal.Read<T>(GetBufferSpan(Unsafe.SizeOf<T>()));
+            ReadOnlySpan<byte> buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset)
+                .AsSpan(offset, Unsafe.SizeOf<T>());
+            T value = MemoryMarshal.Read<T>(buffer);
 
             Advance(Unsafe.SizeOf<T>());
             return value;
         }
 
         private T ReadRawBytes<T>(int offset) where T : unmanaged
-        {
-            return MemoryMarshal.Read<T>(_buffer.AsSpan(offset, Unsafe.SizeOf<T>()));
-        }
+            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, Unsafe.SizeOf<T>()));
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));
@@ -974,9 +964,7 @@ namespace System.Xml
             => BitConverter.IsLittleEndian ? ReadRawBytes<long>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>(offset));
 
         public ulong GetUInt64(int offset)
-        {
-            return (ulong)GetInt64(offset);
-        }
+            => (ulong)GetInt64(offset);
 
         public float GetSingle(int offset)
             => ReadRawBytes<float>(offset);
