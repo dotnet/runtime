@@ -839,6 +839,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [OuterLoop("Takes a long time, allocates a lot of memory")]
         public static void ToString_ValidLargeFormat()
         {
             double d = 123.0;

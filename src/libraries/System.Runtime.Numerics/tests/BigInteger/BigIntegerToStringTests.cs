@@ -463,6 +463,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [OuterLoop("Takes a long time, allocates a lot of memory")]
         public static void ToString_ValidLargeFormat()
         {
             BigInteger b = new BigInteger(123456789000m);
