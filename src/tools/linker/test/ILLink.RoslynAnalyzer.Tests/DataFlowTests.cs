@@ -71,6 +71,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task CompilerGeneratedTypesRelease ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task ComplexTypeHandling ()
 		{
 			return RunTest ();
