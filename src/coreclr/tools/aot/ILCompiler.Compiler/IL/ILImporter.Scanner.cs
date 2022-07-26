@@ -202,7 +202,7 @@ namespace Internal.IL
                         if (catchType.IsRuntimeDeterminedSubtype)
                         {
                             // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
-                            // type inside with a runtime lookup
+                            // type with a runtime lookup
                             _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH filter");
                         }
                     }
