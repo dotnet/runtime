@@ -97,7 +97,7 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
+          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;_EnsureRuntimePackNuGetsAreAvailable;ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)">
@@ -131,6 +131,53 @@
 
   <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(_NuGetsToBuild.Project)" Outputs="%(_NuGetsToBuild.Identity)">
     <Exec Command="dotnet build -bl -restore -v:q -t:Pack %(_NuGetsToBuild.BuildArgs)  %(_NuGetsToBuild.Project)" />
+  </Target>
+
+  <!-- Restrict to !CI once we can get the runtime packs for other variants on CI -->
+  <!--<Target Name="_EnsureRuntimePackNuGetsAreAvailable" Condition="'$(TargetOS)' == 'Browser' and '$(ContinuousIntegrationBuild)' != 'true'">-->
+  <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
+       copy that one as the other nuget files, as a workaround. It will mean that the tests will
+       actually be using that original runtime even though they might be trying to use one of the others.
+  -->
+  <Target Name="_EnsureRuntimePackNuGetsAreAvailable" Condition="'$(TargetOS)' == 'Browser'">
+    <PropertyGroup>
+      <_PackageVersion>$(PackageVersion)</_PackageVersion>
+      <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_RuntimePackNuget Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono*$(_PackageVersion).nupkg" />
+
+      <_ExpectedRuntimePackNuGet Include="Microsoft.NETCore.App.Runtime.Mono.browser-wasm.$(_PackageVersion)" />
+      <_ExpectedRuntimePackNuGet Include="Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm.$(_PackageVersion)" />
+      <_ExpectedRuntimePackNuGet Include="Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm.$(_PackageVersion)" />
+    </ItemGroup>
+
+    <Error Condition="@(_RuntimePackNuget -> Count()) != 3 and @(_RuntimePackNuget -> Count()) != 1"
+           Text="Multiple runtime pack nugets found. Expected to find either one or three in $(LibrariesShippingPackagesDir): @(_RuntimePackNuget->'%(FileName)%(Extension)')" />
+
+    <Copy
+        Condition="@(_RuntimePackNuget -> Count()) == 1"
+        SourceFiles="@(_RuntimePackNuget)"
+        DestinationFiles="$(LibrariesShippingPackagesDir)%(_ExpectedRuntimePackNuGet.Identity).nupkg"
+        SkipUnchangedFiles="true" />
+
+    <Copy
+        Condition="@(_RuntimePackNuget -> Count()) == 1"
+        SourceFiles="@(_RuntimePackNuget)"
+        DestinationFiles="$(LibrariesShippingPackagesDir)%(_ExpectedRuntimePackNuGet.Identity).symbols.nupkg"
+        SkipUnchangedFiles="true" />
+
+    <Message
+        Condition="@(_RuntimePackNuget -> Count()) == 1"
+        Importance="High"
+        Text="
+      ********************
+
+      Note: Could not find the expected three runtime packs in $(LibrariesShippingPackagesDir). Found @(_ExpectedRuntimePackNuGet, ', ') .
+            To support local builds, @(_RuntimePackNuget) was copied as the missing nugets.
+
+      *******************" />
   </Target>
 
   <Target Name="_InstallWorkload"
