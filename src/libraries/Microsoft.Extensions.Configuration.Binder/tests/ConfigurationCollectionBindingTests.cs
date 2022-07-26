@@ -216,41 +216,49 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             GetIntDictionaryT<sbyte>(0, 1, 2);
         }
+
         [Fact]
         public void GetByteDictionary()
         {
             GetIntDictionaryT<byte>(0, 1, 2);
         }
+
         [Fact]
         public void GetShortDictionary()
         {
             GetIntDictionaryT<short>(0, 1, 2);
         }
+
         [Fact]
         public void GetUShortDictionary()
         {
             GetIntDictionaryT<ushort>(0, 1, 2);
         }
+
         [Fact]
         public void GetIntDictionary()
         {
             GetIntDictionaryT<int>(0, 1, 2);
         }
+
         [Fact]
         public void GetUIntDictionary()
         {
             GetIntDictionaryT<uint>(0, 1, 2);
         }
+
         [Fact]
         public void GetLongDictionary()
         {
             GetIntDictionaryT<long>(0, 1, 2);
         }
+
         [Fact]
         public void GetULongDictionary()
         {
             GetIntDictionaryT<ulong>(0, 1, 2);
         }
+
         private void GetIntDictionaryT<T>(T k1, T k2, T k3)
         {
             var input = new Dictionary<string, string>
