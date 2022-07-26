@@ -189,14 +189,15 @@ namespace System.Threading.Tasks
         /// </remarks>
         private Task GetTaskForValueTaskSource(IValueTaskSource t)
         {
-            ValueTaskSourceStatus status = t.GetStatus(_token);
+            short token = _token;
+            ValueTaskSourceStatus status = t.GetStatus(token);
             if (status != ValueTaskSourceStatus.Pending)
             {
                 try
                 {
                     // Propagate any exceptions that may have occurred, then return
                     // an already successfully completed task.
-                    t.GetResult(_token);
+                    t.GetResult(token);
                     return Task.CompletedTask;
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
@@ -225,7 +226,7 @@ namespace System.Threading.Tasks
                 }
             }
 
-            return new ValueTaskSourceAsTask(t, _token);
+            return new ValueTaskSourceAsTask(t, token);
         }
 
         /// <summary>Type used to create a <see cref="Task"/> to represent a <see cref="IValueTaskSource"/>.</summary>
@@ -589,14 +590,15 @@ namespace System.Threading.Tasks
         /// </remarks>
         private Task<TResult> GetTaskForValueTaskSource(IValueTaskSource<TResult> t)
         {
-            ValueTaskSourceStatus status = t.GetStatus(_token);
+            short token = _token;
+            ValueTaskSourceStatus status = t.GetStatus(token);
             if (status != ValueTaskSourceStatus.Pending)
             {
                 try
                 {
                     // Get the result of the operation and return a task for it.
                     // If any exception occurred, propagate it
-                    return Task.FromResult(t.GetResult(_token));
+                    return Task.FromResult(t.GetResult(token));
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".
@@ -624,7 +626,7 @@ namespace System.Threading.Tasks
                 }
             }
 
-            return new ValueTaskSourceAsTask(t, _token);
+            return new ValueTaskSourceAsTask(t, token);
         }
 
         /// <summary>Type used to create a <see cref="Task{TResult}"/> to represent a <see cref="IValueTaskSource{TResult}"/>.</summary>
