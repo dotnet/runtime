@@ -8,6 +8,8 @@ using System.IO;
 using System.Text.Json;
 using Microsoft.Build.Framework;
 
+#nullable enable
+
 internal sealed class ProxyFile
 {
     public string TargetFile { get; }

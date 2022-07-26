@@ -10,6 +10,8 @@ using System.Text.Json;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+#nullable enable
+
 internal sealed class FileCache
 {
     private CompilerCache? _newCache;

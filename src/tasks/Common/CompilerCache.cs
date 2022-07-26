@@ -8,6 +8,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Build.Utilities;
 
+#nullable enable
+
 internal sealed class CompilerCache
 {
     public CompilerCache() => FileHashes = new();

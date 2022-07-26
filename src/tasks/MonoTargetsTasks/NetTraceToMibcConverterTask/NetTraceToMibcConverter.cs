@@ -15,14 +15,9 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Text.Json.Serialization;
 
-public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
+
+public class NetTraceToMibcConverter : ToolTask
 {
-
-    /// <summary>
-    /// Path to the mibc converter tool
-    /// </summary>
-    public string? MibcConverterBinaryPath { get; set; }
-
     /// <summary>
     /// Entries for assemblies referenced in a .nettrace file. Important when you run traces against an executable on a different machine / device
     /// </summary>
@@ -34,12 +29,6 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
     /// </summary>
     [Required]
     public string NetTracePath { get; set; } = "";
-
-    /// <summary>
-    /// File used to track hashes of assemblies, to act as a cache
-    /// Output files don't get written, if they haven't changed
-    /// </summary>
-    public string? CacheFilePath { get; set; }
 
     /// <summary>
     /// Directory where the mibc file will be placed
@@ -54,11 +43,32 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
     [Output]
     public string? MibcProfilePath { get; set; }
 
-    private bool ProcessAndValidateArguments()
+    protected override string ToolName { get; } = "NetTraceToMibcConverter";
+
+    protected override string GenerateFullPathToTool()
     {
-        if (!File.Exists(MibcConverterBinaryPath))
+        return ToolPath;
+    }
+
+    protected override bool ValidateParameters()
+    {
+        if (string.IsNullOrEmpty(ToolPath))
         {
-            Log.LogError($"{nameof(MibcConverterBinaryPath)}='{MibcConverterBinaryPath}' doesn't exist.");
+            Log.LogError($"{nameof(ToolPath)}='{ToolPath}' must be specified.");
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(ToolExe))
+        {
+            Log.LogError($"{nameof(ToolExe)}='{ToolExe}' must be specified.");
+            return false;
+        }
+
+        string mibcConverterBinaryPath = Path.Combine(ToolPath, ToolExe);
+
+        if (!File.Exists(mibcConverterBinaryPath))
+        {
+            Log.LogError($"{nameof(mibcConverterBinaryPath)}='{mibcConverterBinaryPath}' doesn't exist.");
             return false;
         }
 
@@ -84,55 +94,22 @@ public class NetTraceToMibcConverter : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    public override bool Execute()
+    protected override string GenerateCommandLineCommands()
     {
-        try
-        {
-            return ExecuteInternal();
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError(laee.Message);
-            return false;
-        }
-    }
-
-    private bool ExecuteInternal()
-    {
-        if (!ProcessAndValidateArguments())
-            return false;
-
-        if (!ProcessNettrace(NetTracePath))
-            return false;
-
-        return !Log.HasLoggedErrors;
-    }
-
-    private bool ProcessNettrace(string netTraceFile)
-    {
-        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
+        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(NetTracePath), ".mibc"));
 
         StringBuilder mibcConverterArgsStr = new StringBuilder(string.Empty);
         mibcConverterArgsStr.Append($"create-mibc");
-        mibcConverterArgsStr.Append($" --trace {netTraceFile} ");
+        mibcConverterArgsStr.Append($" --trace {NetTracePath} ");
+
         foreach (var refAsmItem in Assemblies)
         {
             string? fullPath = refAsmItem.GetMetadata("FullPath");
             mibcConverterArgsStr.Append($" --reference \"{fullPath}\" ");
         }
+
         mibcConverterArgsStr.Append($" --output {outputMibcPath} ");
-        (int exitCode, string output) = Utils.TryRunProcess(Log,
-                                                            MibcConverterBinaryPath!,
-                                                            mibcConverterArgsStr.ToString());
 
-        if (exitCode != 0)
-        {
-            Log.LogError($"dotnet-pgo({MibcConverterBinaryPath}) failed for {netTraceFile}:{output}");
-            return false;
-        }
-
-        MibcProfilePath = outputMibcPath;
-        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {MibcConverterBinaryPath}");
-        return true;
+        return mibcConverterArgsStr.ToString();
     }
 }
