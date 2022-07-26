@@ -398,7 +398,6 @@ namespace System.Text.RegularExpressions.Tests
 
                 if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
                 {
-                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
                     yield return new object[]
                     {
                         engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
