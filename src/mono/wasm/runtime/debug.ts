@@ -473,6 +473,9 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
 }
 
 export function setup_proxy_console(id: string, originalConsole: Console, origin: string): void {
+    const originalConsoleLog = originalConsole.log;
+    const originalConsoleError = originalConsole.error;
+
     function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
         return function (...args: any[]) {
             try {
@@ -518,21 +521,20 @@ export function setup_proxy_console(id: string, originalConsole: Console, origin
 
     const consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.onopen = function () {
-        originalConsole.log(`browser: [${id}] Console websocket connected.`);
+        originalConsoleLog(`browser: [${id}] Console websocket connected.`);
     };
     consoleWebSocket.onerror = function (event) {
-        originalConsole.error(`[${id}] websocket error: ${event}`, event);
+        originalConsoleError(`[${id}] websocket error: ${event}`, event);
     };
     consoleWebSocket.onclose = function (event) {
-        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+        originalConsoleError(`[${id}] websocket closed: ${event}`, event);
     };
 
     const send = (msg: string) => {
         if (consoleWebSocket.readyState === WebSocket.OPEN) {
             consoleWebSocket.send(msg);
-        }
-        else {
-            originalConsole.log(msg);
+        } else {
+            originalConsoleLog(msg);
         }
     };
 
