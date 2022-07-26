@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -20,6 +21,7 @@ namespace System.ServiceModel.Syndication
         private static readonly XmlQualifiedName s_rss20Url = new XmlQualifiedName(Rss20Constants.UrlTag, string.Empty);
         private const string Rfc822OutputLocalDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss zzz";
         private const string Rfc822OutputUtcDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss Z";
+        private static readonly Regex PersonDisplayRegex = new Regex(@"(.*@[^ ]+)[ ]*\((.*)\)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly Atom10FeedFormatter _atomSerializer;
         private readonly int _maxExtensionSize;
@@ -70,6 +72,8 @@ namespace System.ServiceModel.Syndication
         public override string Version => SyndicationVersions.Rss20;
 
         protected Type FeedType { get; }
+        
+        public bool IncludePersonNames { get; set; } = true;
 
         public override bool CanRead(XmlReader reader)
         {
@@ -585,9 +589,22 @@ namespace System.ServiceModel.Syndication
             reader.ReadStartElement();
             if (!isEmpty)
             {
-                string email = reader.ReadString();
+                string s = reader.ReadString();
                 reader.ReadEndElement();
-                person.Email = email;
+                
+                if (!string.IsNullOrWhiteSpace(s))
+                {
+                    var m = PersonDisplayRegex.Match(s);
+                    if (m.Success && m.Groups.Count == 3)
+                    {
+                        person.Email = m.Groups[1].Value;
+                        person.Name = m.Groups[2].Value;
+                    }
+                    else
+                    {
+                        person.Email = s;
+	    			}
+    			}
             }
         }
 
@@ -1188,6 +1205,9 @@ namespace System.ServiceModel.Syndication
             writer.WriteStartElement(elementTag, Rss20Constants.Rss20Namespace);
             WriteAttributeExtensions(writer, person, Version);
             writer.WriteString(person.Email);
+            if (IncludePersonNames && !string.IsNullOrWhiteSpace(person.Name)) {
+                writer.WriteString(" (" + person.Name + ")");
+            }
             writer.WriteEndElement();
         }
     }
