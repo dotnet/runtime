@@ -36,6 +36,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnosticsInScope(fixAllContext).ConfigureAwait(false);
                 Dictionary<(INamedTypeSymbol marshallerType, ITypeSymbol managedType, bool isLinearCollectionMarshaller), List<string>> uniqueMarshallersToFix = new();
+                // Organize all the diagnostics by marshaller, managed type, and whether or not it's a collection marshaller
                 foreach (Diagnostic diagnostic in diagnostics)
                 {
                     Document doc = fixAllContext.Solution.GetDocument(diagnostic.Location.SourceTree);
@@ -44,23 +45,24 @@ namespace Microsoft.Interop.Analyzers
                     var entryPointTypeSymbol = (INamedTypeSymbol)model.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, fixAllContext.CancellationToken);
                     ITypeSymbol? managedType = GetManagedTypeInAttributeSyntax(diagnostic.Location, entryPointTypeSymbol);
 
-                    SyntaxNode node = (await diagnostic.Location.SourceTree.GetRootAsync(fixAllContext.CancellationToken).ConfigureAwait(false)).FindNode(diagnostic.Location.SourceSpan);
+                    SyntaxNode root = await diagnostic.Location.SourceTree.GetRootAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
+
+                    SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
                     var marshallerType = (INamedTypeSymbol)model.GetSymbolInfo(node, fixAllContext.CancellationToken).Symbol;
                     var uniqueMarshallerFixKey = (marshallerType, managedType, ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointTypeSymbol));
-                    if (uniqueMarshallersToFix.TryGetValue(uniqueMarshallerFixKey, out List<string> membersToAdd))
+                    if (!uniqueMarshallersToFix.TryGetValue(uniqueMarshallerFixKey, out List<string> membersToAdd))
                     {
-                        membersToAdd.AddRange(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter));
+                        uniqueMarshallersToFix[uniqueMarshallerFixKey] = membersToAdd = new List<string>();
                     }
-                    else
-                    {
-                        uniqueMarshallersToFix.Add(uniqueMarshallerFixKey, new List<string>(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter)));
-                    }
+
+                    membersToAdd.AddRange(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter));
                 }
 
                 Dictionary<INamedTypeSymbol, INamedTypeSymbol> partiallyUpdatedSymbols = new(SymbolEqualityComparer.Default);
 
                 SymbolEditor symbolEditor = SymbolEditor.Create(fixAllContext.Solution);
 
+                // Apply each fix
                 foreach (var marshallerInfo in uniqueMarshallersToFix)
                 {
                     var (marshallerType, managedType, isLinearCollectionMarshaller) = marshallerInfo.Key;
@@ -147,7 +149,11 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            return (new HashSet<string>(missingMemberNames), requiredShapeDiagnostics);
+            return (missingMemberNames, requiredShapeDiagnostics);
+        }
+
+        private static void IgnoreArityMismatch(INamedTypeSymbol marshallerType, INamedTypeSymbol managedType)
+        {
         }
 
         private static async Task<Solution> AddMissingMembers(Document doc, SyntaxNode node, HashSet<string> missingMemberNames, CancellationToken ct)
@@ -161,7 +167,9 @@ namespace Microsoft.Interop.Analyzers
 
             bool isLinearCollectionMarshaller = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointTypeSymbol);
 
-            ManualTypeMarshallingHelper.TryResolveManagedType(entryPointTypeSymbol, ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeSymbolInAttribute, entryPointTypeSymbol, model.Compilation), isLinearCollectionMarshaller, (_, _) => { }, out ITypeSymbol managedType);
+            // Explicitly ignore the generic arity mismatch diagnostics as we will only reach here if there are no mismatches.
+            // The analyzer will not for missing members if the managed type cannot be resolved.
+            ManualTypeMarshallingHelper.TryResolveManagedType(entryPointTypeSymbol, ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeSymbolInAttribute, entryPointTypeSymbol, model.Compilation), isLinearCollectionMarshaller, IgnoreArityMismatch, out ITypeSymbol managedType);
 
             SymbolEditor editor = SymbolEditor.Create(doc.Project.Solution);
 
@@ -172,10 +180,13 @@ namespace Microsoft.Interop.Analyzers
             return editor.ChangedSolution;
         }
 
-        private static ITypeSymbol? GetManagedTypeInAttributeSyntax(Location locationInAttribute, INamedTypeSymbol? attributedTypeSymbol)
+        // Get the managed type from the CustomMarshallerAttribute located at the provided location in source on the provided type.
+        // As we only get fixable diagnostics for types that have valid non-null managed types in the CustomMarshallerAttribute applications,
+        // we do not need to worry about the returned symbol being null.
+        private static ITypeSymbol GetManagedTypeInAttributeSyntax(Location locationInAttribute, INamedTypeSymbol attributedTypeSymbol)
             => (ITypeSymbol)attributedTypeSymbol.GetAttributes().First(attr =>
                     attr.ApplicationSyntaxReference.SyntaxTree == locationInAttribute.SourceTree
-                    && attr.ApplicationSyntaxReference.Span.Contains(locationInAttribute.SourceSpan)).ConstructorArguments[0].Value;
+                    && attr.ApplicationSyntaxReference.Span.Contains(locationInAttribute.SourceSpan)).ConstructorArguments[0].Value!;
 
         private static void AddMissingMembers(
             DocumentEditor editor,
