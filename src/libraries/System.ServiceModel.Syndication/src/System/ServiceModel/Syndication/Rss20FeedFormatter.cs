@@ -79,7 +79,7 @@ namespace System.ServiceModel.Syndication
         public override string Version => SyndicationVersions.Rss20;
 
         protected Type FeedType { get; }
-        
+
         public bool IncludePersonNames { get; set; } = true;
 
         public override bool CanRead(XmlReader reader)
@@ -598,7 +598,7 @@ namespace System.ServiceModel.Syndication
             {
                 string s = reader.ReadString();
                 reader.ReadEndElement();
-                
+
                 if (!string.IsNullOrWhiteSpace(s))
                 {
                     var m = PersonDisplayRegex().Match(s);
