@@ -912,7 +912,7 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
         [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
         public async Task EvaluateBrowsableNone(
-            string outerClassName, string className, string localVarName, int breakLine, bool propsAreGetters = false) => await CheckInspectLocalsAtBreakpointSite(
+            string outerClassName, string className, string localVarName, int breakLine, bool allMembersAreProperties = false) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
@@ -923,7 +923,7 @@ namespace DebuggerTests
                 await CheckValue(testNone, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testNone));
                 var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
 
-                if (propsAreGetters)
+                if (allMembersAreProperties)
                     await CheckProps(testNoneProps, new
                     {
                         list = TGetter("list", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
@@ -989,7 +989,7 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
         [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
         public async Task EvaluateBrowsableCollapsed(
-            string outerClassName, string className, string localVarName, int breakLine, bool propsAreGetters = false) => await CheckInspectLocalsAtBreakpointSite(
+            string outerClassName, string className, string localVarName, int breakLine, bool allMembersAreProperties = false) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
@@ -999,7 +999,7 @@ namespace DebuggerTests
                 var (testCollapsed, _) = await EvaluateOnCallFrame(id, localVarName);
                 await CheckValue(testCollapsed, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testCollapsed));
                 var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
-                if (propsAreGetters)
+                if (allMembersAreProperties)
                     await CheckProps(testCollapsedProps, new
                     {
                         listCollapsed = TGetter("listCollapsed", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),

@@ -65,8 +65,8 @@ namespace BrowserDebugProxy
             JArray fields = new();
             if (includeStatic)
             {
-                IEnumerable<FieldTypeClass> staticFields = fieldTypes
-                .Where(f => f.Attributes.HasFlag(FieldAttributes.Static));
+                IEnumerable<FieldTypeClass> staticFields =
+                    fieldTypes.Where(f => f.Attributes.HasFlag(FieldAttributes.Static));
                 foreach (var field in staticFields)
                 {
                     var fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
@@ -98,19 +98,10 @@ namespace BrowserDebugProxy
                 if (isStatic)
                     fieldValue["name"] = field.Name;
 
-                fieldValue["__section"] = isStatic
-                    ? field.Attributes switch
-                    {
-                        FieldAttributes.Private | FieldAttributes.Static => "private",
-                        FieldAttributes.Public | FieldAttributes.Static => "result",
-                        _ => "internal"
-                    }
-                    : field.Attributes switch
-                {
-                    FieldAttributes.Private => "private",
-                    FieldAttributes.Public => "result",
-                    _ => "internal"
-                };
+                fieldValue["__section"] = field.Attributes.HasFlag(FieldAttributes.Private)
+                    ? "private" :
+                    field.Attributes.HasFlag(FieldAttributes.Public) ?
+                    "public" : "internal";
 
                 if (field.IsBackingField)
                 {

@@ -630,6 +630,7 @@ namespace DebuggerTests
                    // Static properties
                    PublicStaticDTProp = TGetter("PublicStaticDTProp"),
                    PrivateStaticDTProp = TGetter("PrivateStaticDTProp"),
+                   InternalStaticDTProp = TGetter("InternalStaticDTProp"),
                }, local_name);
 
                // Invoke getters, and check values
