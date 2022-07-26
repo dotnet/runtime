@@ -6008,7 +6008,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				if (is_simd) {
 					g_assert (lhs);
 					int align = mono_class_value_size (klass, NULL);
-					retval = build_alloca_llvm_type_name (ctx, ret_type, align, "struct_ret");
+					retval = LLVMConstNull(ret_type);
 
 					int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
 					for (int i = 0; i < len; i++)
