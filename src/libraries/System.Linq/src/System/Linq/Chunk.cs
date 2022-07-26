@@ -68,18 +68,7 @@ namespace System.Linq
                     array[0] = e.Current;
                     i = 1;
 
-                    if (size == array.Length)
-                    {
-                        // For all but the first chunk, the array will already be correctly sized.
-                        // We can just store into it until either it's full or MoveNext returns false.
-                        TSource[] local = array; // avoid bounds checks from using a field-based array
-                        Debug.Assert(local.Length == size);
-                        for (; (uint)i < (uint)local.Length && e.MoveNext(); i++)
-                        {
-                            local[i] = e.Current;
-                        }
-                    }
-                    else
+                    if (size != array.Length)
                     {
                         // This is the first chunk. As we fill the array, grow it as needed.
                         for (; i < size && e.MoveNext(); i++)
@@ -90,6 +79,17 @@ namespace System.Linq
                             }
 
                             array[i] = e.Current;
+                        }
+                    }
+                    else
+                    {
+                        // For all but the first chunk, the array will already be correctly sized.
+                        // We can just store into it until either it's full or MoveNext returns false.
+                        TSource[] local = array; // avoid bounds checks by using cached local (`array` is lifted to iterator object as a field)
+                        Debug.Assert(local.Length == size);
+                        for (; (uint)i < (uint)local.Length && e.MoveNext(); i++)
+                        {
+                            local[i] = e.Current;
                         }
                     }
 
