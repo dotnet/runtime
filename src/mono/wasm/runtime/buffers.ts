@@ -63,7 +63,7 @@ function typed_array_from(pinned_array: MonoArray, begin: number, end: number, b
 }
 
 // Copy the pinned array address from pinned_array allocated on the heap to the typed array.
-// 	 adress of managed pinned array -> copy from heap -> typed array memory
+// 	 address of managed pinned array -> copy from heap -> typed array memory
 function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number) {
 
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing

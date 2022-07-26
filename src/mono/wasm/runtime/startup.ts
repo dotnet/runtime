@@ -28,7 +28,7 @@ import { cwraps_internal } from "./exports-internal";
 import { cwraps_binding_api, cwraps_mono_api } from "./exports-legacy";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
-const loaded_files: { url?: string, file: string }[] = [];
+const loaded_files: { url: string, file: string }[] = [];
 const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
 let instantiated_assets_count = 0;
 let downloded_assets_count = 0;
@@ -293,7 +293,7 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
     }
 
     try {
-        loaded_files.forEach(value => MONO.loaded_files.push(value.url!));
+        loaded_files.forEach(value => MONO.loaded_files.push(value.url));
         if (!loaded_files || loaded_files.length == 0) {
             Module.print("MONO_WASM: no files were loaded into runtime");
         }
