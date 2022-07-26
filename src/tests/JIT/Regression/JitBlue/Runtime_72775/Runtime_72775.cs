@@ -12,7 +12,7 @@ public class Runtime_72775
         for (int i = 0; i < 100; i++)
         {
             Call(new Impl1());
-            if (i > 30)
+            if (i > 30 && i < 40)
                 Thread.Sleep(10);
         }
 
