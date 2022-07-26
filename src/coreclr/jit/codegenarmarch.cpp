@@ -3898,7 +3898,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //    cast - The GT_CAST node
 //
 // Assumptions:
-//    The cast node is not a contained node and must have an assigned register.
 //    Neither the source nor target type can be a floating point type.
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
@@ -3969,7 +3968,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 #endif // TARGET_64BIT
             case GenIntCastDesc::LOAD_SOURCE:
                 ins     = ins_Load(src->TypeGet());
-                insSize = emitActualTypeSize(src);
+                insSize = genTypeSize(genActualType(src));
                 break;
 
             default:
@@ -3982,10 +3981,10 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         }
         else
         {
+            // The "used from memory" case. On ArmArch casts are the only nodes which can have
+            // contained memory operands, so we have to handle all possible sources "manually".
             assert(src->isUsedFromMemory());
 
-            unsigned varNum = BAD_VAR_NUM;
-            unsigned offset = BAD_LCL_OFFSET;
             if (src->isUsedFromSpillTemp())
             {
                 assert(src->IsRegOptional());

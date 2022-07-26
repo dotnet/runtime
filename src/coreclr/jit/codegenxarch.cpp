@@ -6831,7 +6831,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             break;
         case GenIntCastDesc::LOAD_SOURCE:
             ins     = ins_Load(src->TypeGet());
-            insSize = emitTypeSize(src);
+            insSize = genTypeSize(src);
             break;
 
         default:
