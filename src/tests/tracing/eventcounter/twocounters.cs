@@ -18,7 +18,7 @@ namespace TwoCountersTests
 {
     public class RuntimeCounterListener : EventListener
     {
-        public RuntimeCounterListener(Func<bool> callback)
+        public RuntimeCounterListener(Action callback)
         {
             _callback = callback;
 
@@ -52,7 +52,7 @@ namespace TwoCountersTests
         }
 
         private Dictionary<string, bool> observedRuntimeCounters;
-        private Func<bool> _callback;
+        private Action _callback;
 
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -109,128 +109,75 @@ namespace TwoCountersTests
     {
         public static int Main(string[] args)
         {
-            int myPid = Process.GetCurrentProcess().Id;
-            DiagnosticsClient client = new DiagnosticsClient(myPid);
-            List<EventPipeProvider> counterProviders = new List<EventPipeProvider>
+            bool after = false;
+            ManualResetEvent eventListenerEvent = new ManualResetEvent(false);
+            Action eventListenerAction = () =>
             {
-                new EventPipeProvider(
-                    /* name */      "System.Runtime",
-                    /* level */     EventLevel.Informational,
-                    /* keywords */  (-1 & (~1 /* RuntimeEventSource.Keywords.AppContext */)),
-                    /* arguments */ new Dictionary<string, string>() { { "EventCounterIntervalSec", "1" } })
+                if (Volatile.Read(ref after))
+                {
+                    eventListenerEvent.Set();
+                }
             };
 
-            using (EventPipeSession outerSession = client.StartEventPipeSession(counterProviders, /* requestRunDown */ false))
+            using (RuntimeCounterListener eventListener = new RuntimeCounterListener(eventListenerAction))
             {
-                EventPipeEventSource outerSource = new EventPipeEventSource(outerSession.EventStream);
-                bool after = false;
-                ManualResetEvent outerEventEvent = new ManualResetEvent(false);
-
-                outerSource.Dynamic.All += (TraceEvent traceEvent) =>
+                int myPid = Process.GetCurrentProcess().Id;
+                DiagnosticsClient client = new DiagnosticsClient(myPid);
+                List<EventPipeProvider> counterProviders = new List<EventPipeProvider>
                 {
-                    if (traceEvent.EventName.Equals("EventCounters"))
-                    {
-                        if (Volatile.Read(ref after))
-                        {
-                            outerEventEvent.Set();
-                        }
-                    }
+                    new EventPipeProvider(
+                        /* name */      "System.Runtime",
+                        /* level */     EventLevel.Informational,
+                        /* keywords */  (-1 & (~1 /* RuntimeEventSource.Keywords.AppContext */)),
+                        /* arguments */ new Dictionary<string, string>() { { "EventCounterIntervalSec", "1" } })
                 };
 
-                Thread outerProcessingThread = new Thread(new ThreadStart(() =>
+                using (EventPipeSession innerSession = client.StartEventPipeSession(counterProviders, /* requestRunDown */ false))
                 {
-                    outerSource.Process();
-                }));
-                outerProcessingThread.Start();
+                        EventPipeEventSource innerSource = new EventPipeEventSource(innerSession.EventStream);
 
-                ManualResetEvent innerEventEvent = new ManualResetEvent(false);
-                using (RuntimeCounterListener innerListener = new RuntimeCounterListener(() => innerEventEvent.Set()))
-                {
-                    if (!innerEventEvent.WaitOne(TimeSpan.FromMinutes(3)))
-                    {
-                        Console.WriteLine("Event listener received no events.");
-                        return 1;
+                        ManualResetEvent innerSessionGotEvent = new ManualResetEvent(false);
+
+                        innerSource.Dynamic.All += (TraceEvent traceEvent) =>
+                        {
+                            if (traceEvent.EventName.Equals("EventCounters"))
+                            {
+                                innerSessionGotEvent.Set();
+                            }
+                        };
+
+                        Thread innerProcessingThread = new Thread(new ThreadStart(() =>
+                        {
+                            innerSource.Process();
+                        }));
+                        innerProcessingThread.Start();
+
+                        if (!innerSessionGotEvent.WaitOne(TimeSpan.FromMinutes(3)))
+                        {
+                            Console.WriteLine("Session did not receive any events after inner session stopped.");
+                            return 1;
+                        }
+
+                        innerSession.Stop();
+                        innerProcessingThread.Join();
                     }
-
-                    if (!innerListener.Verify())
-                    {
-                        return 1;
-                    }
-                }
-
-                Thread.Sleep(3000);
-
-                //using (EventPipeSession innerSession = client.StartEventPipeSession(counterProviders, /* requestRunDown */ false))
-                //{
-                //    EventPipeEventSource innerSource = new EventPipeEventSource(innerSession.EventStream);
-
-                //    ManualResetEvent innerEventEvent = new ManualResetEvent(false);
-                //    innerSource.Dynamic.All += (TraceEvent traceEvent) =>
-                //    {
-                //        if (traceEvent.EventName.Equals("EventCounters"))
-                //        {
-                //            innerEventEvent.Set();
-                //        }
-                //    };
-
-                //    Thread innerProcessingThread = new Thread(new ThreadStart(() =>
-                //    {
-                //        innerSource.Process();
-                //    }));
-                //    innerProcessingThread.Start();
-
-                //    if (!innerEventEvent.WaitOne(TimeSpan.FromMinutes(3)))
-                //    {
-                //        Console.WriteLine("Inner session received no events!");
-                //        return 1;
-                //    }
-
-                //    innerSession.Stop();
-                //    innerProcessingThread.Join();
-                //}
 
                 Volatile.Write(ref after, true);
 
-                if (!outerEventEvent.WaitOne(TimeSpan.FromMinutes(3)))
+                if (!eventListenerEvent.WaitOne(TimeSpan.FromMinutes(3)))
                 {
-                    Console.WriteLine("Session did not receive any events after inner session stopped.");
+                    Console.WriteLine("Event listener received no events.");
                     return 2;
                 }
 
-                outerSession.Stop();
-                outerProcessingThread.Join();
+                if (!eventListener.Verify())
+                {
+                    return 3;
+                }
 
                 return 100;
-
-                //// Create an EventListener.
-                //using (RuntimeCounterListener myListener = new RuntimeCounterListener())
-                //{
-                //    using (SecondListener mySecondListener = new SecondListener())
-                //    {
-                //        Thread.Sleep(1000);
-                //        if (!mySecondListener.Verify())
-                //        {
-                //            return 2;
-                //        }
-                //    }
-
-                //    Thread.Sleep(1000);
-
-                //    myListener.SetAfterSecondListener();
-                //    Thread.Sleep(3000);
-
-                //    if (myListener.Verify())
-                //    {
-                //        Console.WriteLine("Test passed");
-                //        return 100;
-                //    }
-                //    else
-                //    {
-                //        Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
-                //        return 1;
-                //    }
-                //}
             }
+
         }
     }
 }
