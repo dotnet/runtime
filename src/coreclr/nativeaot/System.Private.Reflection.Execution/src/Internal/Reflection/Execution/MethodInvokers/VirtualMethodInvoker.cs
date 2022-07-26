@@ -51,13 +51,13 @@ namespace Internal.Reflection.Execution.MethodInvokers
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        protected sealed override object Invoke(object thisObject, object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             ValidateThis(thisObject, _declaringTypeHandle);
 
             IntPtr resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
 
-            object result = RuntimeAugments.CallDynamicInvokeMethod(
+            object? result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject,
                 resolvedVirtual,
                 MethodInvokeInfo.DynamicInvokeMethod,

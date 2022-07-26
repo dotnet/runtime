@@ -234,9 +234,8 @@ namespace Internal.IL
         ClosedStaticThunk = 1,
         OpenStaticThunk = 2,
         ClosedInstanceThunkOverGenericMethod = 3, // This may not exist
-        DelegateInvokeThunk = 4,
-        OpenInstanceThunk = 5,        // This may not exist
-        ObjectArrayThunk = 6,         // This may not exist
+        OpenInstanceThunk = 4,        // This may not exist
+        ObjectArrayThunk = 5,         // This may not exist
     }
 
     [Flags]
