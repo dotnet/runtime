@@ -1304,6 +1304,137 @@ AQAB
             Assert.Equal(BigInteger.MinusOne, currentCrlNumber);
         }
 
+        [Fact]
+        public static void LoadAndResignPublicCrl()
+        {
+            const string ExistingCrl = @"
+-----BEGIN X509 CRL-----
+MIIE3TCCAsUCAQEwDQYJKoZIhvcNAQEMBQAwWTELMAkGA1UEBhMCVVMxHjAcBgNV
+BAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEqMCgGA1UEAxMhTWljcm9zb2Z0IEF6
+dXJlIFRMUyBJc3N1aW5nIENBIDA2Fw0yMjA0MTExMzA4MjJaFw0yMjA0MjExMzI4
+MjJaMIIB1DAyAhMzACC5qJDtqzKZrS9eAAAAILmoFw0yMTExMTcxODQ4NTNaMAww
+CgYDVR0VBAMKAQQwMgITMwAdIZwN8oowgaBVuwAAAB0hnBcNMjExMDI5MjI0MjM5
+WjAMMAoGA1UdFQQDCgEBMDICEzMAHEsDMKz+x2Q4pB0AAAAcSwMXDTIxMTAyOTIy
+NDIzOVowDDAKBgNVHRUEAwoBATAyAhMzABv5eo1EVElhuLhdAAAAG/l6Fw0yMTEw
+MjkyMjQyMzlaMAwwCgYDVR0VBAMKAQEwMgITMwAVsCZAqBt1i9Ox9AAAABWwJhcN
+MjExMDI5MjI0MjM5WjAMMAoGA1UdFQQDCgEBMDICEzMAFEFG+rIYXhcZLCAAAAAU
+QUYXDTIxMTAyOTIyNDIzOVowDDAKBgNVHRUEAwoBATAyAhMzABKV+sL8KCADS9O+
+AAAAEpX6Fw0yMTEwMjkyMjQyMzlaMAwwCgYDVR0VBAMKAQEwMgITMwAQVfwHnnKI
+5upijgAAABBV/BcNMjExMDI5MjI0MjM5WjAMMAoGA1UdFQQDCgEBMDICEzMAGLfg
+D+AWIpVdxQ8AAAAYt+AXDTIxMTAyODIzNDQyMlowDDAKBgNVHRUEAwoBAaBgMF4w
+HwYDVR0jBBgwFoAU1cFnOsKjnfR3UltZEjgp5lVou6UwEAYJKwYBBAGCNxUBBAMC
+AQAwCwYDVR0UBAQCAgu4MBwGCSsGAQQBgjcVBAQPFw0yMjA0MTYxMzE4MjJaMA0G
+CSqGSIb3DQEBDAUAA4ICAQCXu0H7d26rPD/FLZUVoQNkLFZDef2mVL5MVhMGCTXf
+f0Bg2IYWOPYonmtUTFjXDhBDM9mh5aKY37s46tT4p+H3A6N4tneSkZ8990IIOh75
+PlC/dBT6tikF98Y6fB/Z0ZurlazJQDH3tKBjxcKtjYLjzCFN8uYumtoyBteJj1gt
+JgElPT6S7R+xvydrChjKLCRbmc2B3AggVHz0TVvUX9if8qiPb25a1Uu24nVKDaz9
+gWsEZohsETi+qSRRViKs+ZFy/WBqySwW/6Qv4JbPhY4VhPyZxkvWzSh7HbqTUA3/
+TahuDpwexc/KfebeG2XKGxVEOBYncRaeEISEBnan+LeUtK9Jf8kShTeJeyiV3bgu
+N3/vBCOLV2/dX47iATPeYv/ou7L+i6u0U1MUcLO9ZJW3pwzBuIEeGZvnrTKCcWDV
+G65Yc7rKKcqPdbYzIPsGCc1/Jo6qK9cYxt/OEz88VKe/ruu/Stce9bcPjo8YDkmx
+zisDKD0EGD3iSR7gm9xEwYgh6hMPeqZVU9T5/0Efw3wKr9AGVW1zTi3486DyanHW
+h8FDgbPDXKXNpzkD4a2usnEeHX9YGPyIiFSqsv5vWBIT4mpMYfkCs7IPadt79N6Z
+PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
++w==
+-----END X509 CRL-----";
+
+            using (RSA rsa = RSA.Create(4096))
+            {
+                X500DistinguishedName parentDn = new X500DistinguishedName("CN=Parent");
+                X500DistinguishedName dn = new X500DistinguishedName(
+                    "CN=Microsoft Azure TLS Issuing CA 06, O=Microsoft Corporation, C=US");
+
+                CertificateRequest req = new CertificateRequest(
+                    dn,
+                    rsa,
+                    HashAlgorithmName.SHA384,
+                    RSASignaturePadding.Pkcs1);
+
+                req.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority());
+                req.CertificateExtensions.Add(
+                    new X509SubjectKeyIdentifierExtension(
+                        "D5C1673AC2A39DF477525B59123829E65568BBA5".HexToByteArray(), critical: false));
+
+                DateTimeOffset thisUpdate = new DateTimeOffset(2022, 4, 11, 13, 8, 22, TimeSpan.Zero);
+                DateTimeOffset nextUpdate = new DateTimeOffset(2022, 4, 21, 13, 28, 22, TimeSpan.Zero);
+
+                X509Certificate2 pubCert = req.Create(
+                    parentDn,
+                    X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                    thisUpdate.AddMinutes(-1),
+                    nextUpdate.AddDays(3),
+                    new byte[] { 0x01, 0x02, 0x03, 0x05 });
+
+                using (X509Certificate2 cert = pubCert.CopyWithPrivateKey(rsa))
+                {
+                    pubCert.Dispose();
+
+                    CertificateRevocationListBuilder builder =
+                        CertificateRevocationListBuilder.LoadPem(ExistingCrl, out BigInteger currentCrlNumber);
+
+                    Assert.Equal(3000, currentCrlNumber);
+
+                    byte[] crl = builder.Build(
+                        cert,
+                        currentCrlNumber,
+                        nextUpdate,
+                        HashAlgorithmName.SHA384,
+                        RSASignaturePadding.Pkcs1,
+                        thisUpdate);
+
+                    PemFields pemFields = PemEncoding.Find(ExistingCrl);
+                    byte[] currentCrl = Convert.FromBase64String(ExistingCrl[pemFields.Base64Data]);
+
+                    AsnReader ourReader = new AsnReader(crl, AsnEncodingRules.DER);
+                    AsnReader theirReader = new AsnReader(currentCrl, AsnEncodingRules.DER);
+
+                    // Move into the CRL SEQUENCE
+                    ourReader = ourReader.ReadSequence();
+                    theirReader = theirReader.ReadSequence();
+
+                    // TBS
+                    ourReader = ourReader.ReadSequence();
+                    theirReader = theirReader.ReadSequence();
+
+                    // Version (same)
+                    AssertExtensions.SequenceEqual(
+                        theirReader.ReadEncodedValue().Span,
+                        ourReader.ReadEncodedValue().Span);
+
+                    // Signature Algorithm (same)
+                    AssertExtensions.SequenceEqual(
+                        theirReader.ReadEncodedValue().Span,
+                        ourReader.ReadEncodedValue().Span);
+
+                    // Issuer (same)
+                    AssertExtensions.SequenceEqual(
+                        theirReader.ReadEncodedValue().Span,
+                        ourReader.ReadEncodedValue().Span);
+
+                    // thisUpdate (same)
+                    AssertExtensions.SequenceEqual(
+                        theirReader.ReadEncodedValue().Span,
+                        ourReader.ReadEncodedValue().Span);
+
+                    // nextUpdate (same)
+                    AssertExtensions.SequenceEqual(
+                        theirReader.ReadEncodedValue().Span,
+                        ourReader.ReadEncodedValue().Span);
+
+                    // revokedCertificates (same)
+                    AssertExtensions.SequenceEqual(
+                        theirReader.ReadEncodedValue().Span,
+                        ourReader.ReadEncodedValue().Span);
+
+                    // Their CRL has two extensions we don't:
+                    // * 1.3.6.1.4.1.311.21.1
+                    // * 1.3.6.1.4.1.311.21.4
+                    //
+                    // This makes their extensions group bigger, and why the TBS couldn't be fully compared.
+                }
+            }
+        }
+
         private static void BuildCertificateAndRun(
             IEnumerable<X509Extension> extensions,
             Action<X509Certificate2, DateTimeOffset> action,
