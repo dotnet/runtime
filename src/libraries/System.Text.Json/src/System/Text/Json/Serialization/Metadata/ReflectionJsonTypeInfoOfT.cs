@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -26,6 +27,27 @@ namespace System.Text.Json.Serialization.Metadata
             if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
             {
                 AddPropertiesAndParametersUsingReflection();
+
+#if NET7_0_OR_GREATER
+                bool typeHasRequiredMemberAttribute = typeof(T).GetCustomAttribute<RequiredMemberAttribute>() != null;
+                // Compiler adds RequiredMemberAttribute if any of the members is marked with 'required' keyword.
+                // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
+                bool shouldCheckMembersForRequiredMemberAttribute = typeHasRequiredMemberAttribute
+                    && !(converter.ConstructorInfo?.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: true) ?? false);
+
+                if (shouldCheckMembersForRequiredMemberAttribute)
+                {
+                    Debug.Assert(PropertyCache != null);
+                    foreach (var (_, property) in PropertyCache.List)
+                    {
+                        Debug.Assert(property.AttributeProvider != null);
+                        if (property.AttributeProvider.IsDefined(typeof(RequiredMemberAttribute), inherit: true))
+                        {
+                            property.IsRequired = true;
+                        }
+                    }
+                }
+#endif
             }
 
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));

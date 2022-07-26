@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 array = Array.Empty<JsonParameterInfoValues>();
-                MetadataSerializationNotSupported = true;
+                DeserializationException = ThrowHelper.GetInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
 
             return array;
@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 }
 
-                MetadataSerializationNotSupported = true;
+                DeserializationException = ThrowHelper.GetInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 return;
             }
 

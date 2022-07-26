@@ -269,16 +269,17 @@ namespace System.Text.Json.Serialization.Metadata
         // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
         internal bool HasSerializeHandler { get; private protected set; }
 
-        // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
+        // Exception used to throw on deserialization. In some scenarios i.e.:
+        // configure would have thrown while initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
-        internal bool MetadataSerializationNotSupported { get; private protected set; }
+        internal Exception? DeserializationException { get; private protected set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateCanBeUsedForMetadataSerialization()
         {
-            if (MetadataSerializationNotSupported)
+            if (DeserializationException != null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
+                throw DeserializationException;
             }
         }
 
@@ -881,6 +882,12 @@ namespace System.Text.Json.Serialization.Metadata
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
+
+                if (jsonPropertyInfo.IsRequired)
+                {
+                    // Deserialization is not possible if member has 'required' keyword
+                    DeserializationException = ThrowHelper.GetNotSupportedException_MemberWithRequiredKeywordNotSupported(jsonPropertyInfo);
+                }
 
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();

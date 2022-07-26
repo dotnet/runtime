@@ -656,11 +656,18 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
         }
 
-        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
+        public static Exception GetInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, resolver?.GetType().FullName ?? "<null>", type));
+            return new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, resolver?.GetType().FullName ?? "<null>", type));
         }
 
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
+        {
+            throw GetInvalidOperationException_NoMetadataForTypeProperties(resolver, type);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
@@ -682,6 +689,17 @@ namespace System.Text.Json
         public static void ThrowNotSupportedException_DerivedConverterDoesNotSupportMetadata(Type derivedType)
         {
             throw new NotSupportedException(SR.Format(SR.Polymorphism_DerivedConverterDoesNotSupportMetadata, derivedType));
+        }
+
+        public static Exception GetNotSupportedException_MemberWithRequiredKeywordNotSupported(JsonPropertyInfo property)
+        {
+            return new NotSupportedException(SR.Format(SR.MemberWithRequiredKeywordNotSupported, property.DeclaringType, property.Name));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_MemberWithRequiredKeywordNotSupported(JsonPropertyInfo property)
+        {
+            throw GetNotSupportedException_MemberWithRequiredKeywordNotSupported(property);
         }
 
         [DoesNotReturn]

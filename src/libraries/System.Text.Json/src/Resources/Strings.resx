@@ -659,4 +659,7 @@
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
   </data>
+  <data name="MemberWithRequiredKeywordNotSupported" xml:space="preserve">
+    <value>The JSON property '{0}.{1}' is marked with 'required' keyword which is not supported.</value>
+  </data>
 </root>
