@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
         <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
-        <target state="needs-review-translation">'{0}' non ha equivalenti in 'DllImportAtttribute' e non verrà inoltrato</target>
+        <target state="new">'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">La configurazione '{0}' non è supportata dai P/Invoke generati dall'origine. Se la configurazione specificata è obbligatoria, usare un attributo `DllImport` normale.</target>
+        <target state="new">The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
@@ -49,17 +49,17 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">La configurazione '{0}' specificata per il parametro '{1}' non è supportata dai P/Invoke generati dall'origine. Se la configurazione specificata è obbligatoria, usare un attributo `DllImport` normale.</target>
+        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">La configurazione '{0}' specificata per il valore restituito del metodo '{1}' non è supportata dai P/Invoke generati dall'origine. Se la configurazione specificata è obbligatoria, usare un attributo `DllImport` normale.</target>
+        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">Il valore specificato '{0}' per '{1}' non è supportato da P/Invoke generati dall'origine. Se il valore specificato è obbligatorio, usare un 'DllImport' normale.</target>
+        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -254,7 +254,7 @@
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
-        <target state="needs-review-translation">Il tipo nativo di tipo 'LinearCollection' che supporta il marshalling nella direzione 'In' deve fornire un elemento 'GetManagedValuesSource' che restituisce un elemento 'ReadOnlySpan&lt;&gt;' e un metodo 'GetNativeValuesDestination' che restituisce un elemento 'Span&lt;byte&gt;'.</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
@@ -264,7 +264,7 @@
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="needs-review-translation">Un tipo nativo di tipo 'LinearCollection' che supporta il marshalling nella direzione 'Out' deve fornire un metodo 'GetManagedValuesDestination' che accetta 'int' e restituisce un elemento 'Span&lt;&gt;' e un metodo 'GetNativeValuesSource' che accetta 'int' e restituisce un elemento 'ReadOnlySpan&lt;byte&gt;'.</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
