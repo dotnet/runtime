@@ -933,7 +933,7 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
             <Issue>https://github.com/dotnet/runtime/issues/72822</Issue>
-        </ExcludeList
+        </ExcludeList>
     </ItemGroup>
 
       <!-- NativeAOT specific -->
