@@ -60,6 +60,20 @@ libmono-component-diagnostics_tracing-stub-static.a
 
 NOTE, running on iOS simulator offers some additional capabilities, so runtime pack for iOS includes shared as well as static library builds, like the Android use case described above.
 
+### WebAssembly
+
+By default we do not build the tracing component into the WebAssembly mono runtime.
+
+**TODO**: document how to select an alternate runtime pack
+
+If you're building the runtime from source, pass the `/p:WasmEnablePerfTracing=true` option to include support for the Diagnostic Server and EventPipe.
+
+Note that you will need a version of `dotnet-dsrouter` that supports WebSocket connections.
+
+**TODO** document how to get binaries of `dotnet-dsrouter` with WebSocket support.
+
+If you're building from source, build `dotnet-dsrouter` from <https://github.com/lambdageek/diagnostics/tree/wasm-server>
+
 ## Install diagnostic client tooling
 
 ```
@@ -99,9 +113,9 @@ On Android, `--forward-port` will automatically adapt to the supplied configurat
 
 For more information on Android emulator networking and port forwarding:
 
-https://developer.android.com/studio/run/emulator-networking
+<https://developer.android.com/studio/run/emulator-networking>
 
-https://developer.android.com/studio/command-line/adb#forwardports
+<https://developer.android.com/studio/command-line/adb#forwardports>
 
 On IOS, `--forward-port` works in the scenario where DiagnosticServer runs in listening mode on device (connected over usb) using loopback interface.
 
@@ -147,7 +161,7 @@ dotnet-counters monitor --diagnostic-port ~/myport,connect
 
 #### Example using dotnet-counters using sample app on iOS simulator
 
-Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
+Make sure the following is enabled in <https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile>,
 
 ```
 RUNTIME_COMPONENTS=diagnostics_tracing
@@ -171,7 +185,7 @@ dotnet-counters monitor --diagnostic-port ~/myport,connect
 
 #### Example using dotnet-counters using sample app on Android emulator
 
-Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
+Make sure the following is enabled in <https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile>,
 
 ```
 RUNTIME_COMPONENTS=diagnostics_tracing
@@ -197,7 +211,7 @@ Using `adb` port forwarding it is possible to use `127.0.0.1:9000` in above scen
 
 #### Example using dotnet-trace startup tracing using sample app on iOS simulator
 
-Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
+Make sure the following is enabled in <https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile>,
 
 ```
 RUNTIME_COMPONENTS=diagnostics_tracing
@@ -221,7 +235,7 @@ make run-sim
 
 Since `dotnet-dsrouter` is capable to run several different modes, it is also possible to do startup tracing using server-server mode.
 
-Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
+Make sure the following is enabled in <https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile>,
 
 ```
 RUNTIME_COMPONENTS=diagnostics_tracing
@@ -245,7 +259,7 @@ dotnet-trace collect --diagnostic-port ~/myport,connect
 
 #### Example using dotnet-trace startup tracing using sample app on Android emulator
 
-Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
+Make sure the following is enabled in <https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile>,
 
 ```
 RUNTIME_COMPONENTS=diagnostics_tracing
@@ -269,7 +283,7 @@ make run
 
 Since `dotnet-dsrouter` is capable to run several different modes, it is also possible to do startup tracing using server-server mode.
 
-Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
+Make sure the following is enabled in <https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile>,
 
 ```
 RUNTIME_COMPONENTS=diagnostics_tracing
@@ -345,13 +359,13 @@ NOTE, iOS only support use of loopback interface when running DiagnosticServer i
 
 ### Application running single file based EventPipe session
 
-If application supports controlled runtime shutdown, `mono_jit_cleanup` gets called before terminating process, it is possible to run a single file based EventPipe session using environment variables as described in https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables. In .net6 an additional variable has been added, `COMPlus_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
+If application supports controlled runtime shutdown, `mono_jit_cleanup` gets called before terminating process, it is possible to run a single file based EventPipe session using environment variables as described in <https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables>. In .net6 an additional variable has been added, `COMPlus_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
 
 If application doesn't support controlled runtime shutdown, this mode won't work, since it requires rundown events, only emitted when closing session and flushing memory manager. If application doesn't call `mono_jit_cleanup` before terminating, generated nettrace file will lack rundown events needed to produce callstacks including symbols.
 
 Running using single file based EventPipe session will produce a file in working directory. Use platform specific tooling to extract file once application has terminated. Since file based EventPipe session doesn't use diagnostic server, there is no need to use `DOTNET_DiagnosticPorts` or running `dotnet-dsrouter`.
 
-### Analyze JIT/Loader events during startup.
+### Analyze JIT/Loader events during startup
 
 Increasing the default log level in `dotnet-trace` for `Microsoft-Windows-DotNETRuntime` provider will include additional events in nettrace file giving more details around JIT and loader activities, like all loaded assemblies, loaded types, loaded/JIT:ed methods as well as timing and size metrics, all valuable information when analyzing things like startup performance, size of loaded/JIT:ed methods, time it takes to JIT all, subset or individual methods etc. To instruct `dotnet-trace` to only collect `Microsoft-Windows-DotNETRuntime` events during startup, use one of that startup tracing scenarios as described above, but add the following parameters to `dotnet-trace`,
 
@@ -361,7 +375,7 @@ Increasing the default log level in `dotnet-trace` for `Microsoft-Windows-DotNET
 
 `Prefview` have built in analyzers for JIT/Loader stats, so either load resulting nettrace file in `Perfview` or analyze file using custom `TraceEvent` parsers.
 
-### Trace MonoVM Profiler events during startup.
+### Trace MonoVM Profiler events during startup
 
 MonoVM comes with a EventPipe provider mapping most of low-level Mono profiler events into native EventPipe events thought `Microsoft-DotNETRuntimeMonoProfiler`. Mainly this provider exists to simplify transition from old MonoVM log profiler over to nettrace, but it also adds a couple of features available in MonoVM profiler as well as ability to take heap shots over EventPipe when running on MonoVM (current dotnet-gcdump is tied to events emitted by CoreCLR GC and currently not supported on MonoVM).
 
@@ -419,7 +433,7 @@ Since all methods matching callspec will be instrumented it is possible to captu
 
 A way to effectively use this precise profiling is to first run with SampleProfiler provider, identifying hot paths worth additional investigation and then enable tracing using a matching callspec and trace execution of methods using MonoProfiler provider tracing keyword. It is of course possible to do enter/leave profiling during startup as well (using callspec or provider enabled instrumentation), just keep in mind that it can produce many events, especially in case when no callspec is in use.
 
-### Collect GC dumps on MonoVM.
+### Collect GC dumps on MonoVM
 
 MonoVM EventPipe provider `Microsoft-DotNETRuntimeMonoProfiler`, includes several GC related events that can be used to track allocations, roots and other GC events as well as generating GC heap dumps. Heap dumps can be requested on demand using `dotnet-trace` using the following provider configuration,
 
@@ -454,6 +468,33 @@ won't get any additional events, just trigger a heap dump.
 
 Combining different sessions including different GC information opens up ability to track all GC allocations during a specific time period (to reduce size of captured data), while taking heap dumps into separate sessions, make it possible to do full analysis of GC memory increase/decrease tied allocation callstacks for individual object instances.
 
+### Tracing WebAssembly apps
+
+To trace a WebAssembly app:
+
+1. Add a `diagnostic_options` section to your .csproj specifying a `server` section with a `connect_url`:
+
+   ```xml
+    <ItemGroup>
+       <WasmExtraConfig Include="diagnostic_options" Value='
+    {
+        "server": {
+            "suspend": [true|false],
+            "connect_url": "ws://127.0.0.1:[port]/diagnostics"
+        }
+    }
+    ' />
+    </ItemGroup>
+   ```
+
+   Specify `"suspend":  true` to suspend the runtime at startup (**NOTE** this will make the browser unresponsive until a diagnostic tool connects and resumes it.)  The URL has to use the `ws://` scheme (`wss://` is WIP) the host should be a localhost, the port can be arbitrary, and the path `/diagnostics` is arbtrary, too.
+
+2. Run `dotnet-dsrouter server-websocket -ws http://127.0.0.1:[port]/diagnostics -ipcs /path/to/domain_socket` the `-ws` URL should be the same as the `connect_url` in the .csproj, but with the `http://` scheme.  The `-ipcs` option is some arbitrary path.
+
+3. Run a diagnostic client such as `dotnet-trace collect --diagnostic-port /path/to/domain_socket ...` or `dotnet-counters monitor --diagnostic-port /path/to/domain_socket ...` specifying the path to the domain socket that `dotnet-dsrouter` is listening on.
+
+4. Finally run your app.  At startup the runtime will attempt to connect to the websocket connect_url.  At this point as long as `dotnet-dsrouter` is running, diagnostic tools can be used to start and stop EventPipe sessions and collect traces or monitor events.
+
 ## Analyze a nettrace file
 
 Collected events retrieved over EventPipe sessions is stored in a nettrace file that can be analyzed using tooling like PerfView, Speedscope, Chronium or Visual Studio:
@@ -473,6 +514,39 @@ Using the diagnostic client library gives full flexibility to use data in nettra
 TraceEvent library, https://www.nuget.org/packages/Microsoft.Diagnostics.Tracing.TraceEvent/ can be used to implement custom nettrace parsers.
 
 https://github.com/lateralusX/diagnostics-nettrace-samples includes a couple of custom tools (startup tracing, instrumented method execution, GC heap dump analysis) analyzing nettrace files using TraceEvent library.
+
+## Profiled AOT using `dotnet-pgo`
+
+By collecting a .nettrace file using the diagnostic server and EventPipe, it is possible to create `.mibc` files using the `dotnet-pgo` tool that can be used to tell the Mono AOT compiler which methods in an applcation should be compiled with AOT and which should be interpreted or JITed.  A typical use-case is to improve the startup performance of a mobile app, or to control the overall size of an AOTed application.
+
+A typical workflow is:
+
+1. Install the `dotnet-pgo` tool (**TODO** are there pre-built binaries?)
+2. Run the application with diagnostics configured to use the provider `Microsoft-Windows-DotNETRuntime:0x1F000080018:5` and generate a `.nettrace` file
+3. Either manually create a `.mibc` file using
+
+   ```
+   dotnet-pgo create-mibc --trace <file.nettrace>
+   ```
+
+   and pass the resulting `.mibc` file to the Mono AOT compiler MSBuild task using the `MibcProfilePath` property,
+4. or pass the path of the `.nettrace` file and the path to the `dotnet-pgo` binary using the `NetTracePath` and `PgoBinaryPath` properties.
+
+### Example for Android
+
+**TODO** add detailed example of startup profiling
+
+### Example for iOS
+
+**TODO** add detailed example
+
+### Example for WebAssembly
+
+**TODO** add detailed example
+
+### Runtime dev workflow: Example for a console sample
+
+**TODO**
 
 ## Developing EventPipe/DiagnosticServer on MonoVM
 
