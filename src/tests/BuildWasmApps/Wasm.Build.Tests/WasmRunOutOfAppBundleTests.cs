@@ -15,12 +15,7 @@ namespace Wasm.Build.Tests
         {}
 
         [Theory]
-        [BuildAndRun(aot: false, host: RunHost.V8)]
-        [BuildAndRun(aot: true, host: RunHost.V8)]
-        [BuildAndRun(aot: false, host: RunHost.Chrome)]
-        [BuildAndRun(aot: true, host: RunHost.Chrome)]
-        [BuildAndRun(aot: false, host: RunHost.NodeJS)]
-        [BuildAndRun(aot: true, host: RunHost.NodeJS)]
+        [BuildAndRun]
         public void RunOutOfAppBundle(BuildArgs buildArgs, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"outofappbundle_{buildArgs.Config}_{buildArgs.AOT}" };
@@ -30,31 +25,59 @@ namespace Wasm.Build.Tests
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release"),
-                                UseCache: false));
+                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
 
             string binDir = GetBinDir(baseDir: _projectDir!, config: buildArgs.Config);
-            string baseBundleDir = Path.Combine(binDir, "AppBundle");
-            string tmpBundleDir = Path.Combine(binDir, "AppBundleTmp");
-            string deepBundleDir = Path.Combine(baseBundleDir, "AppBundle");
-
-            Directory.Move(baseBundleDir, tmpBundleDir);
-            Directory.CreateDirectory(baseBundleDir);
-
-            // Create $binDir/AppBundle/AppBundle
-            Directory.Move(tmpBundleDir, deepBundleDir);
+            string appBundleDir = Path.Combine(binDir, "AppBundle");
+            string tmpBundleDirName = "AppBundleTmp";
+            string tmpBundleDir = Path.Combine(binDir, tmpBundleDirName);
 
             if (host == RunHost.Chrome)
             {
-                string indexHtmlPath = Path.Combine(baseBundleDir, "index.html");
+                Directory.Move(appBundleDir, tmpBundleDir);
+                Directory.CreateDirectory(appBundleDir);
+                // Create $binDir/AppBundle/AppBundle
+                Directory.Move(tmpBundleDir, Path.Combine(appBundleDir, "AppBundle"));
+
+                string indexHtmlPath = Path.Combine(appBundleDir, "index.html");
                 if (!File.Exists(indexHtmlPath))
                 {
-                    var html = @"<html><body><script type=""module"" src=""AppBundle/test-main.js""></script></body></html>";
+                    var html = @"<html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
                     File.WriteAllText(indexHtmlPath, html);
                 }
+            } else {
+                CopyAllFiles(appBundleDir, tmpBundleDir);
             }
 
-            RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: "--deep-work-dir");
+            RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, jsRelativePath: $"../{tmpBundleDirName}/test-main.js");
+
+            // Restore AppBundle Dir
+            if (host == RunHost.Chrome)
+            {
+                Directory.Move(Path.Combine(appBundleDir, "AppBundle"), tmpBundleDir);
+                Directory.Delete(appBundleDir, true);
+                Directory.Move(tmpBundleDir, appBundleDir);
+            } else {
+                Directory.Delete(tmpBundleDir, true);
+            }
+        }
+
+        private void CopyAllFiles(string srcDir, string destDir)
+        {
+            if (!Directory.Exists(destDir))
+            {
+                Directory.CreateDirectory(destDir);
+            }
+
+            foreach (var file in Directory.GetFiles(srcDir))
+            {
+                File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
+            }
+
+            foreach (var directory in Directory.GetDirectories(srcDir))
+            {
+                CopyAllFiles(directory, Path.Combine(destDir, Path.GetFileName(directory)));
+            }
         }
     }
 }
