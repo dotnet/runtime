@@ -17952,8 +17952,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     assert(info.compRetNativeType != TYP_VOID &&
                            (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
 
-                    // If this method returns a ref type, track the actual types seen
-                    // in the returns.
+                    // If this method returns a ref type, track the actual types seen in the returns.
                     if (info.compRetType == TYP_REF)
                     {
                         bool                 isExact      = false;
@@ -18010,13 +18009,13 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             else
             {
                 // compRetNativeType is TYP_STRUCT.
-                // This implies that struct return via RetBuf arg or multi-reg struct return
+                // This implies that struct return via RetBuf arg or multi-reg struct return.
 
                 GenTreeCall* iciCall = impInlineInfo->iciCall->AsCall();
 
                 // Assign the inlinee return into a spill temp.
                 // spill temp only exists if there are multiple return points
-                if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
+                if (fgNeedReturnSpillTemp())
                 {
                     // in this case we have to insert multiple struct copies to the temp
                     // and the retexpr is just the temp.
@@ -18027,49 +18026,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                      (unsigned)CHECK_SPILL_ALL);
                 }
 
-#if defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
-#if defined(TARGET_ARM)
-                // TODO-ARM64-NYI: HFA
-                // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
-                // next ifdefs could be refactored in a single method with the ifdef inside.
-                if (IsHfa(retClsHnd))
-                {
-// Same as !IsHfa but just don't bother with impAssignStructPtr.
-#else  // defined(UNIX_AMD64_ABI)
-                ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
-                unsigned retRegCount = retTypeDesc.GetReturnRegCount();
-
-                if (retRegCount != 0)
-                {
-                    // If single eightbyte, the return type would have been normalized and there won't be a temp var.
-                    // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes -
-                    // max allowed.)
-                    assert(retRegCount == MAX_RET_REG_COUNT);
-                    // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-#endif // defined(UNIX_AMD64_ABI)
-
-                    if (fgNeedReturnSpillTemp())
-                    {
-                        if (!impInlineInfo->retExpr)
-                        {
-#if defined(TARGET_ARM)
-                            impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType);
-#else  // defined(UNIX_AMD64_ABI)
-                            // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
-                                gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
-#endif // defined(UNIX_AMD64_ABI)
-                        }
-                    }
-                    else
-                    {
-                        impInlineInfo->retExpr = op2;
-                    }
-                }
-                else
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -18077,34 +18033,11 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 if (retRegCount != 0)
                 {
                     assert(!iciCall->ShouldHaveRetBufArg());
-                    assert(retRegCount >= 2);
-                    if (fgNeedReturnSpillTemp())
-                    {
-                        if (!impInlineInfo->retExpr)
-                        {
-                            // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
-                                gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
-                        }
-                    }
-                    else
-                    {
-                        impInlineInfo->retExpr = op2;
-                    }
-                }
-                else
-#elif defined(TARGET_X86)
-                ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
-                unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+                    assert(retRegCount >= 2); // Otherwise "compRetNativeType" wouldn't have been TYP_STRUCT.
 
-                if (retRegCount != 0)
-                {
-                    assert(!iciCall->ShouldHaveRetBufArg());
-                    assert(retRegCount == MAX_RET_REG_COUNT);
                     if (fgNeedReturnSpillTemp())
                     {
-                        if (!impInlineInfo->retExpr)
+                        if (impInlineInfo->retExpr == nullptr)
                         {
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
                             impInlineInfo->retExpr =
@@ -18116,16 +18049,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         impInlineInfo->retExpr = op2;
                     }
                 }
-                else
-#endif // defined(TARGET_ARM64)
+                else // The struct was to be returned via a return buffer.
                 {
                     assert(iciCall->gtArgs.HasRetBuffer());
                     GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
-                    // spill temp only exists if there are multiple return points
+
+                    // The spill temp only exists when there are multiple return points.
                     if (fgNeedReturnSpillTemp())
                     {
-                        // if this is the first return we have seen set the retExpr
-                        if (!impInlineInfo->retExpr)
+                        // If this is the first return we have seen set the retExpr.
+                        if (impInlineInfo->retExpr == nullptr)
                         {
                             impInlineInfo->retExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
