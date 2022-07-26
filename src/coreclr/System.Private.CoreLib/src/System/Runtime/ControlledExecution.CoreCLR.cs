@@ -35,6 +35,9 @@ namespace System.Runtime
         [Obsolete(Obsoletions.ControlledExecutionRunMessage, DiagnosticId = Obsoletions.ControlledExecutionRunDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void Run(Action action, CancellationToken cancellationToken)
         {
+            if (!OperatingSystem.IsWindows())
+                throw new PlatformNotSupportedException();
+
             ArgumentNullException.ThrowIfNull(action);
 
             // Recursive ControlledExecution.Run calls are not supported
