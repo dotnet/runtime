@@ -463,19 +463,8 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    if (Sse2.IsSupported)
-                    {
-                        // Prefer shuffling doubleword as it is faster than shuffling bytes on older systems
-                        tempFirst = Sse2.Shuffle(tempFirst, 0b00_01_10_11);
-                        tempLast = Sse2.Shuffle(tempLast, 0b00_01_10_11);
-                    }
-                    else
-                    {
-                        tempFirst = Vector128.Shuffle(tempFirst.AsByte(), Vector128.Create(
-                            (byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3)).AsInt32();
-                        tempLast = Vector128.Shuffle(tempLast.AsByte(), Vector128.Create(
-                            (byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3)).AsInt32();
-                    }
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(3, 2, 1, 0));
 
                     // Store the values into final location
                     tempLast.StoreUnsafe(ref buf, firstOffset);
@@ -522,17 +511,15 @@ namespace System
             }
             else if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<long>.Count * 2 <= length)
             {
-                ref int bufInt = ref Unsafe.As<long, int>(ref buf);
-                nuint intLength = length * (sizeof(long) / sizeof(int));
-                nuint numElements = (nuint)Vector128<int>.Count;
-                nuint numIters = (intLength / numElements) / 2;
+                nuint numElements = (nuint)Vector128<long>.Count;
+                nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
                 {
                     nuint firstOffset = i * numElements;
-                    nuint lastOffset = intLength - ((1 + i) * numElements);
+                    nuint lastOffset = length - ((1 + i) * numElements);
                     // Load the values into vectors
-                    Vector128<int> tempFirst = Vector128.LoadUnsafe(ref bufInt, firstOffset);
-                    Vector128<int> tempLast = Vector128.LoadUnsafe(ref bufInt, lastOffset);
+                    Vector128<long> tempFirst = Vector128.LoadUnsafe(ref buf, firstOffset);
+                    Vector128<long> tempLast = Vector128.LoadUnsafe(ref buf, lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +-------+
@@ -542,24 +529,14 @@ namespace System
                     //     +-------+
                     //     | B | A |
                     //     +-------+
-                    if (Sse2.IsSupported)
-                    {
-                        // Prefer shuffling doubleword as it is faster than shuffling bytes on older systems
-                        tempFirst = Sse2.Shuffle(tempFirst, 0b0100_1110);
-                        tempLast = Sse2.Shuffle(tempLast, 0b0100_1110);
-                    }
-                    else
-                    {
-                        tempFirst = Vector128.Shuffle(tempFirst.AsByte(), Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).AsInt32();
-                        tempLast = Vector128.Shuffle(tempLast.AsByte(), Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).AsInt32();
-                    }
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(1, 0));
 
                     // Store the values into final location
-                    tempLast.StoreUnsafe(ref bufInt, firstOffset);
-                    tempFirst.StoreUnsafe(ref bufInt, lastOffset);
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
                 }
-                bufInt = ref Unsafe.Add(ref bufInt, numIters * numElements);
-                buf = ref Unsafe.As<int, long>(ref bufInt);
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * (nuint)Vector128<long>.Count * 2;
             }
 

@@ -576,13 +576,8 @@ namespace System.Buffers.Text
 
                 // lookup
                 Vector128<byte> hiNibbles = Vector128.ShiftRightLogical(str.AsInt32(), 4).AsByte() & mask2F;
-                if (AdvSimd.IsSupported)
-                {
-                    hiNibbles &= mask8F;
-                    str &= mask8F;
-                }
-                Vector128<byte> hi = Vector128.Shuffle(lutHi, hiNibbles);
-                Vector128<byte> lo = Vector128.Shuffle(lutLo, str);
+                Vector128<byte> hi = Vector128.Shuffle(lutHi, AdvSimd.IsSupported ? hiNibbles & mask8F : hiNibbles);
+                Vector128<byte> lo = Vector128.Shuffle(lutLo, AdvSimd.IsSupported ? str & mask8F : str);
 
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:
@@ -634,11 +629,7 @@ namespace System.Buffers.Text
                 // 00000000 AAAAAAaa BBBBbbbb CCcccccc
 
                 // Pack bytes together:
-                if (AdvSimd.IsSupported)
-                {
-                    packBytesMask = (packBytesMask.AsByte() & mask8F).AsSByte();
-                }
-                str = Vector128.Shuffle(output.AsByte(), packBytesMask.AsByte());
+                str = Vector128.Shuffle(output.AsByte(), AdvSimd.IsSupported ? packBytesMask.AsByte() & mask8F : packBytesMask.AsByte());
                 // 00000000 00000000 00000000 00000000
                 // LLllllll KKKKkkkk JJJJJJjj IIiiiiii
                 // HHHHhhhh GGGGGGgg FFffffff EEEEeeee
