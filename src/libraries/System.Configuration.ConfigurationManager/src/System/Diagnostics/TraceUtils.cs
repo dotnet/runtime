@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Configuration;
 using System.IO;
 using System.Reflection;
@@ -11,21 +12,33 @@ namespace System.Diagnostics
 {
     internal static class TraceUtils
     {
+        private const string SystemDiagnostics = "System.Diagnostics.";
+
         internal static object GetRuntimeObject(string className, Type baseType, string initializeData)
         {
             object newObject = null;
-            Type objectType;
+            Type objectType = null;
 
             if (className.Length == 0)
             {
                 throw new ConfigurationErrorsException(SR.EmptyTypeName_NotAllowed);
             }
 
-            objectType = Type.GetType(className);
+            if (className.StartsWith(SystemDiagnostics))
+            {
+                // Since the config file likely has just the FullName without the assembly name,
+                // map the FullName to the built in types.
+                objectType = MapToBuiltInTypes(className);
+            }
 
             if (objectType == null)
             {
-                throw new ConfigurationErrorsException(SR.Format(SR.Could_not_find_type, className));
+                objectType = Type.GetType(className);
+
+                if (objectType == null)
+                {
+                    throw new ConfigurationErrorsException(SR.Format(SR.Could_not_find_type, className));
+                }
             }
 
             if (!baseType.IsAssignableFrom(objectType))
@@ -39,7 +52,7 @@ namespace System.Diagnostics
                     if (IsOwnedTL(objectType))
                         throw new ConfigurationErrorsException(SR.TL_InitializeData_NotSpecified);
 
-                    // create an object with parameterless constructor
+                    // Create an object with parameterless constructor.
                     ConstructorInfo ctorInfo = objectType.GetConstructor(Array.Empty<Type>());
                     if (ctorInfo == null)
                         throw new ConfigurationErrorsException(SR.Format(SR.Could_not_get_constructor, className));
@@ -47,14 +60,14 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    // create an object with a one-string constructor
-                    // first look for a string constructor
+                    // Create an object with a one-string constructor.
+                    // First look for a string constructor.
                     ConstructorInfo ctorInfo = objectType.GetConstructor(new Type[] { typeof(string) });
                     if (ctorInfo != null)
                     {
                         // Special case to enable specifying relative path to trace file from config for
                         // our own TextWriterTraceListener derivatives. We will prepend it with fullpath
-                        // prefix from config file location
+                        // prefix from config file location.
                         if (IsOwnedTextWriterTL(objectType))
                         {
                             if ((initializeData[0] != Path.DirectorySeparatorChar) && (initializeData[0] != Path.AltDirectorySeparatorChar) && !Path.IsPathRooted(initializeData))
@@ -74,10 +87,13 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // now look for another 1 param constructor.
+                        // Now look for another 1 param constructor.
                         ConstructorInfo[] ctorInfos = objectType.GetConstructors();
                         if (ctorInfos == null)
+                        {
                             throw new ConfigurationErrorsException(SR.Format(SR.Could_not_get_constructor, className));
+                        }
+
                         for (int i = 0; i < ctorInfos.Length; i++)
                         {
                             ParameterInfo[] ctorparams = ctorInfos[i].GetParameters();
@@ -98,7 +114,7 @@ namespace System.Diagnostics
                                 catch (Exception e)
                                 {
                                     innerException = e;
-                                    // ignore exceptions for now.  If we don't have a newObject at the end, then we'll throw.
+                                    // Ignore exceptions for now.  If we don't have a newObject at the end, then we'll throw.
                                 }
                             }
                         }
@@ -114,20 +130,61 @@ namespace System.Diagnostics
             if (newObject == null)
             {
                 if (innerException != null)
+                {
                     throw new ConfigurationErrorsException(SR.Format(SR.Could_not_create_type_instance, className), innerException);
-                else
-                    throw new ConfigurationErrorsException(SR.Format(SR.Could_not_create_type_instance, className));
+                }
+
+                throw new ConfigurationErrorsException(SR.Format(SR.Could_not_create_type_instance, className));
             }
 
             return newObject;
         }
 
-        // Our own tracelisteners that needs extra config validation
+        private static Type MapToBuiltInTypes(string className)
+        {
+            string name = className.Substring(SystemDiagnostics.Length);
+            switch (name)
+            {
+                // Types in System.Diagnostics.TraceSource.dll:
+                case nameof(DefaultTraceListener):
+                    return typeof(DefaultTraceListener);
+                case nameof(SourceFilter):
+                    return typeof(SourceFilter);
+                case nameof(EventTypeFilter):
+                    return typeof(EventTypeFilter);
+                case nameof(BooleanSwitch):
+                    return typeof(BooleanSwitch);
+                case nameof(TraceSwitch):
+                    return typeof(TraceSwitch);
+                case nameof(SourceSwitch):
+                    return typeof(SourceSwitch);
+
+                // Types in System.Diagnostics.TextWriterTraceListener:
+                case nameof(ConsoleTraceListener):
+                    return typeof(ConsoleTraceListener);
+                case nameof(DelimitedListTraceListener):
+                    return typeof(DelimitedListTraceListener);
+                case nameof(XmlWriterTraceListener):
+                    return typeof(XmlWriterTraceListener);
+                case nameof(TextWriterTraceListener):
+                    return typeof(TextWriterTraceListener);
+
+                // Types in System.Diagnostics.EventLog.dll:
+                case nameof(EventLogTraceListener):
+                    return typeof(EventLogTraceListener);
+
+                default:
+                    return null;
+            }
+        }
+
+        // Our own tracelisteners that needs extra config validation.
         internal static bool IsOwnedTL(Type type)
         {
-            return (typeof(EventLogTraceListener) == type
-                    || IsOwnedTextWriterTL(type));
+            return typeof(EventLogTraceListener) == type
+                    || IsOwnedTextWriterTL(type);
         }
+
         internal static bool IsOwnedTextWriterTL(Type type)
         {
             return (typeof(XmlWriterTraceListener) == type)
@@ -137,10 +194,9 @@ namespace System.Diagnostics
 
         private static object ConvertToBaseTypeOrEnum(string value, Type type)
         {
-            if (type.IsEnum)
-                return Enum.Parse(type, value, false);
-            else
-                return Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
+            return type.IsEnum ?
+                Enum.Parse(type, value, false) :
+                Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
         }
     }
 }

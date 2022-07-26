@@ -14,6 +14,17 @@ namespace System.Diagnostics
         public bool Enabled { get { throw null; } set { } }
         protected override void OnValueChanged() { }
     }
+    public sealed partial class ConfigureSwitchEventArgs : System.EventArgs
+    {
+        public ConfigureSwitchEventArgs(System.Diagnostics.Switch @switch) { }
+        public System.Diagnostics.Switch Switch { get { throw null; } }
+    }
+    public sealed partial class ConfigureTraceSourceEventArgs : System.EventArgs
+    {
+        public ConfigureTraceSourceEventArgs(System.Diagnostics.TraceSource traceSource) { }
+        public System.Diagnostics.TraceSource TraceSource { get { throw null; } }
+        public bool WasConfigured { get { throw null; } set { } }
+    }
     public partial class CorrelationManager
     {
         internal CorrelationManager() { }
@@ -122,10 +133,11 @@ namespace System.Diagnostics
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Indent() { }
-        public static event Action? ConfigureTrace { add { } remove { } }
-        public static event Action<TraceSource>? ConfigureTraceSource { add { } remove { } }
-        public static event Action<Switch>? ConfigureSwitch { add { } remove { } }
+        public static event EventHandler? ConfigureTrace { add { } remove { } }
+        public static event EventHandler<ConfigureTraceSourceEventArgs>? ConfigureTraceSource { add { } remove { } }
+        public static event EventHandler<ConfigureSwitchEventArgs>? ConfigureSwitch { add { } remove { } }
         public static void Refresh() { }
+        public static event EventHandler? RefreshConfiguration { add { } remove { } }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void TraceError(string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]

@@ -14,32 +14,13 @@ namespace System.Diagnostics
     [ConfigurationCollection(typeof(ListenerElement))]
     internal class ListenerElementsCollection : ConfigurationElementCollection
     {
+        public new ListenerElement this[string name] => (ListenerElement)BaseGet(name);
 
-        public new ListenerElement this[string name]
-        {
-            get
-            {
-                return (ListenerElement)BaseGet(name);
-            }
-        }
+        public override ConfigurationElementCollectionType CollectionType => ConfigurationElementCollectionType.AddRemoveClearMap;
 
-        public override ConfigurationElementCollectionType CollectionType
-        {
-            get
-            {
-                return ConfigurationElementCollectionType.AddRemoveClearMap;
-            }
-        }
+        protected override ConfigurationElement CreateNewElement() => new ListenerElement(true);
 
-        protected override ConfigurationElement CreateNewElement()
-        {
-            return new ListenerElement(true);
-        }
-
-        protected override object GetElementKey(ConfigurationElement element)
-        {
-            return ((ListenerElement)element).Name;
-        }
+        protected override object GetElementKey(ConfigurationElement element) => ((ListenerElement)element).Name;
 
         public IEnumerable<TraceListener> GetRuntimeObject()
         {
@@ -47,10 +28,9 @@ namespace System.Diagnostics
 
             foreach (ListenerElement element in this)
             {
-
                 // At some point, we need to pull out adding/removing the 'default' DefaultTraceListener
                 // code from here in favor of adding/not-adding after we load the config (in TraceSource
-                // and in static Trace)
+                // and in static Trace).
 
                 listeners.Add(element.GetRuntimeObject());
             }
@@ -67,7 +47,7 @@ namespace System.Diagnostics
             defaultListener.TypeName = typeof(DefaultTraceListener).FullName;
             defaultListener._isAddedByDefault = true;
 
-            this.BaseAdd(defaultListener);
+            BaseAdd(defaultListener);
         }
 
         protected override void BaseAdd(ConfigurationElement element)
@@ -86,38 +66,21 @@ namespace System.Diagnostics
     // This is the collection used by the sharedListener section.  It is only slightly different from ListenerElementsCollection.
     // The differences are that it does not allow remove and clear, and that the ListenerElements it creates do not allow
     // references.
-    [ConfigurationCollection(typeof(ListenerElement), AddItemName = "add",
-     CollectionType = ConfigurationElementCollectionType.BasicMap)]
+    [ConfigurationCollection(typeof(ListenerElement),
+        AddItemName = "add",
+        CollectionType = ConfigurationElementCollectionType.BasicMap)]
     internal sealed class SharedListenerElementsCollection : ListenerElementsCollection
     {
-
-        public override ConfigurationElementCollectionType CollectionType
-        {
-            get
-            {
-                return ConfigurationElementCollectionType.BasicMap;
-            }
-        }
-
-        protected override ConfigurationElement CreateNewElement()
-        {
-            return new ListenerElement(false);
-        }
-
-        protected override string ElementName
-        {
-            get
-            {
-                return "add";
-            }
-        }
+        public override ConfigurationElementCollectionType CollectionType => ConfigurationElementCollectionType.BasicMap;
+        protected override ConfigurationElement CreateNewElement() => new ListenerElement(false);
+        protected override string ElementName => "add";
     }
 
     internal sealed class ListenerElement : TypedElement
     {
-        private static readonly ConfigurationProperty _propFilter = new ConfigurationProperty("filter", typeof(FilterElement), null, ConfigurationPropertyOptions.None);
-        private static readonly ConfigurationProperty _propName = new ConfigurationProperty("name", typeof(string), null, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
-        private static readonly ConfigurationProperty _propOutputOpts = new ConfigurationProperty("traceOutputOptions", typeof(TraceOptions), TraceOptions.None, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propFilter = new ConfigurationProperty("filter", typeof(FilterElement), null, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propName = new ConfigurationProperty("name", typeof(string), null, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
+        private static readonly ConfigurationProperty s_propOutputOpts = new ConfigurationProperty("traceOutputOptions", typeof(TraceOptions), TraceOptions.None, ConfigurationPropertyOptions.None);
 
         private ConfigurationProperty _propListenerTypeName;
         private bool _allowReferences;
@@ -138,40 +101,26 @@ namespace System.Diagnostics
 
             _properties.Remove("type");
             _properties.Add(_propListenerTypeName);
-            _properties.Add(_propFilter);
-            _properties.Add(_propName);
-            _properties.Add(_propOutputOpts);
+            _properties.Add(s_propFilter);
+            _properties.Add(s_propName);
+            _properties.Add(s_propOutputOpts);
         }
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
-            }
-        }
+        public StringDictionary Attributes => _attributes ?? new StringDictionary();
 
         [ConfigurationProperty("filter")]
-        public FilterElement Filter
-        {
-            get
-            {
-                return (FilterElement)this[_propFilter];
-            }
-        }
+        public FilterElement Filter => (FilterElement)this[s_propFilter];
 
         [ConfigurationProperty("name", IsRequired = true, IsKey = true)]
         public string Name
         {
             get
             {
-                return (string)this[_propName];
+                return (string)this[s_propName];
             }
             set
             {
-                this[_propName] = value;
+                this[s_propName] = value;
             }
         }
 
@@ -180,12 +129,12 @@ namespace System.Diagnostics
         {
             get
             {
-                return (TraceOptions)this[_propOutputOpts];
+                return (TraceOptions)this[s_propOutputOpts];
             }
-            // This is useful when the OM becomes public. In the meantime, this can be utilized via reflection
+            // This is useful when the OM becomes public. In the meantime, this can be utilized via reflection.
             set
             {
-                this[_propOutputOpts] = value;
+                this[s_propOutputOpts] = value;
             }
 
         }
@@ -205,7 +154,7 @@ namespace System.Diagnostics
 
         public override bool Equals(object compareTo)
         {
-            if (this.Name.Equals("Default") && this.TypeName.Equals(typeof(DefaultTraceListener).FullName))
+            if (Name.Equals("Default") && TypeName.Equals(typeof(DefaultTraceListener).FullName))
             {
                 // This is a workaround to treat all DefaultTraceListener named 'Default' the same.
                 // This is needed for the Config.Save to work properly as otherwise config base layers
@@ -215,14 +164,11 @@ namespace System.Diagnostics
                 return (compareToElem != null) && compareToElem.Name.Equals("Default")
                         && compareToElem.TypeName.Equals(typeof(DefaultTraceListener).FullName);
             }
-            else
-                return base.Equals(compareTo);
+
+            return base.Equals(compareTo);
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
         public TraceListener GetRuntimeObject()
         {
@@ -234,32 +180,41 @@ namespace System.Diagnostics
                 string className = TypeName;
                 if (string.IsNullOrEmpty(className))
                 {
-                    // Look it up in SharedListeners
+                    // Look it up in SharedListeners.
                     Debug.Assert(_allowReferences, "_allowReferences must be true if type name is null");
 
-                    if (_attributes != null || ElementInformation.Properties[_propFilter.Name].ValueOrigin == PropertyValueOrigin.SetHere || TraceOutputOptions != TraceOptions.None || !string.IsNullOrEmpty(InitData))
+                    if (_attributes != null || ElementInformation.Properties[s_propFilter.Name].ValueOrigin == PropertyValueOrigin.SetHere || TraceOutputOptions != TraceOptions.None || !string.IsNullOrEmpty(InitData))
+                    {
                         throw new ConfigurationErrorsException(SR.Format(SR.Reference_listener_cant_have_properties, Name));
+                    }
 
                     if (DiagnosticsConfiguration.SharedListeners == null)
+                    {
                         throw new ConfigurationErrorsException(SR.Format(SR.Reference_to_nonexistent_listener, Name));
+                    }
 
                     ListenerElement sharedListener = DiagnosticsConfiguration.SharedListeners[Name];
                     if (sharedListener == null)
-                        throw new ConfigurationErrorsException(SR.Format(SR.Reference_to_nonexistent_listener, Name));
-                    else
                     {
-                        _runtimeObject = sharedListener.GetRuntimeObject();
-                        return (TraceListener)_runtimeObject;
+                        throw new ConfigurationErrorsException(SR.Format(SR.Reference_to_nonexistent_listener, Name));
                     }
+
+                    _runtimeObject = sharedListener.GetRuntimeObject();
+                    return (TraceListener)_runtimeObject;
                 }
                 else
                 {
-                    // create a new one
+                    // Create a new one.
                     TraceListener newListener = (TraceListener)BaseGetRuntimeObject();
                     s_initData.AddOrUpdate(newListener, InitData);
                     newListener.Name = Name;
                     newListener.Attributes = Attributes;
                     newListener.TraceOutputOptions = TraceOutputOptions;
+
+                    if (Filter != null && !string.IsNullOrEmpty(Filter.TypeName))
+                    {
+                        newListener.Filter = Filter.GetRuntimeObject();
+                    }
 
                     _runtimeObject = newListener;
                     return newListener;
@@ -324,20 +279,22 @@ namespace System.Diagnostics
             // Unmerge the optional attributes cache as well
             ListenerElement le = sourceElement as ListenerElement;
             if ((le != null) && (le._attributes != null))
-                this._attributes = le._attributes;
+            {
+                _attributes = le._attributes;
+            }
         }
 
         internal void ResetProperties()
         {
-            // blow away any UnrecognizedAttributes that we have deserialized earlier
+            // Blow away any UnrecognizedAttributes that we have deserialized earlier.
             if (_attributes != null)
             {
                 _attributes.Clear();
                 _properties.Clear();
                 _properties.Add(_propListenerTypeName);
-                _properties.Add(_propFilter);
-                _properties.Add(_propName);
-                _properties.Add(_propOutputOpts);
+                _properties.Add(s_propFilter);
+                _properties.Add(s_propName);
+                _properties.Add(s_propOutputOpts);
             }
         }
 
@@ -352,20 +309,24 @@ namespace System.Diagnostics
                     // Look it up in SharedListeners and ask the sharedListener to refresh.
                     Debug.Assert(_allowReferences, "_allowReferences must be true if type name is null");
 
-                    if (_attributes != null || ElementInformation.Properties[_propFilter.Name].ValueOrigin == PropertyValueOrigin.SetHere || TraceOutputOptions != TraceOptions.None || !string.IsNullOrEmpty(InitData))
+                    if (_attributes != null || ElementInformation.Properties[s_propFilter.Name].ValueOrigin == PropertyValueOrigin.SetHere || TraceOutputOptions != TraceOptions.None || !string.IsNullOrEmpty(InitData))
+                    {
                         throw new ConfigurationErrorsException(SR.Format(SR.Reference_listener_cant_have_properties, Name));
+                    }
 
                     if (DiagnosticsConfiguration.SharedListeners == null)
+                    {
                         throw new ConfigurationErrorsException(SR.Format(SR.Reference_to_nonexistent_listener, Name));
+                    }
 
                     ListenerElement sharedListener = DiagnosticsConfiguration.SharedListeners[Name];
                     if (sharedListener == null)
-                        throw new ConfigurationErrorsException(SR.Format(SR.Reference_to_nonexistent_listener, Name));
-                    else
                     {
-                        _runtimeObject = sharedListener.RefreshRuntimeObject(listener);
-                        return (TraceListener)_runtimeObject;
+                        throw new ConfigurationErrorsException(SR.Format(SR.Reference_to_nonexistent_listener, Name));
                     }
+
+                    _runtimeObject = sharedListener.RefreshRuntimeObject(listener);
+                    return (TraceListener)_runtimeObject;
                 }
                 else
                 {
@@ -373,7 +334,7 @@ namespace System.Diagnostics
                     // If not, create a whole new object, otherwise, just update the other properties.
                     if (Type.GetType(className) != listener.GetType() || InitDataChanged(listener))
                     {
-                        // type or initdata changed
+                        // Type or initdata changed.
                         return GetRuntimeObject();
                     }
                     else
@@ -383,11 +344,15 @@ namespace System.Diagnostics
 
                         if (listener.Filter != null)
                         {
-                            if (ElementInformation.Properties[_propFilter.Name].ValueOrigin == PropertyValueOrigin.SetHere ||
-                                ElementInformation.Properties[_propFilter.Name].ValueOrigin == PropertyValueOrigin.Inherited)
+                            if (ElementInformation.Properties[s_propFilter.Name].ValueOrigin == PropertyValueOrigin.SetHere ||
+                                ElementInformation.Properties[s_propFilter.Name].ValueOrigin == PropertyValueOrigin.Inherited)
+                            {
                                 listener.Filter = Filter.RefreshRuntimeObject(listener.Filter);
+                            }
                             else
+                            {
                                 listener.Filter = null;
+                            }
                         }
 
                         _runtimeObject = listener;
@@ -400,7 +365,8 @@ namespace System.Diagnostics
                 throw new ConfigurationErrorsException(SR.Format(SR.Could_not_create_listener, Name), e);
             }
         }
-        
-        private bool InitDataChanged(TraceListener listener) => !s_initData.TryGetValue(listener, out string previousInitData) || InitData != previousInitData;
+
+        private bool InitDataChanged(TraceListener listener) => !s_initData.TryGetValue(listener, out string previousInitData)
+            || InitData != previousInitData;
     }
 }

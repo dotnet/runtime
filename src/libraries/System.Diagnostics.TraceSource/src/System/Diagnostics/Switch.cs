@@ -262,6 +262,9 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Refreshes the trace configuration data.
+        /// </summary>
         public void Refresh()
         {
             lock (InitializedLock)

@@ -5,22 +5,14 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
-             Link="Common\System\IO\TempDirectory.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs"
-             Link="Source\ConfigPathUtility.cs" />
-    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs"
-             Link="Source\ExceptionUtil.cs" />
-    <Compile Include="..\src\System\Configuration\StringUtil.cs"
-             Link="Source\StringUtil.cs" />
-    <Compile Include="..\src\System\Configuration\TypeUtil.cs"
-             Link="Source\TypeUtil.cs" />
-    <Compile Include="..\src\System\Configuration\UrlPath.cs"
-             Link="Source\UrlPath.cs" />
-    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs"
-             Link="Source\ValidatorUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs" Link="Source\ConfigPathUtility.cs" />
+    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs" Link="Source\ExceptionUtil.cs" />
+    <Compile Include="..\src\System\Configuration\StringUtil.cs" Link="Source\StringUtil.cs" />
+    <Compile Include="..\src\System\Configuration\TypeUtil.cs" Link="Source\TypeUtil.cs" />
+    <Compile Include="..\src\System\Configuration\UrlPath.cs" Link="Source\UrlPath.cs" />
+    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs" Link="Source\ValidatorUtils.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Mono\CallbackValidatorTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
@@ -98,13 +90,19 @@
     <Compile Include="System\Configuration\UriSectionTests.cs" />
     <Compile Include="System\Configuration\UrlPathTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticsTestData.cs" />
+    <Compile Include="System\Diagnostics\TraceSourceConfigurationTests.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+      <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.TraceSource\ref\System.Diagnostics.TraceSource.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Diagnostics.TraceSource" />
     <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>

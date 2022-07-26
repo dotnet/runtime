@@ -22,7 +22,7 @@ namespace System.Diagnostics
         {
             if (Type.GetType(TypeName) != filter.GetType() || InitDataChanged(filter))
             {
-                // type or initdata changed
+                // Type or initdata changed.
                 _runtimeObject = null;
                 return GetRuntimeObject();
             }

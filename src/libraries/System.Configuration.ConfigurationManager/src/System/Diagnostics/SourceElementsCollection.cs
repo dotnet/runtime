@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Configuration;
 using System.Collections;
 using System.Collections.Specialized;
@@ -7,34 +8,16 @@ using System.Xml;
 
 namespace System.Diagnostics
 {
-    [ConfigurationCollection(typeof(SourceElement), AddItemName = "source",
-     CollectionType = ConfigurationElementCollectionType.BasicMap)]
+    [ConfigurationCollection(typeof(SourceElement),
+        AddItemName = "source",
+        CollectionType = ConfigurationElementCollectionType.BasicMap)]
     internal sealed class SourceElementsCollection : ConfigurationElementCollection
     {
+        public new SourceElement this[string name] => (SourceElement)BaseGet(name);
 
-        public new SourceElement this[string name]
-        {
-            get
-            {
-                return (SourceElement)BaseGet(name);
-            }
-        }
+        protected override string ElementName => "source";
 
-        protected override string ElementName
-        {
-            get
-            {
-                return "source";
-            }
-        }
-
-        public override ConfigurationElementCollectionType CollectionType
-        {
-            get
-            {
-                return ConfigurationElementCollectionType.BasicMap;
-            }
-        }
+        public override ConfigurationElementCollectionType CollectionType => ConfigurationElementCollectionType.BasicMap;
 
         protected override ConfigurationElement CreateNewElement()
         {
@@ -43,10 +26,7 @@ namespace System.Diagnostics
             return se;
         }
 
-        protected override object GetElementKey(ConfigurationElement element)
-        {
-            return ((SourceElement)element).Name;
-        }
+        protected override object GetElementKey(ConfigurationElement element) => ((SourceElement)element).Name;
     }
 
 
@@ -70,68 +50,24 @@ namespace System.Diagnostics
             _properties.Add(_propListeners);
         }
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
-            }
-        }
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
         [ConfigurationProperty("listeners")]
-        public ListenerElementsCollection Listeners
-        {
-            get
-            {
-                return (ListenerElementsCollection)this[_propListeners];
-            }
-        }
+        public ListenerElementsCollection Listeners => (ListenerElementsCollection)this[_propListeners];
 
         [ConfigurationProperty("name", IsRequired = true, DefaultValue = "")]
-        public string Name
-        {
-            get
-            {
-                return (string)this[_propName];
-            }
-        }
+        public string Name => (string)this[_propName];
 
-        protected internal override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return _properties;
-            }
-        }
+        protected internal override ConfigurationPropertyCollection Properties => _properties;
 
         [ConfigurationProperty("switchName")]
-        public string SwitchName
-        {
-            get
-            {
-                return (string)this[_propSwitchName];
-            }
-        }
+        public string SwitchName => (string)this[_propSwitchName];
 
         [ConfigurationProperty("switchValue")]
-        public string SwitchValue
-        {
-            get
-            {
-                return (string)this[_propSwitchValue];
-            }
-        }
+        public string SwitchValue => (string)this[_propSwitchValue];
 
         [ConfigurationProperty("switchType")]
-        public string SwitchType
-        {
-            get
-            {
-                return (string)this[_propSwitchType];
-            }
-        }
+        public string SwitchType => (string)this[_propSwitchType];
 
         protected internal override void DeserializeElement(XmlReader reader, bool serializeCollectionKey)
         {
@@ -199,7 +135,7 @@ namespace System.Diagnostics
 
         internal void ResetProperties()
         {
-            // blow away any UnrecognizedAttributes that we have deserialized earlier
+            // Blow away any UnrecognizedAttributes that we have deserialized earlier.
             if (_attributes != null)
             {
                 _attributes.Clear();
@@ -212,5 +148,4 @@ namespace System.Diagnostics
             }
         }
     }
-
 }

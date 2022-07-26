@@ -6,29 +6,26 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
-    internal enum InitState
-    {
-        NotInitialized,
-        Initializing,
-        Initialized
-    }
-
     internal static class DiagnosticsConfiguration
     {
-        private static volatile SystemDiagnosticsSection configSection;
-        private static volatile InitState initState = InitState.NotInitialized;
+        private static volatile SystemDiagnosticsSection s_configSection;
+        private static volatile InitState s_initState = InitState.NotInitialized;
 
-        // setting for Switch.switchSetting
+        // Setting for Switch.switchSetting
         internal static SwitchElementsCollection SwitchSettings
         {
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null)
+                {
                     return configSectionSav.Switches;
+                }
                 else
+                {
                     return null;
+                }
             }
         }
 
@@ -39,53 +36,61 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null)
+                {
                     return configSectionSav.ElementInformation.Source;
-                else
-                    return string.Empty; // the default
+                }
+
+                return string.Empty; // the default
             }
         }
 
-        // setting for TraceInternal.AutoFlush
+        // Setting for TraceInternal.AutoFlush
         internal static bool AutoFlush
         {
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null && configSectionSav.Trace != null)
+                {
                     return configSectionSav.Trace.AutoFlush;
-                else
-                    return false; // the default
+                }
+
+                return false; // the default
             }
         }
 
-        // setting for TraceInternal.UseGlobalLock
+        // Setting for TraceInternal.UseGlobalLock
         internal static bool UseGlobalLock
         {
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null && configSectionSav.Trace != null)
+                {
                     return configSectionSav.Trace.UseGlobalLock;
-                else
-                    return true; // the default
+                }
+
+                return true; // the default
             }
         }
 
-        // setting for TraceInternal.IndentSize
+        // Setting for TraceInternal.IndentSize
         internal static int IndentSize
         {
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null && configSectionSav.Trace != null)
+                {
                     return configSectionSav.Trace.IndentSize;
-                else
-                    return 4; // the default
+                }
+
+                return 4; // the default
             }
         }
 
@@ -94,11 +99,13 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null)
+                {
                     return configSectionSav.SharedListeners;
-                else
-                    return null;
+                }
+
+                return null;
             }
         }
 
@@ -107,11 +114,13 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                SystemDiagnosticsSection configSectionSav = configSection;
+                SystemDiagnosticsSection configSectionSav = s_configSection;
                 if (configSectionSav != null && configSectionSav.Sources != null)
+                {
                     return configSectionSav.Sources;
-                else
-                    return null;
+                }
+
+                return null;
             }
         }
 
@@ -120,31 +129,21 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                return configSection;
+                return s_configSection;
             }
         }
 
         private static SystemDiagnosticsSection GetConfigSection()
         {
-            SystemDiagnosticsSection configSection = (SystemDiagnosticsSection)PrivilegedConfigurationManager.GetSection("system.diagnostics");
-            return configSection;
+            SystemDiagnosticsSection s_configSection = (SystemDiagnosticsSection)PrivilegedConfigurationManager.GetSection("system.diagnostics");
+            return s_configSection;
         }
 
-        internal static bool IsInitializing()
-        {
-            return initState == InitState.Initializing;
-        }
+        internal static bool IsInitializing() => s_initState == InitState.Initializing;
+        internal static bool IsInitialized() => s_initState == InitState.Initialized;
 
-        internal static bool IsInitialized()
-        {
-            return initState == InitState.Initialized;
-        }
-
-        internal static bool CanInitialize()
-        {
-            return (initState != InitState.Initializing) &&
-                    !ConfigurationManagerInternalFactory.Instance.SetConfigurationSystemInProgress;
-        }
+        internal static bool CanInitialize() => (s_initState != InitState.Initializing) &&
+            !ConfigurationManagerInternalFactory.Instance.SetConfigurationSystemInProgress;
 
         internal static void Initialize()
         {
@@ -161,23 +160,21 @@ namespace System.Diagnostics
             // because some of the code used to load config also uses diagnostics
             // we can't block them while we initialize from config. Therefore we just
             // return immediately and they just use the default values.
-            if (initState != InitState.NotInitialized ||
-                    ConfigurationManagerInternalFactory.Instance.SetConfigurationSystemInProgress)
+            if (s_initState != InitState.NotInitialized ||
+                ConfigurationManagerInternalFactory.Instance.SetConfigurationSystemInProgress)
             {
-
                 return;
             }
 
-            initState = InitState.Initializing; // used for preventing recursion
+            s_initState = InitState.Initializing; // used for preventing recursion
             try
             {
-                configSection = GetConfigSection();
+                s_configSection = GetConfigSection();
             }
             finally
             {
-                initState = InitState.Initialized;
+                s_initState = InitState.Initialized;
             }
-            //}
         }
 
         internal static void Refresh()
@@ -196,33 +193,45 @@ namespace System.Diagnostics
             // cleanup logic below) but the down side of that would be we need to
             // explicitly compute what is recognized Vs unrecognized from that
             // collection when we expose the unrecognized Attributes publically
-            SystemDiagnosticsSection configSectionSav = configSection;
+            SystemDiagnosticsSection configSectionSav = s_configSection;
             if (configSectionSav != null)
             {
-
                 if (configSectionSav.Switches != null)
                 {
                     foreach (SwitchElement swelem in configSectionSav.Switches)
+                    {
                         swelem.ResetProperties();
+                    }
                 }
 
                 if (configSectionSav.SharedListeners != null)
                 {
                     foreach (ListenerElement lnelem in configSectionSav.SharedListeners)
+                    {
                         lnelem.ResetProperties();
+                    }
                 }
 
                 if (configSectionSav.Sources != null)
                 {
                     foreach (SourceElement srelem in configSectionSav.Sources)
+                    {
                         srelem.ResetProperties();
+                    }
                 }
             }
 
-            configSection = null;
+            s_configSection = null;
 
-            initState = InitState.NotInitialized;
+            s_initState = InitState.NotInitialized;
             Initialize();
+        }
+
+        private enum InitState
+        {
+            NotInitialized,
+            Initializing,
+            Initialized
         }
     }
 }

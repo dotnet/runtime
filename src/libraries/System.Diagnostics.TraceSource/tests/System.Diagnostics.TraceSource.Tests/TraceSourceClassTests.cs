@@ -11,7 +11,7 @@ namespace System.Diagnostics.TraceSourceTests
     public sealed class TraceSourceClassTests
     {
         [Fact]
-        public void ConstrutorExceptionTest()
+        public void ConstructorExceptionTest()
         {
             Assert.Throws<ArgumentNullException>(() => new TraceSource(null));
             AssertExtensions.Throws<ArgumentException>("name", null, () => new TraceSource(""));
@@ -23,6 +23,7 @@ namespace System.Diagnostics.TraceSourceTests
             var trace = new TraceSource("TestTraceSource");
             Assert.Equal(1, trace.Listeners.Count);
             Assert.IsType<DefaultTraceListener>(trace.Listeners[0]);
+            Assert.Equal(SourceLevels.Off, trace.Switch.Level);
         }
 
         [Fact]

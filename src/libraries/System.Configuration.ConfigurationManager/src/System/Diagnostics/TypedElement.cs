@@ -6,8 +6,8 @@ namespace System.Diagnostics
 {
     internal class TypedElement : ConfigurationElement
     {
-        protected static readonly ConfigurationProperty _propTypeName = new ConfigurationProperty("type", typeof(string), string.Empty, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsTypeStringTransformationRequired);
-        protected static readonly ConfigurationProperty _propInitData = new ConfigurationProperty("initializeData", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
+        protected static readonly ConfigurationProperty s_propTypeName = new ConfigurationProperty("type", typeof(string), string.Empty, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsTypeStringTransformationRequired);
+        protected static readonly ConfigurationProperty s_propInitData = new ConfigurationProperty("initializeData", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
 
         protected ConfigurationPropertyCollection _properties;
         protected object _runtimeObject;
@@ -16,8 +16,8 @@ namespace System.Diagnostics
         public TypedElement(Type baseType) : base()
         {
             _properties = new ConfigurationPropertyCollection();
-            _properties.Add(_propTypeName);
-            _properties.Add(_propInitData);
+            _properties.Add(s_propTypeName);
+            _properties.Add(s_propInitData);
 
             _baseType = baseType;
         }
@@ -27,34 +27,27 @@ namespace System.Diagnostics
         {
             get
             {
-                return (string)this[_propInitData];
+                return (string)this[s_propInitData];
             }
-            // This is useful when the OM becomes public. In the meantime, this can be utilized via reflection
+            // This is useful when the OM becomes public. In the meantime, this can be utilized via reflection.
             set
             {
-                this[_propInitData] = value;
-            }
-
-        }
-
-        protected internal override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return _properties;
+                this[s_propInitData] = value;
             }
         }
+
+        protected internal override ConfigurationPropertyCollection Properties => _properties;
 
         [ConfigurationProperty("type", IsRequired = true, DefaultValue = "")]
         public virtual string TypeName
         {
             get
             {
-                return (string)this[_propTypeName];
+                return (string)this[s_propTypeName];
             }
             set
             {
-                this[_propTypeName] = value;
+                this[s_propTypeName] = value;
             }
         }
 
@@ -65,6 +58,5 @@ namespace System.Diagnostics
 
             return _runtimeObject;
         }
-
     }
 }

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Configuration;
 using System.Collections;
 using System.Collections.Specialized;
@@ -10,32 +11,10 @@ namespace System.Diagnostics
     [ConfigurationCollection(typeof(SwitchElement))]
     internal sealed class SwitchElementsCollection : ConfigurationElementCollection
     {
-
-        public new SwitchElement this[string name]
-        {
-            get
-            {
-                return (SwitchElement)BaseGet(name);
-            }
-        }
-
-        public override ConfigurationElementCollectionType CollectionType
-        {
-            get
-            {
-                return ConfigurationElementCollectionType.AddRemoveClearMap;
-            }
-        }
-
-        protected override ConfigurationElement CreateNewElement()
-        {
-            return new SwitchElement();
-        }
-
-        protected override object GetElementKey(ConfigurationElement element)
-        {
-            return ((SwitchElement)element).Name;
-        }
+        public new SwitchElement this[string name] => (SwitchElement)BaseGet(name);
+        public override ConfigurationElementCollectionType CollectionType => ConfigurationElementCollectionType.AddRemoveClearMap;
+        protected override ConfigurationElement CreateNewElement() => new SwitchElement();
+        protected override object GetElementKey(ConfigurationElement element) => ((SwitchElement)element).Name;
     }
 
     internal sealed class SwitchElement : ConfigurationElement
@@ -52,41 +31,15 @@ namespace System.Diagnostics
             _properties.Add(_propValue);
         }
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
-            }
-        }
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
         [ConfigurationProperty("name", DefaultValue = "", IsRequired = true, IsKey = true)]
-        public string Name
-        {
-            get
-            {
-                return (string)this[_propName];
-            }
-        }
+        public string Name => (string)this[_propName];
 
-        protected internal override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return _properties;
-            }
-        }
+        protected internal override ConfigurationPropertyCollection Properties => _properties;
 
         [ConfigurationProperty("value", IsRequired = true)]
-        public string Value
-        {
-            get
-            {
-                return (string)this[_propValue];
-            }
-        }
+        public string Value => (string)this[_propValue];
 
         // Our optional attributes implementation is little convoluted as there is
         // no such firsclass mechanism from the config system. We basically cache
@@ -146,7 +99,7 @@ namespace System.Diagnostics
 
         internal void ResetProperties()
         {
-            // blow away any UnrecognizedAttributes that we have deserialized earlier
+            // Blow away any UnrecognizedAttributes that we have deserialized earlier.
             if (_attributes != null)
             {
                 _attributes.Clear();

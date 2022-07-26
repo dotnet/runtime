@@ -1,22 +1,39 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using System.Collections;
+
+using System.Xml.Linq;
 
 namespace System.Diagnostics
 {
     public static class TraceConfiguration
     {
+        private static volatile bool s_registered;
+
+        /// <summary>
+        /// Register the configuration system to apply settings from configuration files
+        /// to <seealso cref="System.Diagnostics.TraceSource"/> and related classes.
+        /// </summary>
         public static void Register()
         {
-            // register callbacks
-            Trace.ConfigureSwitch += ConfigureSwitch;
-            Trace.ConfigureTrace += ConfigureTraceSettings;
-            Trace.ConfigureTraceSource += ConfigureTraceSource;
+            if (!s_registered)
+            {
+                // Registering callbacks more than once is fine, but avoid the overhead common cases without taking a lock.
+                Trace.RefreshConfiguration += RefreshConfiguration;
+                Trace.ConfigureSwitch += ConfigureSwitch;
+                Trace.ConfigureTrace += ConfigureTraceSettings;
+                Trace.ConfigureTraceSource += ConfigureTraceSource;
+
+                s_registered = true;
+            }
         }
 
-        private static void ConfigureTraceSource(TraceSource traceSource)
+        private static void RefreshConfiguration(object sender, EventArgs e) => DiagnosticsConfiguration.Refresh();
+
+        private static void ConfigureTraceSource(object sender, ConfigureTraceSourceEventArgs e)
         {
-            // ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceSource.cs,176
+            TraceSource traceSource = e.TraceSource;
+
+            // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceSource.cs,176
             SourceElementsCollection sources = DiagnosticsConfiguration.Sources;
 
             if (sources != null)
@@ -24,11 +41,11 @@ namespace System.Diagnostics
                 SourceElement sourceElement = sources[traceSource.Name];
                 if (sourceElement != null)
                 {
-                    // first check if the type changed
-                    if ((string.IsNullOrEmpty(sourceElement.SwitchType) && traceSource.Switch.GetType() != typeof(SourceSwitch)) ||
-                         (sourceElement.SwitchType != traceSource.Switch.GetType().AssemblyQualifiedName))
-                    {
+                    e.WasConfigured = true;
 
+                    // First check if the type changed.
+                    if (SourceSwitchTypeChanged())
+                    {
                         if (!string.IsNullOrEmpty(sourceElement.SwitchName))
                         {
                             CreateSwitch(sourceElement.SwitchType, sourceElement.SwitchName);
@@ -38,12 +55,14 @@ namespace System.Diagnostics
                             CreateSwitch(sourceElement.SwitchType, traceSource.Name);
 
                             if (!string.IsNullOrEmpty(sourceElement.SwitchValue))
+                            {
                                 traceSource.Switch.Level = (SourceLevels)Enum.Parse(typeof(SourceLevels), sourceElement.SwitchValue);
+                            }
                         }
                     }
                     else if (!string.IsNullOrEmpty(sourceElement.SwitchName))
                     {
-                        // create a new switch if the name changed, otherwise just refresh.
+                        // Create a new switch if the name changed, otherwise just refresh.
                         if (sourceElement.SwitchName != traceSource.Switch.DisplayName)
                             CreateSwitch(sourceElement.SwitchType, sourceElement.SwitchName);
                         else
@@ -53,11 +72,15 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // the switchValue changed.  Just update our internalSwitch.
+                        // The SwitchValue changed; just update our internalSwitch.
                         if (!string.IsNullOrEmpty(sourceElement.SwitchValue))
+                        {
                             traceSource.Switch.Level = (SourceLevels)Enum.Parse(typeof(SourceLevels), sourceElement.SwitchValue);
+                        }
                         else
+                        {
                             traceSource.Switch.Level = SourceLevels.Off;
+                        }
                     }
 
                     TraceListener[] newListenerCollection = new TraceListener[sourceElement.Listeners.Count];
@@ -82,25 +105,42 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    // there was no config, so clear whatever we have.
+                    // There was no config, so clear whatever we have.
                     traceSource.Switch.Level = traceSource.DefaultLevel;
                     traceSource.Listeners.Clear();
                     traceSource.Attributes.Clear();
+                }
+
+                bool SourceSwitchTypeChanged()
+                {
+                    string sourceTypeName = sourceElement.SwitchType;
+                    Type currentType = traceSource.Switch.GetType();
+
+                    return (string.IsNullOrEmpty(sourceTypeName) && currentType != typeof(SourceSwitch)) ||
+                        (!string.IsNullOrEmpty(sourceTypeName) &&
+                        // Compare with FullName only
+                        sourceTypeName != currentType.FullName &&
+                        // Compare with FullName plus start of AssemblyQualifiedName
+                        !sourceTypeName.StartsWith(currentType.FullName + ","));
                 }
             }
 
             void CreateSwitch(string typeName, string name)
             {
                 if (!string.IsNullOrEmpty(typeName))
+                {
                     traceSource.Switch = (SourceSwitch)TraceUtils.GetRuntimeObject(typeName, typeof(SourceSwitch), name);
+                }
                 else
+                {
                     traceSource.Switch = new SourceSwitch(name, traceSource.DefaultLevel.ToString());
+                }
             }
         }
 
-        private static void ConfigureTraceSettings()
+        private static void ConfigureTraceSettings(object sender, EventArgs e)
         {
-            // ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,06360b4de5e221c2, https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,37
+            // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,06360b4de5e221c2, https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,37
 
             TraceSection traceSection = DiagnosticsConfiguration.SystemDiagnosticsSection?.Trace;
 
@@ -123,29 +163,30 @@ namespace System.Diagnostics
             }
         }
 
-        private static void ConfigureSwitch(Switch @switch)
+        private static void ConfigureSwitch(object sender, ConfigureSwitchEventArgs e)
         {
-            // ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/Switch.cs,173
+            Switch sw = e.Switch;
+
+            // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/Switch.cs,173
             SwitchElementsCollection switchSettings = DiagnosticsConfiguration.SwitchSettings;
             if (switchSettings != null)
             {
-                SwitchElement mySettings = switchSettings[@switch.DisplayName];
+                SwitchElement mySettings = switchSettings[sw.DisplayName];
 
                 if (mySettings != null)
                 {
                     if (mySettings.Value != null)
                     {
-                        @switch.Value = mySettings.Value;
+                        sw.Value = mySettings.Value;
                     }
                     else
                     {
-                        @switch.Value = @switch.DefaultValue;
+                        sw.Value = sw.DefaultValue;
                     }
 
-                    @switch.Attributes = mySettings.Attributes;
+                    sw.Attributes = mySettings.Attributes;
                 }
             }
-
         }
     }
 }
