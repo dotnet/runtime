@@ -809,15 +809,15 @@ namespace System.Collections
                 if (m_length < BitsPerInt32)
                     goto LessThan32;
 
-                // The mask used when shuffling a single int into Vector128/256.
-                // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
-                // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-                Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-                Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-
                 if (Avx2.IsSupported)
                 {
-                    Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
+                    // The mask used when shuffling a single int into Vector128/256.
+                    // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
+                    // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
+                    Vector128<byte> lowerShuffleMask = Vector128.Create(0, 0x01010101_01010101).AsByte();
+                    Vector128<byte> upperShuffleMask = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
+
+                    Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask, upperShuffleMask);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
                     Vector256<byte> ones = Vector256.Create((byte)1);
 
@@ -839,8 +839,6 @@ namespace System.Collections
                 }
                 else if (Vector128.IsHardwareAccelerated)
                 {
-                    Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
-                    Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
                     Vector128<byte> ones = Vector128.Create((byte)1);
                     Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
                                                  Vector128.Create(0x80402010_08040201).AsByte() :
@@ -853,12 +851,14 @@ namespace System.Collections
                         int bits = m_array[i / (uint)BitsPerInt32];
                         Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
 
-                        Vector128<byte> shuffledLower = Vector128.Shuffle(scalar.AsByte(), lowerShuffleMask);
+                        // the shuffle masks used below are the same as masks used by the Avx2 codepath above
+                        // they need to be consts for optimal codegen (see https://github.com/dotnet/runtime/issues/72793)
+                        Vector128<byte> shuffledLower = Vector128.Shuffle(scalar.AsByte(), Vector128.Create((byte)0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1));
                         Vector128<byte> extractedLower = shuffledLower & bitMask128;
                         Vector128<byte> normalizedLower = Vector128.Min(extractedLower, ones);
                         normalizedLower.StoreUnsafe(ref destination, i);
 
-                        Vector128<byte> shuffledHigher = Vector128.Shuffle(scalar.AsByte(), upperShuffleMask);
+                        Vector128<byte> shuffledHigher = Vector128.Shuffle(scalar.AsByte(), Vector128.Create((byte)2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3));
                         Vector128<byte> extractedHigher = shuffledHigher & bitMask128;
                         Vector128<byte> normalizedHigher = Vector128.Min(extractedHigher, ones);
                         normalizedHigher.StoreUnsafe(ref destination, (nuint)(i + Vector128<byte>.Count));
