@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -318,6 +319,71 @@ public static class XmlDictionaryWriterTest
         MemoryStream ms = new MemoryStream();
         XmlDictionaryWriter writer = (XmlDictionaryWriter)ReaderWriterFactory.CreateXmlWriter(rwType, ms, encoding);
         Assert.False(FragmentHelper.CanFragment(writer));
+    }
+
+    [Fact]
+    public static void BinaryWritel_WriteString()
+    {
+        const byte Chars8Text = 152;
+        const byte Chars16Text = 154;
+        MemoryStream ms = new MemoryStream();
+        XmlDictionaryWriter writer = (XmlDictionaryWriter)XmlDictionaryWriter.CreateBinaryWriter(ms);
+        writer.WriteStartElement("root");
+
+        int[] lengths = new[] { 7, 8, 9, 15, 16, 17, 31, 32, 36, 258 };
+        byte[] buffer = new byte[lengths.Max() + 1];
+
+        foreach (var length in lengths)
+        {
+            string allAscii = string.Create(length, null, (Span<char> chars, object _) =>
+            {
+                for (int i = 0; i < chars.Length; ++i)
+                    chars[i] = (char)(i % 128);
+            });
+            string multiByteLast = string.Create(length, null, (Span<char> chars, object _) =>
+            {
+                for (int i = 0; i < chars.Length; ++i)
+                    chars[i] = (char)(i % 128);
+                chars[^1] = 'ä';
+            });
+
+            int numBytes = Encoding.UTF8.GetBytes(allAscii, buffer);
+            Debug.Assert(numBytes == length);
+            ValidateWriteText(ms, writer, allAscii, buffer.AsSpan(0, numBytes));
+
+            numBytes = Encoding.UTF8.GetBytes(multiByteLast, buffer);
+            Debug.Assert(numBytes == length + 1);
+            ValidateWriteText(ms, writer, multiByteLast, buffer.AsSpan(0, numBytes));
+        }
+
+        static void ValidateWriteText(MemoryStream ms, XmlDictionaryWriter writer, string text, ReadOnlySpan<byte> expected)
+        {
+            writer.Flush();
+            ms.Seek(0, SeekOrigin.Begin);
+            ms.SetLength(0);
+            writer.WriteString(text);
+            writer.Flush();
+
+            ms.TryGetBuffer(out ArraySegment<byte> arraySegment);
+            ReadOnlySpan<byte> buffer = arraySegment;
+
+            if (expected.Length <= byte.MaxValue)
+            {
+                Assert.Equal(Chars8Text, buffer[0]);
+                Assert.Equal(expected.Length, buffer[1]);
+                buffer = buffer.Slice(2);
+            }
+            else if (expected.Length <= ushort.MaxValue)
+            {
+                Assert.Equal(Chars16Text, buffer[0]);
+                Assert.Equal(expected.Length, (int)(buffer[1]) | ((int)buffer[2] << 8));
+                buffer = buffer.Slice(3);
+            }
+            else
+                Assert.Fail("test use to long length");
+
+            AssertExtensions.SequenceEqual(expected, buffer);
+        }
     }
 
     private static bool ReadTest(MemoryStream ms, Encoding encoding, ReaderWriterFactory.ReaderWriterType rwType, byte[] byteArray)
