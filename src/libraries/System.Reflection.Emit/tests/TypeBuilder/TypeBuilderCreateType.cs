@@ -20,12 +20,14 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.SpecialName)]
         [InlineData(TypeAttributes.StringFormatMask)]
         [InlineData(TypeAttributes.UnicodeClass)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateType(TypeAttributes attributes)
         {
             TypeBuilder type = Helpers.DynamicType(attributes);
             Type createdType = type.CreateType();
-            Assert.NotNull(createdType);
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.NotNull(createdType);
+            }
             Assert.Equal(type.Name, createdType.Name);
 
             TypeInfo typeInfo = type.CreateTypeInfo();
@@ -71,26 +73,30 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateType_NestedType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             type.DefineNestedType("NestedType");
 
             Type createdType = type.CreateType();
-            Assert.NotNull(createdType);
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.NotNull(createdType);
+            }
             Assert.Equal(type.Name, createdType.Name);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateType_GenericType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             type.DefineGenericParameters("T");
 
             Type createdType = type.CreateType();
-            Assert.NotNull(createdType);
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.NotNull(createdType);
+            }
             Assert.Equal(type.Name, createdType.Name);
         }
     }

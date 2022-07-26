@@ -8,7 +8,6 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderCreateGlobalFunctions
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateGlobalFunctions_SingleGlobalMethod()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -18,11 +17,13 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             module.CreateGlobalFunctions();
-            Assert.Null(method.DeclaringType);
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.Null(method.DeclaringType);
+            }
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateGlobalFunctions_MultipleGlobalMethods()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -37,11 +38,13 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.EmitWriteLine("Hello World from global method again!");
 
             module.CreateGlobalFunctions();
-            Assert.Null(method.DeclaringType);
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.Null(method.DeclaringType);
+            }
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateGlobalFunctions_CalledMultipleTimes_ThrowsInvalidOperationException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -51,7 +54,10 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             module.CreateGlobalFunctions();
-            Assert.Null(method.DeclaringType);
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.Null(method.DeclaringType);
+            }
             Assert.Throws<InvalidOperationException>(() => module.CreateGlobalFunctions());
         }
     }
