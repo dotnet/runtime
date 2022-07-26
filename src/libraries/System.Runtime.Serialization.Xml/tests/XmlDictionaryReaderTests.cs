@@ -161,6 +161,32 @@ namespace System.Runtime.Serialization.Xml.Tests
                 Assert.Equal(value, s);
             }
         }
+
+        [Fact]
+        public static void BinaryXml_ReadPrimitiveTypes()
+        {
+            AssertReadContentFromBinary<long>(long.MaxValue, new byte[] { (byte)XmlBinaryNodeType.Int64TextWithEndElement, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f });
+        }
+
+        private static void AssertReadContentFromBinary<T>(T expected, ReadOnlySpan<byte> bytes)
+        {
+            ReadOnlySpan<byte> documentStart = new byte[] { 0x40, 0x1, 0x61 };  // start node "a"
+            var ms = new MemoryStream(documentStart.Length + bytes.Length);
+            ms.Write(documentStart);
+            ms.Write(bytes);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
+            reader.ReadStartElement("a");
+            T result = (T)reader.ReadContentAs(typeof(T), null); //readCallback(reader);
+            reader.ReadEndElement();
+
+
+            Assert.Equal(expected, result);
+            Assert.True(ms.Position == ms.Length, "whole buffer should have been consumed");
+            Assert.True(XmlNodeType.None == reader.NodeType, "XmlDictionaryReader should be at end of document");
+        }
+
         private static Stream GenerateStreamFromString(string s)
         {
             var stream = new MemoryStream();
