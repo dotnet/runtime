@@ -18151,12 +18151,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         return true;
     }
 
-    if (info.compRetType == TYP_VOID)
-    {
-        // return void
-        op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
-    }
-    else if (info.compRetBuffArg != BAD_VAR_NUM)
+    if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         // Assign value to return buff (first param)
         GenTree* retBuffAddr =
@@ -18165,43 +18160,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
         impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
-        // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(TARGET_AMD64)
-
-        // x64 (System V and Win64) calling convention requires to
-        // return the implicit return buffer explicitly (in RAX).
-        // Change the return type to be BYREF.
-        op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-#else // !defined(TARGET_AMD64)
-        // In case of non-AMD64 targets the profiler hook requires to return the implicit RetBuf explicitly (in RAX).
-        // In such case the return value of the function is changed to BYREF.
-        // If profiler hook is not needed the return type of the function is TYP_VOID.
-        if (compIsProfilerHookNeeded())
+        // There are cases where the address of the implicit RetBuf should be returned explicitly.
+        //
+        if (compMethodReturnsRetBufAddr())
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
-#if defined(TARGET_ARM64)
-        // On ARM64, the native instance calling convention variant
-        // requires the implicit ByRef to be explicitly returned.
-        else if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
-        {
-            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-        }
-#endif
-#if defined(TARGET_X86)
-        else if (info.compCallConv != CorInfoCallConvExtension::Managed)
-        {
-            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-        }
-#endif
         else
         {
-            // return void
             op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
-#endif // !defined(TARGET_AMD64)
     }
     else if (varTypeIsStruct(info.compRetType))
     {
@@ -18211,14 +18179,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif
         op2 = impFixupStructReturnType(op2, retClsHnd, info.compCallConv);
-        // return op2
-        var_types returnType = info.compRetType;
-        op1                  = gtNewOperNode(GT_RETURN, genActualType(returnType), op2);
+        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetType), op2);
+    }
+    else if (info.compRetType != TYP_VOID)
+    {
+        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetType), op2);
     }
     else
     {
-        // return op2
-        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetType), op2);
+        op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
     }
 
     // We must have imported a tailcall and jumped to RET
