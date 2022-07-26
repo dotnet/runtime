@@ -821,7 +821,7 @@ namespace System.Collections
 
                     fixed (bool* destination = &boolArray[index])
                     {
-                        for (; (i + Vector256<byte>.Count) <= thisLength; i += (uint)Vector256<byte>.Count)
+                        for (; i <= thisLength - Vector256<byte>.Count; i += (uint)Vector256<byte>.Count)
                         {
                             int bits = thisArray[i / (uint)BitsPerInt32];
                             Vector256<int> scalar = Vector256.Create(bits);
@@ -844,7 +844,7 @@ namespace System.Collections
 
                     ref byte destination = ref Unsafe.As<bool, byte>(ref Unsafe.Add<bool>(ref MemoryMarshal.GetArrayDataReference<bool>(boolArray), index));
 
-                    for (; (i + Vector128<byte>.Count * 2u) <= thisLength; i += (uint)Vector128<byte>.Count * 2u)
+                    for (; i <= thisLength - Vector128<byte>.Count * 2u; i += (uint)Vector128<byte>.Count * 2u)
                     {
                         int bits = thisArray[i / (uint)BitsPerInt32];
                         Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
