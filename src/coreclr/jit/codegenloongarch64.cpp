@@ -6644,6 +6644,46 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 }
 
 //------------------------------------------------------------------------
+// genScaledAdd: A helper for `dest = base + (index << scale)`
+//               and maybe optimize the instruction(s) for this operation.
+//
+void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
+{
+    emitter* emit = GetEmitter();
+    if (scale == 0)
+    {
+        instruction ins = attr == EA_4BYTE ? INS_add_w : INS_add_d;
+        // target = base + index
+        emit->emitIns_R_R_R(ins, attr, targetReg, baseReg, indexReg);
+    }
+    else if (scale <= 4)
+    {
+        instruction ins = attr == EA_4BYTE ? INS_alsl_w : INS_alsl_d;
+        // target = base + index << scale
+        emit->emitIns_R_R_R_I(ins, attr, targetReg, indexReg, baseReg, scale - 1);
+    }
+    else
+    {
+        instruction ins;
+        instruction ins2;
+        if (attr == EA_4BYTE)
+        {
+            ins  = INS_slli_w;
+            ins2 = INS_add_w;
+        }
+        else
+        {
+            ins  = INS_slli_d;
+            ins2 = INS_add_d;
+        }
+
+        // target = base + index << scale
+        emit->emitIns_R_R_I(ins, attr, REG_R21, indexReg, scale);
+        emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, REG_R21);
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndexAddr: Produce code for a GT_INDEX_ADDR node.
 //
 // Arguments:
@@ -7078,15 +7118,17 @@ void CodeGen::genCall(GenTreeCall* call)
         else if (abiInfo.IsSplit())
         {
             assert(compFeatureArgSplit());
-            assert(abiInfo.NumRegs == 1);
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            for (unsigned idx = 0; idx < abiInfo.NumRegs; idx++)
-            {
-                regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
-                var_types dstType  = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
-                inst_Mov(dstType, argReg, allocReg, /* canSkip */ true);
-            }
+
+            regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
+            regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
+
+            // For LA64's ABI, the split is only using the A7 and stack for passing arg.
+            assert(emitter::isGeneralRegister(argReg));
+            assert(emitter::isGeneralRegister(allocReg));
+            assert(abiInfo.NumRegs == 1);
+
+            inst_Mov(TYP_I_IMPL, argReg, allocReg, /* canSkip */ true);
         }
         else
         {
@@ -7969,42 +8011,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     if (blkOp->gtBlkOpGcUnsafe)
     {
         GetEmitter()->emitEnableGC();
-    }
-}
-
-void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
-{
-    emitter* emit = GetEmitter();
-    if (scale == 0)
-    {
-        instruction ins = attr == EA_4BYTE ? INS_add_w : INS_add_d;
-        // target = base + index
-        emit->emitIns_R_R_R(ins, attr, targetReg, baseReg, indexReg);
-    }
-    else if (scale <= 4)
-    {
-        instruction ins = attr == EA_4BYTE ? INS_alsl_w : INS_alsl_d;
-        // target = base + index<<scale
-        emit->emitIns_R_R_R_I(ins, attr, targetReg, indexReg, baseReg, scale - 1);
-    }
-    else
-    {
-        instruction ins;
-        instruction ins2;
-        if (attr == EA_4BYTE)
-        {
-            ins  = INS_slli_w;
-            ins2 = INS_add_w;
-        }
-        else
-        {
-            ins  = INS_slli_d;
-            ins2 = INS_add_d;
-        }
-
-        // target = base + index<<scale
-        emit->emitIns_R_R_I(ins, attr, REG_R21, indexReg, scale);
-        emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, REG_R21);
     }
 }
 
