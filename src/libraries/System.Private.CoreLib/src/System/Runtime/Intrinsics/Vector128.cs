@@ -3179,38 +3179,23 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<byte> Shuffle(Vector128<byte> vector, Vector128<byte> indices)
         {
-            if (Ssse3.IsSupported)
-            {
-                Debug.Assert(Ssse3.IsSupported && BitConverter.IsLittleEndian);
-                return Ssse3.Shuffle(vector, indices);
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                Debug.Assert(AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian);
-                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
-            }
-            else
-            {
-                Unsafe.SkipInit(out Vector128<byte> result);
+            Unsafe.SkipInit(out Vector128<byte> result);
 
-                for (int index = 0; index < Vector128<byte>.Count; index++)
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                byte selectedIndex = indices.GetElementUnsafe(index);
+                byte selectedValue = 0;
+
+                if (selectedIndex < Vector128<byte>.Count)
                 {
-                    byte selectedIndex = indices.GetElementUnsafe(index);
-                    byte selectedValue = 0;
-
-                    if (selectedIndex < Vector128<byte>.Count)
-                    {
-                        selectedValue = vector.GetElementUnsafe(selectedIndex);
-                    }
-                    result.SetElementUnsafe(index, selectedValue);
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }
-
-                return result;
+                result.SetElementUnsafe(index, selectedValue);
             }
 
+            return result;
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
