@@ -1686,7 +1686,15 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
+        {
+            Type? type = CreateTypeImpl();
+            Debug.Assert(type != null);
+            return type;
+        }
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        internal Type? CreateTypeImpl()
         {
             lock (SyncRoot)
             {

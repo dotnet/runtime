@@ -46,7 +46,7 @@ namespace System.Reflection.Emit
 
         // CreateType cause EnumBuilder to be baked.
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
         {
             return m_typeBuilder.CreateType();
         }
