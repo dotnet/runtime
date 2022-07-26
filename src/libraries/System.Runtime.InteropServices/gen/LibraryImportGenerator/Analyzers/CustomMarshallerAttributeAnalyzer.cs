@@ -662,7 +662,7 @@ namespace Microsoft.Interop.Analyzers
                                         StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule,
                                         MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
                                             mode,
-                                            ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForUnmanagedElements),
+                                            ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements),
                                         marshallerType.ToDisplayString(),
                                         mode,
                                         managedType.ToDisplayString());

@@ -60,6 +60,27 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
+        public async Task ModeThatUsesManagedToUnmanagedIn_OnlyCallerAllocatedBuffer_DoesNotReportDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
+                static class MarshallerType
+                {
+                    public static int BufferSize => 1;
+
+                    public static nint ConvertToUnmanaged(ManagedType managed, Span<byte> buffer) => default;
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
         public async Task ModeThatUsesUnmanagedToManagedShape_Missing_ConvertToManagedMethod_ReportsDiagnostic()
         {
             string source = """
