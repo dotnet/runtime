@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
         <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
-        <target state="translated">'{0}'에는 'DllImportAttribute'에 해당하는 항목이 없으며 전달되지 않습니다.</target>
+        <target state="new">'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">

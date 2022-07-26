@@ -2783,6 +2783,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72460</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
@@ -3069,6 +3073,10 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72460</Issue>
         </ExcludeList>
     </ItemGroup>
 
