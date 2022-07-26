@@ -135,21 +135,9 @@ namespace System.Net.NetworkInformation
     {
         protected IPAddressInformation() { }
         public abstract System.Net.IPAddress Address { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract bool IsDnsEligible { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract bool IsTransient { get; }
     }
     public partial class IPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.IPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.IPAddressInformation>, System.Collections.IEnumerable
@@ -366,53 +354,17 @@ namespace System.Net.NetworkInformation
     public abstract partial class MulticastIPAddressInformation : System.Net.NetworkInformation.IPAddressInformation
     {
         protected MulticastIPAddressInformation() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract long AddressPreferredLifetime { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract long AddressValidLifetime { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract long DhcpLeaseLifetime { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.DuplicateAddressDetectionState DuplicateAddressDetectionState { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.PrefixOrigin PrefixOrigin { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.SuffixOrigin SuffixOrigin { get; }
     }
     public partial class MulticastIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.MulticastIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.MulticastIPAddressInformation>, System.Collections.IEnumerable
@@ -637,55 +589,19 @@ namespace System.Net.NetworkInformation
     public abstract partial class UnicastIPAddressInformation : System.Net.NetworkInformation.IPAddressInformation
     {
         protected UnicastIPAddressInformation() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract long AddressPreferredLifetime { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract long AddressValidLifetime { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract long DhcpLeaseLifetime { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.DuplicateAddressDetectionState DuplicateAddressDetectionState { get; }
         public abstract System.Net.IPAddress IPv4Mask { get; }
         public virtual int PrefixLength { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.PrefixOrigin PrefixOrigin { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("linux")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.SuffixOrigin SuffixOrigin { get; }
     }
     public partial class UnicastIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.UnicastIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.UnicastIPAddressInformation>, System.Collections.IEnumerable
