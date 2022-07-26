@@ -31,13 +31,14 @@ import {
     mono_wasm_debugger_attached,
     mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
-import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule, is_nullish, MonoConfig, MonoConfigError } from "./types";
+import { ENVIRONMENT_IS_WORKER, runtimeHelpers, set_imports_exports } from "./imports";
+import { DotnetModule, is_nullish, MonoConfig, MonoConfigError, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    configure_emscripten_startup
+    configure_emscripten_startup,
+    mono_wasm_load_runtime,
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -70,10 +71,9 @@ import {
     setI8, setI16, setI32, setI52,
     setU8, setU16, setU32, setF32, setF64,
     getI8, getI16, getI32, getI52,
-    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
+    getU8, getU16, getU32, getF32, getF64, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
-import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { dynamic_import, get_global_this, get_property, get_typeof_property, has_property, mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, set_property } from "./invoke-js";
@@ -90,8 +90,8 @@ import {
     dotnet_browser_encrypt_decrypt,
     dotnet_browser_derive_bits,
 } from "./crypto-worker";
-import { mono_wasm_pthread_on_pthread_attached, afterThreadInitTLS } from "./pthreads/worker";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
+import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
+import { init_polyfills } from "./polyfills";
 
 const MONO = {
     // current "public" MONO API
@@ -110,9 +110,8 @@ const MONO = {
     mono_run_main_and_exit,
     mono_wasm_get_assembly_exports,
 
-    // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
-    mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
+    mono_wasm_load_runtime,
 
     config: <MonoConfig | MonoConfigError>runtimeHelpers.config,
     loaded_files: <string[]>[],
@@ -203,26 +202,21 @@ export type BINDINGType = typeof BINDING;
 
 let exportedAPI: DotnetPublicAPI;
 
-// We need to replace some of the methods in the Emscripten PThreads support with our own
-type PThreadReplacements = {
-    loadWasmModuleToWorker: Function,
-    threadInitTLS: Function
-}
-
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
-    exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
+    imports: EarlyImports,
+    exports: EarlyExports,
+    replacements: EarlyReplacements,
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    setImportsAndExports(imports, exports);
+    set_imports_exports(imports, exports);
+    init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, MONO);
@@ -252,49 +246,6 @@ function initializeImportsAndExports(
     if (!module.printErr) {
         module.printErr = console.error.bind(console);
     }
-    module.imports = module.imports || <DotnetModuleConfigImports>{};
-    if (!module.imports.require) {
-        module.imports.require = (name) => {
-            const resolved = (<any>module.imports)[name];
-            if (resolved) {
-                return resolved;
-            }
-            if (replacements.require) {
-                return replacements.require(name);
-            }
-            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
-        };
-    }
-
-    if (module.imports.fetch) {
-        runtimeHelpers.fetch = module.imports.fetch;
-    }
-    else {
-        runtimeHelpers.fetch = fetch_like;
-    }
-    replacements.fetch = runtimeHelpers.fetch;
-    replacements.readAsync = readAsync_like;
-    replacements.requireOut = module.imports.require;
-    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
-        originalUpdateGlobalBufferAndViews(buffer);
-        afterUpdateGlobalBufferAndViews(buffer);
-    };
-
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
-
-    if (replacements.pthreadReplacements) {
-        const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-        replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-            originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-            afterLoadWasmModuleToWorker(worker);
-        };
-        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-        replacements.pthreadReplacements.threadInitTLS = (): void => {
-            originalThreadInitTLS();
-            afterThreadInitTLS();
-        };
-    }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
@@ -307,7 +258,7 @@ function initializeImportsAndExports(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
 
@@ -322,7 +273,7 @@ function initializeImportsAndExports(
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;
@@ -353,13 +304,15 @@ function initializeImportsAndExports(
     }
     list.registerRuntime(exportedAPI);
 
-    configure_emscripten_startup(module, exportedAPI);
-
     if (ENVIRONMENT_IS_WORKER) {
         // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
         // until we have our own fix for dotnet.worker.js file
+        // we also skip all emscripten startup event and configuration of worker's JS state
+        // note that emscripten events are not firing either
         return <any>exportedAPI.Module;
     }
+
+    configure_emscripten_startup(module, exportedAPI);
 
     return exportedAPI;
 }

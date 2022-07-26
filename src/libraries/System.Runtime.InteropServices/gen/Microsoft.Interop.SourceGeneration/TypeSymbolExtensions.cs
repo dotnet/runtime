@@ -199,7 +199,7 @@ namespace Microsoft.Interop
         /// <returns>A fully constructed type based on <c><paramref name="unboundConstructedType"/>.ConstructedFrom</c> with the generic arguments from <paramref name="instantiatedTemplateType"/>.</returns>
         public static INamedTypeSymbol ResolveUnboundConstructedTypeToConstructedType(this INamedTypeSymbol unboundConstructedType, INamedTypeSymbol instantiatedTemplateType, out int numOriginalTypeArgumentsSubstituted, out int extraTypeArgumentsInTemplate)
         {
-            var (typeArgumentsToSubstitute, nullableAnnotationsToSubstitute) = GetArgumentsToSubstitute(instantiatedTemplateType);
+            var (typeArgumentsToSubstitute, nullableAnnotationsToSubstitute) = instantiatedTemplateType.GetAllTypeArgumentsIncludingInContainingTypes();
 
             // Build us a list of the type nesting of unboundConstructedType, with the outermost containing type on the top
             // Use OriginalDefinition to get the generic definition for all containing types instead of having to unconstruct the generic at each loop iteration.
@@ -277,30 +277,28 @@ namespace Microsoft.Interop
             extraTypeArgumentsInTemplate = typeArgumentsToSubstitute.Length - currentArityOffset;
 
             return currentType;
+        }
 
-            // Get the type arguments and their nullable annotations from the instantiated generic type, including all levels of nesting.
-            // Examples:
-            // Foo<A> -> [A]
-            // Foo.Bar<A> -> [A]
-            // Foo<A?>.Bar<B> -> [A?, B]
-            // Foo<A, B, C?>.Bar<D?, E> -> [A, B, C?, D?, E]
-            static (ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>) GetArgumentsToSubstitute(INamedTypeSymbol instantiatedGeneric)
+        public static (ImmutableArray<ITypeSymbol> TypeArguments, ImmutableArray<NullableAnnotation> TypeArgumentNullableAnnotations) GetAllTypeArgumentsIncludingInContainingTypes(this INamedTypeSymbol genericType)
+        {
+            // Get the type arguments of the passed in type and all containing types
+            // with the outermost type on the top of the stack and the innermost type on the bottom of the stack.
+            Stack<(ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>)> genericTypesToSubstitute = new();
+            for (INamedTypeSymbol instantiatedType = genericType; instantiatedType is not null; instantiatedType = instantiatedType.ContainingType)
             {
-                Stack<(ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>)> genericTypesToSubstitute = new();
-                for (INamedTypeSymbol instantiatedType = instantiatedGeneric; instantiatedType is not null; instantiatedType = instantiatedType.ContainingType)
-                {
-                    genericTypesToSubstitute.Push((instantiatedType.TypeArguments, instantiatedType.TypeArgumentNullableAnnotations));
-                }
-                ImmutableArray<ITypeSymbol>.Builder typeArguments = ImmutableArray.CreateBuilder<ITypeSymbol>();
-                ImmutableArray<NullableAnnotation>.Builder nullableAnnotations = ImmutableArray.CreateBuilder<NullableAnnotation>();
-                while (genericTypesToSubstitute.Count != 0)
-                {
-                    var (args, annotations) = genericTypesToSubstitute.Pop();
-                    typeArguments.AddRange(args);
-                    nullableAnnotations.AddRange(annotations);
-                }
-                return (typeArguments.ToImmutable(), nullableAnnotations.ToImmutable());
+                genericTypesToSubstitute.Push((instantiatedType.TypeArguments, instantiatedType.TypeArgumentNullableAnnotations));
             }
+            // Turn our stack of lists of type arguments into one list,
+            // going from the first type argument of the outermost type to the last type argument of the innermost type.
+            ImmutableArray<ITypeSymbol>.Builder typeArguments = ImmutableArray.CreateBuilder<ITypeSymbol>();
+            ImmutableArray<NullableAnnotation>.Builder nullableAnnotations = ImmutableArray.CreateBuilder<NullableAnnotation>();
+            while (genericTypesToSubstitute.Count != 0)
+            {
+                var (args, annotations) = genericTypesToSubstitute.Pop();
+                typeArguments.AddRange(args);
+                nullableAnnotations.AddRange(annotations);
+            }
+            return (typeArguments.ToImmutable(), nullableAnnotations.ToImmutable());
         }
     }
 }

@@ -47,7 +47,33 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="SlidingWindowRateLimiter"/>.</param>
         public SlidingWindowRateLimiter(SlidingWindowRateLimiterOptions options)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            if (options.PermitLimit <= 0 || options.SegmentsPerWindow <= 0)
+            {
+                throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.SegmentsPerWindow)} must be set to values greater than 0.", nameof(options));
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+            }
+            if (options.Window < TimeSpan.Zero)
+            {
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+            }
+
+            _options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = options.PermitLimit,
+                QueueProcessingOrder = options.QueueProcessingOrder,
+                QueueLimit = options.QueueLimit,
+                Window = options.Window,
+                SegmentsPerWindow = options.SegmentsPerWindow,
+                AutoReplenishment = options.AutoReplenishment
+            };
+
             _requestCount = options.PermitLimit;
 
             // _requestsPerSegment holds the no. of acquired requests in each window segment
