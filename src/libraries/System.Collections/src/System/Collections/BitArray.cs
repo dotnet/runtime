@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 
 namespace System.Collections
 {
@@ -804,35 +803,27 @@ namespace System.Collections
                 int[] thisArray = m_array;
                 uint thisLength = (uint)m_length;
 
-                if (m_length < BitsPerInt32)
+                if (thisLength < BitsPerInt32)
                     goto LessThan32;
 
-                if (Avx2.IsSupported)
+                if (Vector256.IsHardwareAccelerated)
                 {
-                    // The mask used when shuffling a single int into Vector128/256.
-                    // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
-                    // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-                    Vector128<byte> lowerShuffleMask = Vector128.Create(0, 0x01010101_01010101).AsByte();
-                    Vector128<byte> upperShuffleMask = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-
-                    Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask, upperShuffleMask);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
                     Vector256<byte> ones = Vector256.Create((byte)1);
 
-                    fixed (bool* destination = &boolArray[index])
-                    {
-                        for (; i <= thisLength - Vector256<byte>.Count; i += (uint)Vector256<byte>.Count)
-                        {
-                            int bits = thisArray[i / (uint)BitsPerInt32];
-                            Vector256<int> scalar = Vector256.Create(bits);
-                            Vector256<byte> shuffled = Avx2.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector256<byte> extracted = Avx2.And(shuffled, bitMask);
+                    ref byte destination = ref Unsafe.As<bool, byte>(ref Unsafe.Add<bool>(ref MemoryMarshal.GetArrayDataReference<bool>(boolArray), index));
 
-                            // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
-                            // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector256<byte> normalized = Avx2.Min(extracted, ones);
-                            Avx.Store((byte*)destination + i, normalized);
-                        }
+                    for (; i <= thisLength - Vector256<byte>.Count; i += (uint)Vector256<byte>.Count)
+                    {
+                        int bits = thisArray[i / (uint)BitsPerInt32];
+                        Vector256<int> scalar = Vector256.Create(bits);
+                        Vector256<byte> shuffled = Vector256.Shuffle(scalar.AsByte(), Vector256.Create(0x0000_0000_0000_0000, 0x0101_0101_0101_0101, 0x12121212_12121212, 0x13131313_13131313).AsByte());
+                        Vector256<byte> extracted = shuffled & bitMask;
+
+                        // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
+                        // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
+                        Vector256<byte> normalized = Vector256.Min(extracted, ones);
+                        normalized.StoreUnsafe(ref destination, i);
                     }
                 }
                 else if (Vector128.IsHardwareAccelerated)
@@ -849,8 +840,7 @@ namespace System.Collections
                         int bits = thisArray[i / (uint)BitsPerInt32];
                         Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
 
-                        // the shuffle masks used below are the same as masks used by the Avx2 codepath above
-                        // they need to be consts for optimal codegen (see https://github.com/dotnet/runtime/issues/72793)
+                        // they masks need to be consts for optimal codegen (see https://github.com/dotnet/runtime/issues/72793)
                         Vector128<byte> shuffledLower = Vector128.Shuffle(scalar.AsByte(), Vector128.Create((byte)0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1));
                         Vector128<byte> extractedLower = shuffledLower & bitMask128;
                         Vector128<byte> normalizedLower = Vector128.Min(extractedLower, ones);
