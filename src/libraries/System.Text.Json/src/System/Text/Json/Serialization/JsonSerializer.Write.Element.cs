@@ -112,7 +112,7 @@ namespace System.Text.Json
 
         private static JsonElement WriteElement<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            Debug.Assert(jsonTypeInfo?.IsConfigured == true);
+            Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
             // For performance, share the same buffer across serialization and deserialization.

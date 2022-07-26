@@ -118,7 +118,7 @@ namespace System.Text.Json
 
         private static byte[] WriteBytes<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            Debug.Assert(jsonTypeInfo?.IsConfigured == true);
+            Debug.Assert(jsonTypeInfo.IsConfigured);
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
@@ -131,7 +131,7 @@ namespace System.Text.Json
 
         private static byte[] WriteBytesAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            Debug.Assert(jsonTypeInfo?.IsConfigured == true);
+            Debug.Assert(jsonTypeInfo.IsConfigured);
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
