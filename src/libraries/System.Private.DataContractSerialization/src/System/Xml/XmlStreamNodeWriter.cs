@@ -359,24 +359,22 @@ namespace System.Xml
             char* charsMax = chars + charCount;
 
             // This method is only called from 2 places and will use length of at least (128/3 and 256/3) respectivly
-            // AVX is faster for at least 2048 chars, probably more
-            // for other cases the encoding path is better optimized than any fast path done here.
-            if (Vector.IsHardwareAccelerated
-                && Vector<short>.Count > Vector128<short>.Count
-                && Vector<short>.Count < charCount && charCount <= 2048)
+            // We avoid Vector<T> sine it is unsure how downclocking due to AVX512 would affect total throughput
+            if (Vector256.IsHardwareAccelerated
+                && Vector256<short>.Count < charCount && charCount <= 2048)
             {
-                char* lastSimd = chars + charCount - Vector<short>.Count;
-                var mask = new Vector<short>(unchecked((short)0xff80));
+                char* lastSimd = chars + charCount - Vector256<short>.Count;
+                Vector256<short> mask = Vector256.Create(unchecked((short)0xff80));
 
                 while (chars < lastSimd)
                 {
-                    if (((*(Vector<short>*)chars) & mask) != Vector<short>.Zero)
+                    if (((*(Vector256<short>*)chars) & mask) != Vector256<short>.Zero)
                         goto NonAscii;
 
-                    chars += Vector<short>.Count;
+                    chars += Vector256<short>.Count;
                 }
 
-                if ((*(Vector<short>*)lastSimd & mask) == Vector<short>.Zero)
+                if ((*(Vector256<short>*)lastSimd & mask) == Vector256<short>.Zero)
                     return charCount;
             }
 
@@ -396,15 +394,15 @@ namespace System.Xml
                     byte* bytes = _bytes;
                     byte* bytesMax = &bytes[buffer.Length - offset];
                     char* charsMax = &chars[charCount];
-                    char* simdLast = chars + charCount - Vector128<ushort>.Count;
 
                     if (Sse41.IsSupported && charCount >= Vector128<ushort>.Count)
                     {
-                        var mask = Vector128.Create(unchecked((short)0xff80));
+                        Vector128<short> mask = Vector128.Create(unchecked((short)0xff80));
+                        char* simdLast = chars + charCount - Vector128<ushort>.Count;
 
                         while (chars < simdLast)
                         {
-                            var v = Sse2.LoadVector128((short*)chars);
+                            Vector128<short> v = *(Vector128<short>*)chars;
                             if (!Sse41.TestZ(v, mask))
                                 goto NonAscii;
 
@@ -413,7 +411,7 @@ namespace System.Xml
                             chars += Vector128<ushort>.Count;
                         }
 
-                        var v2 = Sse2.LoadVector128((short*)simdLast);
+                        Vector128<short> v2 = Sse2.LoadVector128((short*)simdLast);
                         if (!Sse41.TestZ(v2, mask))
                             goto NonAscii;
 
