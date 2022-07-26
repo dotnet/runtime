@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using Xunit;
@@ -165,26 +167,89 @@ namespace System.Runtime.Serialization.Xml.Tests
         [Fact]
         public static void BinaryXml_ReadPrimitiveTypes()
         {
-            AssertReadContentFromBinary<long>(long.MaxValue, new byte[] { (byte)XmlBinaryNodeType.Int64TextWithEndElement, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f });
+            AssertReadContentFromBinary<long>(long.MaxValue, XmlBinaryNodeType.Int64TextWithEndElement, new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f });
+
+            AssertReadContentFromBinary((byte)0x78, XmlBinaryNodeType.Int8Text, new byte[] { 0x78 });
+            AssertReadContentFromBinary((short)0x1234, XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0x12 });
+            AssertReadContentFromBinary(unchecked((short)0xf234), XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0xf2 });
+            AssertReadContentFromBinary((int)0x12345678, XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0x12 });
+            AssertReadContentFromBinary((long)0x0102030412345678, XmlBinaryNodeType.Int64Text, new byte[] { 0x78, 0x56, 0x34, 0x12, 04, 03, 02, 01 });
+
+            // Integer values should be represented using smalles possible type
+            AssertReadContentFromBinary((long)0, XmlBinaryNodeType.ZeroText, ReadOnlySpan<byte>.Empty);
+            AssertReadContentFromBinary((long)1, XmlBinaryNodeType.OneText, ReadOnlySpan<byte>.Empty);
+            AssertReadContentFromBinary((int)0x00000078, XmlBinaryNodeType.Int8Text, new byte[] { 0x78 });
+            AssertReadContentFromBinary(unchecked((int)0xfffffff0), XmlBinaryNodeType.Int8Text, new byte[] { 0xf0 });
+            AssertReadContentFromBinary((int)0x00001234, XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0x12 });
+            AssertReadContentFromBinary(unchecked((int)0xfffff234), XmlBinaryNodeType.Int16Text, new byte[] { 0x34, 0xf2 });
+            AssertReadContentFromBinary((long)0x12345678, XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0x12 });
+            AssertReadContentFromBinary(unchecked((long)0xfffffffff2345678), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0xf2 });
+
+            decimal decMax = decimal.MaxValue;
+            float f = 1.23f;
+            double d = 1.0 / 3.0;
+            Guid guid = new Guid(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+
+            // Remarks: Of these types only timespan handles BigEndian/LittleEndian so for other types compare against bare bytes
+            AssertReadContentFromBinary(decMax, XmlBinaryNodeType.DecimalText, MemoryMarshal.AsBytes(new ReadOnlySpan<decimal>(in decMax)));
+            AssertReadContentFromBinary(f, XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+            AssertReadContentFromBinary(guid, XmlBinaryNodeType.GuidText, guid.ToByteArray());
+            AssertReadContentFromBinary(new TimeSpan(0x0807060504030201), XmlBinaryNodeType.TimeSpanText, new byte[] { 01, 02, 03, 04, 05, 06, 07, 08 });
+
+            // Double can be represented as float or inte as long as no detail is lost
+            AssertReadContentFromBinary((double)f, XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+            AssertReadContentFromBinary((double)0x0100, XmlBinaryNodeType.Int16Text, new byte[] { 0x00, 0x01 });
+            AssertReadContentFromBinary((double)d, XmlBinaryNodeType.DoubleText, MemoryMarshal.AsBytes(new ReadOnlySpan<double>(in d)));
         }
 
-        private static void AssertReadContentFromBinary<T>(T expected, ReadOnlySpan<byte> bytes)
+        [Fact]
+        public static void BinaryXml_Arrays()
         {
-            ReadOnlySpan<byte> documentStart = new byte[] { 0x40, 0x1, 0x61 };  // start node "a"
-            var ms = new MemoryStream(documentStart.Length + bytes.Length);
-            ms.Write(documentStart);
-            ms.Write(bytes);
+            // Write more than 512 bytes in a single call to trigger different writing logic in XmlStreamNodeWriter.WriteBytes
+            int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
+            long[] longs = Enumerable.Range(0x01020304, 127).Select(i => (long)i | (long)(~i << 32)).ToArray();
+
+            using var ms = new MemoryStream();
+            using var writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
+            writer.WriteStartElement("root");
+            writer.WriteArray(null, "ints", null, ints, 1, 2);
+            writer.WriteArray(null, "longs", null, longs, 0, longs.Length);
+            writer.WriteEndElement();
+            writer.WriteEndDocument();
+            writer.Flush();
             ms.Seek(0, SeekOrigin.Begin);
 
-            using XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
-            reader.ReadStartElement("a");
-            T result = (T)reader.ReadContentAs(typeof(T), null); //readCallback(reader);
+            int[] actualInts = new int[] { -1, -1, -1, -1 };
+
+            using var reader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
+            reader.ReadStartElement("root");
+            int intsRead = reader.ReadArray("ints", string.Empty, actualInts, 1, 3);
+            long[] actualLongs = reader.ReadInt64Array("longs", string.Empty);
             reader.ReadEndElement();
 
+            Assert.Equal(XmlNodeType.None, reader.NodeType); // Should be at end
 
-            Assert.Equal(expected, result);
+            Assert.Equal(2, intsRead);
+            AssertExtensions.SequenceEqual(ints, actualInts);
+            AssertExtensions.SequenceEqual(actualLongs, longs);
+        }
+
+        private static void AssertReadContentFromBinary<T>(T expected, XmlBinaryNodeType nodeType, ReadOnlySpan<byte> bytes)
+        {
+            ReadOnlySpan<byte> documentStart = new byte[] { 0x40, 0x1, 0x61 };  // start node "a"
+            MemoryStream ms = new MemoryStream(documentStart.Length + 1 + bytes.Length);
+            ms.Write(documentStart);
+            ms.WriteByte((byte)(nodeType | XmlBinaryNodeType.EndElement)); // With EndElement
+            ms.Write(bytes);
+            ms.Seek(0, SeekOrigin.Begin);
+            XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
+            reader.ReadStartElement("a");
+            T result = (T)reader.ReadContentAs(typeof(T), null);
+            reader.ReadEndElement();
+
             Assert.True(ms.Position == ms.Length, "whole buffer should have been consumed");
             Assert.True(XmlNodeType.None == reader.NodeType, "XmlDictionaryReader should be at end of document");
+            Assert.Equal(expected, result);
         }
 
         private static Stream GenerateStreamFromString(string s)
