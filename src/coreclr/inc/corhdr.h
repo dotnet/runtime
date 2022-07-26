@@ -1236,7 +1236,7 @@ typedef struct IMAGE_COR_ILMETHOD_TINY
 } IMAGE_COR_ILMETHOD_TINY;
 
 /************************************/
-// This strucuture is the 'fat' layout, where no compression is attempted.
+// This structure is the 'fat' layout, where no compression is attempted.
 // Note that this structure can be added on at the end, thus making it extensible
 typedef struct IMAGE_COR_ILMETHOD_FAT
 {

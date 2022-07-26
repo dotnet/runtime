@@ -40,7 +40,7 @@ namespace DebuggerTests
         {
             // Test that js breakpoints get set correctly
             // 13 24
-            // 13 53
+            // 14 24
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -52,7 +52,7 @@ namespace DebuggerTests
             Assert.Equal(13, (int)loc["lineNumber"]);
             Assert.Equal(24, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 53);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 24);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -60,15 +60,15 @@ namespace DebuggerTests
             var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, (int)loc2["lineNumber"]);
-            Assert.Equal(53, (int)loc2["columnNumber"]);
+            Assert.Equal(14, (int)loc2["lineNumber"]);
+            Assert.Equal(24, (int)loc2["columnNumber"]);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CreateJS0Breakpoint()
         {
             // 13 24
-            // 13 53
+            // 14 24
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -78,9 +78,9 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal(13, (int)loc["lineNumber"]);
-            Assert.Equal(4, (int)loc["columnNumber"]);
+            Assert.Equal(24, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 53);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 14, 0);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -88,8 +88,8 @@ namespace DebuggerTests
             var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, (int)loc2["lineNumber"]);
-            Assert.Equal(53, (int)loc2["columnNumber"]);
+            Assert.Equal(14, (int)loc2["lineNumber"]);
+            Assert.Equal(24, (int)loc2["columnNumber"]);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -611,8 +611,8 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "RunStepThrough", "StepThrougBp", "", 846, 8)]
-        [InlineData(true, "RunStepThrough", "StepThrougBp", "RunStepThrough", 847, 8)]
+        [InlineData(false, "RunStepThrough", "StepThroughBp", "", 846, 8)]
+        [InlineData(true, "RunStepThrough", "StepThroughBp", "RunStepThrough", 847, 8)]
         [InlineData(false, "RunNonUserCode", "NonUserCodeBp", "NonUserCodeBp", 852, 4)]
         [InlineData(true, "RunNonUserCode", "NonUserCodeBp", "RunNonUserCode", 867, 8)]
         [InlineData(false, "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeBp", "", 932, 8)]
@@ -645,8 +645,8 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "RunStepThrough", "StepThrougBp")]
-        [InlineData(true, "RunStepThrough", "StepThrougBp")]
+        [InlineData(false, "RunStepThrough", "StepThroughBp")]
+        [InlineData(true, "RunStepThrough", "StepThroughBp")]
         [InlineData(true, "RunNonUserCode", "NonUserCodeBp")]
         [InlineData(false, "RunNonUserCode", "NonUserCodeBp")]
         [InlineData(false, "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeBp")]
@@ -675,9 +675,9 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
+        [InlineData(false, "Debugger.stepInto", "RunStepThrough", "StepThroughUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.stepInto", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
-        [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThrougUserBp", 841, 8, "RunStepThrough", 848, 4)]
+        [InlineData(false, "Debugger.resume", "RunStepThrough", "StepThroughUserBp", 841, 8, "RunStepThrough", 848, 4)]
         [InlineData(true, "Debugger.resume", "RunStepThrough", "RunStepThrough", -1, 8, "RunStepThrough", -1, 4)]
         [InlineData(false, "Debugger.stepInto", "RunNonUserCode",  "NonUserCodeUserBp", 860, 4, "NonUserCodeUserBp", 861, 8)]
         [InlineData(true, "Debugger.stepInto", "RunNonUserCode", "RunNonUserCode", -1, 8, "RunNonUserCode", -1, 4)]

@@ -51,7 +51,7 @@ void EventRedirectionPipeline::Delete()
 //
 //
 // Notes:
-//    This will spin up an auxillary debugger (windbg) and attach it to the existing
+//    This will spin up an auxiliary debugger (windbg) and attach it to the existing
 //    process. If this is a create case, then we're attaching to a create-suspended process.
 //
 //---------------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ BOOL EventRedirectionPipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
 //
 //
 // Notes:
-//    This will spin up an auxillary debugger (windbg) and attach it to the existing
+//    This will spin up an auxiliary debugger (windbg) and attach it to the existing
 //    process. If this is a create case, then we're attaching to a create-suspended process.
 //
 //---------------------------------------------------------------------------------------

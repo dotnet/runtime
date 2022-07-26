@@ -42,7 +42,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context0 = new Asn1Tag(TagClass.ContextSpecific, 0);
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
-        private static readonly Asn1Tag s_context4 = new Asn1Tag(TagClass.ContextSpecific, 4);
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -738,47 +737,15 @@ SingleResponse ::= SEQUENCE {
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // AuthorityKeyIdentifier
-            using (writer.PushSequence())
+            if (skid is null)
             {
-                if (skid == null)
-                {
-                    // authorityCertIssuer [1] GeneralNames (SEQUENCE OF)
-                    using (writer.PushSequence(s_context1))
-                    {
-                        // directoryName [4] Name
-                        byte[] dn = _cert.SubjectName.RawData;
-
-                        if (s_context4.Encode(dn) != 1)
-                        {
-                            throw new InvalidOperationException();
-                        }
-
-                        writer.WriteEncodedValue(dn);
-                    }
-
-                    // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
-                    writer.WriteInteger(_cert.SerialNumberBytes.Span, s_context2);
-                }
-                else
-                {
-                    // keyIdentifier [0] KeyIdentifier (OCTET STRING)
-                    AsnReader reader = new AsnReader(skid.RawData, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> contents;
-
-                    if (!reader.TryReadPrimitiveOctetString(out contents))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    reader.ThrowIfNotEmpty();
-                    writer.WriteOctetString(contents.Span, s_context0);
-                }
+                return X509AuthorityKeyIdentifierExtension.CreateFromCertificate(
+                    _cert,
+                    includeKeyIdentifier: false,
+                    includeIssuerAndSerial: true);
             }
 
-            return new X509Extension("2.5.29.35", writer.Encode(), false);
+            return X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(skid);
         }
 
         private enum OcspResponseStatus

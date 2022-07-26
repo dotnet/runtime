@@ -174,7 +174,7 @@ namespace System.Text.RegularExpressions.Tests
                         new CSharpCompilationOptions(
                             OutputKind.DynamicallyLinkedLibrary,
                             warningLevel: 9999, // docs recommend using "9999" to catch all warnings now and in the future
-                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1045", ReportDiagnostic.Hidden)) // regex with limited support
+                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1044", ReportDiagnostic.Hidden)) // regex with limited support
                             .WithNullableContextOptions(NullableContextOptions.Enable))
                             .WithParseOptions(s_previewParseOptions)
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;

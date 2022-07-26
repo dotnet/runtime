@@ -206,7 +206,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(LanguageVersion.CSharp9)]
         [InlineData(LanguageVersion.CSharp10)]
-        public async Task Diagnostic_InvalidLangVersion(LanguageVersion version)
+        public async Task Diagnostic_InvalidLangVersion_LimitedSupport(LanguageVersion version)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
@@ -232,7 +232,37 @@ namespace System.Text.RegularExpressions.Tests
                 }
             ");
 
-            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_CaseInsensitiveBackreference_LimitedSupport()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(@""(?i)(ab)\1"")]
+                    private static partial Regex CaseInsensitiveBackreferenceNotSupported();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_TooMuchNesting_LimitedSupport()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""" + new string('(', 100) + "a" + new string(')', 100) + @""")]
+                    private static partial Regex TooMuchNestingNotSupported();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
         }
 
         [Fact]

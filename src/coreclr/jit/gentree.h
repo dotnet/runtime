@@ -468,7 +468,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
+    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explicitly cast (variable node may not be type of local)
     GTF_VAR_ITERATOR    = 0x00800000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
     GTF_VAR_CLONED      = 0x00400000, // GT_LCL_VAR -- this node has been cloned or is a clone
     GTF_VAR_CONTEXT     = 0x00200000, // GT_LCL_VAR -- this node is part of a runtime lookup
@@ -2133,9 +2133,9 @@ public:
         SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags) & GTF_ALL_EFFECT);
     }
 
-    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource, GenTree* thirdSouce)
+    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource, GenTree* thirdSource)
     {
-        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags | thirdSouce->gtFlags) & GTF_ALL_EFFECT);
+        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags | thirdSource->gtFlags) & GTF_ALL_EFFECT);
     }
 
     void SetAllEffectsFlags(GenTreeFlags sourceFlags)
@@ -3259,7 +3259,7 @@ inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
 // This function is intended to be used where its truncating behavior is
 // desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
 // wider integers, which is typical when compiling on 64 bit hosts, as
-// most aritmetic is done in ssize_t's aka int64_t's in that case, while
+// most arithmetic is done in ssize_t's aka int64_t's in that case, while
 // the node itself can be of a narrower type.
 //
 // Arguments:
@@ -8469,7 +8469,7 @@ inline bool GenTree::IsFloatNegativeZero() const
 }
 
 //-------------------------------------------------------------------
-// IsFloatPositiveZero: returns true if this is exactly a const float value of postive zero (+0.0)
+// IsFloatPositiveZero: returns true if this is exactly a const float value of positive zero (+0.0)
 //
 // Returns:
 //     True if this represents a const floating-point value of exactly positive zero (+0.0).

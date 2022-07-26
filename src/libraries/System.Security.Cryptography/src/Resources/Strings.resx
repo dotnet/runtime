@@ -111,6 +111,9 @@
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
   </data>
+  <data name="Argument_InvalidSerialNumberBytes" xml:space="preserve">
+    <value>The provided serial number is invalid. Ensure the input is in big-endian byte order and that all redundant leading bytes have been removed.</value>
+  </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
@@ -257,6 +260,15 @@
   </data>
   <data name="Cryptography_Config_EncodedOIDError" xml:space="preserve">
     <value>Encoded OID length is too large (greater than 0x7f bytes).</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_DatesReversed" xml:space="preserve">
+    <value>The provided thisUpdate value is later than the nextUpdate value.</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_IssuerKeyUsageInvalid" xml:space="preserve">
+    <value>The issuer certificate's Key Usage extension is present but does not contain the CrlSign flag.</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_ReasonNotSupported" xml:space="preserve">
+    <value>The specified revocation reason is not supported.</value>
   </data>
   <data name="Cryptography_CryptoStream_FlushFinalBlockTwice" xml:space="preserve">
     <value>FlushFinalBlock() method was called twice on a CryptoStream. It can only be called once.</value>
@@ -453,6 +465,9 @@
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
   </data>
+  <data name="Cryptography_NoPemOfLabel" xml:space="preserve">
+    <value>The contents do not contain a PEM with a '{0}' label, or the content is malformed.</value>
+  </data>
   <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
     <value>Key is not a valid private key.</value>
   </data>
@@ -608,6 +623,9 @@
   </data>
   <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
     <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
+  </data>
+  <data name="Cryptography_X509_AKID_NoSKID" xml:space="preserve">
+    <value>The provided certificate does not have a Subject Key Identifier extension.</value>
   </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>

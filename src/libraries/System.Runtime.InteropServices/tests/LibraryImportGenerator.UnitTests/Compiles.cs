@@ -437,7 +437,7 @@ namespace LibraryImportGenerator.UnitTests
         }
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
-        public async Task ValidateSnippetsWithPreprocessorDefintions(string id, string source, IEnumerable<string> preprocessorSymbols)
+        public async Task ValidateSnippetsWithPreprocessorDefinitions(string id, string source, IEnumerable<string> preprocessorSymbols)
         {
             TestUtils.Use(id);
             Compilation comp = await TestUtils.CreateCompilation(source, preprocessorSymbols: preprocessorSymbols);
@@ -633,6 +633,35 @@ namespace LibraryImportGenerator.UnitTests
         {
             TestUtils.Use(id);
             Compilation comp = await TestUtils.CreateCompilation(sources);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            Assert.Empty(generatorDiags);
+
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+        }
+
+        public static IEnumerable<object[]> CodeSnippetsToCompileToValidateAllowUnsafeBlocks()
+        {
+            yield return new object[] { ID(), CodeSnippets.TrivialClassDeclarations, TestTargetFramework.Net, true };
+
+            {
+                string source = @"
+using System.Runtime.InteropServices;
+public class Basic { }
+";
+                yield return new object[] { ID(), source, TestTargetFramework.Standard, false };
+                yield return new object[] { ID(), source, TestTargetFramework.Framework, false };
+                yield return new object[] { ID(), source, TestTargetFramework.Net, false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CodeSnippetsToCompileToValidateAllowUnsafeBlocks))]
+        public async Task ValidateRequireAllowUnsafeBlocksDiagnosticNoTrigger(string id, string source, TestTargetFramework framework, bool allowUnsafe)
+        {
+            TestUtils.Use(id);
+            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: allowUnsafe);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());

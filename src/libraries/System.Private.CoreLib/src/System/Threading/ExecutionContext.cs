@@ -104,7 +104,7 @@ namespace System.Threading
             ExecutionContext? executionContext = currentThread._executionContext ?? Default;
             if (executionContext.m_isFlowSuppressed)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotSupressFlowMultipleTimes);
+                throw new InvalidOperationException(SR.InvalidOperation_CannotSuppressFlowMultipleTimes);
             }
 
             executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
@@ -120,7 +120,7 @@ namespace System.Threading
             ExecutionContext? executionContext = currentThread._executionContext;
             if (executionContext == null || !executionContext.m_isFlowSuppressed)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotRestoreUnsupressedFlow);
+                throw new InvalidOperationException(SR.InvalidOperation_CannotRestoreUnsuppressedFlow);
             }
 
             currentThread._executionContext = executionContext.ShallowClone(isFlowSuppressed: false);

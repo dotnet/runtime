@@ -685,7 +685,7 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
 
 /*
 The wrappers below are simple implementations that may not be as robust as complete functions in the Secure CRT library.
-Remember to fix the errcode defintion in safecrt.h.
+Remember to fix the errcode definition in safecrt.h.
 */
 
 #define swscanf_s swscanf

@@ -371,7 +371,7 @@ namespace System.Buffers.Text
                 // mask is 0xFF (-1) for range #[1..4] and 0x00 for range #0:
                 Vector256<sbyte> mask = Avx2.CompareGreaterThan(str, const25);
 
-                // substract -1, so add 1 to indices for range #[1..4], All indices are now correct:
+                // subtract -1, so add 1 to indices for range #[1..4], All indices are now correct:
                 Vector256<sbyte> tmp = Avx2.Subtract(indices.AsSByte(), mask);
 
                 // Add offsets to input values:
@@ -499,7 +499,7 @@ namespace System.Buffers.Text
                 // mask is 0xFF (-1) for range #[1..4] and 0x00 for range #0:
                 Vector128<sbyte> mask = Vector128.GreaterThan(str.AsSByte(), const25);
 
-                // substract -1, so add 1 to indices for range #[1..4], All indices are now correct:
+                // subtract -1, so add 1 to indices for range #[1..4], All indices are now correct:
                 Vector128<sbyte> tmp = indices.AsSByte() - mask;
 
                 // Add offsets to input values:
