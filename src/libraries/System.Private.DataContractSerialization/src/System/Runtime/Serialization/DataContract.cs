@@ -348,7 +348,7 @@ namespace System.Runtime.Serialization
             private static readonly ConcurrentDictionary<RuntimeTypeHandle, Lazy<int>> s_typeToIDCache = new();
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
-            private static ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
+            private static readonly ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
             private static Dictionary<XmlQualifiedName, DataContract?>? s_nameToBuiltInContract;
             private static Dictionary<string, string>? s_namespaces;
             private static Dictionary<string, XmlDictionaryString>? s_clrTypeStrings;
