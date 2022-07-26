@@ -44,7 +44,6 @@ export function mono_wasm_runtime_ready(): void {
     if ((<any>globalThis).dotnetDebugger)
         // eslint-disable-next-line no-debugger
         debugger;
-    else
     _readSymbolMapFile("dotnet.js.symbols");
 }
 
