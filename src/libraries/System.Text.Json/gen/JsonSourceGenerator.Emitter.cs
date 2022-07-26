@@ -1073,7 +1073,7 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
 
                 return @$"private {typeInfoPropertyTypeRef}? _{typeFriendlyName};
 /// <summary>
-/// JSON-related serialization metadata for a type.
+/// Defines the source generated JSON serialization contract metadata for a given type.
 /// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
