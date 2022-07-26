@@ -62,7 +62,6 @@ public:
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
-    static FCDECL0(FC_BOOL_RET, ResetAbort);
     static FCDECL1(FC_BOOL_RET, IsAlive,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(FC_BOOL_RET, Join,          ThreadBaseObject* pThisUNSAFE, INT32 Timeout);
     static FCDECL1(void,    Sleep,             INT32 iTime);
@@ -112,6 +111,7 @@ extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize();
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
+extern "C" BOOL QCALLTYPE ThreadNative_ResetAbort();
 
 #endif // _COMSYNCHRONIZABLE_H
 

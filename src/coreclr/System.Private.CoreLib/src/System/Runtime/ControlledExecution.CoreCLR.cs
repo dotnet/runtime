@@ -14,9 +14,6 @@ namespace System.Runtime
     /// </summary>
     public static partial class ControlledExecution
     {
-        [ThreadStatic]
-        private static bool t_executing;
-
         /// <summary>
         /// Runs code that may be aborted asynchronously.
         /// </summary>
@@ -41,17 +38,11 @@ namespace System.Runtime
             ArgumentNullException.ThrowIfNull(action);
 
             // Recursive ControlledExecution.Run calls are not supported
-            if (t_executing)
+            if (Execution.t_executing)
                 throw new InvalidOperationException(SR.InvalidOperation_NestedControlledExecutionRun);
 
             new Execution(action, cancellationToken).Run();
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
-        private static partial void AbortThread(ThreadHandle thread);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ResetAbortThread();
 
         private sealed partial class Execution
         {
@@ -68,6 +59,9 @@ namespace System.Runtime
                 AbortRequested = 2,
                 RunningAbort = 4
             }
+
+            [ThreadStatic]
+            internal static bool t_executing;
 
             // Interpreted as a value of the State enumeration type
             private int _state;
@@ -112,7 +106,7 @@ namespace System.Runtime
                                 // QCall may be aborted. That is OK as we will catch the ThreadAbortException and call
                                 // ResetAbortThread again below. The only downside is that a successfully executed
                                 // action may be reported as canceled.
-                                bool resetAbortRequest = ResetAbortThread();
+                                bool resetAbortRequest = ResetAbortThread() != Interop.BOOL.FALSE;
 
                                 // If there is an Abort in progress, we need to wait until it sets the TS_AbortRequested
                                 // flag on this thread, then we can reset the flag and safely exit this frame.
@@ -175,6 +169,13 @@ namespace System.Runtime
                     Interlocked.And(ref _state, (int)~State.RunningAbort);
                 }
             }
+
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
+            private static partial void AbortThread(ThreadHandle thread);
+
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ResetAbort")]
+            [SuppressGCTransition]
+            private static partial Interop.BOOL ResetAbortThread();
         }
     }
 }
