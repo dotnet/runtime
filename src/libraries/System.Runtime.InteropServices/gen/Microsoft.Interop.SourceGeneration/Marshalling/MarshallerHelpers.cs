@@ -147,6 +147,11 @@ namespace Microsoft.Interop
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
+        internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
+        }
+
         /// <summary>
         /// Generate a topologically sorted collection of elements.
         /// </summary>

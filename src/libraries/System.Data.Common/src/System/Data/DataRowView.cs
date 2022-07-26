@@ -33,7 +33,7 @@ namespace System.Data
         /// <returns>Hashcode of <see cref="Row"/></returns>
         public override int GetHashCode()
         {
-            // Everett compatability, must return hashcode for DataRow
+            // Everett compatibility, must return hashcode for DataRow
             // this does prevent using this object in collections like Hashtable
             // which use the hashcode as an immutable value to identify this object
             // user could/should have used the DataRow property instead of the hashcode
@@ -234,7 +234,7 @@ namespace System.Data
         string? ICustomTypeDescriptor.GetComponentName() => null;
 
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        TypeConverter ICustomTypeDescriptor.GetConverter() => null!;
+        TypeConverter? ICustomTypeDescriptor.GetConverter() => null;
 
         [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent() => null;

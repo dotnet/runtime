@@ -177,7 +177,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -310,7 +310,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -427,7 +427,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -571,7 +571,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -684,7 +684,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -785,7 +785,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -928,7 +928,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -1075,7 +1075,7 @@ Return Value:
                     resultant dest string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -1208,7 +1208,7 @@ Return Value:
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -1315,7 +1315,7 @@ Return Value:
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -1469,7 +1469,7 @@ Return Value:
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -1619,7 +1619,7 @@ Return Value:
                     null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all falure cases
+                    code for all failure cases
 
     STRSAFE_E_INSUFFICIENT_BUFFER /
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -1750,7 +1750,7 @@ Return Value:
                     string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
@@ -1806,7 +1806,7 @@ Return Value:
                     string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
@@ -1889,7 +1889,7 @@ Return Value:
                     string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
@@ -1972,7 +1972,7 @@ Return Value:
                     string was null terminated
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
@@ -2030,7 +2030,7 @@ Return Value:
                     less than or equal to cchMax characters
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     It is strongly recommended to use the SUCCEEDED() / FAILED() macros to test the
     return value of this function.
@@ -2121,7 +2121,7 @@ Return Value:
                     less than or equal to cbMax bytes
 
     failure     -   you can use the macro HRESULT_CODE() to get a win32 error
-                    code for all hresult falure cases
+                    code for all hresult failure cases
 
     It is strongly recommended to use the SUCCEEDED() / FAILED() macros to test the
     return value of this function.

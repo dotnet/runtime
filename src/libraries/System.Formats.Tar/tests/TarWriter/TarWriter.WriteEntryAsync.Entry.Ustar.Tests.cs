@@ -18,8 +18,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry regularFile = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 SetRegularFile(regularFile);
@@ -28,8 +27,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry regularFile = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifyRegularFile(regularFile, isWritable: false);
@@ -40,8 +38,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry hardLink = new UstarTarEntry(TarEntryType.HardLink, InitialEntryName);
                 SetHardLink(hardLink);
@@ -50,8 +47,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry hardLink = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifyHardLink(hardLink);
@@ -62,8 +58,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry symbolicLink = new UstarTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
                 SetSymbolicLink(symbolicLink);
@@ -72,8 +67,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry symbolicLink = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifySymbolicLink(symbolicLink);
@@ -84,8 +78,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry directory = new UstarTarEntry(TarEntryType.Directory, InitialEntryName);
                 SetDirectory(directory);
@@ -94,8 +87,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry directory = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifyDirectory(directory);
@@ -106,8 +98,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteCharacterDevice_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry charDevice = new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
                 SetCharacterDevice(charDevice);
@@ -116,8 +107,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry charDevice = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifyCharacterDevice(charDevice);
@@ -128,8 +118,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteBlockDevice_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry blockDevice = new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName);
                 SetBlockDevice(blockDevice);
@@ -138,8 +127,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry blockDevice = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifyBlockDevice(blockDevice);
@@ -150,8 +138,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteFifo_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry fifo = new UstarTarEntry(TarEntryType.Fifo, InitialEntryName);
                 SetFifo(fifo);
@@ -160,8 +147,7 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream);
-            await using (reader)
+            await using (TarReader reader = new TarReader(archiveStream))
             {
                 UstarTarEntry fifo = await reader.GetNextEntryAsync() as UstarTarEntry;
                 VerifyFifo(fifo);

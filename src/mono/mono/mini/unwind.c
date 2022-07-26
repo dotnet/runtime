@@ -412,7 +412,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 			loc = op->when;
 		}
 
-		/* Emit an advance_loc if neccesary */
+		/* Emit an advance_loc if necessary */
 		while (op->when > loc) {
 			if (op->when - loc >= 65536) {
 				*p ++ = DW_CFA_advance_loc4;
@@ -1041,7 +1041,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	/* Decode FDE */
 
 	p = fde;
-	// FIXME: Endianess ?
+	// FIXME: Endianness ?
 	fde_len = *(guint32*)p;
 	g_assert (fde_len != 0xffffffff && fde_len != 0);
 	p += 4;

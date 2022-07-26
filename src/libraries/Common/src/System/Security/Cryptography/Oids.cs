@@ -110,6 +110,7 @@ namespace System.Security.Cryptography
         internal const string CertPolicies = "2.5.29.32";
         internal const string AnyCertPolicy = "2.5.29.32.0";
         internal const string CertPolicyMappings = "2.5.29.33";
+        internal const string AuthorityKeyIdentifier = "2.5.29.35";
         internal const string CertPolicyConstraints = "2.5.29.36";
         internal const string EnhancedKeyUsage = "2.5.29.37";
         internal const string InhibitAnyPolicyExtension = "2.5.29.54";

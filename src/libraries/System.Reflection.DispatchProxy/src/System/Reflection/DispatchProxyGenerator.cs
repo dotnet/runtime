@@ -59,6 +59,7 @@ namespace System.Reflection
             typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
+        [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
         internal static object CreateProxyInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -113,6 +114,7 @@ namespace System.Reflection
             private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
+            [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
             {
                 string name;
@@ -343,8 +345,8 @@ namespace System.Reflection
 
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
-                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overriden
-                    // ("methods that cannot be overriden" includes default implementation of other interface methods).
+                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overridden
+                    // ("methods that cannot be overridden" includes default implementation of other interface methods).
                     if (!mi.IsVirtual || mi.IsFinal)
                         continue;
 
@@ -374,7 +376,7 @@ namespace System.Reflection
                 {
                     PropertyAccessorInfo ai = propertyMap[pi.GetMethod ?? pi.SetMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static property, non-virtual property,
+                    // If we didn't make an overridden accessor above, this was a static property, non-virtual property,
                     // or a default implementation of a property of a different interface. In any case, we don't need
                     // to redeclare it.
                     if (ai.GetMethodBuilder == null && ai.SetMethodBuilder == null)
@@ -391,7 +393,7 @@ namespace System.Reflection
                 {
                     EventAccessorInfo ai = eventMap[ei.AddMethod ?? ei.RemoveMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static event, non-virtual event,
+                    // If we didn't make an overridden accessor above, this was a static event, non-virtual event,
                     // or a default implementation of an event of a different interface. In any case, we don't
                     // need to redeclare it.
                     if (ai.AddMethodBuilder == null && ai.RemoveMethodBuilder == null && ai.RaiseMethodBuilder == null)

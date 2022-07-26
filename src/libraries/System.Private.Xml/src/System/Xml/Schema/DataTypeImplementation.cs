@@ -3168,7 +3168,7 @@ namespace System.Xml.Schema
     }
 
     /*
-      <xs:simpleType name="nonPositiveInteger" id="nonPostiveInteger">
+      <xs:simpleType name="nonPositiveInteger" id="nonPositiveInteger">
         <xs:annotation>
           <xs:documentation
             source="http://www.w3.org/TR/xmlschema-2/#negativeInteger"/>

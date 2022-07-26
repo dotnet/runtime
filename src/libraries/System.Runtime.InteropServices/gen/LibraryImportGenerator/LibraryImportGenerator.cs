@@ -12,6 +12,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -60,23 +61,19 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            // Collect all methods adorned with LibraryImportAttribute
             var attributedMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (node, ct) => ShouldVisitNode(node),
-                    static (context, ct) =>
-                    {
-                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
-                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute))
-                        {
-                            return new { Syntax = syntax, Symbol = methodSymbol };
-                        }
-
-                        return null;
-                    })
+                .ForAttributeWithMetadataName(
+                    context,
+                    TypeNames.LibraryImportAttribute,
+                    static (node, ct) => node is MethodDeclarationSyntax,
+                    static (context, ct) => context.TargetSymbol is IMethodSymbol methodSymbol
+                        ? new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
+                        : null)
                 .Where(
                     static modelData => modelData is not null);
 
+            // Validate if attributed methods can have source generated
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
                 Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
@@ -86,16 +83,33 @@ namespace Microsoft.Interop
             var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
+            // Report diagnostics for invalid methods
             context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
             {
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
+            // Compute generator options
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
                 .Select(static (options, ct) => new LibraryImportGeneratorOptions(options.GlobalOptions));
 
+            IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
+
+            // Validate environment that is being used to generate stubs.
+            context.RegisterDiagnostics(stubEnvironment.Combine(attributedMethods.Collect()).SelectMany((data, ct) =>
+            {
+                if (data.Right.IsEmpty // no attributed methods
+                    || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true } // Unsafe code enabled
+                    || data.Left.TargetFramework != TargetFramework.Net) // Non-.NET 5 scenarios use forwarders and don't need unsafe code
+                {
+                    return ImmutableArray<Diagnostic>.Empty;
+                }
+
+                return ImmutableArray.Create(Diagnostic.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
+            }));
+
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
-                .Combine(context.CreateStubEnvironmentProvider())
+                .Combine(stubEnvironment)
                 .Combine(stubOptions)
                 .Select(static (data, ct) => new
                 {
@@ -582,19 +596,6 @@ namespace Microsoft.Interop
                     IdentifierName(typeof(T).FullName),
                     IdentifierName(value.ToString()));
             }
-        }
-
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                return false;
-            }
-
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

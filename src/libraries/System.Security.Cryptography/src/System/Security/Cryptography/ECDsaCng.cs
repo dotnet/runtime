@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -46,6 +47,25 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        /// <summary>
+        ///     Creates a new ECDsaCng object that will use the specified key. Unlike the public
+        ///     constructor, this does not copy the key and ownership is transferred. The
+        ///     <paramref name="transferOwnership"/> parameter must be true.
+        /// </summary>
+        /// <param name="key">Key to use for ECDsa operations</param>
+        /// <param name="transferOwnership">
+        /// Must be true. Signals that ownership of <paramref name="key"/> will be transferred to the new instance.
+        /// </param>
+        [SupportedOSPlatform("windows")]
+        internal ECDsaCng(CngKey key, bool transferOwnership)
+        {
+            Debug.Assert(key is not null);
+            Debug.Assert(IsEccAlgorithmGroup(key.AlgorithmGroup));
+            Debug.Assert(transferOwnership);
+
+            Key = key;
         }
 
         protected override void Dispose(bool disposing)

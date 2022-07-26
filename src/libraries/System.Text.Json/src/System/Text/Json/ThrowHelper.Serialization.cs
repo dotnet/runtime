@@ -171,12 +171,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerContextOptionsImmutable()
-        {
-            throw new InvalidOperationException(SR.SerializerContextOptionsImmutable);
-        }
-
-        [DoesNotReturn]
         public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
         {
             throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
@@ -417,6 +411,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty()
+        {
+            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+        }
+
+        [DoesNotReturn]
         public static void ThrowNotSupportedException(ref ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
         {
             string message = ex.Message;
@@ -645,12 +645,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_BuiltInConvertersNotRooted(Type type)
-        {
-            throw new NotSupportedException(SR.Format(SR.BuiltInConvertersNotRooted, type));
-        }
-
-        [DoesNotReturn]
         public static void ThrowNotSupportedException_NoMetadataForType(Type type, IJsonTypeInfoResolver? resolver)
         {
             throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
@@ -662,12 +656,6 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
         }
 
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_MetadatInitFuncsNull()
-        {
-            throw new InvalidOperationException(SR.Format(SR.MetadataInitFuncsNull));
-        }
-
         public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, resolver?.GetType().FullName ?? "<null>", type));
@@ -676,11 +664,6 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
-        }
-
-        public static void ThrowInvalidOperationException_NoDefaultOptionsForContext(JsonSerializerContext context, Type type)
-        {
-            throw new InvalidOperationException(SR.Format(SR.NoDefaultOptionsForContext, context.GetType(), type));
         }
 
         [DoesNotReturn]

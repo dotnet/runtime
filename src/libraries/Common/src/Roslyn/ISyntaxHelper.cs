@@ -35,6 +35,8 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
         /// </summary>
         void AddAliases(SyntaxNode node, ref ValueListBuilder<(string aliasName, string symbolName)> aliases, bool global);
         void AddAliases(CompilationOptions options, ref ValueListBuilder<(string aliasName, string symbolName)> aliases);
+
+        bool ContainsGlobalAliases(SyntaxNode root);
     }
 
     internal abstract class AbstractSyntaxHelper : ISyntaxHelper
@@ -58,5 +60,7 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 
         public abstract void AddAliases(SyntaxNode node, ref ValueListBuilder<(string aliasName, string symbolName)> aliases, bool global);
         public abstract void AddAliases(CompilationOptions options, ref ValueListBuilder<(string aliasName, string symbolName)> aliases);
+
+        public abstract bool ContainsGlobalAliases(SyntaxNode root);
     }
 }

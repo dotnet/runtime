@@ -128,7 +128,7 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? GetCSharpString(string? value)
         {
             return ReflectionAwareILGen.GetCSharpString(value);

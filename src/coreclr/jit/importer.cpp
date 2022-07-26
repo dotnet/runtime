@@ -3474,7 +3474,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* src     = gtNewIndOfIconHandleNode(TYP_STRUCT, (size_t)initData, GTF_ICON_CONST_PTR, true);
 
 #ifdef DEBUG
-    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_IntializeArrayIntrinsics;
+    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
     return gtNewBlkOpNode(dst,   // dst
@@ -3631,7 +3631,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 //    Intrinsics are generally not recognized in minopts and debug codegen.
 //
 //    However, certain traditional intrinsics are identifed as "must expand"
-//    if there is no fallback implmentation to invoke; these must be handled
+//    if there is no fallback implementation to invoke; these must be handled
 //    in all codegen modes.
 //
 //    New style intrinsics (where the fallback implementation is in IL) are
@@ -6609,7 +6609,27 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
 #endif                   // DEBUG
 }
 
-/******************************************************************************/
+typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+    if ((varDsc->TypeGet() == TYP_BLK) || (varDsc->TypeGet() == TYP_LCLBLK))
+    {
+        return typeInfo();
+    }
+    if (varDsc->TypeGet() == TYP_BYREF)
+    {
+        // Pretend all byrefs are pointing to bytes.
+        return typeInfo(TI_BYTE).MakeByRef();
+    }
+    if (varTypeIsStruct(varDsc))
+    {
+        return typeInfo(TI_STRUCT, varDsc->GetStructHnd());
+    }
+
+    return typeInfo(varDsc->TypeGet());
+}
+
 typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(ciType < CORINFO_TYPE_COUNT);
@@ -7441,7 +7461,7 @@ void Compiler::verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
         }
 
         // If it is null, we assume we can access it (since it will AV shortly)
-        // If it is anything but a refernce class, there is no hierarchy, so
+        // If it is anything but a reference class, there is no hierarchy, so
         // again, we don't need the precise instance class to compute 'protected' access
         if (tiThis->IsType(TI_REF))
         {
@@ -8501,6 +8521,11 @@ void Compiler::impCheckForPInvokeCall(
         call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
     }
 
+    if ((unmanagedCallConv == CorInfoCallConvExtension::Thiscall) && (sig->numArgs == 0))
+    {
+        BADCODE("thiscall with 0 arguments");
+    }
+
     // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
@@ -8574,11 +8599,6 @@ void Compiler::impCheckForPInvokeCall(
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }
-
-    if (unmanagedCallConv == CorInfoCallConvExtension::Thiscall)
-    {
-        call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
-    }
 }
 
 GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di)
@@ -8649,7 +8669,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     // For "thiscall", the first argument goes in a register. Since its
     // order does not need to be changed, we do not need to spill it
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         assert(argsToReverse);
         argsToReverse--;
@@ -8694,7 +8714,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
@@ -9662,7 +9682,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
 
                     GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
-                    assert(!compDonotInline());
+
+                    // stubAddr tree may require a new temp.
+                    // If we're inlining, this may trigger the too many locals inline failure.
+                    //
+                    // If so, we need to bail out.
+                    //
+                    if (compDonotInline())
+                    {
+                        return TYP_UNDEF;
+                    }
 
                     // This is the rough code to set up an indirect stub call
                     assert(stubAddr != nullptr);
@@ -9670,8 +9699,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // The stubAddr may be a
                     // complex expression. As it is evaluated after the args,
                     // it may cause registered args to be spilled. Simply spill it.
+                    //
+                    unsigned const lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
+                    if (compDonotInline())
+                    {
+                        return TYP_UNDEF;
+                    }
 
-                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
                     impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
@@ -10770,9 +10804,9 @@ DONE_CALL:
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
                     {
-                        unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
-                        LclVarDsc* varDsc     = lvaGetDesc(calliSlot);
-                        varDsc->lvVerTypeInfo = tiRetVal;
+                        unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
+                        LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
+
                         impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
@@ -11052,7 +11086,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
             return op;
         }
 
-        if (op->gtOper == GT_CALL)
+        if (op->IsCall() && (op->AsCall()->GetUnmanagedCallConv() == unmgdCallConv))
         {
             return op;
         }
@@ -11445,7 +11479,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nBefore import CEE_LEAVE in " FMT_BB " (targetting " FMT_BB "):\n", block->bbNum,
+        printf("\nBefore import CEE_LEAVE in " FMT_BB " (targeting " FMT_BB "):\n", block->bbNum,
                block->bbJumpDest->bbNum);
         fgDispBasicBlocks();
         fgDispHandlerTab();
@@ -11912,7 +11946,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // In the above nested try-finally example, we create a step block (call it Bstep) which in branches to a block
     // where a finally would branch to (and such block is marked as finally target).  Block B1 branches to step block.
     // Because of re-import of B0, Bstep is also orphaned. Since Bstep is a finally target it cannot be removed.  To
-    // work around this we will duplicate B0 (call it B0Dup) before reseting. B0Dup is marked as BBJ_CALLFINALLY and
+    // work around this we will duplicate B0 (call it B0Dup) before resetting. B0Dup is marked as BBJ_CALLFINALLY and
     // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
     // will be treated as pair and handled correctly.
     if (block->bbJumpKind == BBJ_CALLFINALLY)
@@ -12043,7 +12077,7 @@ const static controlFlow_t controlFlow[] = {
 #endif // DEBUG
 
 /*****************************************************************************
- *  Determine the result type of an arithemetic operation
+ *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
  */
 var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2)
@@ -12052,7 +12086,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     GenTree*  op1  = *pOp1;
     GenTree*  op2  = *pOp2;
 
-    // Arithemetic operations are generally only allowed with
+    // Arithmetic operations are generally only allowed with
     // primitive types, but certain operations are allowed
     // with byrefs
 
@@ -13419,7 +13453,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impImplicitIorI4Cast(op1, lclTyp);
 
 #ifdef TARGET_64BIT
-                // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
+                // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
                 if (varTypeIsI(op1->TypeGet()) && (genActualType(lclTyp) == TYP_INT))
                 {
                     op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
@@ -13610,8 +13644,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
                 assert((op1->gtFlags & GTF_GLOB_REF) == 0);
 
-                tiRetVal = lvaTable[lclNum].lvVerTypeInfo;
-
+                tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -15095,13 +15128,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
+                    // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
                     //
                     if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
                     {
                         op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                     }
-                    // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
+                    // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                     //
                     if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
                     {
@@ -15201,7 +15234,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impBashVarAddrsToI(op1);
 
 #ifdef TARGET_64BIT
-                // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
+                // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                 //
                 if (genActualType(op1->gtType) == TYP_INT)
                 {
@@ -15469,7 +15502,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 //      3) Class Size can be determined beforehand (normal case)
                 // In the first case, we need to call a NEWOBJ helper (multinewarray).
                 // In the second case we call the constructor with a '0' this pointer.
-                // In the third case we alloc the memory, then call the constuctor.
+                // In the third case we alloc the memory, then call the constructor.
 
                 clsFlags = callInfo.classFlags;
                 if (clsFlags & CORINFO_FLG_ARRAY)
@@ -16385,13 +16418,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
-                        // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
+                        // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
                         //
                         if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
                         {
                             op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                         }
-                        // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
+                        // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                         //
                         if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
                         {
@@ -17665,9 +17698,9 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET o
 
 // Load a local/argument on the operand stack
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
-void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
+void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 {
-    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), tiRetVal);
+    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
 }
 
 // Load an argument on the operand stack
@@ -18354,7 +18387,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                 if (HBtab->HasCatchHandler() || HBtab->HasFinallyHandler() || HBtab->HasFilter())
                 {
                     BADCODE(
-                        "The 'this' pointer of an instance constructor is not intialized upon entry to a try region");
+                        "The 'this' pointer of an instance constructor is not initialized upon entry to a try region");
                 }
                 else
                 {
@@ -20743,11 +20776,6 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
             {
                 lvaSetStruct(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
             }
-            else
-            {
-                // This is a wrapped primitive.  Make sure the verstate knows that
-                lvaTable[tmpNum].lvVerTypeInfo = inlineeLocal.lclVerTypeInfo;
-            }
         }
 
 #ifdef DEBUG
@@ -20959,11 +20987,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                     {
                         lvaSetStructUsedAsVarArg(tmpNum);
                     }
-                }
-                else
-                {
-                    // This is a wrapped primitive.  Make sure the verstate knows that
-                    lvaTable[tmpNum].lvVerTypeInfo = lclInfo.lclVerTypeInfo;
                 }
             }
 
@@ -21474,7 +21497,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
     }
 #elif defined(TARGET_LOONGARCH64)
-    // TODO-LoongArch64: add some instrinsics.
+    // TODO-LoongArch64: add some intrinsics.
     return false;
 #else
     // TODO: This portion of logic is not implemented for other arch.
@@ -22357,7 +22380,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
 
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    // See what intrinisc we have...
+    // See what intrinsic we have...
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
     switch (ni)
     {
@@ -22854,6 +22877,22 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         {
             assert(call->IsDelegateInvoke());
             JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
+            return;
+        }
+
+        CORINFO_CLASS_HANDLE definingClass = info.compCompHnd->getMethodClass(likelyMethod);
+        likelyClassAttribs                 = info.compCompHnd->getClassAttribs(definingClass);
+
+        // For instance methods on value classes we need an extended check to
+        // check for the unboxing stub. This is NYI.
+        // Note: For dynamic PGO likelyMethod above will be the unboxing stub
+        // which would fail GDV for other reasons.
+        // However, with static profiles or textual PGO input it is still
+        // possible that likelyMethod is not the unboxing stub. So we do need
+        // this explicit check.
+        if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) != 0)
+        {
+            JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
             return;
         }
 

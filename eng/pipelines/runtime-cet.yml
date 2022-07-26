@@ -13,6 +13,7 @@ pr:
     exclude:
     - /**/*.md
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT

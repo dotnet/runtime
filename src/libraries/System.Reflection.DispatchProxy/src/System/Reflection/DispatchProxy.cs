@@ -33,6 +33,7 @@ namespace System.Reflection
         /// <returns>An object instance that implements <typeparamref name="T"/>.</returns>
         /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is a class,
         /// or <typeparamref name="TProxy"/> is sealed or does not have a parameterless constructor</exception>
+        [RequiresDynamicCode("Creating a proxy instance requires generating code at runtime")]
         public static T Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TProxy>()
             where TProxy : DispatchProxy
         {

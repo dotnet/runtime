@@ -25,33 +25,33 @@
 .class interface public auto ansi abstract IGenDerive<V1,V2> implements class IGenRetType<!V1,!V2>  { }
 
 // Structs implementing the interfaces
-.class public sealed auto ansi A extends [mscorlib]System.ValueType 
+.class public sealed auto ansi A extends [mscorlib]System.ValueType
     implements IA { }
 
-.class public sealed auto ansi B extends [mscorlib]System.ValueType 
+.class public sealed auto ansi B extends [mscorlib]System.ValueType
     implements IB { }
 
-.class public sealed auto ansi RetType extends [mscorlib]System.ValueType 
+.class public sealed auto ansi RetType extends [mscorlib]System.ValueType
     implements class IGenRetType<int32,string> { }
 
-.class public sealed auto ansi DerivedRetType extends [mscorlib]System.ValueType 
+.class public sealed auto ansi DerivedRetType extends [mscorlib]System.ValueType
     implements class IGenDerive<int32,string> { }
 
-.class public sealed auto ansi GenRetType<U,V> extends [mscorlib]System.ValueType 
+.class public sealed auto ansi GenRetType<U,V> extends [mscorlib]System.ValueType
     implements class IGenRetType<!U, class IDictionary<string,!V>> { }
 
-.class public sealed auto ansi DerivedGenRetType<U,V> extends [mscorlib]System.ValueType 
+.class public sealed auto ansi DerivedGenRetType<U,V> extends [mscorlib]System.ValueType
     implements class IGenDerive<!U, class IDictionary<string,!V>> { }
 
 // ========================================================================================
-// Main base type with various virtual methods that will be overriden later
+// Main base type with various virtual methods that will be overridden later
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed  { ret }
 
-  .method public hidebysig newslot virtual instance class IA NonGen(string& res) 
+  .method public hidebysig newslot virtual instance class IA NonGen(string& res)
   {
     ldarg.1
     ldstr "IA GenBaseType.NonGen()"
@@ -59,7 +59,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IGenRetType<int32,string> GenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class IGenRetType<int32,string> GenFunc(string& res)
   {
     ldarg.1
     ldstr "IGenRetType<int32,string> GenBaseType.GenFunc()"
@@ -67,7 +67,7 @@
     ldnull
     ret
   }
-  .method public hidebysig newslot virtual instance class IGenRetType<!A, class IDictionary<string,!B>> GenFunc(string& res) 
+  .method public hidebysig newslot virtual instance class IGenRetType<!A, class IDictionary<string,!B>> GenFunc(string& res)
   {
     ldarg.1
     ldstr "IGenRetType<!A, class IDictionary<string,!B>> GenBaseType.GenFunc()"
@@ -86,7 +86,7 @@
 .class public auto ansi beforefieldinit Invalid1<U,V> extends class GenBaseType<!U,!V>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-  .method public hidebysig newslot virtual instance valuetype A NonGen(string& res) 
+  .method public hidebysig newslot virtual instance valuetype A NonGen(string& res)
   {
     .override method instance class IA class GenBaseType<!U,!V>::NonGen(string& res)
     .locals ( valuetype A )
@@ -98,7 +98,7 @@
 .class public auto ansi beforefieldinit Invalid2<U,V> extends class GenBaseType<!U,!V>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-  .method public hidebysig newslot virtual instance valuetype B NonGen(string& res) 
+  .method public hidebysig newslot virtual instance valuetype B NonGen(string& res)
   {
     .override method instance class IA class GenBaseType<!U,!V>::NonGen(string& res)
     .locals ( valuetype B )
@@ -110,7 +110,7 @@
 .class public auto ansi beforefieldinit Invalid3<U,V> extends class GenBaseType<!U,!V>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-  .method public hidebysig newslot virtual instance valuetype RetType GenFunc(string& res) 
+  .method public hidebysig newslot virtual instance valuetype RetType GenFunc(string& res)
   {
     .override method instance class IGenRetType<int32,string> class GenBaseType<!U,!V>::GenFunc(string& res)
     .locals ( valuetype RetType )
@@ -122,7 +122,7 @@
 .class public auto ansi beforefieldinit Invalid4<U,V> extends class GenBaseType<!U,!V>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-  .method public hidebysig newslot virtual instance valuetype DerivedRetType GenFunc(string& res) 
+  .method public hidebysig newslot virtual instance valuetype DerivedRetType GenFunc(string& res)
   {
     .override method instance class IGenRetType<int32,string> class GenBaseType<!U,!V>::GenFunc(string& res)
     .locals ( valuetype DerivedRetType )
@@ -134,7 +134,7 @@
 .class public auto ansi beforefieldinit Invalid5<U,V> extends class GenBaseType<!U,!V>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-  .method public hidebysig newslot virtual instance valuetype GenRetType<!U,!V> GenFunc(string& res) 
+  .method public hidebysig newslot virtual instance valuetype GenRetType<!U,!V> GenFunc(string& res)
   {
     .override method instance class IGenRetType<!U, class IDictionary<string,!V>> class GenBaseType<!U,!V>::GenFunc(string& res)
     .locals ( valuetype GenRetType<!U,!V> )
@@ -146,7 +146,7 @@
 .class public auto ansi beforefieldinit Invalid6<U,V> extends class GenBaseType<!U,!V>
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-  .method public hidebysig newslot virtual instance valuetype DerivedGenRetType<!U,!V> GenFunc(string& res) 
+  .method public hidebysig newslot virtual instance valuetype DerivedGenRetType<!U,!V> GenFunc(string& res)
   {
     .override method instance class IGenRetType<!U, class IDictionary<string,!V>> class GenBaseType<!U,!V>::GenFunc(string& res)
     .locals ( valuetype DerivedGenRetType<!U,!V> )
@@ -159,42 +159,42 @@
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
-  .method public static void RunTest1() noinlining 
+  .method public static void RunTest1() noinlining
   {
     newobj     instance void class Invalid1<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunTest2() noinlining 
+  .method public static void RunTest2() noinlining
   {
     newobj     instance void class Invalid2<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunTest3() noinlining 
+  .method public static void RunTest3() noinlining
   {
     newobj     instance void class Invalid3<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunTest4() noinlining 
+  .method public static void RunTest4() noinlining
   {
     newobj     instance void class Invalid4<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunTest5() noinlining 
+  .method public static void RunTest5() noinlining
   {
     newobj     instance void class Invalid5<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
-  .method public static void RunTest6() noinlining 
+  .method public static void RunTest6() noinlining
   {
     newobj     instance void class Invalid6<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
@@ -208,10 +208,10 @@
     )
     .entrypoint
     .maxstack  2
-    .locals init (bool V_0)    
+    .locals init (bool V_0)
     ldc.i4.1
     stloc.0
-    
+
     T1:
     .try
     {
@@ -223,13 +223,13 @@
         leave.s T2
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s T2
     }
-    
+
     T2:
     .try
     {
@@ -241,10 +241,10 @@
         leave.s T3
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s T3
     }
 
@@ -259,10 +259,10 @@
         leave.s T4
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s T4
     }
 
@@ -277,10 +277,10 @@
         leave.s T5
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s T5
     }
 
@@ -295,10 +295,10 @@
         leave.s T6
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s T6
     }
 
@@ -313,28 +313,28 @@
         leave.s DONE
     }
     catch [mscorlib]System.TypeLoadException
-    {   
+    {
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s DONE
     }
 
     DONE:
-    
+
     ldloc.0
     brtrue.s   PASS
 
     ldc.i4.s   101
     ret
-    
+
     PASS:
     ldstr      "Test PASSED"
     call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.s   100
     ret
   }
-  
+
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

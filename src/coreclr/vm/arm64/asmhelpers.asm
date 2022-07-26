@@ -231,7 +231,7 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implemetations
+; The following Macros help in WRITE_BARRIER Implementations
     ; WRITE_BARRIER_ENTRY
     ;
     ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -1085,10 +1085,10 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
-                                  ; Move this entry to head postion of the chain
+                                  ; Move this entry to head position of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG

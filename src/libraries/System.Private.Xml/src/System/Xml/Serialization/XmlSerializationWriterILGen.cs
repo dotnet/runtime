@@ -2600,12 +2600,12 @@ namespace System.Xml.Serialization
             ilg.Ceq();
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? GetQuotedCSharpString(string? value) =>
             value is null ? null :
             $"@\"{GetCSharpString(value)}\"";
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? GetCSharpString(string? value)
         {
             if (value == null)

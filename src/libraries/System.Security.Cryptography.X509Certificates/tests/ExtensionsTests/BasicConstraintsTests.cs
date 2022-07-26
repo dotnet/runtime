@@ -39,6 +39,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             byte[] expectedDer = expectedDerString.HexToByteArray();
             Assert.Equal(expectedDer, ext.RawData);
+            Assert.Equal(critical, ext.Critical);
+
+            if (certificateAuthority)
+            {
+                ext = X509BasicConstraintsExtension.CreateForCertificateAuthority(
+                    hasPathLengthConstraint ? pathLengthConstraint : null);
+
+                AssertExtensions.SequenceEqual(expectedDer, ext.RawData);
+                Assert.True(ext.Critical, "ext.Critical");
+            }
+            else if (!hasPathLengthConstraint)
+            {
+                ext = X509BasicConstraintsExtension.CreateForEndEntity(critical);
+
+                AssertExtensions.SequenceEqual(expectedDer, ext.RawData);
+                Assert.Equal(critical, ext.Critical);
+            }
         }
 
         [Theory]
