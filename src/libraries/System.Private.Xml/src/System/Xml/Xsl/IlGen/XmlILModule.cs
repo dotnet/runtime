@@ -239,7 +239,7 @@ namespace System.Xml.Xsl.IlGen
 
             if (!_useLRE)
             {
-                typBaked = _typeBldr!.CreateType();
+                typBaked = _typeBldr.CreateType();
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);
