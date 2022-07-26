@@ -77,7 +77,7 @@ namespace System.IO.Tests
                 RetryHelper.Execute(() =>
                 {
                     File.Decrypt(tmpFileName);
-                }, maxAttempts: 5, backoffFunc: null, retryWhen: e => e.GetType() == typeof(IOException));
+                }, maxAttempts: 30, backoffFunc: null, retryWhen: e => e.GetType() == typeof(IOException));
 
                 Assert.Equal(fileContentRead, File.ReadAllText(tmpFileName));
                 Assert.NotEqual(FileAttributes.Encrypted, (FileAttributes.Encrypted & File.GetAttributes(tmpFileName)));
