@@ -539,16 +539,16 @@ public sealed partial class QuicStream
             bool closedRemotely = data.ConnectionClosedRemotely != 0;
             Exception exception = (shutdownByApp, closedRemotely) switch
             {
-                // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
-                (true, false) => ThrowHelper.GetOperationAbortedException(),
                 // It's remote shutdown by app, peer's side called QuicConnection.CloseAsync, throw QuicError.ConnectionAborted.
-                (true, true) => ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode),
-                // It's local shutdown by transport, assuming idle connection (TODO: we should get Connection.CloseStatus), throw QuicError.ConnectionIdle.
-                // https://github.com/dotnet/runtime/issues/72666
-                (false, false) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_CONNECTION_IDLE),
+                (shutdownByApp: true, closedRemotely: true) => ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode),
+                // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
+                (shutdownByApp: true, closedRemotely: false) => ThrowHelper.GetOperationAbortedException(),
                 // It's remote shutdown by transport, (TODO: we should propagate transport error code), throw QuicError.InternalError.
                 // https://github.com/dotnet/runtime/issues/72666
-                (false, true) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_INTERNAL_ERROR, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_INTERNAL_ERROR, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                // It's local shutdown by transport, assuming idle connection (TODO: we should get Connection.CloseStatus), throw QuicError.ConnectionIdle.
+                // https://github.com/dotnet/runtime/issues/72666
+                (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_CONNECTION_IDLE),
             };
             _startedTcs.TrySetException(exception);
             _receiveTcs.TrySetException(exception, final: true);
