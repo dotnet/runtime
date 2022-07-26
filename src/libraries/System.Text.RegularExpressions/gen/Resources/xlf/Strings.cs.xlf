@@ -97,11 +97,6 @@
         <target state="translated">Nerozpoznaný seskupovací konstrukt.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">Je požadována verze jazyku C# LangVersion 11 nebo vyšší.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">Zadaný regulární výraz je neplatný. {0}</target>
@@ -128,8 +123,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci pro zadaný regulární výraz z důvodu interního omezení.</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="needs-review-translation">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci pro zadaný regulární výraz z důvodu interního omezení.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">

@@ -97,11 +97,6 @@
         <target state="translated">認識されないグループ化構成体です。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">C# LangVersion 11 以上が必要です</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">指定された正規表現が無効です。'{0}'</target>
@@ -128,8 +123,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">内部制限により、RegexGenerator は指定された正規表現の完全なソース実装を生成できませんでした。</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="needs-review-translation">内部制限により、RegexGenerator は指定された正規表現の完全なソース実装を生成できませんでした。</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
