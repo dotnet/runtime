@@ -362,7 +362,7 @@ namespace System.Xml
         }
 
         public int ReadInt16()
-            => unchecked((short)ReadUInt16());
+            => (short)ReadUInt16();
 
         public int ReadInt32()
         {
