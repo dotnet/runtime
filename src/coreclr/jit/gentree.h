@@ -915,6 +915,12 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
+    // Node is contained, but it isn't contained due to being a containable int.
+    bool isContainedAndNotIntOrIImmed() const
+    {
+        return isContained() && !isContainedIntOrIImmed();
+    }
+
     bool isContainedFltOrDblImmed() const
     {
         return isContained() && OperIs(GT_CNS_DBL);
@@ -1088,8 +1094,8 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() ||
-                   OperIsSimdOrHWintrinsic() || IsCnsVec());
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsSimdOrHWintrinsic() ||
+                   IsCnsVec());
             return false;
         }
 

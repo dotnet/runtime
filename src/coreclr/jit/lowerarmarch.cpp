@@ -365,6 +365,10 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             binOp->ChangeOper(GT_AND_NOT);
             BlockRange().Remove(notNode);
         }
+        else
+        {
+            ContainCheckAndChain(binOp);
+        }
     }
 
     ContainCheckBinary(binOp);

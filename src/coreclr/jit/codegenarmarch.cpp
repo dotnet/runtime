@@ -363,6 +363,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_ARM64
         case GT_TEST_EQ:
         case GT_TEST_NE:
+            // Consume early to ensure chains consume correctly.
+            genConsumeOperands(treeNode->AsOp());
 #endif // TARGET_ARM64
             genCodeForCompare(treeNode->AsOp());
             break;

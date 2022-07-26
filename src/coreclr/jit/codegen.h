@@ -1048,7 +1048,7 @@ protected:
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
     void genCodeForConditionalCompare(GenTreeOp* tree, insCond cond);
-    void genCodeForContainedCompareChain(GenTreeOp* tree, bool* inchain, insCond* prevcond);
+    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, insCond* prevcond);
     void genCodeForSelect(GenTreeConditional* tree);
 #endif
     void genIntrinsic(GenTree* treeNode);

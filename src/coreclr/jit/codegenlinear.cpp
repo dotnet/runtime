@@ -1629,9 +1629,9 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
-        else if (tree->OperIsCompare())
+        else if (tree->OperIsCompare() || tree->OperIs(GT_AND))
         {
-            // Compares may be contained by a conditional.
+            // Compares and ANDs may be contained in a conditional chain.
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
@@ -2636,7 +2636,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jtrue->OperIs(GT_JTRUE));
 
-    GenTreeOp* relop = jtrue->gtGetOp1()->AsOp();
+    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
     GenCondition condition = GenCondition::FromRelop(relop);
 
     if (condition.PreferSwap())
