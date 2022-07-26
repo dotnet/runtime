@@ -1615,7 +1615,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // argTmpNum here since in-linee compiler instance
                     // would have iterated over these and marked them
                     // accordingly.
-                    impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callDI, block);
+                    impAssignTempGen(tmpNum, argNode, structHnd, CHECK_SPILL_NONE, &afterStmt, callDI, block);
 
                     // We used to refine the temp type here based on
                     // the actual arg, but we now do this up front, when
@@ -1822,8 +1822,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.
-                    impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), NO_CLASS_HANDLE,
-                                     (unsigned)CHECK_SPILL_NONE, &afterStmt, callDI, block);
+                    impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), NO_CLASS_HANDLE, CHECK_SPILL_NONE,
+                                     &afterStmt, callDI, block);
                 }
                 else
                 {
