@@ -29956,7 +29956,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
                             if (oh == soh)
                             {
-                                heap_segment* freeable = freeable_soh_segment;
+                                heap_segment* freeable = hp->freeable_soh_segment;
                                 while (freeable)
                                 {
                                     committed += (heap_segment_committed (freeable) - get_region_start (freeable));
@@ -29965,7 +29965,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                             }
                             else
                             {
-                                heap_segment* freeable = freeable_uoh_segment;
+                                heap_segment* freeable = hp->freeable_uoh_segment;
                                 while (freeable)
                                 {
                                     if (heap_segment_oh (freeable) == oh)
