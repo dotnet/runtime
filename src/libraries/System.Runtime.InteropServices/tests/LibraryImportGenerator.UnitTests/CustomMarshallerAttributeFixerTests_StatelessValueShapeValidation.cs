@@ -153,7 +153,7 @@ namespace LibraryImportGenerator.UnitTests
 
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
-                VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
+                VerifyCS.Diagnostic(CallerAllocFromManagedMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
         }
     }
 }

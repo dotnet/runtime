@@ -432,7 +432,7 @@ namespace LibraryImportGenerator.UnitTests
 
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
-                VerifyCS.Diagnostic(StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType<T>", "byte"));
+                VerifyCS.Diagnostic(StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType<T>", "byte"));
         }
 
         [Fact]
