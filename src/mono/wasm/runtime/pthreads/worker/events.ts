@@ -1,5 +1,14 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
-import type { pthread_ptr } from "../shared";
+import type { pthread_ptr, PThreadInfo, MonoThreadMessage } from "../shared";
+
+/// Identification of the current thread executing on a worker
+export interface PThreadSelf extends PThreadInfo {
+    readonly pthread_id: pthread_ptr;
+    readonly portToBrowser: MessagePort;
+    readonly isBrowserThread: boolean;
+    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
+    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
+}
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
 export const dotnetPthreadAttached = "dotnet:pthread:attached" as const;
@@ -15,8 +24,7 @@ export interface WorkerThreadEventMap {
 }
 
 export interface WorkerThreadEvent extends Event {
-    readonly pthread_ptr: pthread_ptr;
-    readonly portToMain: MessagePort;
+    readonly pthread_self: PThreadSelf;
 }
 
 export interface WorkerThreadEventTarget extends EventTarget {
@@ -26,18 +34,15 @@ export interface WorkerThreadEventTarget extends EventTarget {
     addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
 }
 
-let WorkerThreadEventClassConstructor: new (type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort) => WorkerThreadEvent;
-export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort) => WorkerThreadEvent = !MonoWasmThreads
+let WorkerThreadEventClassConstructor: new (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent;
+export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent = !MonoWasmThreads
     ? (() => { throw new Error("threads support disabled"); })
-    : ((type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort) => {
+    : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
         if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
-            readonly pthread_ptr: pthread_ptr;
-            readonly portToMain: MessagePort;
-            constructor(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, portToMain: MessagePort) {
+            constructor(type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
                 super(type);
-                this.pthread_ptr = pthread_ptr;
-                this.portToMain = portToMain;
             }
         };
-        return new WorkerThreadEventClassConstructor(type, pthread_ptr, port);
+        return new WorkerThreadEventClassConstructor(type, pthread_self);
     });
+

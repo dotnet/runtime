@@ -236,6 +236,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
             });
 
+            _fieldRvaDataBlobs = new NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode>(key =>
+            {
+                return new FieldRvaDataNode(key);
+            });
+
             _uninitializedWritableDataBlobs = new NodeCache<UninitializedWritableDataBlobKey, BlobNode>(key =>
             {
                 return new BlobNode(key.Name, ObjectNodeSection.BssSection, new byte[key.Size], key.Alignment);
@@ -708,6 +713,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
+
+        private NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode> _fieldRvaDataBlobs;
+
+        public ISymbolNode FieldRvaData(Internal.TypeSystem.Ecma.EcmaField field)
+        {
+            return _fieldRvaDataBlobs.GetOrAdd(field);
+        }
+
         private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
 
         internal SealedVTableNode SealedVTable(TypeDesc type)

@@ -141,7 +141,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Make sure we're not disposed or deleted.
                 CheckDisposedOrDeleted();
 
-                // Check that we actually support this propery in our store
+                // Check that we actually support this property in our store
                 //CheckSupportedProperty(PropertyNames.GroupMembers);
 
                 if (_members == null)

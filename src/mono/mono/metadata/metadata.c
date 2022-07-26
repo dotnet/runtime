@@ -2747,7 +2747,7 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	/*
 	 * This function MUST NOT be called by runtime code as it does error handling incorrectly.
 	 * Use mono_metadata_parse_method_signature_full instead.
-	 * It's ok to asser on failure as we no longer use it.
+	 * It's ok to assert on failure as we no longer use it.
 	 */
 	ERROR_DECL (error);
 	MonoMethodSignature *ret;

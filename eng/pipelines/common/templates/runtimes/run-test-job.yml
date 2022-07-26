@@ -270,7 +270,7 @@ jobs:
 
 
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      # We need to explictly download CoreCLR for Mono
+      # We need to explicitly download CoreCLR for Mono
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(coreClrProductRootFolderPath)

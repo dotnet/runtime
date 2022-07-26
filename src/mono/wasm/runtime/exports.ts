@@ -4,24 +4,16 @@
 import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
 
-import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule, is_nullish, DotnetPublicAPI, PThreadReplacements } from "./types";
-import {
-    configure_emscripten_startup
-} from "./startup";
-import {
-    mono_bind_static_method
-} from "./net6-legacy/method-calls";
-import {
-    afterUpdateGlobalBufferAndViews
-} from "./memory";
+import { ENVIRONMENT_IS_WORKER, set_imports_exports } from "./imports";
+import { DotnetModule, is_nullish, DotnetPublicAPI, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
+import { configure_emscripten_startup } from "./startup";
+import { mono_bind_static_method } from "./method-calls";
+
 import { create_weak_ref } from "./weak-ref";
-import { fetch_like, readAsync_like } from "./polyfills";
-import { afterThreadInitTLS } from "./pthreads/worker";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
-import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legacy";
+import { export_binding_api, export_mono_api } from "./exports-legacy";
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
+import { init_polyfills } from "./polyfills";
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 export let __linker_exports: any = null;
@@ -33,15 +25,16 @@ let exportedAPI: DotnetPublicAPI;
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
-    exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
+    imports: EarlyImports,
+    exports: EarlyExports,
+    replacements: EarlyReplacements,
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    setImportsAndExports(imports, exports);
+    set_imports_exports(imports, exports);
+    init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, export_mono_api());
@@ -72,49 +65,6 @@ function initializeImportsAndExports(
     if (!module.printErr) {
         module.printErr = console.error.bind(console);
     }
-    module.imports = module.imports || <DotnetModuleConfigImports>{};
-    if (!module.imports.require) {
-        module.imports.require = (name) => {
-            const resolved = (<any>module.imports)[name];
-            if (resolved) {
-                return resolved;
-            }
-            if (replacements.require) {
-                return replacements.require(name);
-            }
-            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
-        };
-    }
-
-    if (module.imports.fetch) {
-        runtimeHelpers.fetch = module.imports.fetch;
-    }
-    else {
-        runtimeHelpers.fetch = fetch_like;
-    }
-    replacements.fetch = runtimeHelpers.fetch;
-    replacements.readAsync = readAsync_like;
-    replacements.requireOut = module.imports.require;
-    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
-        originalUpdateGlobalBufferAndViews(buffer);
-        afterUpdateGlobalBufferAndViews(buffer);
-    };
-
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
-
-    if (replacements.pthreadReplacements) {
-        const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-        replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-            originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-            afterLoadWasmModuleToWorker(worker);
-        };
-        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-        replacements.pthreadReplacements.threadInitTLS = (): void => {
-            originalThreadInitTLS();
-            afterThreadInitTLS();
-        };
-    }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
@@ -127,7 +77,7 @@ function initializeImportsAndExports(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
 
@@ -142,7 +92,7 @@ function initializeImportsAndExports(
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;
@@ -173,13 +123,15 @@ function initializeImportsAndExports(
     }
     list.registerRuntime(exportedAPI);
 
-    configure_emscripten_startup(module, exportedAPI);
-
     if (ENVIRONMENT_IS_WORKER) {
         // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
         // until we have our own fix for dotnet.worker.js file
+        // we also skip all emscripten startup event and configuration of worker's JS state
+        // note that emscripten events are not firing either
         return <any>exportedAPI.Module;
     }
+
+    configure_emscripten_startup(module, exportedAPI);
 
     return exportedAPI;
 }

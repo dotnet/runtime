@@ -13,14 +13,14 @@
 //
 // PRINCIPLE: EventSource - ETW decoupling
 //
-// Conceptually an EventSouce is something that takes event logging data from the source methods
+// Conceptually an EventSource is something that takes event logging data from the source methods
 // to the EventListener that can subscribe to them.  Note that CONCEPTUALLY EVENTSOURCES DON'T
 // KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListener which
 // we will call the EtwEventListener, that forwards commands from ETW to EventSources and
 // listens to EventSources and forwards on those events to ETW.   Thus the model should
 // be that you DON'T NEED ETW.
 //
-// Now in actual practice, EventSouce have rather intimate knowledge of ETW and send events
+// Now in actual practice, EventSource have rather intimate knowledge of ETW and send events
 // to it directly, but this can be VIEWED AS AN OPTIMIZATION.
 //
 // Basic Event Data Flow:
@@ -1191,7 +1191,7 @@ namespace System.Diagnostics.Tracing
             }
 
             // Important, we pass this structure directly to the Win32 EventWrite API, so this structure must
-            // be layed out exactly the way EventWrite wants it.
+            // be laid out exactly the way EventWrite wants it.
             internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
@@ -3662,11 +3662,11 @@ namespace System.Diagnostics.Tracing
                     case 28: // LDC_I4_6
                     case 29: // LDC_I4_7
                     case 30: // LDC_I4_8
-                        if (idx > 0 && instrs[idx - 1] == 2)  // preceeded by LDARG0
+                        if (idx > 0 && instrs[idx - 1] == 2)  // preceded by LDARG0
                             retVal = instrs[idx] - 22;
                         break;
                     case 31: // LDC_I4_S
-                        if (idx > 0 && instrs[idx - 1] == 2)  // preceeded by LDARG0
+                        if (idx > 0 && instrs[idx - 1] == 2)  // preceded by LDARG0
                             retVal = instrs[idx + 1];
                         idx++;
                         break;

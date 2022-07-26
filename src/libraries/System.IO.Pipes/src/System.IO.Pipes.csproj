@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
@@ -106,6 +106,8 @@
          Link="Common\Interop\Windows\Interop.CancelSynchronousIo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs"
          Link="Common\Interop\Windows\Interop.GetCurrentThreadId.cs" />
+    <Compile Include="$(CommonPath)System\Threading\AsyncOverSyncWithIoCancellation.cs"
+         Link="Common\System\Threading\AsyncOverSyncWithIoCancellation.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Windows.cs" />

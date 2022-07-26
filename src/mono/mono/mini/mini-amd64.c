@@ -1622,7 +1622,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 	if (cfg->method->save_lmf)
 		/* The register is already saved */
-		/* substract 1 for the invisible store in the prolog */
+		/* subtract 1 for the invisible store in the prolog */
 		return (ins->opcode == OP_ARG) ? 0 : 1;
 	else
 		/* push+pop */

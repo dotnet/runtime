@@ -1052,7 +1052,7 @@ HRESULT CordbReferenceValue::Dereference(ICorDebugValue **ppValue)
 //-----------------------------------------------------------------------------
 // Common helper to dereferefence.
 // Parameters:
-//     pAppDomain, pType, pInfo - necessary paramters to create the value
+//     pAppDomain, pType, pInfo - necessary parameters to create the value
 //     pRealTypeOfTypedByref - type for a potential TypedByRef. Can be NULL if we know
 //        that we're not a typed-byref (this is true if we're definitely an object handle)
 //     ppValue - outparameter for newly created value. This will get an Ext AddRef.
