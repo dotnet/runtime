@@ -6,9 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices.JavaScript;
 using System.Buffers;
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Net.WebSockets
 {
@@ -23,6 +20,8 @@ namespace System.Net.WebSockets
         private WebSocketState _state;
         private bool _disposed;
         private bool _aborted;
+        private int[] responseStatus = new int[3];
+        private MemoryHandle? responseStatusHandle;
 
         #region Properties
 
@@ -166,6 +165,7 @@ namespace System.Net.WebSockets
                 }
                 _innerWebSocket?.Dispose();
                 _innerWebSocket = null;
+                responseStatusHandle?.Dispose();
             }
         }
 
@@ -185,7 +185,10 @@ namespace System.Net.WebSockets
                     }
                 };
 
-                _innerWebSocket = BrowserInterop.WebSocketCreate(uri.ToString(), subProtocols, onClose);
+                Memory<int> responseMemory = new Memory<int>(responseStatus);
+                responseStatusHandle = responseMemory.Pin();
+
+                _innerWebSocket = BrowserInterop.UnsafeCreate(uri.ToString(), subProtocols, responseStatusHandle.Value, onClose);
                 var openTask = BrowserInterop.WebSocketOpen(_innerWebSocket);
                 var wrappedTask = CancelationHelper(openTask!, cancellationToken, _state);
 
@@ -213,24 +216,9 @@ namespace System.Net.WebSockets
 
         private async Task SendAsyncCore(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            unsafe static Task? UnsafeSendSync(JSObject jsWs, ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage)
-            {
-                if (buffer.Count == 0)
-                {
-                    return BrowserInterop.WebSocketSend(jsWs, IntPtr.Zero, 0, (int)messageType, endOfMessage);
-                }
-
-                var span = buffer.AsSpan();
-                // we can do this because the bytes in the buffer are always consumed synchronously (not later with Task resolution)
-                fixed (void* spanPtr = span)
-                {
-                    return BrowserInterop.WebSocketSend(jsWs, (IntPtr)spanPtr, buffer.Count, (int)messageType, endOfMessage);
-                }
-            }
-
             try
             {
-                var sendTask = UnsafeSendSync(_innerWebSocket!, buffer, messageType, endOfMessage);
+                var sendTask = BrowserInterop.UnsafeSendSync(_innerWebSocket!, buffer, messageType, endOfMessage);
                 if (sendTask == null)
                 {
                     // return synchronously
@@ -256,32 +244,22 @@ namespace System.Net.WebSockets
 
         private async Task<WebSocketReceiveResult> ReceiveAsyncCore(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            unsafe static Task? ReceiveUnsafeSync(JSObject jsWs, MemoryHandle pinBuffer, int length, MemoryHandle pinResponse)
-            {
-                return BrowserInterop.WebSocketReceive(jsWs, (IntPtr)pinBuffer.Pointer, length, (IntPtr)pinResponse.Pointer);
-            }
-
             try
             {
-                int[] responseStatus = new int[3];
-                Memory<int> responseMemory = new Memory<int>(responseStatus);
                 Memory<byte> bufferMemory = buffer.AsMemory();
                 using (MemoryHandle pinBuffer = bufferMemory.Pin())
                 {
-                    using (MemoryHandle pinResponse = responseMemory.Pin())
+                    var receiveTask = BrowserInterop.ReceiveUnsafeSync(_innerWebSocket!, pinBuffer, bufferMemory.Length);
+                    if (receiveTask == null)
                     {
-                        var receiveTask = ReceiveUnsafeSync(_innerWebSocket!, pinBuffer, bufferMemory.Length, pinResponse);
-                        if (receiveTask == null)
-                        {
-                            // return synchronously
-                            return ConvertResponse(responseStatus);
-                        }
-
-                        var wrappedTask = CancelationHelper(receiveTask, cancellationToken, _state);
-                        await wrappedTask.ConfigureAwait(true);
-
-                        return ConvertResponse(responseStatus);
+                        // return synchronously
+                        return ConvertResponse();
                     }
+
+                    var wrappedTask = CancelationHelper(receiveTask, cancellationToken, _state);
+                    await wrappedTask.ConfigureAwait(true);
+
+                    return ConvertResponse();
                 }
             }
             catch (OperationCanceledException)
@@ -298,7 +276,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private WebSocketReceiveResult ConvertResponse(int[] responseStatus)
+        private WebSocketReceiveResult ConvertResponse()
         {
             const int countIndex = 0;
             const int typeIndex = 1;
