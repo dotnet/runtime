@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Composition;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace System.Text.RegularExpressions.Generator
     /// Roslyn code fixer that will listen to SysLIB1046 diagnostics and will provide a code fix which onboards a particular Regex into
     /// source generation.
     /// </summary>
-    [ExportCodeFixProvider(LanguageNames.CSharp)]
+    [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
     public sealed class UpgradeToRegexGeneratorCodeFixer : CodeFixProvider
     {
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
