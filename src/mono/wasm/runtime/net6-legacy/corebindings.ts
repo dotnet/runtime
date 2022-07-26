@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject } from "./types";
+import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject } from "../types";
 import { mono_bind_method, _create_primitive_converters } from "./method-binding";
-import { WasmRoot } from "./roots";
-import { runtimeHelpers } from "./imports";
-import cwraps from "./cwraps";
-import { PromiseController } from "./promise-controller";
+import { WasmRoot } from "../roots";
+import { runtimeHelpers } from "../imports";
+import cwraps from "../cwraps";
+import { PromiseController } from "../promise-controller";
 type SigLine = [lazy: boolean, jsname: string, csname: string, signature: string/*ArgsMarshalString*/];
 const fn_signatures: SigLine[] = [
     [true, "_get_cs_owned_object_by_js_handle_ref", "GetCSOwnedObjectByJSHandleRef", "iim"],

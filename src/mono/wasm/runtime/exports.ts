@@ -7,10 +7,10 @@ import Configuration from "consts:configuration";
 import { ENVIRONMENT_IS_WORKER, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, DotnetPublicAPI, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
 import { configure_emscripten_startup } from "./startup";
-import { mono_bind_static_method } from "./method-calls";
+import { mono_bind_static_method } from "./net6-legacy/method-calls";
 
 import { create_weak_ref } from "./weak-ref";
-import { export_binding_api, export_mono_api } from "./exports-legacy";
+import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";

@@ -16,8 +16,6 @@ export interface JavaScriptExports {
     _call_delegate(args: JSMarshalerArguments): void;// CallDelegate
 }
 
-export const javaScriptExports: JavaScriptExports = <any>{};
-
 export function init_managed_exports(): void {
     const anyModule = Module as any;
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
@@ -41,7 +39,7 @@ export function init_managed_exports(): void {
     const call_delegate_method = get_method("CallDelegate");
     mono_assert(call_delegate_method, "Can't find CallDelegate method");
 
-    javaScriptExports._release_js_owned_object_by_gc_handle = (gc_handle: GCHandle) => {
+    runtimeHelpers.javaScriptExports._release_js_owned_object_by_gc_handle = (gc_handle: GCHandle) => {
         if (!gc_handle) {
             Module.printErr("Must be valid gc_handle");
         }
@@ -56,7 +54,7 @@ export function init_managed_exports(): void {
             anyModule.stackRestore(sp);
         }
     };
-    javaScriptExports._create_task_callback = () => {
+    runtimeHelpers.javaScriptExports._create_task_callback = () => {
         const sp = anyModule.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -67,10 +65,10 @@ export function init_managed_exports(): void {
             anyModule.stackRestore(sp);
         }
     };
-    javaScriptExports._complete_task = (args: JSMarshalerArguments) => {
+    runtimeHelpers.javaScriptExports._complete_task = (args: JSMarshalerArguments) => {
         invoke_method_and_handle_exception(complete_task_method, args);
     };
-    javaScriptExports._call_delegate = (args: JSMarshalerArguments) => {
+    runtimeHelpers.javaScriptExports._call_delegate = (args: JSMarshalerArguments) => {
         invoke_method_and_handle_exception(call_delegate_method, args);
     };
 }

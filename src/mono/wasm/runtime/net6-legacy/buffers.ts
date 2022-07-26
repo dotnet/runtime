@@ -1,8 +1,8 @@
-import { Module } from "./imports";
-import { wrap_error_root } from "./invoke-js";
-import { mono_wasm_new_external_root } from "./roots";
-import { MonoArray, MonoObjectRef, MonoObject } from "./types";
-import { Int32Ptr, TypedArray } from "./types/emscripten";
+import { Module } from "../imports";
+import { wrap_error_root } from "../invoke-js";
+import { mono_wasm_new_external_root } from "../roots";
+import { MonoArray, MonoObjectRef, MonoObject } from "../types";
+import { Int32Ptr, TypedArray } from "../types/emscripten";
 import { js_to_mono_obj_root } from "./js-to-cs";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { runtimeHelpers } from "./imports";
 import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull, mono_assert } from "./types";
 import { create_weak_ref } from "./weak-ref";
-import { javaScriptExports } from "./managed-exports";
 
 const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
 let _js_owned_object_registry: FinalizationRegistry<any>;
@@ -105,7 +105,7 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
         }
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle)) {
-        javaScriptExports._release_js_owned_object_by_gc_handle(gc_handle);
+        runtimeHelpers.javaScriptExports._release_js_owned_object_by_gc_handle(gc_handle);
     }
 }
 

@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import "node/buffer"; // we use the Buffer type to type some of Emscripten's APIs
-import { BINDINGType, MONOType } from "./exports-legacy";
+import { JavaScriptExports } from "./managed-exports";
+import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
@@ -163,6 +164,7 @@ export type RuntimeHelpers = {
     ExitStatus: ExitStatusError;
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
+    javaScriptExports: JavaScriptExports,
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");

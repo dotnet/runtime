@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { assembly_load } from "./class-loader";
-import cwraps from "./cwraps";
-import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
-import { Module, runtimeHelpers, INTERNAL } from "./imports";
-import { wrap_error_root } from "./invoke-js";
-import { _release_temp_frame } from "./memory";
-import { WasmRoot, mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
-import { conv_string_root, js_string_to_mono_string_root } from "./strings";
-import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, mono_assert } from "./types";
-import { Int32Ptr, VoidPtr } from "./types/emscripten";
+import { assembly_load } from "../class-loader";
+import cwraps from "../cwraps";
+import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
+import { Module, runtimeHelpers, INTERNAL } from "../imports";
+import { wrap_error_root } from "../invoke-js";
+import { _release_temp_frame } from "../memory";
+import { WasmRoot, mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
+import { conv_string_root, js_string_to_mono_string_root } from "../strings";
+import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, mono_assert } from "../types";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method } from "./method-binding";

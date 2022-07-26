@@ -22,10 +22,10 @@ import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
 import { mono_wasm_init_diagnostics } from "./diagnostics/index";
 import { init_managed_exports } from "./managed-exports";
-import { init_legacy_exports } from "./corebindings";
+import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { cwraps_internal } from "./exports-internal";
-import { cwraps_binding_api, cwraps_mono_api } from "./exports-legacy";
+import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
 const loaded_files: { url: string, file: string }[] = [];

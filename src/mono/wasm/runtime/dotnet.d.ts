@@ -63,6 +63,114 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
 
 declare function mono_wasm_runtime_ready(): void;
 
+/**
+ * Allocates a block of memory that can safely contain pointers into the managed heap.
+ * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
+ * Once you are done using the root buffer, you must call its release() method.
+ * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
+ */
+declare function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer;
+/**
+ * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
+ * Releasing this root will not de-allocate the root space. You still need to call .release().
+ */
+declare function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T>;
+/**
+ * Allocates temporary storage for a pointer into the managed heap.
+ * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
+ * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
+ * The result object has get() and set(value) methods, along with a .value property.
+ * When you are done using the root you must call its .release() method.
+ */
+declare function mono_wasm_new_root<T extends MonoObject>(value?: T | undefined): WasmRoot<T>;
+/**
+ * Releases 1 or more root or root buffer objects.
+ * Multiple objects may be passed on the argument list.
+ * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
+ *  even if you are not sure all of your roots have been created yet.
+ * @param {... WasmRoot} roots
+ */
+declare function mono_wasm_release_roots(...args: WasmRoot<any>[]): void;
+declare class WasmRootBuffer {
+    private __count;
+    private length;
+    private __offset;
+    private __offset32;
+    private __handle;
+    private __ownsAllocation;
+    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string);
+    _throw_index_out_of_range(): void;
+    _check_in_range(index: number): void;
+    get_address(index: number): MonoObjectRef;
+    get_address_32(index: number): number;
+    get(index: number): ManagedPointer;
+    set(index: number, value: ManagedPointer): ManagedPointer;
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void;
+    _unsafe_get(index: number): number;
+    _unsafe_set(index: number, value: ManagedPointer | NativePointer): void;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+interface WasmRoot<T extends MonoObject> {
+    get_address(): MonoObjectRef;
+    get_address_32(): number;
+    get address(): MonoObjectRef;
+    get(): T;
+    set(value: T): T;
+    get value(): T;
+    set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
+    valueOf(): T;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+
+interface IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+}
+declare class ManagedObject implements IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+declare class ManagedError extends Error implements IDisposable {
+    constructor(message: string);
+    get stack(): string | undefined;
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+declare const enum MemoryViewType {
+    Byte = 0,
+    Int32 = 1,
+    Double = 2
+}
+interface IMemoryView {
+    /**
+     * copies elements from provided source to the wasm memory.
+     * target has to have the elements of the same type as the underlying C# array.
+     * same as TypedArray.set()
+     */
+    set(source: TypedArray, targetOffset?: number): void;
+    /**
+     * copies elements from wasm memory to provided target.
+     * target has to have the elements of the same type as the underlying C# array.
+     */
+    copyTo(target: TypedArray, sourceOffset?: number): void;
+    /**
+     * same as TypedArray.slice()
+     */
+    slice(start?: number, end?: number): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
 }
@@ -240,114 +348,6 @@ interface Diagnostics {
 }
 
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
-
-/**
- * Allocates a block of memory that can safely contain pointers into the managed heap.
- * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
- * Once you are done using the root buffer, you must call its release() method.
- * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
- */
-declare function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer;
-/**
- * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
- * Releasing this root will not de-allocate the root space. You still need to call .release().
- */
-declare function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T>;
-/**
- * Allocates temporary storage for a pointer into the managed heap.
- * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
- * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
- * The result object has get() and set(value) methods, along with a .value property.
- * When you are done using the root you must call its .release() method.
- */
-declare function mono_wasm_new_root<T extends MonoObject>(value?: T | undefined): WasmRoot<T>;
-/**
- * Releases 1 or more root or root buffer objects.
- * Multiple objects may be passed on the argument list.
- * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
- *  even if you are not sure all of your roots have been created yet.
- * @param {... WasmRoot} roots
- */
-declare function mono_wasm_release_roots(...args: WasmRoot<any>[]): void;
-declare class WasmRootBuffer {
-    private __count;
-    private length;
-    private __offset;
-    private __offset32;
-    private __handle;
-    private __ownsAllocation;
-    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string);
-    _throw_index_out_of_range(): void;
-    _check_in_range(index: number): void;
-    get_address(index: number): MonoObjectRef;
-    get_address_32(index: number): number;
-    get(index: number): ManagedPointer;
-    set(index: number, value: ManagedPointer): ManagedPointer;
-    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void;
-    _unsafe_get(index: number): number;
-    _unsafe_set(index: number, value: ManagedPointer | NativePointer): void;
-    clear(): void;
-    release(): void;
-    toString(): string;
-}
-interface WasmRoot<T extends MonoObject> {
-    get_address(): MonoObjectRef;
-    get_address_32(): number;
-    get address(): MonoObjectRef;
-    get(): T;
-    set(value: T): T;
-    get value(): T;
-    set value(value: T);
-    copy_from_address(source: MonoObjectRef): void;
-    copy_to_address(destination: MonoObjectRef): void;
-    copy_from(source: WasmRoot<T>): void;
-    copy_to(destination: WasmRoot<T>): void;
-    valueOf(): T;
-    clear(): void;
-    release(): void;
-    toString(): string;
-}
-
-interface IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-}
-declare class ManagedObject implements IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
-declare class ManagedError extends Error implements IDisposable {
-    constructor(message: string);
-    get stack(): string | undefined;
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
-declare const enum MemoryViewType {
-    Byte = 0,
-    Int32 = 1,
-    Double = 2
-}
-interface IMemoryView {
-    /**
-     * copies elements from provided source to the wasm memory.
-     * target has to have the elements of the same type as the underlying C# array.
-     * same as TypedArray.set()
-     */
-    set(source: TypedArray, targetOffset?: number): void;
-    /**
-     * copies elements from wasm memory to provided target.
-     * target has to have the elements of the same type as the underlying C# array.
-     */
-    copyTo(target: TypedArray, sourceOffset?: number): void;
-    /**
-     * same as TypedArray.slice()
-     */
-    slice(start?: number, end?: number): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
 
 declare function mono_wasm_get_assembly_exports(assembly: string): Promise<any>;
 

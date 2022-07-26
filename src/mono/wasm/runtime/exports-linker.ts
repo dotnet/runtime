@@ -5,10 +5,11 @@ import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function } from "./invoke-js";
-import { mono_wasm_typed_array_from_ref } from "./buffers";
-import { mono_wasm_create_cs_owned_object_ref } from "./cs-to-js";
-import { mono_wasm_typed_array_to_array_ref } from "./js-to-cs";
-import { mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref, mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref } from "./method-calls";
+import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
+import {
+    mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
+    mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref
+} from "./net6-legacy/method-calls";
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
@@ -16,6 +17,8 @@ import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
 import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
+import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
+import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---

@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { isThenable } from "./cancelable-promise";
-import { javaScriptExports } from "./managed-exports";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     JSMarshalerArgument, ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
@@ -362,7 +361,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     mono_assert(isThenable(value), "Value is not a Promise");
 
     const anyModule = Module as any;
-    const gc_handle: GCHandle = javaScriptExports._create_task_callback();
+    const gc_handle: GCHandle = runtimeHelpers.javaScriptExports._create_task_callback();
     set_gc_handle(arg, gc_handle);
     set_arg_type(arg, MarshalerType.Task);
     const holder = new TaskCallbackHolder(value);
@@ -380,7 +379,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             } else {
                 res_converter(arg1, data);
             }
-            javaScriptExports._complete_task(args);
+            runtimeHelpers.javaScriptExports._complete_task(args);
         } finally {
             anyModule.stackRestore(sp);
         }
@@ -396,7 +395,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
                 reason = new Error(reason || "");
             }
             marshal_exception_to_cs(exc, reason);
-            javaScriptExports._complete_task(args);
+            runtimeHelpers.javaScriptExports._complete_task(args);
         } finally {
             anyModule.stackRestore(sp);
         }

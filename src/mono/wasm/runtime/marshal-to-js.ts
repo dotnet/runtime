@@ -4,8 +4,7 @@
 import { createPromiseController, assertIsControllablePromise, getPromiseController } from "./promise-controller";
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
-import { Module } from "./imports";
-import { javaScriptExports } from "./managed-exports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     ManagedObject, JSMarshalerArgument, ManagedError, JSMarshalerArguments, MarshalerToCs, MarshalerToJs, JSMarshalerType,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
@@ -266,7 +265,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
                     arg3_converter(arg3, arg3_js);
                 }
 
-                javaScriptExports._call_delegate(args);
+                runtimeHelpers.javaScriptExports._call_delegate(args);
 
                 if (res_converter) {
                     return res_converter(res);
