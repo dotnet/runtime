@@ -71,6 +71,16 @@ namespace System.Net.Http.Tests
             Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
         }
 
+        [Fact]
+        public void TryAddWithoutValidation_AddInvalidViaHeaderValue_ValuePassed()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation("Via", "1.1 foo.bar, foo");
+
+            Assert.Equal(1, headers.First().Value.Count());
+            Assert.Equal("1.1 foo.bar, foo", headers.First().Value.ElementAt(0));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
