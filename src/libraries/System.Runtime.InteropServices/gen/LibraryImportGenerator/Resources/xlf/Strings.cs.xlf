@@ -108,8 +108,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
-        <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second type.</source>
-        <target state="new">The element type of the span returned by the first method must be the same type as the element type of the span returned by the second type.</target>
+        <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
+        <target state="new">The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
@@ -438,8 +438,8 @@
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
-        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the first parameter and returns a value of the 'unmanaged' type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the first parameter and returns a value of the 'unmanaged' type.</target>
+        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
+        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
