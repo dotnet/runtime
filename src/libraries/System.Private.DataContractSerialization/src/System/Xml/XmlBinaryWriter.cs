@@ -565,6 +565,15 @@ namespace System.Xml
         }
 
         public override unsafe void WriteText(string value)
+            => WriteTextImpl(value);
+
+        public override void WriteText(char[] chars, int offset, int count)
+           => WriteTextImpl(chars.AsSpan(offset, count));
+
+        // We need a separate implementation method which is not an override
+        // so that overload resolution will call string based method instead of ReadOnlySpan
+        // when called with a string argument
+        private unsafe void WriteTextImpl(string value)
         {
             if (_inAttribute)
             {
@@ -586,10 +595,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteText(char[] chars, int offset, int count)
-           => WriteText(chars.AsSpan(offset, count));
-
-        private unsafe void WriteText(ReadOnlySpan<char> chars)
+        private unsafe void WriteTextImpl(ReadOnlySpan<char> chars)
         {
             if (_inAttribute)
             {
@@ -701,12 +707,12 @@ namespace System.Xml
             if (ch > char.MaxValue)
             {
                 SurrogateChar sch = new SurrogateChar(ch);
-                WriteText(stackalloc char[] { sch.HighChar, sch.LowChar });
+                WriteTextImpl(stackalloc char[] { sch.HighChar, sch.LowChar });
             }
             else
             {
                 char castChar = (char)ch;
-                WriteText(new ReadOnlySpan<char>(in castChar));
+                WriteTextImpl(new ReadOnlySpan<char>(in castChar));
             }
         }
 
