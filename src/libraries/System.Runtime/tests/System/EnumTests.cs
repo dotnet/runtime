@@ -2083,7 +2083,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value1", true);
             enumBuilder.DefineLiteral("Value2", false);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_charEnumType = GetCharEnumType();
@@ -2104,7 +2104,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (char)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (char)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_floatEnumType = GetFloatEnumType();
@@ -2125,7 +2125,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (float)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (float)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_doubleEnumType = GetDoubleEnumType();
@@ -2146,7 +2146,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (double)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (double)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_intPtrEnumType = GetIntPtrEnumType();
@@ -2156,7 +2156,7 @@ namespace System.Tests
             if (enumBuilder == null)
                 return null;
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_uintPtrEnumType = GetUIntPtrEnumType();
@@ -2166,7 +2166,7 @@ namespace System.Tests
             if (enumBuilder == null)
                 return null;
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
     }
 }

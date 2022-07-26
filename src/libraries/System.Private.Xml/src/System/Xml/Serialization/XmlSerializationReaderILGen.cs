@@ -255,7 +255,7 @@ namespace System.Xml.Serialization
 
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
-            Type readerType = this.typeBuilder.CreateTypeInfo()!.AsType();
+            Type readerType = this.typeBuilder.CreateType();
             CreatedTypes.Add(readerType.Name, readerType);
         }
 
