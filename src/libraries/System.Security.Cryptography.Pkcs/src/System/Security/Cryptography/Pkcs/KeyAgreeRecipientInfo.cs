@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyRecipientIdentifier ?? (_lazyRecipientIdentifier = Pal.RecipientIdentifier);
+                return _lazyRecipientIdentifier ??= Pal.RecipientIdentifier;
             }
         }
 
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyKeyEncryptionAlgorithm ?? (_lazyKeyEncryptionAlgorithm = Pal.KeyEncryptionAlgorithm);
+                return _lazyKeyEncryptionAlgorithm ??= Pal.KeyEncryptionAlgorithm;
             }
         }
 
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyEncryptedKey ?? (_lazyEncryptedKey = Pal.EncryptedKey);
+                return _lazyEncryptedKey ??= Pal.EncryptedKey;
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyOriginatorIdentifierKey ?? (_lazyOriginatorIdentifierKey = Pal.OriginatorIdentifierOrKey);
+                return _lazyOriginatorIdentifierKey ??= Pal.OriginatorIdentifierOrKey;
             }
         }
 
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyOtherKeyAttribute ?? (_lazyOtherKeyAttribute = Pal.OtherKeyAttribute);
+                return _lazyOtherKeyAttribute ??= Pal.OtherKeyAttribute;
             }
         }
 

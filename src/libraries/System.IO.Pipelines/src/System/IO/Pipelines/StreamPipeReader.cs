@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,8 +36,17 @@ namespace System.IO.Pipelines
         /// </summary>
         /// <param name="readingStream">The stream to read from.</param>
         /// <param name="options">The options to use.</param>
-        public StreamPipeReader(Stream readingStream!!, StreamPipeReaderOptions options!!)
+        public StreamPipeReader(Stream readingStream, StreamPipeReaderOptions options)
         {
+            if (readingStream is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.readingStream);
+            }
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
+            }
+
             InnerStream = readingStream;
             _options = options;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
@@ -67,11 +77,7 @@ namespace System.IO.Pipelines
             {
                 lock (_lock)
                 {
-                    if (_internalTokenSource == null)
-                    {
-                        _internalTokenSource = new CancellationTokenSource();
-                    }
-                    return _internalTokenSource;
+                    return _internalTokenSource ??= new CancellationTokenSource();
                 }
             }
         }
@@ -145,7 +151,6 @@ namespace System.IO.Pipelines
             while (returnStart != returnEnd)
             {
                 BufferSegment next = returnStart.NextSegment!;
-                returnStart.ResetMemory();
                 ReturnSegmentUnsynchronized(returnStart);
                 returnStart = next;
             }
@@ -160,9 +165,22 @@ namespace System.IO.Pipelines
         /// <inheritdoc />
         public override void Complete(Exception? exception = null)
         {
+            if (CompleteAndGetNeedsDispose())
+            {
+                InnerStream.Dispose();
+            }
+        }
+
+#if NETCOREAPP
+        public override ValueTask CompleteAsync(Exception? exception = null) =>
+            CompleteAndGetNeedsDispose() ? InnerStream.DisposeAsync() : default;
+#endif
+
+        private bool CompleteAndGetNeedsDispose()
+        {
             if (_isReaderCompleted)
             {
-                return;
+                return false;
             }
 
             _isReaderCompleted = true;
@@ -173,13 +191,10 @@ namespace System.IO.Pipelines
                 BufferSegment returnSegment = segment;
                 segment = segment.NextSegment;
 
-                returnSegment.ResetMemory();
+                returnSegment.Reset();
             }
 
-            if (!LeaveOpen)
-            {
-                InnerStream.Dispose();
-            }
+            return !LeaveOpen;
         }
 
         /// <inheritdoc />
@@ -208,6 +223,9 @@ namespace System.IO.Pipelines
 
             return Core(this, tokenSource, cancellationToken);
 
+#if NETCOREAPP
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;
@@ -293,6 +311,9 @@ namespace System.IO.Pipelines
 
             return Core(this, minimumSize, tokenSource, cancellationToken);
 
+#if NETCOREAPP
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, int minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;
@@ -601,6 +622,8 @@ namespace System.IO.Pipelines
         {
             Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
             Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
+
+            segment.Reset();
 
             if (_bufferSegmentPool.Count < MaxSegmentPoolSize)
             {

@@ -414,9 +414,9 @@ namespace System.DirectoryServices.ActiveDirectory
         [FieldOffset(16)]
         public global::Interop.UNICODE_STRING TopLevelName;
         [FieldOffset(16)]
-        public LSA_FOREST_TRUST_BINARY_DATA Data = null!;
+        public LSA_FOREST_TRUST_BINARY_DATA Data;
         [FieldOffset(16)]
-        public LSA_FOREST_TRUST_DOMAIN_INFO? DomainInfo;
+        public LSA_FOREST_TRUST_DOMAIN_INFO DomainInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -432,8 +432,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LSA_FOREST_TRUST_DOMAIN_INFO
+    internal struct LSA_FOREST_TRUST_DOMAIN_INFO
     {
         public IntPtr sid;
         public short DNSNameLength;
@@ -444,8 +443,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public IntPtr NetBIOSNameBuffer;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LSA_FOREST_TRUST_BINARY_DATA
+    internal struct LSA_FOREST_TRUST_BINARY_DATA
     {
         public int Length;
         public IntPtr Buffer;

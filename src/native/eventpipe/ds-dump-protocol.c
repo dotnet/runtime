@@ -8,6 +8,8 @@
 #include "ds-dump-protocol.h"
 #include "ds-rt.h"
 
+const ep_char16_t empty_string [1] = { 0 };
+
 /*
  * Forward declares of all static functions.
  */
@@ -94,6 +96,102 @@ dump_protocol_helper_unknown_command (
 }
 
 static
+void
+dump_protocol_generate_core_dump_response_init(
+	DiagnosticsGenerateCoreDumpResponsePayload *payload,
+	ds_ipc_result_t error,
+	const ep_char8_t *errorText)
+{
+	EP_ASSERT (payload != NULL);
+
+	payload->error = error;
+	// If this conversion failures it will set error_message to NULL which will send an empty message
+	payload->error_message = ep_rt_utf8_to_utf16le_string (errorText, -1);
+}
+
+static
+void
+dump_protocol_generate_core_dump_response_fini(
+	DiagnosticsGenerateCoreDumpResponsePayload *payload)
+{
+	ep_rt_utf16_string_free (payload->error_message);
+}
+
+static
+uint16_t
+dump_protocol_generate_core_dump_response_get_size (
+	DiagnosticsGenerateCoreDumpResponsePayload *payload)
+{
+	EP_ASSERT (payload != NULL);
+
+	size_t size = sizeof(payload->error);
+
+	size += sizeof(uint32_t);
+	size += (payload->error_message != NULL) ? (ep_rt_utf16_string_len (payload->error_message) + 1) * sizeof(ep_char16_t) : 0;
+
+	EP_ASSERT (size <= UINT16_MAX);
+	return (uint16_t)size;
+}
+
+static
+bool
+dump_protocol_generate_core_dump_response_flatten (
+	void *payload,
+	uint8_t **buffer,
+	uint16_t *size)
+{
+	DiagnosticsGenerateCoreDumpResponsePayload *response = (DiagnosticsGenerateCoreDumpResponsePayload*)payload;
+
+	EP_ASSERT (payload != NULL);
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (*buffer != NULL);
+	EP_ASSERT (size != NULL);
+	EP_ASSERT (dump_protocol_generate_core_dump_response_get_size (response) == *size);
+
+	bool success = true;
+
+	// ds_ipc_result_t size error
+	memcpy (*buffer, &response->error, sizeof (response->error));
+	*buffer += sizeof (response->error);
+	*size -= sizeof (response->error);
+
+	// LPCWSTR error message - if there is no error_message (NULL) then write an empty string
+	success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, response->error_message != NULL ? response->error_message : empty_string);
+
+	// Assert we've used the whole buffer we were given
+	EP_ASSERT(*size == 0);
+
+	return success;
+}
+
+static
+void
+dump_protocol_generate_core_dump_response (
+	DiagnosticsIpcStream *stream,
+	ds_ipc_result_t error,
+	const ep_char8_t * errorText)
+{
+	DiagnosticsGenerateCoreDumpResponsePayload payload;
+	DiagnosticsIpcMessage message;
+	ds_ipc_message_init (&message);
+
+	dump_protocol_generate_core_dump_response_init(&payload, error, errorText);
+
+	bool result = ds_ipc_message_initialize_buffer (
+		&message,
+		ds_ipc_header_get_generic_error (),
+		&payload,
+		dump_protocol_generate_core_dump_response_get_size(&payload),
+		dump_protocol_generate_core_dump_response_flatten);
+
+	if (result)
+		ds_ipc_message_send (&message, stream);
+
+	ds_ipc_message_fini (&message);
+	dump_protocol_generate_core_dump_response_fini (&payload);
+}
+
+static
 bool
 dump_protocol_helper_generate_core_dump (
 	DiagnosticsIpcMessage *message,
@@ -115,9 +213,17 @@ dump_protocol_helper_generate_core_dump (
 		ep_raise_error ();
 	}
 
-	ipc_result = ds_rt_generate_core_dump (commandId, payload);
+	ep_char8_t errorMessage[1024];
+	errorMessage[0] = '\0';
+
+	ipc_result = ds_rt_generate_core_dump (commandId, payload, errorMessage, sizeof(errorMessage));
 	if (ipc_result != DS_IPC_S_OK) {
-		ds_ipc_message_send_error (stream, ipc_result);
+		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP3) {
+			dump_protocol_generate_core_dump_response (stream, ipc_result, errorMessage);
+		}
+		else {
+			ds_ipc_message_send_error (stream, ipc_result);
+		}
 		ep_raise_error ();
 	} else {
 		ds_ipc_message_send_success (stream, ipc_result);
@@ -146,6 +252,7 @@ ds_dump_protocol_helper_handle_ipc_message (
 	switch ((DiagnosticsDumpCommandId)ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (message))) {
 	case DS_DUMP_COMMANDID_GENERATE_CORE_DUMP:
 	case DS_DUMP_COMMANDID_GENERATE_CORE_DUMP2:
+	case DS_DUMP_COMMANDID_GENERATE_CORE_DUMP3:
 		result = dump_protocol_helper_generate_core_dump (message, stream);
 		break;
 	default:
@@ -158,7 +265,7 @@ ds_dump_protocol_helper_handle_ipc_message (
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_dump_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_dump_protocol = 0;
 #endif

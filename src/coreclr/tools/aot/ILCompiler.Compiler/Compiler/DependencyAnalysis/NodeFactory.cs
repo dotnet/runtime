@@ -236,6 +236,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
             });
 
+            _fieldRvaDataBlobs = new NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode>(key =>
+            {
+                return new FieldRvaDataNode(key);
+            });
+
             _uninitializedWritableDataBlobs = new NodeCache<UninitializedWritableDataBlobKey, BlobNode>(key =>
             {
                 return new BlobNode(key.Name, ObjectNodeSection.BssSection, new byte[key.Size], key.Alignment);
@@ -292,6 +297,11 @@ namespace ILCompiler.DependencyAnalysis
             _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
             {
                 return new ReflectableMethodNode(method);
+            });
+
+            _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
+            {
+                return new ReflectableFieldNode(field);
             });
 
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
@@ -703,6 +713,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
+
+        private NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode> _fieldRvaDataBlobs;
+
+        public ISymbolNode FieldRvaData(Internal.TypeSystem.Ecma.EcmaField field)
+        {
+            return _fieldRvaDataBlobs.GetOrAdd(field);
+        }
+
         private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
 
         internal SealedVTableNode SealedVTable(TypeDesc type)
@@ -850,6 +868,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectableMethodNode ReflectableMethod(MethodDesc method)
         {
             return _reflectableMethods.GetOrAdd(method);
+        }
+
+        private NodeCache<FieldDesc, ReflectableFieldNode> _reflectableFields;
+        public ReflectableFieldNode ReflectableField(FieldDesc field)
+        {
+            return _reflectableFields.GetOrAdd(field);
         }
 
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;

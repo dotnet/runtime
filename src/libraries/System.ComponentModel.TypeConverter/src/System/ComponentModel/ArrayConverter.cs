@@ -19,7 +19,7 @@ namespace System.ComponentModel
         {
             if (destinationType == typeof(string) && value is Array)
             {
-                return SR.Format(SR.Array, value.GetType().Name);
+                return string.Format(SR.GetResourceString(nameof(SR.Array), "{0} Array"), value.GetType().Name);
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -29,7 +29,7 @@ namespace System.ComponentModel
         /// Gets a collection of properties for the type of array specified by the value parameter.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public override PropertyDescriptorCollection? GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)
         {
             if (value == null)

@@ -32,8 +32,10 @@ namespace System.Reflection.Emit
 
         // *** ILGenerator api ***
 
-        public override LocalBuilder DeclareLocal(Type localType!!, bool pinned)
+        public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
+            ArgumentNullException.ThrowIfNull(localType);
+
             LocalBuilder localBuilder;
 
             RuntimeType? rtType = localType as RuntimeType;
@@ -53,8 +55,10 @@ namespace System.Reflection.Emit
         // Token resolution calls
         //
         //
-        public override void Emit(OpCode opcode, MethodInfo meth!!)
+        public override void Emit(OpCode opcode, MethodInfo meth)
         {
+            ArgumentNullException.ThrowIfNull(meth);
+
             int stackchange = 0;
             int token;
             DynamicMethod? dynMeth = meth as DynamicMethod;
@@ -105,8 +109,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, ConstructorInfo con!!)
+        public override void Emit(OpCode opcode, ConstructorInfo con)
         {
+            ArgumentNullException.ThrowIfNull(con);
+
             RuntimeConstructorInfo? rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
@@ -129,8 +135,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, Type type!!)
+        public override void Emit(OpCode opcode, Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             RuntimeType? rtType = type as RuntimeType;
 
             if (rtType == null)
@@ -142,8 +150,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, FieldInfo field!!)
+        public override void Emit(OpCode opcode, FieldInfo field)
         {
+            ArgumentNullException.ThrowIfNull(field);
+
             RuntimeFieldInfo? runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
@@ -159,8 +169,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, string str!!)
+        public override void Emit(OpCode opcode, string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             int tempVal = GetTokenForString(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -179,15 +191,17 @@ namespace System.Reflection.Emit
                                        Type[]? optionalParameterTypes)
         {
             int stackchange = 0;
-            SignatureHelper sig;
             if (optionalParameterTypes != null)
                 if ((callingConvention & CallingConventions.VarArgs) == 0)
                     throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
 
-            sig = GetMemberRefSignature(callingConvention,
-                                        returnType,
-                                        parameterTypes,
-                                        optionalParameterTypes);
+
+            SignatureHelper sig = GetMethodSigHelper(callingConvention,
+                                                     returnType,
+                                                     parameterTypes,
+                                                     null,
+                                                     null,
+                                                     optionalParameterTypes);
 
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
@@ -216,17 +230,10 @@ namespace System.Reflection.Emit
         {
             int stackchange = 0;
             int cParams = 0;
-            int i;
-            SignatureHelper sig;
-
             if (parameterTypes != null)
                 cParams = parameterTypes.Length;
 
-            sig = SignatureHelper.GetMethodSigHelper(unmanagedCallConv, returnType);
-
-            if (parameterTypes != null)
-                for (i = 0; i < cParams; i++)
-                    sig.AddArgument(parameterTypes[i]);
+            SignatureHelper sig = GetMethodSigHelper(unmanagedCallConv, returnType, parameterTypes);
 
             // If there is a non-void return type, push one.
             if (returnType != typeof(void))
@@ -247,8 +254,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void EmitCall(OpCode opcode, MethodInfo methodInfo!!, Type[]? optionalParameterTypes)
+        public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
+            ArgumentNullException.ThrowIfNull(methodInfo);
+
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
 
@@ -283,8 +292,10 @@ namespace System.Reflection.Emit
             PutInteger4(tk);
         }
 
-        public override void Emit(OpCode opcode, SignatureHelper signature!!)
+        public override void Emit(OpCode opcode, SignatureHelper signature)
         {
+            ArgumentNullException.ThrowIfNull(signature);
+
             int stackchange = 0;
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -330,7 +341,7 @@ namespace System.Reflection.Emit
             current.MarkFilterAddr(ILOffset);
         }
 
-        public override void BeginCatchBlock(Type exceptionType)
+        public override void BeginCatchBlock(Type? exceptionType)
         {
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
@@ -428,7 +439,7 @@ namespace System.Reflection.Emit
                 optionalCustomModifiers = null;
             }
 
-            SignatureHelper sig = GetMemberRefSignature(methodInfo.CallingConvention,
+            SignatureHelper sig = GetMethodSigHelper(methodInfo.CallingConvention,
                                                      MethodBuilder.GetMethodBaseReturnType(methodInfo),
                                                      parameterTypes,
                                                      requiredCustomModifiers,
@@ -441,7 +452,17 @@ namespace System.Reflection.Emit
                 return GetTokenForVarArgMethod(dm!, sig);
         }
 
-        internal override SignatureHelper GetMemberRefSignature(
+        private SignatureHelper GetMethodSigHelper(
+                                                CallingConvention unmanagedCallConv,
+                                                Type? returnType,
+                                                Type[]? parameterTypes)
+        {
+            SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(null, unmanagedCallConv, returnType);
+            AddParameters(sigHelp, parameterTypes, null, null);
+            return sigHelp;
+        }
+
+        private SignatureHelper GetMethodSigHelper(
                                                 CallingConventions call,
                                                 Type? returnType,
                                                 Type[]? parameterTypes,
@@ -449,14 +470,31 @@ namespace System.Reflection.Emit
                                                 Type[][]? optionalCustomModifiers,
                                                 Type[]? optionalParameterTypes)
         {
-            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(null, call, returnType, null, null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
-
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(call, returnType);
+            AddParameters(sig, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
             if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {
                 sig.AddSentinel();
                 sig.AddArguments(optionalParameterTypes, null, null);
             }
             return sig;
+        }
+
+        private void AddParameters(SignatureHelper sigHelp, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        {
+            if (requiredCustomModifiers != null && (parameterTypes == null || requiredCustomModifiers.Length != parameterTypes.Length))
+                throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(requiredCustomModifiers), nameof(parameterTypes)));
+
+            if (optionalCustomModifiers != null && (parameterTypes == null || optionalCustomModifiers.Length != parameterTypes.Length))
+                throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(optionalCustomModifiers), nameof(parameterTypes)));
+
+            if (parameterTypes != null)
+            {
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    sigHelp.AddDynamicArgument(m_scope, parameterTypes[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
+                }
+            }
         }
 
         internal override void RecordTokenFixup()

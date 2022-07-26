@@ -2089,7 +2089,7 @@ cominterop_get_ccw_method (MonoClass *iface, MonoMethod *method, MonoError *erro
 	adjust_method = cominterop_get_managed_wrapper_adjusted (method);
 	sig_adjusted = mono_method_signature_internal (adjust_method);
 
-	mspecs = g_new (MonoMarshalSpec*, sig_adjusted->param_count + 1);
+	mspecs = g_new0 (MonoMarshalSpec*, sig_adjusted->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
 	/* move managed args up one */

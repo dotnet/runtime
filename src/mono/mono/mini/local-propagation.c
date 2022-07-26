@@ -66,7 +66,7 @@ compute_magic_unsigned (guint32 divisor) {
 	int p;
 
 	magu.addition = 0;
-	nc = -1 - (-divisor) % divisor;
+	nc = -1 - (-(gint32)divisor) % divisor;
 	p = 31;
 	q1 = 0x80000000 / nc;
 	r1 = 0x80000000 - q1 * nc;
@@ -163,7 +163,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			guint32 tmp_regi;
 #endif
 			struct magic_unsigned mag;
-			int power2 = mono_is_power_of_two (ins->inst_imm);
+			int power2 = mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm));
 
 			/* The decomposition doesn't handle exception throwing */
 			if (ins->inst_imm == 0)
@@ -182,7 +182,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			 * Replacement of unsigned division with multiplication,
 			 * shifts and additions Hacker's Delight, chapter 10-10.
 			 */
-			mag = compute_magic_unsigned (ins->inst_imm);
+			mag = compute_magic_unsigned (GTMREG_TO_UINT32 (ins->inst_imm));
 			tmp_regl = alloc_lreg (cfg);
 #if SIZEOF_REGISTER == 8
 			dividend_reg = alloc_lreg (cfg);
@@ -223,7 +223,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			guint32 tmp_regi;
 #endif
 			struct magic_signed mag;
-			int power2 = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
+			int power2 = (ins->inst_imm > 0) ? mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm)) : -1;
 			/* The decomposition doesn't handle exception throwing */
 			/* Optimization with MUL does not apply for -1, 0 and 1 divisors */
 			if (ins->inst_imm == 0 || ins->inst_imm == -1) {
@@ -255,7 +255,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			 * Replacement of signed division with multiplication,
 			 * shifts and additions Hacker's Delight, chapter 10-6.
 			 */
-			mag = compute_magic_signed (ins->inst_imm);
+			mag = compute_magic_signed (GTMREG_TO_UINT32 (ins->inst_imm));
 			tmp_regl = alloc_lreg (cfg);
 #if SIZEOF_REGISTER == 8
 			dividend_reg = alloc_lreg (cfg);
@@ -350,8 +350,8 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			ins->opcode = OP_INEG;
 		} else if ((ins->opcode == OP_LMUL_IMM) && (ins->inst_imm == -1)) {
 			ins->opcode = OP_LNEG;
-		} else if (ins->inst_imm > 0) {
-			int power2 = mono_is_power_of_two (ins->inst_imm);
+		} else if (ins->inst_imm > 0 && ins->inst_imm <= UINT32_MAX) {
+			int power2 = mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm));
 			if (power2 >= 0) {
 				ins->opcode = (ins->opcode == OP_MUL_IMM) ? OP_SHL_IMM : ((ins->opcode == OP_LMUL_IMM) ? OP_LSHL_IMM : OP_ISHL_IMM);
 				ins->inst_imm = power2;
@@ -359,7 +359,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 		}
 		break;
 	case OP_IREM_UN_IMM: {
-		int power2 = mono_is_power_of_two (ins->inst_imm);
+		int power2 = mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm));
 
 		if (power2 >= 0) {
 			ins->opcode = OP_IAND_IMM;
@@ -378,7 +378,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 	case OP_LREM_IMM:
 #endif
 	case OP_IREM_IMM: {
-		int power = mono_is_power_of_two (ins->inst_imm);
+		int power = mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm));
 		if (ins->inst_imm == 1) {
 			ins->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (ins);
@@ -500,7 +500,7 @@ mono_local_cprop (MonoCompile *cfg)
 	MonoBasicBlock *bb, *bb_opt;
 	MonoInst **defs;
 	gint32 *def_index;
-	int max;
+	guint32 max;
 	int filter = FILTER_IL_SEQ_POINT;
 	int initial_max_vregs = cfg->next_vreg;
 
@@ -665,7 +665,7 @@ mono_local_cprop (MonoCompile *cfg)
 
 					opcode2 = mono_op_to_op_imm (ins->opcode);
 					if ((opcode2 != -1) && mono_arch_is_inst_imm (ins->opcode, opcode2, def->inst_c0) && ((srcindex == 1) || (ins->sreg2 == -1))) {
-						ins->opcode = opcode2;
+						ins->opcode = GUINT32_TO_OPCODE (opcode2);
 						if ((def->opcode == OP_I8CONST) && TARGET_SIZEOF_VOID_P == 4)
 							ins->inst_l = def->inst_l;
 						else if (regtype == 'l' && TARGET_SIZEOF_VOID_P == 4)
@@ -699,7 +699,7 @@ mono_local_cprop (MonoCompile *cfg)
 #endif
 						opcode2 = mono_load_membase_to_load_mem (ins->opcode);
 						if ((srcindex == 0) && (opcode2 != -1) && mono_arch_is_inst_imm (ins->opcode, opcode2, def->inst_c0)) {
-							ins->opcode = opcode2;
+							ins->opcode = GUINT32_TO_OPCODE (opcode2);
 							ins->inst_imm = def->inst_c0 + ins->inst_offset;
 							ins->sreg1 = -1;
 						}
@@ -840,8 +840,8 @@ reg_is_softreg (int reg, const char spec)
 static gboolean
 mono_is_simd_accessor (MonoInst *ins)
 {
-	switch (ins->opcode) {
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+	switch (ins->opcode) {
 	case OP_INSERT_I1:
 	case OP_INSERT_I2:
 	case OP_INSERT_I4:
@@ -855,10 +855,12 @@ mono_is_simd_accessor (MonoInst *ins)
 	case OP_INSERTX_R8_SLOW:
 	case OP_INSERTX_I8_SLOW:
 		return TRUE;
-#endif
 	default:
 		return FALSE;
 	}
+#else
+	return FALSE;
+#endif
 }
 
 /**
@@ -962,12 +964,12 @@ mono_local_deadce (MonoCompile *cfg)
 					MONO_INS_HAS_NO_SIDE_EFFECT (ins)) {
 					/* Happens with CMOV instructions */
 					if (prev_f && prev_f->opcode == OP_ICOMPARE_IMM) {
-						MonoInst *prev = prev_f;
+						MonoInst *prev_ins = prev_f;
 						/*
 						 * Can't use DELETE_INS since that would interfere with the
 						 * FOR_EACH_INS loop.
 						 */
-						NULLIFY_INS (prev);
+						NULLIFY_INS (prev_ins);
 					}
 					//printf ("DEADCE: "); mono_print_ins (ins);
 					MONO_DELETE_INS (bb, ins);

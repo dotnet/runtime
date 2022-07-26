@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -18,7 +18,7 @@ namespace System.Security
         private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
         private const int ChildrenTypical = 1;
 
-        private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
+        private const string EscapeChars = "<>\"'&";
         private static readonly string[] s_escapeStringPairs = new string[]
         {
             // these must be all once character escape sequences or a new escaping algorithm is needed
@@ -31,16 +31,20 @@ namespace System.Security
 
         //-------------------------- Constructors ---------------------------
 
-        public SecurityElement(string tag!!)
+        public SecurityElement(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
         }
 
-        public SecurityElement(string tag!!, string? text)
+        public SecurityElement(string tag, string? text)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
@@ -184,8 +188,11 @@ namespace System.Security
             _attributes.Add(value);
         }
 
-        public void AddAttribute(string name!!, string value!!)
+        public void AddAttribute(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!IsValidAttributeName(name))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, name));
 
@@ -195,8 +202,10 @@ namespace System.Security
             AddAttributeSafe(name, value);
         }
 
-        public void AddChild(SecurityElement child!!)
+        public void AddChild(SecurityElement child)
         {
+            ArgumentNullException.ThrowIfNull(child);
+
             _children ??= new ArrayList(ChildrenTypical);
 
             _children.Add(child);
@@ -309,7 +318,7 @@ namespace System.Security
             return c.ToString();
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         public static string? Escape(string? str)
         {
             if (str == null)
@@ -317,36 +326,16 @@ namespace System.Security
 
             StringBuilder? sb = null;
 
-            int strLen = str.Length;
-            int index; // Pointer into the string that indicates the location of the current '&' character
-            int newIndex = 0; // Pointer into the string that indicates the start index of the "remaining" string (that still needs to be processed).
-
-            while (true)
+            ReadOnlySpan<char> span = str;
+            int pos;
+            while ((pos = span.IndexOfAny(EscapeChars)) >= 0)
             {
-                index = str.IndexOfAny(s_escapeChars, newIndex);
-
-                if (index < 0)
-                {
-                    if (sb == null)
-                        return str;
-                    else
-                    {
-                        sb.Append(str, newIndex, strLen - newIndex);
-                        return sb.ToString();
-                    }
-                }
-                else
-                {
-                    sb ??= new StringBuilder();
-
-                    sb.Append(str, newIndex, index - newIndex);
-                    sb.Append(GetEscapeSequence(str[index]));
-
-                    newIndex = (index + 1);
-                }
+                sb ??= new StringBuilder();
+                sb.Append(span.Slice(0, pos)).Append(GetEscapeSequence(span[pos]));
+                span = span.Slice(pos + 1);
             }
 
-            // no normal exit is possible
+            return sb == null ? str : sb.Append(span).ToString();
         }
 
         private static string GetUnescapeSequence(string str, int index, out int newIndex)
@@ -481,8 +470,10 @@ namespace System.Security
             }
         }
 
-        public string? Attribute(string name!!)
+        public string? Attribute(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             // Note: we don't check for validity here because an
             // if an invalid name is passed we simply won't find it.
             if (_attributes == null)
@@ -510,8 +501,10 @@ namespace System.Security
             return null;
         }
 
-        public SecurityElement? SearchForChildByTag(string tag!!)
+        public SecurityElement? SearchForChildByTag(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             // Go through all the children and see if we can
             // find the ones that are asked for (matching tags)
 
@@ -527,8 +520,10 @@ namespace System.Security
             return null;
         }
 
-        public string? SearchForTextOfTag(string tag!!)
+        public string? SearchForTextOfTag(string tag)
         {
+            ArgumentNullException.ThrowIfNull(tag);
+
             // Search on each child in order and each
             // child's child, depth-first
 
@@ -548,6 +543,10 @@ namespace System.Security
             return null;
         }
 
-        public static SecurityElement? FromString(string xml!!) => default;
+        public static SecurityElement? FromString(string xml)
+        {
+            ArgumentNullException.ThrowIfNull(xml);
+            return null;
+        }
     }
 }

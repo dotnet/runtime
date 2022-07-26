@@ -149,20 +149,15 @@ struct PatchpointInfo
         return ((m_offsetAndExposureData[localNum] & EXPOSURE_MASK) != 0);
     }
 
-    void SetIsExposed(unsigned localNum)
-    {
-        m_offsetAndExposureData[localNum] |= EXPOSURE_MASK;
-    }
-
     // FP relative offset of this local in the original method
     int Offset(unsigned localNum) const
     {
-        return (m_offsetAndExposureData[localNum] & ~EXPOSURE_MASK);
+        return (m_offsetAndExposureData[localNum] >> OFFSET_SHIFT);
     }
 
-    void SetOffset(unsigned localNum, int offset)
+    void SetOffsetAndExposure(unsigned localNum, int offset, bool isExposed)
     {
-        m_offsetAndExposureData[localNum] = offset;
+        m_offsetAndExposureData[localNum] = (offset << OFFSET_SHIFT) | (isExposed ? EXPOSURE_MASK : 0);
     }
 
     // Callee save registers saved by the original method.
@@ -181,6 +176,7 @@ struct PatchpointInfo
 private:
     enum
     {
+        OFFSET_SHIFT = 0x1,
         EXPOSURE_MASK = 0x1
     };
 

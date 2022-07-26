@@ -27,6 +27,8 @@
 #include "mini-amd64.h"
 #include "mini-amd64-gsharedvt.h"
 
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
+
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 
 #define SRC_REG_SHIFT 0
@@ -179,10 +181,10 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 
 	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, GPTRDIFF_TO_UINT32 (code - start), NULL, NULL), NULL);
 
 	return start;
 }
@@ -497,9 +499,9 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	if (info)
-		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 
-	mono_arch_flush_icache (buf, code - buf);
+	mono_arch_flush_icache (buf, GPTRDIFF_TO_INT (code - buf));
 	return buf;
 }
 

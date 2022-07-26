@@ -223,7 +223,7 @@ Arguments:
                 break;
 
                 //
-                // Establish the the frame pointer register.
+                // Establish the frame pointer register.
                 //
                 // The operation information is not used.
                 //

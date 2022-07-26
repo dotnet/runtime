@@ -29,6 +29,8 @@
 
 #include <mono/metadata/components.h>
 
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
+
 /*
  * mono_arch_get_unbox_trampoline:
  * @m: method pointer
@@ -109,13 +111,13 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	code -= 6;
 	orig_code -= 6;
 	if (code [1] == 0xe8) {
-		mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
+		mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gint32)((gsize)addr - ((gsize)orig_code + 1) - 5));
 
 		/* Tell valgrind to recompile the patched code */
 		VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, 4);
 	} else if (code [1] == 0xe9) {
 		/* A PLT entry: jmp <DISP> */
-		mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gsize)addr - ((gsize)orig_code + 1) - 5);
+		mono_atomic_xchg_i32 ((gint32*)(orig_code + 2), (gint32)((gsize)addr - ((gsize)orig_code + 1) - 5));
 	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x n", code [0], code [1], code [2], code [3],
 				code [4], code [5]);
@@ -783,8 +785,8 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	x86_fst_membase (code, X86_ESI, MONO_STRUCT_OFFSET (CallContext, fret), TRUE, TRUE);
 
 	/* restore ESI, EDI which were saved below rbp */
-	x86_mov_reg_membase (code, X86_EDI, X86_EBP, - sizeof (target_mgreg_t), sizeof (target_mgreg_t));
-	x86_mov_reg_membase (code, X86_ESI, X86_EBP, - 2 * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+	x86_mov_reg_membase (code, X86_EDI, X86_EBP, - (gint32)sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+	x86_mov_reg_membase (code, X86_ESI, X86_EBP, - (gint32)(2 * sizeof (target_mgreg_t)), sizeof (target_mgreg_t));
 	x86_mov_reg_reg (code, X86_ESP, X86_EBP);
 
 	x86_pop_reg (code, X86_EBP);

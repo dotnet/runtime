@@ -16,7 +16,7 @@ using System.Linq;
 // long as the declaring scope remains on the stack.
 //
 // Each record interface simply declares as properties the members declared in the schema definition,
-// and each struct is declared as partial and as implmenting the interface, thus requiring all
+// and each struct is declared as partial and as implementing the interface, thus requiring all
 // interface properties to be supplied by the metadata reader implementation.
 //
 // Each handle interface requires type-specific equality functionality by itself implementing
@@ -36,6 +36,7 @@ class PublicGen : CsWriter
         WriteLine("using System;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine();
 
         WriteLine("#pragma warning disable 108     // base type 'uint' is not CLS-compliant");
@@ -58,7 +59,7 @@ class PublicGen : CsWriter
         }
 
         //
-        // HandleType enum is not the the schema
+        // HandleType enum is not the schema
         //
         EmitEnum(
             new RecordDef(
@@ -81,6 +82,7 @@ class PublicGen : CsWriter
     {
         if ((record.Flags & RecordDefFlags.Flags) != 0)
             WriteScopeAttribute("[Flags]");
+        WriteTypeAttributesForCoreLib();
         OpenScope($"public enum {record.Name} : {record.BaseTypeName}");
 
         foreach (var member in record.Members)

@@ -16,4 +16,4 @@ Event Logging is a mechanism by which CoreClr can provide a variety of informati
 
 # Adding New Logging System
 
-Though the the Event logging system was designed for ETW, the build system provides a mechanism, basically an [adapter script- genEventing.py](../../src/coreclr/scripts/genEventing.py) so that other Logging System can be added and used by CoreClr. An Example of such an extension for [LTTng logging system](https://lttng.org/) can be found in [genLttngProvider.py](../../src/coreclr/scripts/genLttngProvider.py )
+Though the Event logging system was designed for ETW, the build system provides a mechanism, basically an [adapter script- genEventing.py](../../src/coreclr/scripts/genEventing.py) so that other Logging System can be added and used by CoreClr. An Example of such an extension for [LTTng logging system](https://lttng.org/) can be found in [genLttngProvider.py](../../src/coreclr/scripts/genLttngProvider.py )

@@ -13,16 +13,32 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout)
         {
             Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
             var charSetSolver = new CharSetSolver();
             var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
-            var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
+            var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
-            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
-            BDD[] minterms = rootNode.ComputeMinterms();
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
+
+            // Determine if the root node is supported for safe handling
+            int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
+            Debug.Assert(threshold > 0);
+
+            // Skip the threshold check if the threshold equals int.MaxValue
+            if (threshold != int.MaxValue)
+            {
+                int size = rootNode.EstimateNfaSize();
+                if (size > threshold)
+                {
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingUnsafeSize, size, threshold));
+                }
+            }
+
+            rootNode = rootNode.AddFixedLengthMarkers(bddBuilder);
+            BDD[] minterms = rootNode.ComputeMinterms(bddBuilder);
 
             _matcher = minterms.Length > 64 ?
                 SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :
@@ -40,7 +56,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
-        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>
+        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>, IEquatable<TSet>
         {
             /// <summary>The matching engine.</summary>
             /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>
@@ -58,7 +74,7 @@ namespace System.Text.RegularExpressions.Symbolic
             protected internal override void Scan(ReadOnlySpan<char> text)
             {
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, text, runtextpos, _perThreadData);
+                SymbolicMatch pos = _matcher.FindMatch(_mode, text, runtextpos, _perThreadData);
 
                 // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
@@ -66,7 +82,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
                     int start = pos.Index;
                     int end = start + pos.Length;
-                    if (!quick && pos.CaptureStarts != null)
+                    if (_mode == RegexRunnerMode.FullMatchRequired && pos.CaptureStarts != null)
                     {
                         Debug.Assert(pos.CaptureEnds != null);
                         Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
@@ -83,13 +99,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Capture(0, start, end);
                     }
+
                     runtextpos = end;
                 }
                 else
                 {
                     // If we failed to find a match in the entire remainder of the input, skip the current position to the end.
                     // The calling scan loop will then exit.
-                    runtextpos = runtextend;
+                    runtextpos = text.Length;
                 }
             }
         }

@@ -9,7 +9,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal static SymbolicMatch NoMatch => new SymbolicMatch(-1, -1);
 
         /// <summary>Indicates a match was found but without meaningful details about where.</summary>
-        internal static SymbolicMatch QuickMatch => new SymbolicMatch(0, 0);
+        internal static SymbolicMatch MatchExists => new SymbolicMatch(0, 0);
 
         public SymbolicMatch(int index, int length, int[]? captureStarts = null, int[]? captureEnds = null)
         {

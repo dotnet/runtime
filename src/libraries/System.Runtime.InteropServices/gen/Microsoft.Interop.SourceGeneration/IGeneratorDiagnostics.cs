@@ -44,6 +44,20 @@ namespace Microsoft.Interop
         }
 
         public static Diagnostic CreateDiagnostic(
+            this AttributeData attributeData,
+            DiagnosticDescriptor descriptor,
+            ImmutableDictionary<string, string> properties,
+            params object[] args)
+        {
+            SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
+            Location location = syntaxReference is not null
+                ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
+                : Location.None;
+
+            return location.CreateDiagnostic(descriptor, properties, args);
+        }
+
+        public static Diagnostic CreateDiagnostic(
             this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             params object[] args)
@@ -75,7 +89,7 @@ namespace Microsoft.Interop
             }
 
             return firstLocation is null ?
-                Diagnostic.Create(descriptor, Location.None, args) :
+                Diagnostic.Create(descriptor, Location.None, properties: properties, args) :
                 Diagnostic.Create(descriptor, firstLocation, additionalLocations, properties, args);
         }
 
@@ -89,22 +103,24 @@ namespace Microsoft.Interop
                 location: location.IsInSource ? location : Location.None,
                 messageArgs: args);
         }
+
+        public static Diagnostic CreateDiagnostic(
+            this Location location,
+            DiagnosticDescriptor descriptor,
+            ImmutableDictionary<string, string> properties,
+            params object[] args)
+        {
+            return Diagnostic.Create(
+                descriptor,
+                location: location.IsInSource ? location : Location.None,
+                properties: properties,
+                messageArgs: args);
+        }
     }
 
 
     public interface IGeneratorDiagnostics
     {
-        /// <summary>
-        /// Report diagnostic for marshalling of a parameter/return that is not supported
-        /// </summary>
-        /// <param name="method">Method with the parameter/return</param>
-        /// <param name="info">Type info for the parameter/return</param>
-        /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
-        void ReportMarshallingNotSupported(
-            MethodDeclarationSyntax method,
-            TypePositionInfo info,
-            string? notSupportedDetails);
-
         /// <summary>
         /// Report diagnostic for configuration that is not supported by the DLL import source generator
         /// </summary>
@@ -126,5 +142,10 @@ namespace Microsoft.Interop
     {
         public static void ReportConfigurationNotSupported(this IGeneratorDiagnostics diagnostics, AttributeData attributeData, string configurationName)
             => diagnostics.ReportConfigurationNotSupported(attributeData, configurationName, null);
+    }
+
+    public class GeneratorDiagnosticProperties
+    {
+        public const string AddDisableRuntimeMarshallingAttribute = nameof(AddDisableRuntimeMarshallingAttribute);
     }
 }

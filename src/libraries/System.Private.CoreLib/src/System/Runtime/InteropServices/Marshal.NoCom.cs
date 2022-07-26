@@ -195,9 +195,19 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static bool IsComObject(object o!!) => false;
+        public static bool IsComObject(object o)
+        {
+            ArgumentNullException.ThrowIfNull(o);
 
-        public static bool IsTypeVisibleFromCom(Type t!!) => false;
+            return false;
+        }
+
+        public static bool IsTypeVisibleFromCom(Type t)
+        {
+            ArgumentNullException.ThrowIfNull(t);
+
+            return false;
+        }
 
         [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)

@@ -273,7 +273,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            return clone != null ? clone : uninstantiatedTypes;
+            return clone ?? uninstantiatedTypes;
         }
 
         // Strips instantiation. E.g C<int> -> C<T>

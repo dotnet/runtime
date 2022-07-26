@@ -143,7 +143,7 @@ ep_event_payload_copy_data (
 			EventData *event_data = event_payload->event_data;
 			for (uint32_t i = 0; i < event_payload->event_data_len; ++i) {
 				EP_ASSERT ((offset + ep_event_data_get_size (&event_data[i])) <= event_payload->size);
-				memcpy (dst + offset, (uint8_t *)ep_event_data_get_ptr (&event_data[i]), ep_event_data_get_size (&event_data[i]));
+				memcpy (dst + offset, (uint8_t *)(uintptr_t)ep_event_data_get_ptr (&event_data[i]), ep_event_data_get_size (&event_data[i]));
 				offset += ep_event_data_get_size (&event_data[i]);
 			}
 		}
@@ -182,7 +182,7 @@ ep_event_payload_get_flat_data (EventPipeEventPayload *event_payload)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_event_payload;
 const char quiet_linker_empty_file_warning_eventpipe_event_payload = 0;
 #endif

@@ -120,11 +120,10 @@ mono_bitset_mp_new_noinit (MonoMemPool *mp, guint32 size, guint32 max_size)
 G_GNUC_UNUSED static void
 mono_bitset_print (MonoBitSet *set)
 {
-	int i;
 	gboolean first = TRUE;
 
 	printf ("{");
-	for (i = 0; i < mono_bitset_size (set); i++) {
+	for (guint32 i = 0; i < mono_bitset_size (set); i++) {
 
 		if (mono_bitset_test (set, i)) {
 			if (!first)
@@ -159,15 +158,16 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 
 		if ((ins->dreg != -1) && get_vreg_to_inst (cfg, ins->dreg)) {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
-			int idx = var->inst_c0;
-			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+			MonoMethodVar *vi = MONO_VARINFO (cfg, var->inst_c0);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 			if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 				/* Make the component vregs volatile as well (#612206) */
 				get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 			}
+MONO_RESTORE_WARNING
 		}
 
 		/* SREGS */
@@ -178,15 +178,16 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 			g_assert (sreg != -1);
 			if (get_vreg_to_inst (cfg, sreg)) {
 				MonoInst *var = get_vreg_to_inst (cfg, sreg);
-				int idx = var->inst_c0;
-				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+				MonoMethodVar *vi = MONO_VARINFO (cfg, var->inst_c0);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 					/* Make the component vregs volatile as well (#612206) */
 					get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 					get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				}
+MONO_RESTORE_WARNING
 			}
 		}
 	}
@@ -208,7 +209,6 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause, *clause2;
-	int i, j;
 	gboolean *outer_try;
 
 	/*
@@ -216,17 +216,17 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 	 * other non-try clause.
 	 */
 	outer_try = (gboolean *)mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
-	for (i = 0; i < header->num_clauses; ++i)
+	for (guint i = 0; i < header->num_clauses; ++i)
 		outer_try [i] = TRUE;
 	/* Iterate over the clauses backward, so outer clauses come first */
 	/* This avoids doing an O(2) search, since we can determine when inner clauses end */
-	for (i = header->num_clauses - 1; i >= 0; --i) {
+	for (int i = header->num_clauses - 1; i >= 0; --i) {
 		clause = &header->clauses [i];
 
 		if (clause->flags != 0) {
 			outer_try [i] = TRUE;
 			/* Iterate over inner clauses */
-			for (j = i - 1; j >= 0; --j) {
+			for (int j = i - 1; j >= 0; --j) {
 				clause2 = &header->clauses [j];
 
 				if (clause2->flags == 0 && MONO_OFFSET_IN_HANDLER (clause, clause2->try_offset)) {
@@ -244,7 +244,7 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 	mono_ptrset_init (&visited);
 	/*
 	 * Variables in exception handler register cannot be allocated to registers
-	 * so make them volatile. See bug #42136. This will not be neccessary when
+	 * so make them volatile. See bug #42136. This will not be necessary when
 	 * the back ends could guarantee that the variables will be in the
 	 * correct registers when a handler is called.
 	 * This includes try blocks too, since a variable in a try block might be
@@ -269,10 +269,10 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 static void
 update_live_range (MonoMethodVar *var, int abs_pos)
 {
-	if (var->range.first_use.abs_pos > abs_pos)
+	if (var->range.first_use.abs_pos > GINT_TO_UINT32(abs_pos))
 		var->range.first_use.abs_pos = abs_pos;
 
-	if (var->range.last_use.abs_pos < abs_pos)
+	if (var->range.last_use.abs_pos < GINT_TO_UINT32(abs_pos))
 		var->range.last_use.abs_pos = abs_pos;
 }
 
@@ -301,12 +301,12 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if (ins->opcode == OP_LDADDR) {
 			MonoInst *var = (MonoInst *)ins->inst_p0;
-			int idx = var->inst_c0;
+			target_mgreg_t idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 #ifdef DEBUG_LIVENESS
 			if (cfg->verbose_level > 1)
-				printf ("\tGEN: R%d(%d)\n", var->dreg, idx);
+				printf ("\tGEN: R%d(%d)\n", var->dreg, GTMREG_TO_INT (idx));
 #endif
 			update_live_range (&vars [idx], abs_pos + inst_num);
 			if (!mono_bitset_test_fast (bb->kill_set, idx))
@@ -320,12 +320,12 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 			sreg = sregs [i];
 			if ((spec [MONO_INST_SRC1 + i] != ' ') && get_vreg_to_inst (cfg, sreg)) {
 				MonoInst *var = get_vreg_to_inst (cfg, sreg);
-				int idx = var->inst_c0;
+				target_mgreg_t idx = var->inst_c0;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 #ifdef DEBUG_LIVENESS
 				if (cfg->verbose_level > 1)
-					printf ("\tGEN: R%d(%d)\n", sreg, idx);
+					printf ("\tGEN: R%d(%d)\n", sreg, GTMREG_TO_INT (idx));
 #endif
 				update_live_range (&vars [idx], abs_pos + inst_num);
 				if (!mono_bitset_test_fast (bb->kill_set, idx))
@@ -337,7 +337,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* DREG */
 		if ((spec [MONO_INST_DEST] != ' ') && get_vreg_to_inst (cfg, ins->dreg)) {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
-			int idx = var->inst_c0;
+			target_mgreg_t idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 			if (MONO_IS_STORE_MEMBASE (ins)) {
@@ -348,7 +348,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 #ifdef DEBUG_LIVENESS
 				if (cfg->verbose_level > 1)
-					printf ("\tKILL: R%d(%d)\n", ins->dreg, idx);
+					printf ("\tKILL: R%d(%d)\n", ins->dreg, GTMREG_TO_INT (idx));
 #endif
 				update_live_range (&vars [idx], abs_pos + inst_num + 1);
 				mono_bitset_set_fast (bb->kill_set, idx);
@@ -365,7 +365,7 @@ void
 mono_analyze_liveness (MonoCompile *cfg)
 {
 	MonoBitSet *old_live_out_set;
-	int i, j, max_vars = cfg->num_varinfo;
+	int max_vars = cfg->num_varinfo;
 	int out_iter;
 	gboolean *in_worklist;
 	MonoBasicBlock **worklist;
@@ -386,13 +386,13 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 	bitsize = mono_bitset_alloc_size (max_vars, 0);
 
-	for (i = 0; i < max_vars; i ++) {
+	for (int i = 0; i < max_vars; i ++) {
 		MONO_VARINFO (cfg, i)->range.first_use.abs_pos = ~ 0;
 		MONO_VARINFO (cfg, i)->range.last_use .abs_pos =   0;
 		MONO_VARINFO (cfg, i)->spill_costs = 0;
 	}
 
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
 		bb->gen_set = mono_bitset_mp_new (cfg->mempool, bitsize, max_vars);
@@ -401,7 +401,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 #ifdef DEBUG_LIVENESS
 		if (cfg->verbose_level > 1) {
 			printf ("BLOCK BB%d (", bb->block_num);
-			for (j = 0; j < bb->out_count; j++)
+			for (gint16 j = 0; j < bb->out_count; j++)
 				printf ("BB%d, ", bb->out_bb [j]->block_num);
 
 			printf ("):\n");
@@ -428,7 +428,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	 * This is a backward dataflow analysis problem, so we process blocks in
 	 * decreasing dfn order, this speeds up the iteration.
 	 */
-	for (i = 0; i < cfg->num_bblocks; i ++) {
+	for (guint i = 0; i < cfg->num_bblocks; i ++) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
 		worklist [l_end ++] = bb;
@@ -454,10 +454,10 @@ mono_analyze_liveness (MonoCompile *cfg)
 #ifdef DEBUG_LIVENESS
 		if (cfg->verbose_level > 1) {
 			printf ("P: BB%d(%d): IN: ", bb->block_num, bb->dfn);
-			for (j = 0; j < bb->in_count; ++j)
+			for (gint16 j = 0; j < bb->in_count; ++j)
 				printf ("BB%d ", bb->in_bb [j]->block_num);
 			printf ("OUT:");
-			for (j = 0; j < bb->out_count; ++j)
+			for (gint16 j = 0; j < bb->out_count; ++j)
 				printf ("BB%d ", bb->out_bb [j]->block_num);
 			printf ("\n");
 		}
@@ -478,7 +478,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 			mono_bitset_copyto_fast (bb->live_out_set, old_live_out_set);
 		}
 
-		for (j = 0; j < bb->out_count; j++) {
+		for (gint16 j = 0; j < bb->out_count; j++) {
 			out_bb = bb->out_bb [j];
 
 			if (!out_bb->live_in_set) {
@@ -503,7 +503,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 			mono_bitset_sub_fast (bb->live_in_set, bb->kill_set);
 			mono_bitset_union_fast (bb->live_in_set, bb->gen_set);
 
-			for (j = 0; j < bb->in_count; j++) {
+			for (gint16 j = 0; j < bb->in_count; j++) {
 				MonoBasicBlock *in_bb = bb->in_bb [j];
 				/*
 				 * Some basic blocks do not seem to be in the
@@ -541,7 +541,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	g_free (in_worklist);
 
 	/* Compute live_in_set for bblocks skipped earlier */
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
 		if (!bb->live_in_set) {
@@ -553,7 +553,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 		}
 	}
 
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 		guint32 max;
 		guint32 abs_pos = (bb->dfn << BB_ID_SHIFT);
@@ -563,7 +563,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 			continue;
 
 		max = ((max_vars + (BITS_PER_CHUNK -1)) / BITS_PER_CHUNK);
-		for (j = 0; j < max; ++j) {
+		for (guint32 j = 0; j < max; ++j) {
 			gsize bits_in;
 			gsize bits_out;
 			int k;
@@ -590,7 +590,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	 * in the prolog (bug #74992).
 	 */
 
-	for (i = 0; i < max_vars; i ++) {
+	for (int i = 0; i < max_vars; i ++) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, i);
 		if (cfg->varinfo [vi->idx]->opcode == OP_ARG) {
 			if (vi->range.last_use.abs_pos == 0 && !(cfg->varinfo [vi->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
@@ -611,7 +611,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 #ifdef DEBUG_LIVENESS
 	if (cfg->verbose_level > 1) {
-		for (i = cfg->num_bblocks - 1; i >= 0; i--) {
+		for (int i = cfg->num_bblocks - 1; i >= 0; i--) {
 			MonoBasicBlock *bb = cfg->bblocks [i];
 
 			printf ("LIVE IN  BB%d: ", bb->block_num);
@@ -620,7 +620,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 			mono_bitset_print (bb->live_out_set);
 		}
 
-		for (i = 0; i < max_vars; i ++) {
+		for (int i = 0; i < max_vars; i ++) {
 			MonoMethodVar *vi = MONO_VARINFO (cfg, i);
 
 			printf ("V%d: [0x%x - 0x%x]\n", i, vi->range.first_use.abs_pos, vi->range.last_use.abs_pos);
@@ -858,7 +858,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 	/* DREG */
 	if ((spec [MONO_INST_DEST] != ' ') && get_vreg_to_inst (cfg, ins->dreg)) {
 		MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
-		int idx = var->inst_c0;
+		target_mgreg_t idx = var->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 		if (MONO_IS_STORE_MEMBASE (ins)) {
@@ -899,7 +899,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 		sreg = sregs [i];
 		if ((spec [MONO_INST_SRC1 + i] != ' ') && get_vreg_to_inst (cfg, sreg)) {
 			MonoInst *var = get_vreg_to_inst (cfg, sreg);
-			int idx = var->inst_c0;
+			target_mgreg_t idx = var->inst_c0;
 
 			if (last_use [idx] == 0) {
 				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", sreg, inst_num));
@@ -912,7 +912,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 static void
 mono_analyze_liveness2 (MonoCompile *cfg)
 {
-	int bnum, idx, i, j, nins, max, max_vars, block_from, block_to, pos;
+	int nins, max, max_vars, block_from, block_to, pos;
 	gint32 *last_use;
 	static guint32 disabled = -1;
 
@@ -926,7 +926,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		/* Ranges would overflow */
 		return;
 
-	for (bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
+	for (int bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
 		MonoBasicBlock *bb = cfg->bblocks [bnum];
 		MonoInst *ins;
 
@@ -949,7 +949,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	max_vars = cfg->num_varinfo;
 	last_use = g_new0 (gint32, max_vars);
 
-	for (idx = 0; idx < max_vars; ++idx) {
+	for (int idx = 0; idx < max_vars; ++idx) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 		vi->interval = (MonoLiveInterval *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
@@ -959,12 +959,12 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	 * Process bblocks in reverse order, so the addition of new live ranges
 	 * to the intervals is faster.
 	 */
-	for (bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
+	for (int bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
 		MonoBasicBlock *bb = cfg->bblocks [bnum];
 		MonoInst *ins;
 
 		block_from = (bb->dfn << BB_ID_SHIFT) + 1; /* so pos > 0 */
-		if (bnum < cfg->num_bblocks - 1)
+		if (GINT_TO_UINT(bnum) < cfg->num_bblocks - 1)
 			/* Beginning of the next bblock */
 			block_to = (cfg->bblocks [bnum + 1]->dfn << BB_ID_SHIFT) + 1;
 		else
@@ -977,7 +977,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		/* For variables in bb->live_out, set last_use to block_to */
 
 		max = ((max_vars + (BITS_PER_CHUNK -1)) / BITS_PER_CHUNK);
-		for (j = 0; j < max; ++j) {
+		for (int j = 0; j < max; ++j) {
 			gsize bits_out;
 			int k;
 
@@ -1005,7 +1005,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 			pos--;
 		}
 
-		for (idx = 0; idx < max_vars; ++idx) {
+		for (int idx = 0; idx < max_vars; ++idx) {
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 			if (last_use [idx] != 0) {
@@ -1021,14 +1021,14 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	 * the method to account for the arg reg/memory -> global register copies
 	 * in the prolog (bug #74992).
 	 */
-	for (i = 0; i < max_vars; i ++) {
+	for (int i = 0; i < max_vars; i ++) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, i);
 		if (cfg->varinfo [vi->idx]->opcode == OP_ARG)
 			mono_linterval_add_range (cfg, vi->interval, 0, 1);
 	}
 
 #if 0
-	for (idx = 0; idx < max_vars; ++idx) {
+	for (int idx = 0; idx < max_vars; ++idx) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 		LIVENESS_DEBUG (printf ("LIVENESS R%d: ", cfg->varinfo [idx]->dreg));
@@ -1046,7 +1046,7 @@ static void
 update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *last_use, MonoMethodVar **vreg_to_varinfo, GSList **callsites)
 {
 	if (ins->opcode == OP_GC_LIVENESS_DEF || ins->opcode == OP_GC_LIVENESS_USE) {
-		int vreg = ins->inst_c1;
+		target_mgreg_t vreg = ins->inst_c1;
 		MonoMethodVar *vi = vreg_to_varinfo [vreg];
 		int idx = vi->idx;
 		int pc_offset = ins->backend.pc_offset;
@@ -1055,12 +1055,12 @@ update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 
 
 		if (ins->opcode == OP_GC_LIVENESS_DEF) {
 			if (last_use [idx] > 0) {
-				LIVENESS_DEBUG (printf ("\tadd range to R%d: [%x, %x)\n", vreg, pc_offset, last_use [idx]));
+				LIVENESS_DEBUG (printf ("\tadd range to R%d: [%x, %x)\n", GTMREG_TO_INT (vreg), pc_offset, last_use [idx]));
 				last_use [idx] = 0;
 			}
 		} else {
 			if (last_use [idx] == 0) {
-				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", vreg, pc_offset));
+				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", GTMREG_TO_INT (vreg), pc_offset));
 				last_use [idx] = pc_offset;
 			}
 		}
@@ -1073,7 +1073,6 @@ update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 
 		last->param_slots = g_slist_prepend_mempool (cfg->mempool, last->param_slots, ins);
 	} else if (ins->flags & MONO_INST_GC_CALLSITE) {
 		GCCallSite *callsite = (GCCallSite *)mono_mempool_alloc0 (cfg->mempool, sizeof (GCCallSite));
-		int i;
 
 		LIVENESS_DEBUG (printf ("\t%x: ", ins->backend.pc_offset); mono_print_ins (ins));
 		LIVENESS_DEBUG (printf ("\t\tlive: "));
@@ -1081,7 +1080,7 @@ update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 
 		callsite->bb = bb;
 		callsite->liveness = (guint8 *)mono_mempool_alloc0 (cfg->mempool, ALIGN_TO (cfg->num_varinfo, 8) / 8);
 		callsite->pc_offset = ins->backend.pc_offset;
-		for (i = 0; i < cfg->num_varinfo; ++i) {
+		for (guint i = 0; i < cfg->num_varinfo; ++i) {
 			if (last_use [i] != 0) {
 				LIVENESS_DEBUG (printf ("R%d", MONO_VARINFO (cfg, i)->vreg));
 				callsite->liveness [i / 8] |= (1 << (i % 8));
@@ -1189,9 +1188,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		/* Process instructions backwards */
 		callsites = NULL;
 		for (i = nins - 1; i >= 0; --i) {
-			MonoInst *ins = (MonoInst*)reverse [i];
-
-			update_liveness_gc (cfg, bb, ins, last_use, vreg_to_varinfo, &callsites);
+			update_liveness_gc (cfg, bb, (MonoInst*)reverse [i], last_use, vreg_to_varinfo, &callsites);
 		}
 		/* The callsites should already be sorted by pc offset because we added them backwards */
 		bb->gc_callsites = callsites;

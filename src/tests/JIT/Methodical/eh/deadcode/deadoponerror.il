@@ -8,9 +8,9 @@
 .assembly 'deadoponerror'
 { }
 .assembly extern xunit.core {}
-.class private auto ansi Test_deadoponerror extends [mscorlib]System.Object
+.class public auto ansi Test_deadoponerror extends [mscorlib]System.Object
 {
-.method private hidebysig static int32 Main() il managed
+.method public hidebysig static int32 Main() il managed
 {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00

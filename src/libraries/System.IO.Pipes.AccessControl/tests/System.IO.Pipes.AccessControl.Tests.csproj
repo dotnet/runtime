@@ -6,7 +6,6 @@
     <AssembliesBeingTested Include="System.IO.Pipes" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeServerStreamAclTests.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.AclExtensions.cs" />
     <Compile Include="NamedPipeTests\NamedPipeServerStreamAclTests.cs" />

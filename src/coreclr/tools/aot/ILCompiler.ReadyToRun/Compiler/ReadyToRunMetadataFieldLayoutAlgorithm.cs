@@ -116,6 +116,11 @@ namespace ILCompiler
             /// </summary>
             private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm = 8;
 
+            /// <summary>
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for LoongArch64
+            /// </summary>
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64 = 8;
+
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -253,7 +258,7 @@ namespace ILCompiler
                     size = fieldType.GetElementSize().AsInt;
                     alignment = size;
                 }
-                else if (fieldType.IsByRef || fieldType.IsByRefLike || fieldType.IsByReferenceOfT)
+                else if (fieldType.IsByRef || fieldType.IsByRefLike)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                 }
@@ -412,6 +417,10 @@ namespace ILCompiler
 
                         case TargetArchitecture.ARM:
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm;
+                            break;
+
+                        case TargetArchitecture.LoongArch64:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64;
                             break;
 
                         default:

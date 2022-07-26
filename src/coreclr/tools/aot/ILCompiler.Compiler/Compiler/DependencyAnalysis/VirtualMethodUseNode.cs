@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     // This node represents the concept of a virtual method being used.
-    // It has no direct depedencies, but may be referred to by conditional static 
+    // It has no direct dependencies, but may be referred to by conditional static
     // dependencies, or static dependencies from elsewhere.
     //
     // It is used to keep track of uses of virtual methods to ensure that the
@@ -26,7 +26,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!decl.IsRuntimeDeterminedExactMethod);
             Debug.Assert(decl.IsVirtual);
-            Debug.Assert(!decl.Signature.IsStatic);
 
             // Virtual method use always represents the slot defining method of the virtual.
             // Places that might see virtual methods being used through an override need to normalize

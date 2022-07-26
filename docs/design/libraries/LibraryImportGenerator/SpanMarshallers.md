@@ -1,6 +1,8 @@
 # Support for Marshalling `(ReadOnly)Span<T>`
 
-As part of the exit criteria for the DllImportGenerator experiment, we have decided to introduce support for marshalling `System.Span<T>` and `System.ReadOnlySpan<T>` into the DllImportGenerator-generated stubs. This document describes design decisions made during the implementation of these marshallers.
+As part of the exit criteria for the LibraryImportGenerator experiment, we have decided to introduce support for marshalling `System.Span<T>` and `System.ReadOnlySpan<T>` into the LibraryImportGenerator-generated stubs. This document describes design decisions made during the implementation of these marshallers.
+
+> NOTE: These design docs are kept for historical purposes. The designs in this file are superseded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
 
 ## Design 1: "Intrinsic" support for `(ReadOnly)Span<T>`
 
@@ -29,7 +31,7 @@ As part of this design, we would also want to include some in-box marshallers th
 - A marshaller that marshals out a pointer to the native memory as a Span instead of copying the data into a managed array.
   - This marshaller would only support blittable spans by design.
   - This marshaller will require the user to manually release the memory. Since this will be an opt-in marshaller, this scenario is already advanced and that additional requirement should be understandable to users who use this marshaller.
-  - Since there is no mechansim to provide a collection length, the question of how to provide the span's length in this case is still unresolved. One option would be to always provide a length 1 span and require the user to create a new span with the correct size, but that feels like a bad design.
+  - Since there is no mechanism to provide a collection length, the question of how to provide the span's length in this case is still unresolved. One option would be to always provide a length 1 span and require the user to create a new span with the correct size, but that feels like a bad design.
 
 ### Pros/Cons of Design 1
 
@@ -43,7 +45,7 @@ Cons:
 - Defining custom marshallers for non-empty spans of non-blittable types generically is impossible since the marshalling rules of the element's type cannot be known.
 - Custom non-default marshalling of the span element types is impossible for non-built-in types.
 - Inlining the span marshalling fully into the stub increases on-disk IL size.
-- This design does not enable developers to easily define custom marshalling support for their own collection types, which may be desireable.
+- This design does not enable developers to easily define custom marshalling support for their own collection types, which may be desirable.
 - The MarshalAs attributes will continue to fail to work on spans used in non-source-generated DllImports, so this would be the first instance of enabling the "old" MarshalAs model on a new type in the generated DllImports, which may or may not be undesirable.
   - The existing "native type marshalling" support cannot support marshalling collections of an unknown (at marshaller authoring time) non-blittable element type and cannot specify an element count for collections during unmarshalling.
 
@@ -59,7 +61,7 @@ Introduce a marshaller kind named `LinearCollection`.
 
 ```diff
 namespace System.Runtime.InteropServices
-{ 
+{
   [AttributeUsage(AttributeTargets.Struct)]
   public sealed class CustomTypeMarshallerAttribute : Attribute
   {
@@ -154,16 +156,11 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     /// <summary>
     /// A span that points to the memory where the native values of the collection are stored after the native call.
     /// </summary>
-    public ReadOnlySpan<TCollectionElement> GetNativeValuesSource(int length);
+    public ReadOnlySpan<byte> GetNativeValuesSource(int length);
     /// <summary>
     /// A span that points to the memory where the native values of the collection should be stored.
     /// </summary>
-    public Span<TCollectionElement> GetNativeValuesDestination();
-
-    /// <summary>
-    /// A span that points to the memory where the native values of the collection should be stored.
-    /// </summary>
-    public unsafe Span<byte> NativeValueStorage { get; }
+    public Span<byte> GetNativeValuesDestination();
 
     // The requirements on the TNative type are the same as when used with `NativeTypeMarshallingAttribute`.
     // The property is required with the generic collection marshalling.
@@ -175,7 +172,7 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 
 The constructors now require an additional `int` parameter specifying the native size of a collection element. The collection element type is represented as `TCollectionElement` above, and can be any type the marshaller defines. As the elements may be marshalled to types with different native sizes than managed, this enables the author of the generic collection marshaller to not need to know how to marshal the elements of the collection, just the collection structure itself.
 
-When the elements of the collection are blittable, the marshaller will emit a block copy of the span `ManagedValues` to the destination `NativeValueStorage`. When the elements are not blittable, the marshaller will emit a loop that will marshal the elements of the managed span one at a time and store them in the `NativeValueStorage` span.
+When the elements of the collection are blittable, the marshaller will emit a block copy of the span `GetManagedValuesSource`/`GetNativeValuesSource` to `GetNativeValuesDestination`/`GetManagedValuesDestination`. When the elements are not blittable, the marshaller will emit a loop that will marshal the elements of the managed span one at a time and store them in the `NativeValueStorage` span.
 
 This would enable similar performance metrics as the current support for arrays as well as Design 1's support for the span types when the element type is blittable.
 
@@ -227,7 +224,7 @@ public ref struct SpanMarshaller<T>
     private Span<T> managedCollection;
 
     private int nativeElementSize;
-  
+
     private IntPtr Value { get; set; }
 
     public SpanMarshaller(Span<T> collection, int nativeSizeOfElement)
@@ -239,7 +236,7 @@ public ref struct SpanMarshaller<T>
     }
 
     public ReadOnlySpan<T> GetManagedValuesSource() => managedCollection;
-  
+
     public Span<T> GetManagedValuesDestination(int length) => managedCollection = new T[length];
 
     public unsafe Span<byte> GetNativeValuesDestination() => MemoryMarshal.CreateSpan(ref *(byte*)(Value), managedCollection.Length);
@@ -249,7 +246,7 @@ public ref struct SpanMarshaller<T>
     public Span<T> ToManaged() => managedCollection;
 
     public IntPtr ToNativeValue() => Value;
-    
+
     public void FromNativeValue(IntPtr value) => Value = value;
 
     public void FreeNative()
@@ -328,8 +325,8 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
 
 -   public ReadOnlySpan<TCollectionElement> GetManagedValuesSource();
 -   public Span<TCollectionElement> GetManagedValuesDestination(int length);
--   public ReadOnlySpan<TCollectionElement> GetNativeValuesSource(int length);
--   public Span<TCollectionElement> GetNativeValuesDestination();
+-   public ReadOnlySpan<byte> GetNativeValuesSource(int length);
+-   public Span<byte> GetNativeValuesDestination();
 
 +    public ref byte GetOffsetForNativeValueAtIndex(int index);
 +    public TCollectionElement GetManagedValueAtIndex(int index);

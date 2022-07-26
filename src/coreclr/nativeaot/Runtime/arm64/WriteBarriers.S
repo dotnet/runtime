@@ -201,7 +201,7 @@
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpCheckedAssignRefArm64
+        b       C_FUNC(RhpCheckedAssignRefArm64)
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -221,7 +221,7 @@ LEAF_ENTRY RhpAssignRef, _TEXT
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpAssignRefArm64
+        b       C_FUNC(RhpAssignRefArm64)
 
 LEAF_END RhpAssignRef, _TEXT
 

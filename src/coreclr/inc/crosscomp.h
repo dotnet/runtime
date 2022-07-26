@@ -399,7 +399,7 @@ enum
 
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
 
-typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
+typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
 
     //
     // Control flags.
@@ -448,7 +448,7 @@ typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
     // Floating Point Registers
     //
     //TODO-LoongArch64: support the SIMD.
-    DWORD64 F[32];
+    ULONGLONG F[32];
     DWORD   Fcsr;
 } T_CONTEXT, *PT_CONTEXT;
 
@@ -564,6 +564,8 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #elif defined(TARGET_LINUX) && defined(TARGET_S390X)
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_LINUX) && defined(TARGET_LOONGARCH64)
+#define DAC_CS_NATIVE_DATA_SIZE 96
+#elif defined(TARGET_LINUX) && defined(TARGET_POWERPC64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_NETBSD) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 96

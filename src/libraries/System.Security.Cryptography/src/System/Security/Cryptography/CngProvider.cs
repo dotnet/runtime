@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_msPlatformKsp ?? (s_msPlatformKsp = new CngProvider("Microsoft Platform Crypto Provider")); // MS_PLATFORM_CRYPTO_PROVIDER
+                return s_msPlatformKsp ??= new CngProvider("Microsoft Platform Crypto Provider"); // MS_PLATFORM_CRYPTO_PROVIDER
             }
         }
 
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_msSmartCardKsp ?? (s_msSmartCardKsp = new CngProvider("Microsoft Smart Card Key Storage Provider")); // MS_SMART_CARD_KEY_STORAGE_PROVIDER
+                return s_msSmartCardKsp ??= new CngProvider("Microsoft Smart Card Key Storage Provider"); // MS_SMART_CARD_KEY_STORAGE_PROVIDER
             }
         }
 
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_msSoftwareKsp ?? (s_msSoftwareKsp = new CngProvider("Microsoft Software Key Storage Provider")); // MS_KEY_STORAGE_PROVIDER
+                return s_msSoftwareKsp ??= new CngProvider("Microsoft Software Key Storage Provider"); // MS_KEY_STORAGE_PROVIDER
             }
         }
 

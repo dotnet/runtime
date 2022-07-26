@@ -826,7 +826,7 @@ namespace System
                 DayOfWeek day;
                 if (!TZif_ParseMDateRule(date, out month, out week, out day))
                 {
-                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date.ToString()));
+                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparsablePosixMDateString, date.ToString()));
                 }
 
                 return TransitionTime.CreateFloatingDateRule(ParseTimeOfDay(time), month, week, day);
@@ -899,7 +899,7 @@ namespace System
 
             int index = 1;
 
-            if (index >= date.Length || ((uint)(date[index] - '0') > '9'-'0'))
+            if ((uint)index >= (uint)date.Length || !char.IsAsciiDigit(date[index]))
             {
                 throw new InvalidTimeZoneException(SR.InvalidTimeZone_InvalidJulianDay);
             }
@@ -908,9 +908,9 @@ namespace System
 
             do
             {
-                julianDay = julianDay * 10 + (int) (date[index] - '0');
+                julianDay = julianDay * 10 + (int)(date[index] - '0');
                 index++;
-            } while (index < date.Length && ((uint)(date[index] - '0') <= '9'-'0'));
+            } while ((uint)index < (uint)date.Length && char.IsAsciiDigit(date[index]));
 
             int[] days = GregorianCalendarHelper.DaysToMonth365;
 
@@ -1007,7 +1007,7 @@ namespace System
             return !standardName.IsEmpty && !standardOffset.IsEmpty;
         }
 
-        private static ReadOnlySpan<char> TZif_ParsePosixName(ReadOnlySpan<char> posixFormat, ref int index)
+        private static ReadOnlySpan<char> TZif_ParsePosixName(ReadOnlySpan<char> posixFormat, scoped ref int index)
         {
             bool isBracketEnclosed = index < posixFormat.Length && posixFormat[index] == '<';
             if (isBracketEnclosed)
@@ -1034,10 +1034,10 @@ namespace System
             }
         }
 
-        private static ReadOnlySpan<char> TZif_ParsePosixOffset(ReadOnlySpan<char> posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixOffset(ReadOnlySpan<char> posixFormat, scoped ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => !char.IsDigit(c) && c != '+' && c != '-' && c != ':');
 
-        private static void TZif_ParsePosixDateTime(ReadOnlySpan<char> posixFormat, ref int index, out ReadOnlySpan<char> date, out ReadOnlySpan<char> time)
+        private static void TZif_ParsePosixDateTime(ReadOnlySpan<char> posixFormat, scoped ref int index, out ReadOnlySpan<char> date, out ReadOnlySpan<char> time)
         {
             time = null;
 
@@ -1049,13 +1049,13 @@ namespace System
             }
         }
 
-        private static ReadOnlySpan<char> TZif_ParsePosixDate(ReadOnlySpan<char> posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixDate(ReadOnlySpan<char> posixFormat, scoped ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => c == '/' || c == ',');
 
-        private static ReadOnlySpan<char> TZif_ParsePosixTime(ReadOnlySpan<char> posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixTime(ReadOnlySpan<char> posixFormat, scoped ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => c == ',');
 
-        private static ReadOnlySpan<char> TZif_ParsePosixString(ReadOnlySpan<char> posixFormat, ref int index, Func<char, bool> breakCondition)
+        private static ReadOnlySpan<char> TZif_ParsePosixString(ReadOnlySpan<char> posixFormat, scoped ref int index, Func<char, bool> breakCondition)
         {
             int startIndex = index;
             for (; index < posixFormat.Length; index++)
@@ -1318,7 +1318,7 @@ namespace System
                 // skip the 15 byte reserved field
 
                 // don't use the BitConverter class which parses data
-                // based on the Endianess of the machine architecture.
+                // based on the Endianness of the machine architecture.
                 // this data is expected to always be in "standard byte order",
                 // regardless of the machine it is being processed on.
 

@@ -114,7 +114,7 @@ namespace ILCompiler
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
         {
-            // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
+            // If we're creating a delegate to a virtual method that cannot be overridden, devirtualize.
             // This is not just an optimization - it's required for correctness in the presence of sealed
             // vtable slots.
             if (followVirtualDispatch && (target.IsFinal || target.OwningType.IsSealed()))
@@ -142,10 +142,7 @@ namespace ILCompiler
             else
             {
                 // Use the typical field definition in case this is an instantiated generic type
-                field = field.GetTypicalFieldDefinition();
-                int fieldTypePack = (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1;
-                return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
-                    ((EcmaField)field).GetFieldRvaData(), Math.Max(NodeFactory.Target.PointerSize, fieldTypePack));
+                return NodeFactory.FieldRvaData((EcmaField)field.GetTypicalFieldDefinition());
             }
         }
 
@@ -264,7 +261,8 @@ namespace ILCompiler
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
             bool canConstructPerWholeProgramAnalysis = _devirtualizationManager == null ? true : _devirtualizationManager.CanConstructType(type);
-            return canConstructPerWholeProgramAnalysis & DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type)
+            bool creationAllowed = DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type);
+            return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle
                 : ReadyToRunHelperId.NecessaryTypeHandle;
         }
@@ -444,7 +442,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Retreives method whose runtime handle is suitable for use with GVMLookupForSlot.
+        /// Retrieves method whose runtime handle is suitable for use with GVMLookupForSlot.
         /// </summary>
         public MethodDesc GetTargetOfGenericVirtualMethodCall(MethodDesc calledMethod)
         {
@@ -658,5 +656,18 @@ namespace ILCompiler
         public readonly MethodDesc Method;
         public ConstrainedCallInfo(TypeDesc constrainedType, MethodDesc method)
             => (ConstrainedType, Method) = (constrainedType, method);
+        public int CompareTo(ConstrainedCallInfo other, TypeSystemComparer comparer)
+        {
+            int result = comparer.Compare(ConstrainedType, other.ConstrainedType);
+            if (result == 0)
+                result = comparer.Compare(Method, other.Method);
+            return result;
+        }
+        public override bool Equals(object obj) =>
+            obj is ConstrainedCallInfo other
+            && ConstrainedType == other.ConstrainedType
+            && Method == other.Method;
+
+        public override int GetHashCode() => HashCode.Combine(ConstrainedType, Method);
     }
 }

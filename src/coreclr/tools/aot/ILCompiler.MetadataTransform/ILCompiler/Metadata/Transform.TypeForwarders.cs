@@ -46,7 +46,7 @@ namespace ILCompiler.Metadata
 
         private TypeForwarder HandleTypeForwarder(Cts.Ecma.EcmaModule module, Ecma.ExportedTypeHandle handle)
         {
-            return _forwarders.GetOrCreate(new ForwarderKey(module, handle), _initForwarder ?? (_initForwarder = InitializeTypeForwarder));
+            return _forwarders.GetOrCreate(new ForwarderKey(module, handle), _initForwarder ??= InitializeTypeForwarder);
         }
 
         private void InitializeTypeForwarder(ForwarderKey key, TypeForwarder record)

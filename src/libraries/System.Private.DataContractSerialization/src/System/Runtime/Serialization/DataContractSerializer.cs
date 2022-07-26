@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Reflection;
-    using System.Text;
-    using System.Xml;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Runtime.CompilerServices;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Diagnostics.CodeAnalysis;
-
     public sealed class DataContractSerializer : XmlObjectSerializer
     {
         private Type _rootType;
@@ -95,16 +95,13 @@ namespace System.Runtime.Serialization
 
         public DataContractSerializer(Type type, DataContractSerializerSettings? settings)
         {
-            if (settings == null)
-            {
-                settings = new DataContractSerializerSettings();
-            }
+            settings ??= new DataContractSerializerSettings();
             Initialize(type, settings.RootName, settings.RootNamespace, settings.KnownTypes, settings.MaxItemsInObjectGraph, false,
                 settings.PreserveObjectReferences, settings.DataContractResolver, settings.SerializeReadOnlyTypes);
         }
 
         [MemberNotNull(nameof(_rootType))]
-        private void Initialize(Type type!!,
+        private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
@@ -112,6 +109,8 @@ namespace System.Runtime.Serialization
             DataContractResolver? dataContractResolver,
             bool serializeReadOnlyTypes)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)
@@ -355,8 +354,7 @@ namespace System.Runtime.Serialization
                 graph = SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
             }
 
-            if (dataContractResolver == null)
-                dataContractResolver = this.DataContractResolver;
+            dataContractResolver ??= this.DataContractResolver;
 
             if (graph == null)
             {
@@ -435,8 +433,7 @@ namespace System.Runtime.Serialization
             if (MaxItemsInObjectGraph == 0)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, MaxItemsInObjectGraph)));
 
-            if (dataContractResolver == null)
-                dataContractResolver = this.DataContractResolver;
+            dataContractResolver ??= this.DataContractResolver;
 
             if (verifyObjectName)
             {
@@ -494,7 +491,7 @@ namespace System.Runtime.Serialization
             return _rootType;
         }
 
-        [return: NotNullIfNotNull("oldObj")]
+        [return: NotNullIfNotNull(nameof(oldObj))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? SurrogateToDataContractType(ISerializationSurrogateProvider serializationSurrogateProvider, object? oldObj, Type surrogatedDeclaredType, ref Type objType)
         {

@@ -977,7 +977,7 @@ int DefaultPolicy::CodeSizeEstimate()
     {
         // This is not something the DefaultPolicy explicitly computed,
         // since it uses a blended evaluation model (mixing size and time
-        // together for overall profitability). But it's effecitvely an
+        // together for overall profitability). But it's effectively an
         // estimate of the size impact.
         return (m_CalleeNativeSizeEstimate - m_CallsiteNativeSizeEstimate);
     }
@@ -1508,7 +1508,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
         // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
         multiplier += 3.0;
-        JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
+        JITDUMP("\nCallsite passes a constant.  Multiplier increased to %g.", multiplier);
     }
 
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)

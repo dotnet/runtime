@@ -31,10 +31,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(environment);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string>(HostDefaults.EnvironmentKey,
-                        environment ?? throw new ArgumentNullException(nameof(environment)))
+                    new KeyValuePair<string, string?>(HostDefaults.EnvironmentKey, environment)
                 });
             });
         }
@@ -50,10 +51,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(contentRoot);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string>(HostDefaults.ContentRootKey,
-                        contentRoot ?? throw new ArgumentNullException(nameof(contentRoot)))
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, contentRoot)
                 });
             });
         }
@@ -185,7 +187,7 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[] args)
+        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[]? args)
         {
             return builder.ConfigureHostConfiguration(config => ApplyDefaultHostConfiguration(config, args))
                           .ConfigureAppConfiguration((hostingContext, config) => ApplyDefaultAppConfiguration(hostingContext, config, args))
@@ -193,12 +195,24 @@ namespace Microsoft.Extensions.Hosting
                           .UseServiceProviderFactory(context => new DefaultServiceProviderFactory(CreateDefaultServiceProviderOptions(context)));
         }
 
-        internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[] args)
+        internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
-            hostConfigBuilder.AddInMemoryCollection(new[]
+            // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
+            // However, since many things like Windows services and MSIX installers have C:\Windows\system32 as there CWD which is not likely
+            // to really be the home for things like appsettings.json, we skip changing the ContentRoot in that case. The non-"default" initial
+            // value for ContentRoot is AppContext.BaseDirectory (e.g. the executable path) which probably makes more sense than the system32.
+
+            // In my testing, both Environment.CurrentDirectory and Environment.GetFolderPath(Environment.SpecialFolder.System) return the path without
+            // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
+            // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
+            string cwd = Environment.CurrentDirectory;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !string.Equals(cwd, Environment.GetFolderPath(Environment.SpecialFolder.System), StringComparison.OrdinalIgnoreCase))
             {
-                new KeyValuePair<string, string>(HostDefaults.ContentRootKey, Directory.GetCurrentDirectory())
-            });
+                hostConfigBuilder.AddInMemoryCollection(new[]
+                {
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
+                });
+            }
 
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
             if (args is { Length: > 0 })
@@ -207,7 +221,7 @@ namespace Microsoft.Extensions.Hosting
             }
         }
 
-        internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[] args)
+        internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)
         {
             IHostEnvironment env = hostingContext.HostingEnvironment;
             bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);

@@ -17,7 +17,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            // Parameter validation
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -327,7 +326,7 @@ namespace System.DirectoryServices.AccountManagement
             StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
+            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted);
 
             if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupBeCleared(_owningGroup, out explanation)))
                 throw new InvalidOperationException(explanation);
@@ -380,7 +379,7 @@ namespace System.DirectoryServices.AccountManagement
             StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
+            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted);
 
             if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupMemberBeRemoved(_owningGroup, principal, out explanation)))
                 throw new InvalidOperationException(explanation);

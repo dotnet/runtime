@@ -1,6 +1,11 @@
 Compat issues with assembly System.Diagnostics.Tracing:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.DiagnosticCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.EventCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.IncrementingEventCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.IncrementingPollingCounter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Diagnostics.Tracing.PollingCounter' in the contract but not the implementation.
 MembersMustExist : Member 'protected void System.Diagnostics.Tracing.EventCounter.Flush()' does not exist in the reference but it does exist in the implementation.
 CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the reference but is not abstract in the implementation.
 CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'protected' in the reference but 'public' in the implementation.
 CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'protected' in the reference but 'public' in the implementation.
-Total Issues: 4
+Total Issues: 8

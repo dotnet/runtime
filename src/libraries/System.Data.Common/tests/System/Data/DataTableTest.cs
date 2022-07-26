@@ -381,7 +381,9 @@ namespace System.Data.Tests
         public void SerializationFormat_Binary_does_not_work_by_default()
         {
             DataTable dt = new DataTable("MyTable");
+#pragma warning disable SYSLIB0038
             Assert.Throws<InvalidEnumArgumentException>(() => dt.RemotingFormat = SerializationFormat.Binary);
+#pragma warning restore SYSLIB0038
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -396,7 +398,9 @@ namespace System.Data.Tests
                 DataTable dt = new DataTable("MyTable");
                 DataColumn dc = new DataColumn("dc", typeof(int));
                 dt.Columns.Add(dc);
+#pragma warning disable SYSLIB0038
                 dt.RemotingFormat = SerializationFormat.Binary;
+#pragma warning restore SYSLIB0038
 
                 DataTable dtDeserialized;
                 using (MemoryStream ms = new MemoryStream())
@@ -1601,7 +1605,7 @@ Assert.False(true);
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Serialize()
         {
-            // Create an array with multiple elements refering to
+            // Create an array with multiple elements referring to
             // the one Singleton object.
             DataTable dt = new DataTable();
 
@@ -2790,7 +2794,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -2870,7 +2874,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -2927,7 +2931,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 

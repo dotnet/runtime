@@ -532,7 +532,7 @@ MonoEECallbacks*       mono_interp_callbacks_pointer;
 
 MONO_COMPONENT_API const MonoEECallbacks* mini_get_interp_callbacks_api (void);
 
-MonoDomain* mini_init                      (const char *filename, const char *runtime_version);
+MonoDomain* mini_init                      (const char *root_domain_name);
 void        mini_cleanup                   (MonoDomain *domain);
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
 MONO_API gboolean    mini_parse_debug_option (const char *option);
@@ -700,10 +700,12 @@ void mini_register_sigterm_handler (void);
 	} while (0)
 
 #define MINI_END_CODEGEN(buf,size,type,arg) do { \
+	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */ \
 	mono_codeman_disable_write (); \
 	mono_arch_flush_icache ((buf), (size)); \
 	if ((int)type != -1) \
 		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (MonoProfilerCodeBufferType)(type), (arg))); \
+	MONO_RESTORE_WARNING \
 	} while (0)
 
 #endif /* __MONO_MINI_RUNTIME_H__ */

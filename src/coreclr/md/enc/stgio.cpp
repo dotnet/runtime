@@ -479,7 +479,7 @@ HRESULT StgIO::Read(                    // Return code.
     // Get the data based on type.
     switch (m_iType)
     {
-        // For data on file, there are two possiblities:
+        // For data on file, there are two possibilities:
         // (1) We have an in memory backing store we should use, or
         // (2) We just need to read from the file.
         case STGIO_HFILE:
@@ -1382,7 +1382,7 @@ void *AllocateMemory(int iSize)
 
 #if defined(_DEBUG) && defined(_TRACE_MEM_)
     static int i=0;
-    DbgWriteEx(W("AllocateMemory: (%d) 0x%08x, size %d\n"), ++i, ptr, iSize);
+    printf("AllocateMemory: (%d) 0x%p, size %d\n", ++i, ptr, iSize);
 #endif
     return (ptr);
 }
@@ -1392,7 +1392,7 @@ void FreeMemory(void *pbData)
 {
 #if defined(_DEBUG) && defined(_TRACE_MEM_)
     static int i=0;
-    DbgWriteEx(W("FreeMemory: (%d) 0x%08x\n"), ++i, pbData);
+    printf("FreeMemory: (%d) 0x%p\n", ++i, pbData);
 #endif
 
     _ASSERTE(pbData);

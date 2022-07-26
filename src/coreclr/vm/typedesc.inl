@@ -18,19 +18,18 @@ inline PTR_MethodTable  TypeDesc::GetMethodTable() {
 
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsGenericVariable())
-        return NULL;
-
-    if (GetInternalCorElementType() == ELEMENT_TYPE_FNPTR)
+    switch (GetInternalCorElementType())
+    {
+    case ELEMENT_TYPE_PTR:
+    case ELEMENT_TYPE_FNPTR:
         return CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
 
-    _ASSERTE(HasTypeParam());
-    ParamTypeDesc* asParam = dac_cast<PTR_ParamTypeDesc>(this);
+    case ELEMENT_TYPE_VALUETYPE:
+        return dac_cast<PTR_MethodTable>(dac_cast<PTR_ParamTypeDesc>(this)->m_Arg.AsMethodTable());
 
-    if (GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE)
-        return dac_cast<PTR_MethodTable>(asParam->m_Arg.AsMethodTable());
-    else
-        return(asParam->GetTemplateMethodTableInternal());
+    default:
+        return NULL;
+    }
 }
 
 inline TypeHandle TypeDesc::GetTypeParam() {

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -14,7 +15,6 @@ namespace System.Security.Cryptography
     /// phase to be skipped, and the master key to be used directly as the pseudorandom key.
     /// See <a href="https://tools.ietf.org/html/rfc5869">RFC5869</a> for more information.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     public static class HKDF
     {
         /// <summary>
@@ -25,8 +25,10 @@ namespace System.Security.Cryptography
         /// <param name="ikm">The input keying material.</param>
         /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
         /// <returns>The pseudo random key (prk).</returns>
-        public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm!!, byte[]? salt = null)
+        public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null)
         {
+            ArgumentNullException.ThrowIfNull(ikm);
+
             int hashLength = HashLength(hashAlgorithmName);
             byte[] prk = new byte[hashLength];
 
@@ -79,8 +81,10 @@ namespace System.Security.Cryptography
         /// <returns>The output keying material.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="prk"/>is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="outputLength"/> is less than 1.</exception>
-        public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk!!, int outputLength, byte[]? info = null)
+        public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null)
         {
+            ArgumentNullException.ThrowIfNull(prk);
+
             if (outputLength <= 0)
                 throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
 
@@ -128,14 +132,14 @@ namespace System.Security.Cryptography
             if (prk.Length < hashLength)
                 throw new ArgumentException(SR.Format(SR.Cryptography_Prk_TooSmall, hashLength), nameof(prk));
 
-            Span<byte> counterSpan = stackalloc byte[1];
-            ref byte counter = ref counterSpan[0];
+            byte counter = 0;
+            var counterSpan = new Span<byte>(ref counter);
             Span<byte> t = Span<byte>.Empty;
             Span<byte> remainingOutput = output;
 
             const int MaxStackInfoBuffer = 64;
             Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
-            ReadOnlySpan<byte> infoBuffer = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> infoBuffer;
             byte[]? rentedTempInfoBuffer = null;
 
             if (output.Overlaps(info))
@@ -202,8 +206,10 @@ namespace System.Security.Cryptography
         /// <returns>The output keying material.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="ikm"/>is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="outputLength"/> is less than 1.</exception>
-        public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm!!, int outputLength, byte[]? salt = null, byte[]? info = null)
+        public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null)
         {
+            ArgumentNullException.ThrowIfNull(ikm);
+
             if (outputLength <= 0)
                 throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
 

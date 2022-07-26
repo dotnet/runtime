@@ -24,7 +24,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(handle);
             if (safeCertContextHandle.IsInvalid)
-                throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
+            {
+                Exception e = ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
+                safeCertContextHandle.Dispose();
+                throw e;
+            }
 
             int cbData = 0;
             bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out Interop.Crypt32.DATA_BLOB _, ref cbData);
@@ -153,8 +157,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 finally
                 {
-                    if (certChainContext != null)
-                        certChainContext.Dispose();
+                    certChainContext?.Dispose();
                 }
             }
         }
@@ -305,7 +308,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             set
             {
-                string friendlyName = (value == null) ? string.Empty : value;
+                string friendlyName = value ?? string.Empty;
                 unsafe
                 {
                     IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);
@@ -329,7 +332,8 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    byte[] encodedSubjectName = _certContext.CertContext->pCertInfo->Subject.ToByteArray();
+                    // X500DN creates a copy of the data for itself; data is kept alive with GC.KeepAlive.
+                    ReadOnlySpan<byte> encodedSubjectName = _certContext.CertContext->pCertInfo->Subject.DangerousAsSpan();
                     X500DistinguishedName subjectName = new X500DistinguishedName(encodedSubjectName);
                     GC.KeepAlive(this);
                     return subjectName;
@@ -343,7 +347,8 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    byte[] encodedIssuerName = _certContext.CertContext->pCertInfo->Issuer.ToByteArray();
+                    // X500DN creates a copy of the data for itself; data is kept alive with GC.KeepAlive.
+                    ReadOnlySpan<byte> encodedIssuerName = _certContext.CertContext->pCertInfo->Issuer.DangerousAsSpan();
                     X500DistinguishedName issuerName = new X500DistinguishedName(encodedIssuerName);
                     GC.KeepAlive(this);
                     return issuerName;
@@ -365,16 +370,20 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CERT_INFO* pCertInfo = _certContext.CertContext->pCertInfo;
                     int numExtensions = pCertInfo->cExtension;
                     X509Extension[] extensions = new X509Extension[numExtensions];
+
                     for (int i = 0; i < numExtensions; i++)
                     {
                         Interop.Crypt32.CERT_EXTENSION* pCertExtension = (Interop.Crypt32.CERT_EXTENSION*)pCertInfo->rgExtension.ToPointer() + i;
                         string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
                         Oid oid = new Oid(oidValue, friendlyName: null);
                         bool critical = pCertExtension->fCritical != 0;
-                        byte[] rawData = pCertExtension->Value.ToByteArray();
 
+                        // X509Extension creates a copy of the data for itself. The underlying data
+                        // is kept alive with the KeepAlive below.
+                        ReadOnlySpan<byte> rawData = pCertExtension->Value.DangerousAsSpan();
                         extensions[i] = new X509Extension(oid, rawData, critical);
                     }
+
                     GC.KeepAlive(this);
                     return extensions;
                 }
@@ -466,14 +475,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal SafeCertContextHandle CertContext
+        internal SafeCertContextHandle GetCertContext()
         {
-            get
-            {
-                SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
-                GC.KeepAlive(_certContext);
-                return certContext;
-            }
+            SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
+            GC.KeepAlive(_certContext);
+            return certContext;
         }
 
         private static Interop.Crypt32.CertNameType MapNameType(X509NameType nameType)
@@ -521,9 +527,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 // We need to delete any associated key container upon disposition. Thus, replace the safehandle we got with a safehandle whose
                 // Release() method performs the key container deletion.
-                SafeCertContextHandle oldCertContext = certContext;
-                certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
-                GC.KeepAlive(oldCertContext);
+                using (SafeCertContextHandle oldCertContext = certContext)
+                {
+                    certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
+                }
             }
             _certContext = certContext;
         }

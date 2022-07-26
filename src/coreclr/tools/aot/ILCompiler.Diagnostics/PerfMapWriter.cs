@@ -123,8 +123,8 @@ namespace ILCompiler.Diagnostics
             PerfMapAbiToken abiToken = details.Abi switch
             {
                 TargetAbi.Unknown => PerfMapAbiToken.Unknown,
-                TargetAbi.CoreRT => PerfMapAbiToken.Default,
-                TargetAbi.CoreRTArmel => PerfMapAbiToken.Armel,
+                TargetAbi.NativeAot => PerfMapAbiToken.Default,
+                TargetAbi.NativeAotArmel => PerfMapAbiToken.Armel,
                 _ => throw new NotImplementedException(details.Abi.ToString())
             };
 

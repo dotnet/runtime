@@ -181,7 +181,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		/*
 		 * For page trampolines the data is in r1, so just move it, otherwise use the got slot as below.
 		 * The trampoline contains a pc-relative offset to the got slot
-		 * preceeding the got slot where the value is stored. The offset can be
+		 * preceding the got slot where the value is stored. The offset can be
 		 * found at [lr + 0].
 		 */
 		/* See if emit_trampolines () in aot-compiler.c for the '2' */
@@ -1176,7 +1176,7 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 
 	/* Similar to the specialized trampoline code */
 	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 2 * sizeof (target_mgreg_t));
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, (guint32)(2 * sizeof (target_mgreg_t)));
 	/* arg is passed in LR */
 	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_PC, 0);
 	code = emit_bx (code, ARMREG_IP);

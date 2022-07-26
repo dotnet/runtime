@@ -176,7 +176,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Utf8JsonReader reader = new Utf8JsonReader(nullStringAsBytes);
 
-            JsonTestHelper.AssertThrows<JsonException>(reader, (reader) => JsonSerializer.Deserialize<SimpleStruct>(ref reader));
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => JsonSerializer.Deserialize<SimpleStruct>(ref reader));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullStringAsBytes));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullString));
 
@@ -188,7 +188,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static async Task ParseNullStringShouldThrowJsonExceptionAsync()
         {
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            using (var stream = new MemoryStream("null"u8.ToArray()))
             { 
                 await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
 

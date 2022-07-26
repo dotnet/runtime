@@ -33,6 +33,14 @@ Linux and macOS
 find %LOUTDIR% -name '*zip' -exec unzip -d %LOUTDIR% {} \;
 ```
 
+# If the dump is for NativeAOT
+
+Rest of the document discusses how to debug the dump using the SOS extension and DAC because native debuggers are lost without the extension. The SOS extension is not necessary (and doesn't work) for NativeAOT. NativeAOT debugs like a native app. Open the crash dump in your debugger of choice, including Visual Studio. To interpret the dump you'll need symbols - the symbols are in the ZIP file - a separate PDB file on Windows, and the executable itself outside Windows.
+
+You can read the rest of the document for information purposes (there is useful info on e.g. how to set up symbol path), but you can stop reading now if you already have experience with native debugging.
+
+# Install SOS debugging extension
+
 Now use the [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos) to install the SOS debugging extension.
 ```cmd
 dotnet tool install --global dotnet-sos

@@ -1583,7 +1583,7 @@ static MLOCK_T magic_init_mutex;
   Each freshly allocated chunk must have both cinuse and pinuse set.
   That is, each allocated chunk borders either a previously allocated
   and still in-use chunk, or the base of its memory arena. This is
-  ensured by making all allocations from the the `lowest' part of any
+  ensured by making all allocations from the `lowest' part of any
   found chunk.  Further, no free chunk physically borders another one,
   so each free chunk is known to be preceded and followed by either
   inuse chunks or the ends of memory.
@@ -1789,12 +1789,12 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   of the same size are arranged in a circularly-linked list, with only
   the oldest chunk (the next to be used, in our FIFO ordering)
   actually in the tree.  (Tree members are distinguished by a non-null
-  parent pointer.)  If a chunk with the same size an an existing node
+  parent pointer.)  If a chunk with the same size an existing node
   is inserted, it is linked off the existing node using pointers that
   work in the same way as fd/bk pointers of small chunks.
 
   Each tree contains a power of 2 sized range of chunk sizes (the
-  smallest is 0x100 <= x < 0x180), which is is divided in half at each
+  smallest is 0x100 <= x < 0x180), which is divided in half at each
   tree level, with the chunks in the smaller half of the range (0x100
   <= x < 0x140 for the top nose) in the left subtree and the larger
   half (0x140 <= x < 0x180) in the right subtree.  This is, of course,
@@ -4193,7 +4193,7 @@ void* dlmalloc(size_t bytes) {
 
 void dlfree(void* mem) {
   /*
-     Consolidate freed chunks with preceeding or succeeding bordering
+     Consolidate freed chunks with preceding or succeeding bordering
      free chunks, if they exist, and then place in a bin.  Intermixed
      with special cases for top, dv, mmapped chunks, and usage errors.
   */
@@ -5037,10 +5037,10 @@ History:
         Wolfram Gloger (Gloger@lrz.uni-muenchen.de).
       * Use last_remainder in more cases.
       * Pack bins using idea from  colin@nyx10.cs.du.edu
-      * Use ordered bins instead of best-fit threshhold
+      * Use ordered bins instead of best-fit threshold
       * Eliminate block-local decls to simplify tracing and debugging.
       * Support another case of realloc via move into top
-      * Fix error occuring when initial sbrk_base not word-aligned.
+      * Fix error occurring when initial sbrk_base not word-aligned.
       * Rely on page size for units instead of SBRK_UNIT to
         avoid surprises about sbrk alignment conventions.
       * Add mallinfo, mallopt. Thanks to Raymond Nijssen

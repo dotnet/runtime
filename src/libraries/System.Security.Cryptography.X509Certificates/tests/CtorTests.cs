@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
             Assert.ThrowsAny<CryptographicException>(() => c.GetPublicKey());
             Assert.ThrowsAny<CryptographicException>(() => c.GetSerialNumber());
+            Assert.ThrowsAny<CryptographicException>(() => c.SerialNumberBytes);
             Assert.ThrowsAny<CryptographicException>(() => ignored = c.Issuer);
             Assert.ThrowsAny<CryptographicException>(() => ignored = c.Subject);
             Assert.ThrowsAny<CryptographicException>(() => ignored = c.RawData);
@@ -155,6 +156,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(c1.GetKeyAlgorithmParametersString(), c2.GetKeyAlgorithmParametersString());
                 Assert.Equal(c1.GetPublicKey(), c2.GetPublicKey());
                 Assert.Equal(c1.GetSerialNumber(), c2.GetSerialNumber());
+                AssertExtensions.SequenceEqual(c1.SerialNumberBytes.Span, c1.SerialNumberBytes.Span);
                 Assert.Equal(c1.Issuer, c2.Issuer);
                 Assert.Equal(c1.Subject, c2.Subject);
                 Assert.Equal(c1.RawData, c2.RawData);
@@ -189,9 +191,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
                 RSA rsa = c2.GetRSAPrivateKey();
-                byte[] hash = new byte[20];
-                byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                byte[] hash = new byte[SHA256.HashSizeInBytes];
+                byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
 
                 c1.Dispose();
                 rsa.Dispose();
@@ -202,9 +204,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Verify other cert and previous key do not affect cert
                 using (rsa = c2.GetRSAPrivateKey())
                 {
-                    hash = new byte[20];
-                    sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                    hash = new byte[SHA256.HashSizeInBytes];
+                    sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
                 }
             }
         }
@@ -259,9 +261,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 using (RSA rsa = c.GetRSAPrivateKey())
                 {
-                    byte[] hash = new byte[20];
-                    byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                    byte[] hash = new byte[SHA256.HashSizeInBytes];
+                    byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
                 }
             }
             else

@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ;
 ; FILE: asmhelpers.asm
 ;
@@ -634,7 +629,7 @@ else
 FASTCALL_FUNC HelperMethodFrameRestoreState,4
     mov         eax, ecx        ; eax = MachState*
 endif
-    ; restore the registers from the m_MachState stucture.  Note that
+    ; restore the registers from the m_MachState structure.  Note that
     ; we only do this for register that where not saved on the stack
     ; at the time the machine state snapshot was taken.
 

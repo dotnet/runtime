@@ -338,7 +338,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var noCacheHeader in _noCacheHeaders)
                 {
-                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
+                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
                 }
             }
 
@@ -346,7 +346,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var privateHeader in _privateHeaders)
                 {
-                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
+                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
                 }
             }
 
@@ -354,7 +354,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var extension in _extensions)
                 {
-                    result = result ^ extension.GetHashCode();
+                    result ^= extension.GetHashCode();
                 }
             }
 
@@ -413,11 +413,7 @@ namespace System.Net.Http.Headers
             // Cache-Control is a header supporting lists of values. However, expose the header as an instance of
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
             // from this string to the existing instances.
-            CacheControlHeaderValue? result = storeValue;
-            if (result == null)
-            {
-                result = new CacheControlHeaderValue();
-            }
+            CacheControlHeaderValue? result = storeValue ?? new CacheControlHeaderValue();
 
             if (!TrySetCacheControlValues(result, nameValueList))
             {
@@ -537,7 +533,7 @@ namespace System.Net.Http.Headers
             // We need the string to be at least 3 chars long: 2x quotes and at least 1 character. Also make sure we
             // have a quoted string. Note that NameValueHeaderValue will never have leading/trailing whitespace.
             string valueString = nameValue.Value;
-            if ((valueString.Length < 3) || (valueString[0] != '\"') || (valueString[valueString.Length - 1] != '\"'))
+            if ((valueString.Length < 3) || !valueString.StartsWith('\"') || !valueString.EndsWith('\"'))
             {
                 return false;
             }
@@ -568,7 +564,7 @@ namespace System.Net.Http.Headers
                 destination ??= new TokenObjectCollection();
                 destination.Add(valueString.Substring(current, tokenLength));
 
-                current = current + tokenLength;
+                current += tokenLength;
             }
 
             // After parsing a valid token list, we expect to have at least one value

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace Test_hfa_params
 {
@@ -42,7 +43,8 @@ public class A
         return success;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Test that a function with HFA args gets the expected contents of the structs.
 

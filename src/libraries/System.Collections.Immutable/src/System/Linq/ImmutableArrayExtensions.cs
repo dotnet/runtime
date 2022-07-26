@@ -167,10 +167,7 @@ namespace System.Linq
                 return false;
             }
 
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TBase>.Default;
-            }
+            comparer ??= EqualityComparer<TBase>.Default;
 
             for (int i = 0; i < immutableArray.Length; i++)
             {
@@ -192,10 +189,7 @@ namespace System.Linq
         {
             Requires.NotNull(items, nameof(items));
 
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TBase>.Default;
-            }
+            comparer ??= EqualityComparer<TBase>.Default;
 
             int i = 0;
             int n = immutableArray.Length;

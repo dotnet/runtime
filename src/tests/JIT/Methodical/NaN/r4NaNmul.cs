@@ -3,7 +3,8 @@
 //
 
 using System;
-class r4NaNmul
+using Xunit;
+public class r4NaNmul
 {
 
     //user-defined class that overloads operator *
@@ -78,7 +79,8 @@ class r4NaNmul
         public float f_vt_test3_op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         //initialize class

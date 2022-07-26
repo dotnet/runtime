@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public void ThrowTypeWithGenericParamters()
+        public void ThrowTypeWithGenericParameters()
         {
             Type listType = typeof(List<>);
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));

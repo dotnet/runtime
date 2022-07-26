@@ -115,8 +115,10 @@ namespace System.Threading
         public static bool TryOpenExisting(string name, MutexRights rights, [NotNullWhen(returnValue: true)] out Mutex? result) =>
             OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
 
-        private static OpenExistingResult OpenExistingWorker(string name!!, MutexRights rights, out Mutex? result)
+        private static OpenExistingResult OpenExistingWorker(string name, MutexRights rights, out Mutex? result)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
@@ -128,6 +130,7 @@ namespace System.Threading
             int errorCode = Marshal.GetLastWin32Error();
             if (existingHandle.IsInvalid)
             {
+                existingHandle.Dispose();
                 return errorCode switch
                 {
                     Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,

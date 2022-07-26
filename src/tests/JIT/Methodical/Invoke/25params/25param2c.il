@@ -9,6 +9,8 @@
 .assembly extern mscorlib {}
 .assembly '25param2c' {}
 .assembly extern xunit.core {}
+.namespace Test_25param2c_il
+{
 .class private sequential ansi sealed beforefieldinit VT
        extends [mscorlib]System.ValueType
 {
@@ -27,13 +29,13 @@
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ldarg.0
     IL_0007:  ldarg.1
-    IL_0008:  stfld      int32 CL::n
+    IL_0008:  stfld      int32 Test_25param2c_il.CL::n
     IL_000d:  ret
   } 
 
 } 
 
-.class private auto ansi beforefieldinit test
+.class public auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
@@ -47,8 +49,8 @@
              int8 a8,
              valuetype [mscorlib]System.Decimal a9,
              int32[] a10,
-             valuetype VT a11,
-             class CL a12,
+             valuetype Test_25param2c_il.VT a11,
+             class Test_25param2c_il.CL a12,
              int32 a13,
              int32 a14,
              int32 a15,
@@ -99,11 +101,11 @@
     IL_0028:  conv.i8
     IL_0029:  add
     IL_002a:  ldarga.s   a11
-    IL_002c:  ldfld      int32 VT::m
+    IL_002c:  ldfld      int32 Test_25param2c_il.VT::m
     IL_0031:  conv.i8
     IL_0032:  add
     IL_0033:  ldarg.s    a12
-    IL_0035:  ldfld      int32 CL::n
+    IL_0035:  ldfld      int32 Test_25param2c_il.CL::n
     IL_003a:  conv.i8
     IL_003b:  add
     IL_003c:  ldarg.s    a13
@@ -171,8 +173,8 @@
             int8 a8,
             valuetype [mscorlib]System.Decimal a9,
             int32[] a10,
-            valuetype VT a11,
-            class CL a12,
+            valuetype Test_25param2c_il.VT a11,
+            class Test_25param2c_il.CL a12,
             int32 a13,
             int32 a14,
             int32 a15,
@@ -213,10 +215,10 @@
     IL_003e:  ldelem.i4
     IL_003f:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0044:  ldarga.s   a11
-    IL_0046:  ldfld      int32 VT::m
+    IL_0046:  ldfld      int32 Test_25param2c_il.VT::m
     IL_004b:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0050:  ldarg.s    a12
-    IL_0052:  ldfld      int32 CL::n
+    IL_0052:  ldfld      int32 Test_25param2c_il.CL::n
     IL_0057:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_005c:  ldarg.s    a13
     IL_005e:  call       void [System.Console]System.Console::WriteLine(int32)
@@ -269,7 +271,7 @@
     IL_00df:  ldarg.s    a23
     IL_00e1:  ldarg.s    a24
     IL_00e3:  ldarg.s    a25
-    tail.  call       int32 test::f1(int16,
+    tail.  call       int32 Test_25param2c_il.test::f1(int16,
                                         uint16,
                                         int32,
                                         uint32,
@@ -279,8 +281,8 @@
                                         int8,
                                         valuetype [mscorlib]System.Decimal,
                                         int32[],
-                                        valuetype VT,
-                                        class CL,
+                                        valuetype Test_25param2c_il.VT,
+                                        class Test_25param2c_il.CL,
                                         int32,
                                         int32,
                                         int32,
@@ -297,7 +299,7 @@
     IL_00f0:  ret
   } 
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -305,20 +307,20 @@
     )
     .entrypoint
     .maxstack  25
-    .locals init ([0] valuetype VT vt,
-             [1] class CL cl,
+    .locals init ([0] valuetype Test_25param2c_il.VT vt,
+             [1] class Test_25param2c_il.CL cl,
              [2] int32 sum,
              [3] int32 CS$00000003$00000000,
              [4] int32[] CS$00000002$00000001)
 ldstr "Testing method of 25 parameters, mixed data type, tail.call"
 call void [System.Console]System.Console::WriteLine(string)
     IL_0000:  ldloca.s   vt
-    IL_0002:  initobj    VT
+    IL_0002:  initobj    Test_25param2c_il.VT
     IL_0008:  ldloca.s   vt
     IL_000a:  ldc.i4.s   11
-    IL_000c:  stfld      int32 VT::m
+    IL_000c:  stfld      int32 Test_25param2c_il.VT::m
     IL_0011:  ldc.i4.s   12
-    IL_0013:  newobj     instance void CL::.ctor(int32)
+    IL_0013:  newobj     instance void Test_25param2c_il.CL::.ctor(int32)
     IL_0018:  stloc.1
     IL_0019:  ldc.i4.1
     IL_001a:  ldc.i4.2
@@ -355,7 +357,7 @@ call void [System.Console]System.Console::WriteLine(string)
     IL_0050:  ldc.i4.s   23
     IL_0052:  ldc.i4.s   24
     IL_0054:  ldc.i4.s   25
-    IL_0056:  call       int32 test::f(int16,
+    IL_0056:  call       int32 Test_25param2c_il.test::f(int16,
                                        uint16,
                                        int32,
                                        uint32,
@@ -365,8 +367,8 @@ call void [System.Console]System.Console::WriteLine(string)
                                        int8,
                                        valuetype [mscorlib]System.Decimal,
                                        int32[],
-                                       valuetype VT,
-                                       class CL,
+                                       valuetype Test_25param2c_il.VT,
+                                       class Test_25param2c_il.CL,
                                        int32,
                                        int32,
                                        int32,
@@ -405,4 +407,5 @@ call void [System.Console]System.Console::WriteLine(string)
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
   } 
+}
 }

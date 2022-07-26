@@ -36,7 +36,7 @@ namespace System.Net
         private ResponseDescription? _currentResponseDescription;
         protected string? _abortReason;
 
-        internal CommandStream(TcpClient client)
+        internal CommandStream(NetworkStream client)
             : base(client)
         {
             _decoder = _encoding.GetDecoder();

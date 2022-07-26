@@ -13,16 +13,21 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new AttributeProviderAttribute object.
         /// </summary>
-        public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] string typeName!!)
+        public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] string typeName)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+
             TypeName = typeName;
         }
 
         /// <summary>
         /// Creates a new AttributeProviderAttribute object.
         /// </summary>
-        public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] string typeName!!, string propertyName!!)
+        public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] string typeName, string propertyName)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+            ArgumentNullException.ThrowIfNull(propertyName);
+
             TypeName = typeName;
             PropertyName = propertyName;
         }
@@ -30,8 +35,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new AttributeProviderAttribute object.
         /// </summary>
-        public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] Type type!!)
+        public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             TypeName = type.AssemblyQualifiedName;
         }
 

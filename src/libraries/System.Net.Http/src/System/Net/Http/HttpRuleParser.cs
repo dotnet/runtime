@@ -177,7 +177,7 @@ namespace System.Net.Http
             while (current < input.Length)
             {
                 c = input[current];
-                if ((c >= '0') && (c <= '9'))
+                if (char.IsAsciiDigit(c))
                 {
                     current++;
                 }
@@ -315,7 +315,7 @@ namespace System.Net.Http
                     // We ignore invalid quoted-pairs. Invalid quoted-pairs may mean that it looked like a quoted pair,
                     // but we actually have a quoted-string: e.g. "\\u00FC" ('\' followed by a char >127 - quoted-pair only
                     // allows ASCII chars after '\'; qdtext allows both '\' and >127 chars).
-                    current = current + quotedPairLength;
+                    current += quotedPairLength;
                     continue;
                 }
 

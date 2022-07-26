@@ -1,4 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
+using Xunit;
+namespace Test_arithm64
+{
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
@@ -6,7 +9,7 @@ namespace JitTest
 {
     using System;
 
-    class Test
+    public class Test
     {
         static void RunTests(double nan, double plusinf, double minusinf)
         {
@@ -84,11 +87,13 @@ namespace JitTest
                 throw new Exception("! Double.IsNegativeInfinity(minusinf + minusinf)");
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             RunTests(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity);
             Console.WriteLine("=== PASSED ===");
             return 100;
         }
     }
+}
 }

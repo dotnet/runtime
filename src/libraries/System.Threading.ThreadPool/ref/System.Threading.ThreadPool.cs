@@ -10,7 +10,9 @@ namespace System.Threading
     {
         void Execute();
     }
+#if !FEATURE_WASM_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed partial class RegisteredWaitHandle : System.MarshalByRefObject
     {
         internal RegisteredWaitHandle() { }
@@ -32,14 +34,22 @@ namespace System.Threading
         public static bool QueueUserWorkItem(System.Threading.WaitCallback callBack) { throw null; }
         public static bool QueueUserWorkItem(System.Threading.WaitCallback callBack, object? state) { throw null; }
         public static bool QueueUserWorkItem<TState>(System.Action<TState> callBack, TState state, bool preferLocal) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, int millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, long millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, System.TimeSpan timeout, bool executeOnlyOnce) { throw null; }
         [System.CLSCompliantAttribute(false)]
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, uint millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) { throw null; }
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) { throw null; }
@@ -49,14 +59,22 @@ namespace System.Threading
         public static bool UnsafeQueueUserWorkItem(System.Threading.IThreadPoolWorkItem callBack, bool preferLocal) { throw null; }
         public static bool UnsafeQueueUserWorkItem(System.Threading.WaitCallback callBack, object? state) { throw null; }
         public static bool UnsafeQueueUserWorkItem<TState>(System.Action<TState> callBack, TState state, bool preferLocal) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, int millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, long millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, System.TimeSpan timeout, bool executeOnlyOnce) { throw null; }
         [System.CLSCompliantAttribute(false)]
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, uint millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
     }
     public delegate void WaitCallback(object? state);

@@ -186,8 +186,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="value"><see cref="BlobBuilder"/> containing the blob.</param>
         /// <returns>Handle to the added or existing blob.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public BlobHandle GetOrAddBlob(BlobBuilder value!!)
+        public BlobHandle GetOrAddBlob(BlobBuilder value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             // TODO: avoid making a copy if the blob exists in the index
             return GetOrAddBlob(value.ToImmutableArray());
         }
@@ -198,8 +203,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="value">Array containing the blob.</param>
         /// <returns>Handle to the added or existing blob.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public BlobHandle GetOrAddBlob(byte[] value!!)
+        public BlobHandle GetOrAddBlob(byte[] value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             // TODO: avoid making a copy if the blob exists in the index
             return GetOrAddBlob(ImmutableArray.Create(value));
         }
@@ -291,8 +301,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// (see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#DocumentNameBlob).
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public BlobHandle GetOrAddDocumentName(string value!!)
+        public BlobHandle GetOrAddDocumentName(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             char separator = ChooseSeparator(value);
 
             var resultBuilder = PooledBlobBuilder.GetInstance();
@@ -409,8 +424,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="value">Array containing the blob.</param>
         /// <returns>Handle to the added or existing blob.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public StringHandle GetOrAddString(string value!!)
+        public StringHandle GetOrAddString(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             StringHandle handle;
             if (value.Length == 0)
             {
@@ -460,8 +480,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// </returns>
         /// <exception cref="ImageFormatLimitationException">The remaining space on the heap is too small to fit the string.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public UserStringHandle GetOrAddUserString(string value!!)
+        public UserStringHandle GetOrAddUserString(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             UserStringHandle handle;
             if (!_userStrings.TryGetValue(value, out handle))
             {

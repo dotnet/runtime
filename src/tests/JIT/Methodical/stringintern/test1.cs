@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class
 #if XASSEM
@@ -97,7 +98,8 @@ Test1
         return passed;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (TestSameObjRef())
         {

@@ -34,7 +34,7 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
             CurrentOffset = CurrentOffset + 16
         .endr
 
-        // r10 still contains the the indirection cell address.
+        // r10 still contains the indirection cell address.
 
         jmp     C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInterfaceDispatch\entries, _TEXT

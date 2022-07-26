@@ -82,8 +82,8 @@ namespace System.Threading
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("location1")]
-        public static extern object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value);
+        [return: NotNullIfNotNull(nameof(location1))]
+        public static extern object? Exchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         // The below whole method reduces to a single call to Exchange(ref object, object) but
         // the JIT thinks that it will generate more native code than it actually does.
@@ -95,8 +95,8 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         /// <typeparam name="T">The type to be used for <paramref name="location1"/> and <paramref name="value"/>. This type must be a reference type.</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull("location1")]
-        public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class? =>
+        [return: NotNullIfNotNull(nameof(location1))]
+        public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class? =>
             Unsafe.As<T>(Exchange(ref Unsafe.As<T, object?>(ref location1), value));
         #endregion
 
@@ -146,11 +146,11 @@ namespace System.Threading
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("location1")]
+        [return: NotNullIfNotNull(nameof(location1))]
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
         // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
-        // the body of the following method with the the following IL:
+        // the body of the following method with the following IL:
         //     ldarg.0
         //     ldarg.1
         //     ldarg.2
@@ -166,7 +166,7 @@ namespace System.Threading
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         /// <typeparam name="T">The type to be used for <paramref name="location1"/>, <paramref name="value"/>, and <paramref name="comparand"/>. This type must be a reference type.</typeparam>
-        [return: NotNullIfNotNull("location1")]
+        [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? =>
             Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));

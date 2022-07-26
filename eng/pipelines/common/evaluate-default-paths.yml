@@ -106,9 +106,11 @@ jobs:
     - subset: wasmbuildtests
       include:
       - src/tasks/*
-      - src/tests/BuildWasmApps/*
+      - src/tests/BuildWasmApps/Directory.Build*
+      - src/tests/BuildWasmApps/Wasm.Build.Tests/*
       - src/mono/wasm/build/*
       - src/mono/wasm/runtime/*
+      - src/mono/wasm/templates/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
@@ -121,10 +123,14 @@ jobs:
       - eng/Version.Details.xml
       - eng/Versions.props
       - src/mono/wasm/emscripten-version.txt
+      - src/libraries/sendtohelix*
     - subset: wasmdebuggertests
       include:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
+      - src/tests/BuildWasmApps/Directory.Build*
+      - src/tests/BuildWasmApps/Wasm.Debugger.Tests/*
+      - eng/testing/ProvisioningVersions.props
       - src/mono/mono/*
     - subset: allwasm
       include:

@@ -322,8 +322,7 @@ namespace System.Runtime.InteropServices.Tests
         public static void GetNativeVariantForObject_CantCastToObject_ThrowsInvalidCastException()
         {
             // While GetNativeVariantForObject supports taking chars, GetObjectForNativeVariant will
-            // never return a char. The internal type is ushort, as mentioned above. This behavior
-            // is the same on ProjectN and Desktop CLR.
+            // never return a char. The internal type is ushort, as mentioned above.
             var v = new Variant();
             IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
             try

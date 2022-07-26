@@ -60,25 +60,31 @@ namespace System.Threading.RateLimiting.Test
         public abstract void AcquireZero_WithoutAvailability();
 
         [Fact]
-        public abstract Task WaitAsyncZero_WithAvailability();
+        public abstract Task WaitAndAcquireAsyncZero_WithAvailability();
 
         [Fact]
-        public abstract Task WaitAsyncZero_WithoutAvailabilityWaitsForAvailability();
+        public abstract Task WaitAndAcquireAsyncZero_WithoutAvailabilityWaitsForAvailability();
 
         [Fact]
         public abstract Task CanDequeueMultipleResourcesAtOnce();
 
         [Fact]
-        public abstract Task CanAcquireResourcesWithWaitAsyncWithQueuedItemsIfNewestFirst();
+        public abstract Task CanAcquireResourcesWithWaitAndAcquireAsyncWithQueuedItemsIfNewestFirst();
 
         [Fact]
-        public abstract Task CannotAcquireResourcesWithWaitAsyncWithQueuedItemsIfOldestFirst();
+        public abstract Task CannotAcquireResourcesWithWaitAndAcquireAsyncWithQueuedItemsIfOldestFirst();
 
         [Fact]
-        public abstract Task CanCancelWaitAsyncAfterQueuing();
+        public abstract Task CanCancelWaitAndAcquireAsyncAfterQueuing();
 
         [Fact]
-        public abstract Task CanCancelWaitAsyncBeforeQueuing();
+        public abstract Task CanCancelWaitAndAcquireAsyncBeforeQueuing();
+
+        [Fact]
+        public abstract Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest();
+
+        [Fact]
+        public abstract Task CanDisposeAfterCancelingQueuedRequest();
 
         [Fact]
         public abstract Task CancelUpdatesQueueLimit();
@@ -100,5 +106,14 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task DisposeAsyncReleasesQueuedAcquires();
+
+        [Fact]
+        public abstract void NullIdleDurationWhenActive();
+
+        [Fact]
+        public abstract Task IdleDurationUpdatesWhenIdle();
+
+        [Fact]
+        public abstract void IdleDurationUpdatesWhenChangingFromActive();
     }
 }

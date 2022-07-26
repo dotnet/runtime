@@ -18,14 +18,14 @@
 }
 .assembly extern xunit.core {}
 // MVID: {3433C0F8-3BEA-4168-AB0C-C275EF054928}
-.namespace Test
+.namespace Test_u_flow
 {
-  .class private auto ansi AA extends [mscorlib]System.Object
+  .class public auto ansi AA extends [mscorlib]System.Object
   {
 	.field public native unsigned int m_i
 	.field public native unsigned int[0...] m_ai
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
@@ -33,29 +33,29 @@
 		.entrypoint
 		// Code size       134 (0x86)
 		.maxstack  8
-		.locals (class Test.AA, native unsigned int i, native unsigned int& p1, native unsigned int& p2)
-		newobj instance void Test.AA::.ctor()
+		.locals (class Test_u_flow.AA, native unsigned int i, native unsigned int& p1, native unsigned int& p2)
+		newobj instance void Test_u_flow.AA::.ctor()
 		stloc.0
 		
 		ldloc.0
 		ldc.i4 0x80000000
 		conv.u
-		stfld native unsigned int Test.AA::m_i
+		stfld native unsigned int Test_u_flow.AA::m_i
 
 		ldloc.0
-		ldfld native unsigned int Test.AA::m_i
+		ldfld native unsigned int Test_u_flow.AA::m_i
 		ldc.i4 0x7fffffff
 		conv.u
 		blt.un fail
 
 		ldloc.0
-		ldfld native unsigned int Test.AA::m_i
+		ldfld native unsigned int Test_u_flow.AA::m_i
 		ldc.i4 0x80000001
 		conv.u
 		bgt.un fail
 
 		ldloc.0
-		ldfld native unsigned int Test.AA::m_i
+		ldfld native unsigned int Test_u_flow.AA::m_i
 		ldc.i4 0x80000001
 		conv.u
 		bgt.un fail
@@ -73,34 +73,34 @@
 		ldloca i
 	merge_2:
 		ldloc.0
-		ldfld native unsigned int[0...] Test.AA::m_ai
+		ldfld native unsigned int[0...] Test_u_flow.AA::m_ai
 		ldc.i4.1
 		ldelema [mscorlib]System.IntPtr
 		br final_merge
 	a3:
 		ldloc.0
-		ldflda native unsigned int Test.AA::m_i
+		ldflda native unsigned int Test_u_flow.AA::m_i
 	merge_3:
 		ldloca i
 		br final_merge
 	a4:
 		ldloc.0
-		ldflda native unsigned int Test.AA::m_i
+		ldflda native unsigned int Test_u_flow.AA::m_i
 		br merge_2
 	a5:
 		ldloc.0
-		ldfld native unsigned int[0...] Test.AA::m_ai
+		ldfld native unsigned int[0...] Test_u_flow.AA::m_ai
 		ldc.i4.1
 		ldelema [mscorlib]System.IntPtr
 		br merge_3
 	a6:
 		ldloc.0
-		ldfld native unsigned int[0...] Test.AA::m_ai
+		ldfld native unsigned int[0...] Test_u_flow.AA::m_ai
 		ldc.i4.1
 		ldelema [mscorlib]System.IntPtr
 	merge_1:
 		ldloc.0
-		ldflda native unsigned int Test.AA::m_i
+		ldflda native unsigned int Test_u_flow.AA::m_i
 	final_merge:
 		stloc p1
 		stloc p2
@@ -147,16 +147,16 @@
       call       instance void [mscorlib]System.Object::.ctor()
       ldarg.0
       ldc.i4.0
-      stfld		native unsigned int Test.AA::m_i
+      stfld		native unsigned int Test_u_flow.AA::m_i
       ldarg.0
       ldc.i4.8
       newobj   instance void native unsigned int[0...]::.ctor(int32)
-      stfld		native unsigned int[0...] Test.AA::m_ai
+      stfld		native unsigned int[0...] Test_u_flow.AA::m_ai
       ret
     } // end of method 'AA::.ctor'
 
   } // end of class 'AA'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_u_flow'
 
 //*********** DISASSEMBLY COMPLETE ***********************

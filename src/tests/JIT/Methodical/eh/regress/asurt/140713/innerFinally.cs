@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace test
+namespace test_innerFinally
 {
 
-    class Class1
+    public class Class1
     {
 
         private static TestUtil.TestLog testLog;
@@ -29,7 +30,8 @@ namespace test
             // Create and initialize test log object
             testLog = new TestUtil.TestLog(expectedOut);
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int x = 7, y = 0, z;
             //Start recording

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.IO;
-using System.Net.Quic.Implementations;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,9 +57,6 @@ namespace System.Net.Http
 
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
-
-        // !!! NOTE !!! This is temporary and will not ship.
-        internal QuicImplementationProvider? _quicImplementationProvider;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -122,12 +118,6 @@ namespace System.Net.Http
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
             };
-
-            // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
-            if (HttpConnectionPool.IsHttp3Supported())
-            {
-                settings._quicImplementationProvider = _quicImplementationProvider;
-            }
 
             return settings;
         }

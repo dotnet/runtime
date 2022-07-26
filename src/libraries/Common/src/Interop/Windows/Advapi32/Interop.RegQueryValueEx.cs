@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 #if REGISTRY_ASSEMBLY
 using Microsoft.Win32.SafeHandles;
 #else
@@ -23,30 +22,12 @@ internal static partial class Interop
             ref int lpcbData);
 
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegQueryValueEx(
+        internal static unsafe partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
-            int[]? lpReserved,
-            ref int lpType,
-            ref int lpData,
-            ref int lpcbData);
-
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegQueryValueEx(
-            SafeRegistryHandle hKey,
-            string? lpValueName,
-            int[]? lpReserved,
-            ref int lpType,
-            ref long lpData,
-            ref int lpcbData);
-
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegQueryValueEx(
-            SafeRegistryHandle hKey,
-            string? lpValueName,
-            int[]? lpReserved,
-            ref int lpType,
-            [Out] char[]? lpData,
-            ref int lpcbData);
+            int* lpReserved,
+            int* lpType,
+            byte* lpData,
+            uint* lpcbData);
     }
 }

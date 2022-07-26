@@ -23,8 +23,10 @@ namespace System.Globalization
         // The RegionInfo for our current region
         internal static volatile RegionInfo? s_currentRegionInfo;
 
-        public RegionInfo(string name!!)
+        public RegionInfo(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             // The InvariantCulture has no matching region
             if (name.Length == 0)
             {

@@ -29,8 +29,8 @@ public:
         LIMITED_METHOD_CONTRACT;
 #if defined(UNIX_AMD64_ABI)
         _ASSERTE((argLocDescForStructInRegs != NULL) || (offset != TransitionBlock::StructInRegsOffset));
-#elif defined(TARGET_ARM64)
-        // This assert is not interesting on arm64. argLocDescForStructInRegs could be
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        // This assert is not interesting on arm64/loongarch64. argLocDescForStructInRegs could be
         // initialized if the args are being enregistered.
 #else
         _ASSERTE(argLocDescForStructInRegs == NULL);
@@ -82,6 +82,99 @@ public:
 
 #endif // !DACCESS_COMPILE
 #endif // defined(TARGET_ARM64)
+
+#if defined(TARGET_LOONGARCH64)
+    bool IsStructPassedInRegs()
+    {
+        return m_argLocDescForStructInRegs != NULL;
+    }
+
+#ifndef DACCESS_COMPILE
+    // Copy struct argument into registers described by the current ArgDestination.
+    // Arguments:
+    //  src = source data of the structure
+    //  fieldBytes - size of the structure
+    //  destOffset - nonzero when copying values into Nullable<T>, it is the offset
+    //               of the T value inside of the Nullable<T>
+    void CopyStructToRegisters(void *src, int fieldBytes, int destOffset)
+    {
+        _ASSERTE(IsStructPassedInRegs());
+        _ASSERTE(fieldBytes <= 16);
+
+        int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
+
+        if (m_argLocDescForStructInRegs->m_structFields == STRUCT_FLOAT_FIELD_ONLY_TWO)
+        { // struct with two floats.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
+            *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
+            *(INT64*)((char*)m_base + argOfs + 8) = *((INT32*)src + 1);
+        }
+        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
+        { // the first field is float or double.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) == 0);//the second field is integer.
+
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
+            {
+                *(INT64*)((char*)m_base + argOfs) = *(INT32*)src; // the first field is float
+            }
+            else
+            {
+                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // the first field is double.
+            }
+
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != 0)
+            {
+                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+            }
+            else
+            {
+                *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
+            }
+        }
+        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) != 0)
+        { // the second field is float or double.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) == 0);//the first field is integer.
+
+            // destOffset - nonzero when copying values into Nullable<T>, it is the offset of the T value inside of the Nullable<T>.
+            // here the first field maybe Nullable.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
+            {
+                // the second field is float.
+                *(INT64*)((char*)m_base + argOfs) = destOffset == 0 ? *((INT32*)src + 1) : *(INT32*)src;
+            }
+            else
+            {
+                // the second field is double.
+                *(UINT64*)((char*)m_base + argOfs) = destOffset == 0 ? *((UINT64*)src + 1) : *(UINT64*)src;
+            }
+
+            if (0 == destOffset)
+            {
+                // NOTE: here ignoring the first size.
+                argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
+            }
+        }
+        else
+        {
+            _ASSERTE(!"---------UNReachable-------LoongArch64!!!");
+        }
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_VOID GetStructGenRegDestinationAddress()
+    {
+        _ASSERTE(IsStructPassedInRegs());
+        int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+        return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + argOfs);
+    }
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -216,8 +309,6 @@ public:
     void ReportPointersFromStructInRegisters(promote_func *fn, ScanContext *sc, int fieldBytes)
     {
         LIMITED_METHOD_CONTRACT;
-
-        // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
 
        _ASSERTE(IsStructPassedInRegs());
 

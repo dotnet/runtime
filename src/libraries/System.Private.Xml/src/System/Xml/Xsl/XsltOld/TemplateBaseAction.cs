@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Xml;
+using System.Xml.XPath;
+using System.Globalization;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Globalization;
-
     // RootAction and TemplateActions have a litle in common -- they are responsible for variable allocation
     // TemplateBaseAction -- implenemts this shared behavior
 

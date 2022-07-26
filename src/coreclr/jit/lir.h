@@ -64,7 +64,7 @@ public:
         Use& operator=(const Use& other);
         Use& operator=(Use&& other);
 
-        static Use GetDummyUse(Range& range, GenTree* node);
+        static void MakeDummyUse(Range& range, GenTree* node, Use* dummyUse);
 
         GenTree* Def() const;
         GenTree* User() const;
@@ -226,7 +226,7 @@ public:
     // LIR::Range:
     //
     // Represents a contiguous range of LIR nodes. Provides a variety of
-    // variety of utilites that modify the LIR contained in the range. Unlike
+    // variety of utilities that modify the LIR contained in the range. Unlike
     // `ReadOnlyRange`, values of this type may be edited.
     //
     // Because it is not a final class, it is possible to slice values of this

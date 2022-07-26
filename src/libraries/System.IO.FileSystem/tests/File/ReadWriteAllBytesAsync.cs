@@ -97,7 +97,6 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public async Task WriteToReadOnlyFileAsync()
         {
             string path = GetTestFilePath();
@@ -108,11 +107,11 @@ namespace System.IO.Tests
                 // Operation succeeds when being run by the Unix superuser
                 if (PlatformDetection.IsSuperUser)
                 {
-                    await File.WriteAllBytesAsync(path, Encoding.UTF8.GetBytes("text"));
-                    Assert.Equal(Encoding.UTF8.GetBytes("text"), await File.ReadAllBytesAsync(path));
+                    await File.WriteAllBytesAsync(path, "text"u8.ToArray());
+                    Assert.Equal("text"u8.ToArray(), await File.ReadAllBytesAsync(path));
                 }
                 else
-                    await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.WriteAllBytesAsync(path, Encoding.UTF8.GetBytes("text")));
+                    await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.WriteAllBytesAsync(path, "text"u8.ToArray()));
             }
             finally
             {
@@ -205,6 +204,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InUnix()
         {
             string fifoPath = GetTestFilePath();

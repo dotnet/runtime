@@ -62,7 +62,7 @@ namespace System.Threading
             }
 
             // None are free; allocate a new one.
-            overlapped = (Win32ThreadPoolNativeOverlapped*)Marshal.AllocHGlobal(sizeof(Win32ThreadPoolNativeOverlapped));
+            overlapped = (Win32ThreadPoolNativeOverlapped*)NativeMemory.Alloc((nuint)sizeof(Win32ThreadPoolNativeOverlapped));
             *overlapped = default(Win32ThreadPoolNativeOverlapped);
 
             // Allocate a OverlappedData object, and an index at which to store it in _dataArray.
@@ -75,7 +75,7 @@ namespace System.Threading
 
             while (true)
             {
-                OverlappedData[] dataArray = Volatile.Read(ref s_dataArray);
+                OverlappedData[]? dataArray = Volatile.Read(ref s_dataArray);
                 int currentLength = dataArray == null ? 0 : dataArray.Length;
 
                 // If the current array is too small, create a new, larger one.
@@ -87,7 +87,7 @@ namespace System.Threading
                     while (newLength <= dataIndex)
                         newLength = (newLength * 3) / 2;
 
-                    OverlappedData[] newDataArray = dataArray;
+                    OverlappedData[]? newDataArray = dataArray;
                     Array.Resize(ref newDataArray, newLength);
 
                     if (Interlocked.CompareExchange(ref s_dataArray, newDataArray, dataArray) != dataArray)
@@ -101,12 +101,12 @@ namespace System.Threading
                 if (s_dataArray[dataIndex] == null)
                 {
                     // Full fence so this write can't move past subsequent reads.
-                    Interlocked.Exchange(ref dataArray[dataIndex], data);
+                    Interlocked.Exchange(ref dataArray![dataIndex], data);
                     continue;
                 }
 
                 // We're already in the array, so we're done.
-                Debug.Assert(dataArray[dataIndex] == data);
+                Debug.Assert(dataArray![dataIndex] == data);
                 overlapped->_dataIndex = dataIndex;
                 return overlapped;
             }
@@ -129,7 +129,7 @@ namespace System.Threading
             //
             if (pinData != null)
             {
-                object[] objArray = pinData as object[];
+                object[]? objArray = pinData as object[];
                 if (objArray != null && objArray.GetType() == typeof(object[]))
                 {
                     if (data._pinnedData == null || data._pinnedData.Length < objArray.Length)
@@ -145,8 +145,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    if (data._pinnedData == null)
-                        data._pinnedData = new GCHandle[1];
+                    data._pinnedData ??= new GCHandle[1];
 
                     if (!data._pinnedData[0].IsAllocated)
                         data._pinnedData[0] = GCHandle.Alloc(pinData, GCHandleType.Pinned);
@@ -192,6 +191,7 @@ namespace System.Threading
 
             if (data._executionContext == null)
             {
+                Debug.Assert(data._callback != null, "Does CompleteWithCallback called after Reset?");
                 data._callback(errorCode, bytesWritten, ToNativeOverlapped(overlapped));
                 return;
             }
@@ -202,8 +202,7 @@ namespace System.Threading
 
             // Get an args object from the per-thread cache.
             ExecutionContextCallbackArgs args = t_executionContextCallbackArgs;
-            if (args == null)
-                args = new ExecutionContextCallbackArgs();
+            args ??= new ExecutionContextCallbackArgs();
 
             t_executionContextCallbackArgs = null;
 
@@ -229,6 +228,7 @@ namespace System.Threading
             args._data = null;
             t_executionContextCallbackArgs = args;
 
+            Debug.Assert(data._callback != null, "Does OnExecutionContextCallback called after Reset?");
             data._callback(errorCode, bytesWritten, ToNativeOverlapped(overlapped));
         }
 

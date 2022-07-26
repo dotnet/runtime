@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
-    [UnsupportedOSPlatform("browser")]
     public class HMACMD5 : HMAC
     {
         /// <summary>
@@ -28,13 +27,17 @@ namespace System.Security.Cryptography
         /// </summary>
         public const int HashSizeInBytes = HashSizeInBits / 8;
 
+        [UnsupportedOSPlatform("browser")]
         public HMACMD5()
             : this(RandomNumberGenerator.GetBytes(BlockSize))
         {
         }
 
-        public HMACMD5(byte[] key!!)
+        [UnsupportedOSPlatform("browser")]
+        public HMACMD5(byte[] key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             this.HashName = HashAlgorithmNames.MD5;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.MD5, key, BlockSize);
             base.Key = _hMacCommon.ActualKey!;
@@ -82,8 +85,12 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="key" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static byte[] HashData(byte[] key!!, byte[] source!!)
+        [UnsupportedOSPlatform("browser")]
+        public static byte[] HashData(byte[] key, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
+
             return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
         }
 
@@ -93,6 +100,7 @@ namespace System.Security.Cryptography
         /// <param name="key">The HMAC key.</param>
         /// <param name="source">The data to HMAC.</param>
         /// <returns>The HMAC of the data.</returns>
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
         {
             byte[] buffer = new byte[HashSizeInBytes];
@@ -114,6 +122,7 @@ namespace System.Security.Cryptography
         /// The buffer in <paramref name="destination"/> is too small to hold the calculated hash
         /// size. The MD5 algorithm always produces a 128-bit HMAC, or 16 bytes.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (!TryHashData(key, source, destination, out int bytesWritten))
@@ -137,6 +146,7 @@ namespace System.Security.Cryptography
         /// <see langword="false"/> if <paramref name="destination"/> is too small to hold the
         /// calculated hash, <see langword="true"/> otherwise.
         /// </returns>
+        [UnsupportedOSPlatform("browser")]
         public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length < HashSizeInBytes)
@@ -171,8 +181,11 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         ///   </p>
         /// </exception>
-        public static int HashData(ReadOnlySpan<byte> key, Stream source!!, Span<byte> destination)
+        [UnsupportedOSPlatform("browser")]
+        public static int HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -194,8 +207,11 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static byte[] HashData(ReadOnlySpan<byte> key, Stream source!!)
+        [UnsupportedOSPlatform("browser")]
+        public static byte[] HashData(ReadOnlySpan<byte> key, Stream source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
@@ -214,8 +230,11 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static byte[] HashData(byte[] key!!, Stream source)
+        [UnsupportedOSPlatform("browser")]
+        public static byte[] HashData(byte[] key, Stream source)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return HashData(new ReadOnlySpan<byte>(key), source);
         }
 
@@ -235,8 +254,11 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source!!, CancellationToken cancellationToken = default)
+        [UnsupportedOSPlatform("browser")]
+        public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
@@ -259,8 +281,11 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(byte[] key!!, Stream source, CancellationToken cancellationToken = default)
+        [UnsupportedOSPlatform("browser")]
+        public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
         }
 
@@ -288,12 +313,15 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         ///   </p>
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<int> HashDataAsync(
             ReadOnlyMemory<byte> key,
-            Stream source!!,
+            Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 

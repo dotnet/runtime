@@ -131,8 +131,10 @@ namespace System.Resources
             return ResourceManager.IsDefaultType(readerType, ResourceManager.ResReaderTypeName);
         }
 
-        public void GetResourceData(string resourceName!!, out string resourceType, out byte[] resourceData)
+        public void GetResourceData(string resourceName, out string resourceType, out byte[] resourceData)
         {
+            ArgumentNullException.ThrowIfNull(resourceName);
+
             if (_resCache == null)
                 throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 

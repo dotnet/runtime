@@ -174,7 +174,7 @@
 //        A do-nothing contract used by functions that trivially wrap another.
 //
 //
-// "LEGACY" stuff - these features have been mostly superceded by better solutions
+// "LEGACY" stuff - these features have been mostly superseded by better solutions
 //     so their use should be discouraged.
 //
 //
@@ -226,7 +226,7 @@
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementaiton parts of contracts if this isn't a DAC build.
+// Finally, only define the implementation parts of contracts if this isn't a DAC build.
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif
@@ -998,7 +998,7 @@ class BaseContract
           }
     };
 
-    // PseudoTemplate is a class which can be instantated with a template-like syntax, resulting
+    // PseudoTemplate is a class which can be instantiated with a template-like syntax, resulting
     // in an expression which simply boxes a following value in a Box
 
     template <typename T>
@@ -2142,7 +2142,7 @@ class HostNoCallHolder
 // Eventually, all those bugs should be fixed this holder can be completely removed.
 //
 // It is also the case that we disallow allocations when any thread is OS suspended
-// This happens for a short time when we are suspending the EE.   We supress both
+// This happens for a short time when we are suspending the EE.   We suppress both
 // of these.
 //
 // @todo- ideally this would be rolled into the ContractViolation.

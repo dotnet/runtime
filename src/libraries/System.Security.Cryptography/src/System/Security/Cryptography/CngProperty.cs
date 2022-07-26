@@ -16,13 +16,26 @@ namespace System.Security.Cryptography
     [StructLayout(LayoutKind.Sequential)]  // The [StructLayout] is here to prevent a spurious ApiReviewer alert. We do not actually depend on the layout of this struct.
     public struct CngProperty : IEquatable<CngProperty>
     {
-        public CngProperty(string name!!, byte[]? value, CngPropertyOptions options)
+        public CngProperty(string name, byte[]? value, CngPropertyOptions options)
             : this()
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Name = name;
             Options = options;
             _lazyHashCode = default(int?);
-            _value = (value == null) ? null : value.CloneByteArray();
+            _value = value.CloneByteArray();
+        }
+
+        internal CngProperty(string name, ReadOnlySpan<byte> value, CngPropertyOptions options)
+            : this()
+        {
+            ArgumentNullException.ThrowIfNull(name);
+
+            Name = name;
+            Options = options;
+            _lazyHashCode = default;
+            _value = value.ToArray();
         }
 
         /// <summary>
@@ -34,10 +47,7 @@ namespace System.Security.Cryptography
         ///     Contents of the property
         /// </summary>
         /// <returns></returns>
-        public byte[]? GetValue()
-        {
-            return (_value == null) ? null : _value.CloneByteArray();
-        }
+        public byte[]? GetValue() => _value.CloneByteArray();
 
         /// <summary>
         ///     Options used to set / get the property
@@ -67,16 +77,7 @@ namespace System.Security.Cryptography
             if (other._value == null)
                 return false;
 
-            if (_value.Length != other._value.Length)
-                return false;
-
-            for (int i = 0; i < _value.Length; i++)
-            {
-                if (_value[i] != other._value[i])
-                    return false;
-            }
-
-            return true;
+            return _value.AsSpan().SequenceEqual(other._value);
         }
 
         public override int GetHashCode()

@@ -148,7 +148,7 @@ namespace System.Management
         /// </value>
         public string Name
         {
-            get { return qualifierName != null ? qualifierName : ""; }
+            get { return qualifierName ?? ""; }
         }
 
         /// <summary>

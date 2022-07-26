@@ -611,7 +611,6 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 {
 	MonoMethodSignature *res;
 	gboolean is_open;
-	int i;
 
 	error_init (error);
 	if (!context)
@@ -624,7 +623,7 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 	if (!is_ok (error))
 		goto fail;
 	is_open = mono_class_is_open_constructed_type (res->ret);
-	for (i = 0; i < sig->param_count; ++i) {
+	for (guint16 i = 0; i < sig->param_count; ++i) {
 		res->params [i] = mono_class_inflate_generic_type_checked (sig->params [i], context, error);
 		if (!is_ok (error))
 			goto fail;
@@ -645,7 +644,7 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 fail:
 	if (res->ret)
 		mono_metadata_free_type (res->ret);
-	for (i = 0; i < sig->param_count; ++i) {
+	for (guint16 i = 0; i < sig->param_count; ++i) {
 		if (res->params [i])
 			mono_metadata_free_type (res->params [i]);
 	}
@@ -693,12 +692,12 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, M
 
 	error_init (error);
 
-	for (int i = 0; i < header->num_locals; ++i) {
+	for (guint16 i = 0; i < header->num_locals; ++i) {
 		res->locals [i] = mono_class_inflate_generic_type_checked (header->locals [i], context, error);
 		goto_if_nok (error, fail);
 	}
 	if (res->num_clauses) {
-		for (int i = 0; i < header->num_clauses; ++i) {
+		for (guint i = 0; i < header->num_clauses; ++i) {
 			MonoExceptionClause *clause = &res->clauses [i];
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				continue;
@@ -1078,8 +1077,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	result->slot = -1;
 	result->klass = klass;
-	result->flags = cols [MONO_METHOD_FLAGS];
-	result->iflags = cols [MONO_METHOD_IMPLFLAGS];
+	result->flags = GUINT32_TO_UINT16 (cols [MONO_METHOD_FLAGS]);
+	result->iflags = GUINT32_TO_UINT16 (cols [MONO_METHOD_IMPLFLAGS]);
 	result->token = token;
 	result->name = mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]);
 
@@ -1129,7 +1128,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 		/* Native methods can have no map. */
 		if (piinfo->implmap_idx)
-			piinfo->piflags = mono_metadata_decode_row_col (&tables [MONO_TABLE_IMPLMAP], piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
+			piinfo->piflags = GUINT32_TO_UINT16 (mono_metadata_decode_row_col (&tables [MONO_TABLE_IMPLMAP], piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS));
 	}
 
  	if (generic_container)
@@ -1330,7 +1329,7 @@ mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, M
 /**
  * mono_get_method_constrained:
  * This is used when JITing the <code>constrained.</code> opcode.
- * \returns The contrained method, which has been inflated
+ * \returns The constrained method, which has been inflated
  * as the function return value; and the original CIL-stream method as
  * declared in \p cil_method. The latter is used for verification.
  */
@@ -1419,7 +1418,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		method = ((MonoMethodInflated *) method)->declaring;
 
 	signature = mono_method_signature_internal (method);
-	/*FIXME this check is somewhat redundant since the caller usally will have to get the signature to figure out the
+	/*FIXME this check is somewhat redundant since the caller usually will have to get the signature to figure out the
 	  number of arguments and allocate a properly sized array. */
 	if (signature == NULL)
 		return;

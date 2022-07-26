@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <!-- Reference all NetCoreAppCurrent shared framework generator projects. -->
+  <ItemGroup>
+    <AnyProject Include="$(MSBuildThisFileDirectory)*\gen\**\*.*proj"
+                Exclude="@(ProjectExclusions)"
+                OriginalIdentity="%(Identity)" />
+    <AnyProjectWithProjectName Include="@(AnyProject->Metadata('Filename'))" />
+    <NonNetCoreAppProjectWithProjectName Include="@(AnyProjectWithProjectName)"
+                                         Exclude="@(NetCoreAppLibraryGenerator)" />
+    <NetCoreAppProjectWithProjectName Include="@(AnyProjectWithProjectName)"
+                                      Exclude="@(NonNetCoreAppProjectWithProjectName)" />
+    <ProjectReference Include="@(NetCoreAppProjectWithProjectName->Metadata('OriginalIdentity'))" />
+  </ItemGroup>
+
+</Project>

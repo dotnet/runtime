@@ -80,6 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             public const string TraceLevelEnvironmentVariable = "COREHOST_TRACE";
             public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
+            public const string VerbosityEnvironmentVariable = "COREHOST_TRACE_VERBOSITY";
         }
 
         public static class DotnetRoot

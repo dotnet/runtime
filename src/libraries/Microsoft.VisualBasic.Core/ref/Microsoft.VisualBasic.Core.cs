@@ -645,7 +645,7 @@ namespace Microsoft.VisualBasic
         public static string? Join(object?[] SourceArray, string? Delimiter = " ") { throw null; }
         public static string? Join(string?[] SourceArray, string? Delimiter = " ") { throw null; }
         public static char LCase(char Value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("Value")]
         public static string? LCase(string? Value) { throw null; }
         public static string Left(string? str, int Length) { throw null; }
         public static int Len(bool Expression) { throw null; }
@@ -820,7 +820,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static decimal ToDecimal(string? Value) { throw null; }
         public static double ToDouble(object? Value) { throw null; }
         public static double ToDouble(string? Value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("Value")]
         public static T? ToGenericParameter<T>(object? Value) { throw null; }
         public static int ToInteger(object? Value) { throw null; }
         public static int ToInteger(string? Value) { throw null; }
@@ -1192,7 +1192,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static string FromDouble(double Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string FromInteger(int Value) { throw null; }
         public static string FromLong(long Value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("Value")]
         public static string? FromObject(object? Value) { throw null; }
         public static string FromShort(short Value) { throw null; }
         public static string FromSingle(float Value) { throw null; }
@@ -1341,6 +1341,7 @@ namespace Microsoft.VisualBasic.FileIO
         public TextFieldParser(string path) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding, bool detectEncoding) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public string[]? CommentTokens { get { throw null; } set { } }
         public string[]? Delimiters { get { throw null; } set { } }
         public bool EndOfData { get { throw null; } }

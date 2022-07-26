@@ -14,7 +14,7 @@ In some occasions we may want to include a library in the shared framework, but 
 
 Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework. This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 
-Source generators and analyzers can be included in the shared framework by specifying `IsNetCoreAppAnalyzer`.  These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+Source generators and analyzers can be included in the shared framework by adding their project name into the NetCoreAppLibrary.props file under the `NetCoreAppLibraryGenerator` section. These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
 Removing a library from the shared framework is a breaking change and should be avoided.
 
@@ -22,7 +22,7 @@ Removing a library from the shared framework is a breaking change and should be 
 
 Transport packages are non-shipping packages that dotnet/runtime produces in order to share binaries with other repositories.
 
-### Microsoft.Internal.Runtime.**TARGET**.Transport
+### Microsoft.Internal.Runtime.**[TargetRepositoryName]**.Transport
 
 Such transport packages represent the set of libraries which are produced in dotnet/runtime and ship in target repo's shared framework (i.e. Microsoft.AspNetCore.App and Microsoft.WindowsDesktop.App). We produce a transport package so that we can easily share reference, implementation and analyzer assemblies that might not be present in NuGet packages that also ship.
 
@@ -70,10 +70,10 @@ Build props and targets may be needed in NuGet packages. To define these, author
 
 Some packages may wish to include a companion analyzer or source-generator with their library. Analyzers are much different from normal library contributors: their dependencies shouldn't be treated as nuget package dependencies, their TargetFramework isn't applicable to the project they are consumed in (since they run in the compiler). To facilitate this, we've defined some common infrastructure for packaging Analyzers.
 
-To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer
+To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer and set the `Pack` metadata to true. If you just want to include the analyzer but not consume it, set the `ReferenceAnalyzer` metadata to false.
 ```xml
-  <ItemGroup> 
-    <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" />
+  <ItemGroup>
+    <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" Pack="true" ReferenceAnalyzer="false" />
   </ItemGroup>
 ```
 
@@ -86,9 +86,42 @@ In the analyzer project make sure to do the following. Ensure it only targets `n
   </PropertyGroup>
 ```
 
-In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overriden by setting the following property in the project that produces the package
+In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overridden by setting the following property in the project that produces the package
 ```xml
   <PropertyGroup>
     <DisableSourceGeneratorPropertyName>CustomPropertyName</DisableSourceGeneratorPropertyName>
   </PropertyGroup>
+```
+
+### NETStandard Compatibility Error infrastructure
+For libraries that support .NETStandard, the _.NETStandard Compatibility packaging infrastructure_ makes sure that out-of-support target frameworks like _netcoreapp3.1_ or _net461_ are unsupported by the produced package. That enables library authors to support .NETStandard but explicitly not support unsupported .NETStandard compatible target frameworks.
+
+The infrastructure generates a targets file that throws a user readable Error when msbuild invokes a project with an unsupported target framework. In addition to the targets file, placeholder files `_._` are placed into the minimum supported .NETStandard compatible target framework's package folder (as time of writing `net6.0` and `net462`), so that the generated targets files don't apply for that and any newer/compatible target framework. Example:
+
+```
+buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
+buildTransitive\net462\_._
+buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
+buildTransitive\net6.0\_._
+```
+
+Whenever a library wants to author their own set of props and targets files (i.e. for source generators) and the above mentioned infrastructure kicks in (because the library targets .NETStandard), such files **must be included not only for the .NETStandard target framework but also for the specific minimum supported target frameworks**. The _.NETStandard Compatibility packaging infrastructure_ then omits the otherwise necessary placeholder files. Example:
+
+```
+buildTransitive\netstandard2.0\Microsoft.Extensions.Configuration.UserSecrets.targets    <- This file is hand authored and doesn't throw an error
+buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
+buildTransitive\net462\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
+buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
+buildTransitive\net6.0\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
+```
+
+The above layout is achieved via the following item declaration in the project file. In that case, the hand authored msbuild props and/or targets files are located in a buildTransitive folder in the project tree. Note that the trailing directory separators are required.
+
+```xml
+<ItemGroup>
+    <Content Include="buildTransitive\$(MSBuildProjectName).*"
+             PackagePath="buildTransitive\netstandard2.0\;
+                          buildTransitive\$(NetFrameworkMinimum)\;
+                          buildTransitive\$(NetCoreAppMinimum)\" />
+</ItemGroup>
 ```

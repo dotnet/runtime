@@ -1,0 +1,45 @@
+parameters:
+  alwaysRun: false
+  extraBuildArgs: ''
+  isExtraPlatformsBuild: false
+  nameSuffix: ''
+  platforms: []
+
+jobs:
+
+#
+# Build for Browser/wasm and test it
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
+      buildArgs: -s mono+libs+host -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 240
+      # always run for runtime-wasm builds (triggered manually)
+      # Always run for rolling builds
+      # Else run on path changes
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
+

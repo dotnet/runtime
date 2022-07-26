@@ -12,15 +12,23 @@ namespace System.Threading
         /// </summary>
         /// <param name="waitHandle">The <see cref="System.Threading.WaitHandle"/> to operate on.</param>
         /// <returns>A <see cref="System.Runtime.InteropServices.SafeHandle"/> representing the native operating system handle.</returns>
-        public static SafeWaitHandle GetSafeWaitHandle(this WaitHandle waitHandle!!) =>
-            waitHandle.SafeWaitHandle;
+        public static SafeWaitHandle GetSafeWaitHandle(this WaitHandle waitHandle)
+        {
+            ArgumentNullException.ThrowIfNull(waitHandle);
+
+            return waitHandle.SafeWaitHandle;
+        }
 
         /// <summary>
         /// Sets the native operating system handle
         /// </summary>
         /// <param name="waitHandle">The <see cref="System.Threading.WaitHandle"/> to operate on.</param>
         /// <param name="value">A <see cref="System.Runtime.InteropServices.SafeHandle"/> representing the native operating system handle.</param>
-        public static void SetSafeWaitHandle(this WaitHandle waitHandle!!, SafeWaitHandle? value) =>
+        public static void SetSafeWaitHandle(this WaitHandle waitHandle, SafeWaitHandle? value)
+        {
+            ArgumentNullException.ThrowIfNull(waitHandle);
+
             waitHandle.SafeWaitHandle = value;
+        }
     }
 }

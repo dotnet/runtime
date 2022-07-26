@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
@@ -21,8 +16,6 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
-    IMPORT LinkFrameAndThrow
-    IMPORT FixContextHandler
     IMPORT OnHijackWorker
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
@@ -238,7 +231,7 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implemetations
+; The following Macros help in WRITE_BARRIER Implementations
     ; WRITE_BARRIER_ENTRY
     ;
     ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -1036,27 +1029,6 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 
 ; ------------------------------------------------------------------
-;
-; Helpers for async (NullRef, AccessViolation) exceptions
-;
-
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
-        PROLOG_SAVE_REG_PAIR fp,lr, #-16!
-
-        ; On entry:
-        ;
-        ; X0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
-
-        ; Target should not return.
-        EMIT_BREAKPOINT
-
-        NESTED_END NakedThrowHelper2
-
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
-
-; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
 ; This method will perform a quick chained lookup of the entry if the
@@ -1113,10 +1085,10 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
-                                  ; Move this entry to head postion of the chain
+                                  ; Move this entry to head position of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG

@@ -15,7 +15,7 @@
 
   #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     128     // Upper bound to let the code generator to loop unroll InitBlk.
-  #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the the threshold of the number
+  #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
                                            // of contiguous non-gc slots that trigger generating rep movsq instead of
                                            // sequences of movsq instructions
 
@@ -34,6 +34,7 @@
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #ifdef    UNIX_AMD64_ABI
+  #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
@@ -44,10 +45,11 @@
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 #else // !UNIX_AMD64_ABI
   #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
+  #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
@@ -57,7 +59,7 @@
   #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument (no arguments are passed using multiple registers)
   #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
                                            // Note that this must be greater than 1 so that GenTreeLclVar can have an array of
                                            // MAX_MULTIREG_COUNT - 1.
@@ -141,9 +143,46 @@
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
 
+  #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
+
+  // AMD64 write barrier ABI (see vm\amd64\JitHelpers_Fast.asm, vm\amd64\JitHelpers_Fast.S):
+  // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
+  //     The usual amd64 calling convention is observed.
+  //     TODO-CQ: could this be optimized?
+  // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
+  //     On entry:
+  //       rsi: the source address (points to object reference to write)
+  //       rdi: the destination address (object reference written here)
+  //     On exit:
+  //       rcx: trashed
+  //       rdi: incremented by 8
+  //       rsi: incremented by 8
+  //       rax: trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
+  //     TODO-CQ: the above description matches the comments for the amd64 assembly code of JIT_ByRefWriteBarrier,
+  //              however the defines below assume the normal calling convention *except* for rdi/rsi. If we could
+  //              reduce the number of trashed variables, we could improve code quality.
+  //
+
+  #define REG_WRITE_BARRIER_DST          REG_ARG_0
+  #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
+
+  #define REG_WRITE_BARRIER_SRC          REG_ARG_1
+  #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
+
   #define RBM_CALLEE_TRASH_NOGC   RBM_CALLEE_TRASH
 
-  #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+  // Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
 
 #if 0
 #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
@@ -190,6 +229,9 @@
 
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)
+
+  // callee-preserved registers we always save and allow use of for EnC code
+  #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
 
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX

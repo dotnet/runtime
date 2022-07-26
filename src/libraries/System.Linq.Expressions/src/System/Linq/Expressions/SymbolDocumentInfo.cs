@@ -13,7 +13,7 @@ namespace System.Linq.Expressions
     {
         internal SymbolDocumentInfo(string fileName)
         {
-            ContractUtils.RequiresNotNull(fileName, nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
             FileName = fileName;
         }
 

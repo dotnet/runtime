@@ -20,6 +20,10 @@
     <!-- apphost and comhost template files are not signed, by design. -->
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
 
+    <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
+    <!-- WARNING: Needs to happed outside of any target -->
+    <FileExtensionSignInfo Update=".js" CertificateName="None" />
+
     <!-- Third-party components which should be signed.  -->
     <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
@@ -47,14 +51,15 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
+  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true'">
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
 
     <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
+    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
+    <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
   </ItemGroup>
 
   <Target Name="SetupFilesToSign">

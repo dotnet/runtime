@@ -140,8 +140,13 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
-        public unsafe void WriteBytes(byte* buffer!!, int byteCount)
+        public unsafe void WriteBytes(byte* buffer, int byteCount)
         {
+            if (buffer is null)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+
             if (byteCount < 0)
             {
                 Throw.ArgumentOutOfRange(nameof(byteCount));
@@ -157,15 +162,25 @@ namespace System.Reflection.Metadata
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
-        public void WriteBytes(BlobBuilder source!!)
+        public void WriteBytes(BlobBuilder source)
         {
+            if (source is null)
+            {
+                Throw.ArgumentNull(nameof(source));
+            }
+
             source.WriteContentTo(ref this);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
-        public int WriteBytes(Stream source!!, int byteCount)
+        public int WriteBytes(Stream source, int byteCount)
         {
+            if (source is null)
+            {
+                Throw.ArgumentNull(nameof(source));
+            }
+
             if (byteCount < 0)
             {
                 Throw.ArgumentOutOfRange(nameof(byteCount));
@@ -198,8 +213,13 @@ namespace System.Reflection.Metadata
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
-        public unsafe void WriteBytes(byte[] buffer!!, int start, int byteCount)
+        public unsafe void WriteBytes(byte[] buffer, int start, int byteCount)
         {
+            if (buffer is null)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+
             BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
             // an empty array has no element pointer:
@@ -349,8 +369,13 @@ namespace System.Reflection.Metadata
         /// Writes UTF16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public void WriteUTF16(char[] value!!)
+        public void WriteUTF16(char[] value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             if (value.Length == 0)
             {
                 return;
@@ -376,8 +401,13 @@ namespace System.Reflection.Metadata
         /// Writes UTF16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public void WriteUTF16(string value!!)
+        public void WriteUTF16(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             if (BitConverter.IsLittleEndian)
             {
                 fixed (char* ptr = value)
@@ -424,8 +454,13 @@ namespace System.Reflection.Metadata
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteUserString(string value!!)
+        public void WriteUserString(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             WriteCompressedInteger(BlobUtilities.GetUserStringByteLength(value.Length));
             WriteUTF16(value);
             WriteByte(BlobUtilities.GetUserStringTrailingByte(value));
@@ -435,8 +470,13 @@ namespace System.Reflection.Metadata
         /// Writes UTF8 encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-        public void WriteUTF8(string value!!, bool allowUnpairedSurrogates)
+        public void WriteUTF8(string value, bool allowUnpairedSurrogates)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
             WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
         }
 

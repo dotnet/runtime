@@ -3,6 +3,9 @@
     <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
     <Configuration>Release</Configuration>
     <OutputType>Exe</OutputType>
+    <TargetOS>browser</TargetOS>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>
@@ -22,7 +25,13 @@
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <DebuggerSupport>false</DebuggerSupport>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
   <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />

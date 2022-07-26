@@ -17,8 +17,10 @@ namespace System
     //
     public abstract partial class Type
     {
-        public virtual bool IsEnumDefined(object value!!)
+        public virtual bool IsEnumDefined(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
@@ -61,8 +63,10 @@ namespace System
             }
         }
 
-        public virtual string? GetEnumName(object value!!)
+        public virtual string? GetEnumName(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
@@ -126,7 +130,7 @@ namespace System
                 object val = values[i];
                 bool exchanged = false;
 
-                // Since the elements are sorted we only need to do one comparision, we keep the check for j inside the loop.
+                // Since the elements are sorted we only need to do one comparison, we keep the check for j inside the loop.
                 while (comparer.Compare(values[j - 1], val) > 0)
                 {
                     names[j] = names[j - 1];

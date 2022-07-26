@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
@@ -20,12 +21,33 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not an DSA key</exception>
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         [SupportedOSPlatform("windows")]
-        public DSACng(CngKey key!!)
+        public DSACng(CngKey key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (key.AlgorithmGroup != CngAlgorithmGroup.Dsa)
                 throw new ArgumentException(SR.Cryptography_ArgDSARequiresDSAKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        /// <summary>
+        ///     Creates a new ECDsaCng object that will use the specified key. Unlike the public
+        ///     constructor, this does not copy the key and ownership is transferred. The
+        ///     <paramref name="transferOwnership"/> parameter must be true.
+        /// </summary>
+        /// <param name="key">Key to use for DSA operations</param>
+        /// <param name="transferOwnership">
+        /// Must be true. Signals that ownership of <paramref name="key"/> will be transferred to the new instance.
+        /// </param>
+        [SupportedOSPlatform("windows")]
+        internal DSACng(CngKey key, bool transferOwnership)
+        {
+            Debug.Assert(key is not null);
+            Debug.Assert(key.AlgorithmGroup == CngAlgorithmGroup.Dsa);
+            Debug.Assert(transferOwnership);
+
+            Key = key;
         }
 
         protected override void Dispose(bool disposing)
