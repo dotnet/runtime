@@ -53,6 +53,16 @@ import {
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
+import {
+    mono_wasm_event_pipe_early_startup_callback,
+    mono_wasm_diagnostic_server_on_runtime_server_init
+} from "./diagnostics";
+import {
+    mono_wasm_diagnostic_server_on_server_thread_created,
+} from "./diagnostics/server_pthread";
+import {
+    mono_wasm_diagnostic_server_stream_signal_work_available
+} from "./diagnostics/server_pthread/stream-queue";
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import cwraps from "./cwraps";
@@ -361,6 +371,10 @@ export const __initializeImportsAndExports: any = initializeImportsAndExports; /
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_attached,
+    // diagnostics_server.c
+    mono_wasm_diagnostic_server_on_server_thread_created,
+    mono_wasm_diagnostic_server_on_runtime_server_init,
+    mono_wasm_diagnostic_server_stream_signal_work_available,
 };
 
 // the methods would be visible to EMCC linker
@@ -382,6 +396,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
+    mono_wasm_event_pipe_early_startup_callback,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args_ref,

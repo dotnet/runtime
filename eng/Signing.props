@@ -51,14 +51,15 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
+  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true'">
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
 
     <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
+    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
+    <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
   </ItemGroup>
 
   <Target Name="SetupFilesToSign">

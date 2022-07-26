@@ -314,6 +314,9 @@ private:
     // Returns "true" iff "vnf" should be folded by evaluating the func with constant arguments.
     bool VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
 
+    // Value number a type comparison
+    ValueNum VNEvalFoldTypeCompare(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
+
     // return vnf(v0)
     template <typename T>
     static T EvalOp(VNFunc vnf, T v0);
@@ -457,6 +460,11 @@ public:
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
     ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
+
+    void AddToEmbeddedHandleMap(ssize_t embeddedHandle, ssize_t compileTimeHandle)
+    {
+        m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
+    }
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -1379,6 +1387,9 @@ private:
         }
         return m_handleMap;
     }
+
+    typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
+    EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {

@@ -79,6 +79,7 @@ export type MonoConfig = {
     runtime_options?: string[], // array of runtime options as strings
     aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
+    diagnostic_options?: DiagnosticOptions, // dictionary-style Object. If omitted, diagnostics will not be initialized.
     ignore_pdb_load_errors?: boolean,
     wait_for_debugger?: number
 };
@@ -180,6 +181,14 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
+/// Options to configure EventPipe sessions that will be created and started at runtime startup
+export type DiagnosticOptions = {
+    /// An array of sessions to start at runtime startup
+    sessions?: EventPipeSessionOptions[],
+    /// If true, the diagnostic server will be started.  If "wait", the runtime will wait at startup until a diagnsotic session connects to the server
+    server?: DiagnosticServerOptions,
+}
+
 /// Options to configure the event pipe session
 /// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
 export interface EventPipeSessionOptions {
@@ -191,6 +200,11 @@ export interface EventPipeSessionOptions {
     providers: string;
 }
 
+/// Options to configure the diagnostic server
+export type DiagnosticServerOptions = {
+    connect_url: string, // websocket URL to connect to.
+    suspend: string | boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
+}
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 
@@ -286,3 +300,21 @@ export const enum MarshalError {
 export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
+
+/// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
+/// to 'never' after you handle all the cases it knows about.
+export function assertNever(x: never): never {
+    throw new Error("Unexpected value: " + x);
+}
+
+/// returns true if the given value is not Thenable
+///
+/// Useful if some function returns a value or a promise of a value.
+export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+    return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
+}
+
+/// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
+/// Primarily intended for debugging purposes.
+export type EventPipeSessionID = bigint;
+
