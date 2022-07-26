@@ -141,7 +141,7 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);BundleTestAppTargets;ArchiveTests" />
+          DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
 
   <Target Name="PrepareForTestUsingWorkloads"
           BeforeTargets="Test"
