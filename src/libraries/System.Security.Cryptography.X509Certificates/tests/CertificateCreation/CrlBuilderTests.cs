@@ -48,9 +48,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificatePemBytes))
             {
-                ArgumentException e;
-
-                e = Assert.Throws<ArgumentException>(
+                ArgumentException e = Assert.Throws<ArgumentException>(
                     CertParam,
                     () => builder.Build(cert, 0, now, HashAlgorithmName.SHA256));
 
@@ -67,9 +65,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    ArgumentException e;
-
-                    e = Assert.Throws<ArgumentException>(
+                    ArgumentException e = Assert.Throws<ArgumentException>(
                         CertParam,
                         () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
 
@@ -90,9 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    ArgumentException e;
-
-                    e = Assert.Throws<ArgumentException>(
+                    ArgumentException e = Assert.Throws<ArgumentException>(
                         CertParam,
                         () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
 
@@ -114,9 +108,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    ArgumentException e;
-
-                    e = Assert.Throws<ArgumentException>(
+                    ArgumentException e = Assert.Throws<ArgumentException>(
                         CertParam,
                         () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
 
@@ -231,7 +223,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 },
                 static (cert, now) =>
                 {
-                    HashAlgorithmName hashAlg = new HashAlgorithmName("");
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
                     Assert.Throws<ArgumentOutOfRangeException>(
