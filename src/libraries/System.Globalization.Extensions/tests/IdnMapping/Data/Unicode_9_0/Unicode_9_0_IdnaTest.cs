@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
             Source = EscapedToLiteralString(split[1], lineNumber);
             bool validDomainName = (split.Length != 5 || split[4].Trim() != "NV8"); 
             
-            // On Server 2019, uses ICU 61.0 which IDNA not supporting the following cases. Ignore these entries there.
+            // Server 2019 uses ICU 61.0 whose IDNA does not support the following cases. Ignore these entries there.
             if (PlatformDetection.IsWindowsServer2019 && Source.EndsWith("\ud802\udf8b\u3002\udb40\udd0a", StringComparison.Ordinal))
             {
                 Source = "";
