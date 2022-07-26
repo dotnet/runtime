@@ -801,6 +801,8 @@ namespace System.Collections
                 }
 
                 uint i = 0;
+                int[] thisArray = m_array;
+                uint thisLength = (uint)m_length;
 
                 if (m_length < BitsPerInt32)
                     goto LessThan32;
@@ -819,9 +821,9 @@ namespace System.Collections
 
                     fixed (bool* destination = &boolArray[index])
                     {
-                        for (; (i + Vector256<byte>.Count) <= (uint)m_length; i += (uint)Vector256<byte>.Count)
+                        for (; (i + Vector256<byte>.Count) <= thisLength; i += (uint)Vector256<byte>.Count)
                         {
-                            int bits = m_array[i / (uint)BitsPerInt32];
+                            int bits = thisArray[i / (uint)BitsPerInt32];
                             Vector256<int> scalar = Vector256.Create(bits);
                             Vector256<byte> shuffled = Avx2.Shuffle(scalar.AsByte(), shuffleMask);
                             Vector256<byte> extracted = Avx2.And(shuffled, bitMask);
@@ -842,9 +844,9 @@ namespace System.Collections
 
                     ref byte destination = ref Unsafe.As<bool, byte>(ref Unsafe.Add<bool>(ref MemoryMarshal.GetArrayDataReference<bool>(boolArray), index));
 
-                    for (; (i + Vector128<byte>.Count * 2u) <= (uint)m_length; i += (uint)Vector128<byte>.Count * 2u)
+                    for (; (i + Vector128<byte>.Count * 2u) <= thisLength; i += (uint)Vector128<byte>.Count * 2u)
                     {
-                        int bits = m_array[i / (uint)BitsPerInt32];
+                        int bits = thisArray[i / (uint)BitsPerInt32];
                         Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
 
                         // the shuffle masks used below are the same as masks used by the Avx2 codepath above
@@ -862,10 +864,10 @@ namespace System.Collections
                 }
 
             LessThan32:
-                for (; i < (uint)m_length; i++)
+                for (; i < thisLength; i++)
                 {
                     int elementIndex = Div32Rem((int)i, out int extraBits);
-                    boolArray[(uint)index + i] = ((m_array[elementIndex] >> extraBits) & 0x00000001) != 0;
+                    boolArray[(uint)index + i] = ((thisArray[elementIndex] >> extraBits) & 0x00000001) != 0;
                 }
             }
             else
