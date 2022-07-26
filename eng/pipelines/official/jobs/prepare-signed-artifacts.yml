@@ -12,7 +12,7 @@ jobs:
     name: NetCore1ESPool-Internal
     demands: ImageOverride -equals build.windows.amd64.vs2022
   # Double the default timeout.
-  timeoutInMinutes: 180
+  timeoutInMinutes: 240
   workspace:
     clean: all
 

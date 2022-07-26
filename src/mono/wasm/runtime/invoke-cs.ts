@@ -33,8 +33,8 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         const js_fqn = conv_string_root(fqn_root)!;
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
-        if (runtimeHelpers.config.diagnostic_tracing) {
-            console.trace(`MONO_WASM: Binding [JSExport] ${js_fqn}`);
+        if (runtimeHelpers.diagnostic_tracing) {
+            console.debug(`MONO_WASM: Binding [JSExport] ${js_fqn}`);
         }
 
         const { assembly, namespace, classname, methodname } = parseFQN(js_fqn);
@@ -201,6 +201,7 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
 }
 
 export async function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
     const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
