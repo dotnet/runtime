@@ -266,10 +266,10 @@ mono_arch_init (void)
 #ifdef MONO_ARCH_ENABLE_PTRAUTH
 	enable_ptrauth = TRUE;
 #endif
-
+ #ifndef DISABLE_JIT 
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
-
+#endif
 	mono_arm_gsharedvt_init ();
 }
 
