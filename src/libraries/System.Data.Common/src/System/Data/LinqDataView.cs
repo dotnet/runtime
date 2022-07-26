@@ -63,7 +63,7 @@ namespace System.Data
                 comparison,
                 DataViewRowState.CurrentRows)
         {
-            this.sortExpressionBuilder = (sortExpressionBuilder == null) ? this.sortExpressionBuilder : sortExpressionBuilder;
+            this.sortExpressionBuilder = sortExpressionBuilder ?? this.sortExpressionBuilder;
             this.comparerKeyRow = comparerKeyRow;
         }
 
@@ -140,7 +140,7 @@ namespace System.Data
         /// <summary>
         /// Since LinkDataView does not support multiple selectors/comparers, it does not make sense for
         /// them to Find using multiple keys.
-        /// This overriden method prevents users calling multi-key find on dataview.
+        /// This overridden method prevents users calling multi-key find on dataview.
         /// </summary>
         internal override int FindByKey(object?[] key)
         {
@@ -180,7 +180,7 @@ namespace System.Data
         /// <summary>
         /// Searches the index and finds rows where the sort-key matches the input key.
         /// Since LinkDataView does not support multiple selectors/comparers, it does not make sense for
-        /// them to Find using multiple keys. This overriden method prevents users calling multi-key find on dataview.
+        /// them to Find using multiple keys. This overridden method prevents users calling multi-key find on dataview.
         /// </summary>
         internal override DataRowView[] FindRowsByKey(object?[] key)
         {

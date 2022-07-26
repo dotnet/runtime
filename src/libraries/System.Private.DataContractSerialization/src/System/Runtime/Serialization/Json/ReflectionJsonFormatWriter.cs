@@ -239,10 +239,7 @@ namespace System.Runtime.Serialization.Json
 
                 if (shouldWriteValue)
                 {
-                    if (memberValue == null)
-                    {
-                        memberValue = ReflectionGetMemberValue(obj, member);
-                    }
+                    memberValue ??= ReflectionGetMemberValue(obj, member);
                     bool requiresNameAttribute = DataContractJsonSerializer.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
                     if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))

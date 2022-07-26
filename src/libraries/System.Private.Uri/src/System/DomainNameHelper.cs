@@ -32,10 +32,7 @@ namespace System
                     end = i;
             }
 
-            if (res == null)
-            {
-                res = str.Substring(start, end - start);
-            }
+            res ??= str.Substring(start, end - start);
 
             if (res == Localhost || res == Loopback)
             {
@@ -392,11 +389,7 @@ namespace System
         // This means that a host containing Unicode characters can be normalized to contain
         // URI reserved characters, changing the meaning of a URI only when certain properties
         // such as IdnHost are accessed. To be safe, disallow control characters in normalized hosts.
-        private static readonly char[] s_UnsafeForNormalizedHost = { '\\', '/', '?', '@', '#', ':', '[', ']' };
-
-        internal static bool ContainsCharactersUnsafeForNormalizedHost(string host)
-        {
-            return host.IndexOfAny(s_UnsafeForNormalizedHost) != -1;
-        }
+        internal static bool ContainsCharactersUnsafeForNormalizedHost(string host) =>
+            host.AsSpan().IndexOfAny(@"\/?@#:[]") >= 0;
     }
 }

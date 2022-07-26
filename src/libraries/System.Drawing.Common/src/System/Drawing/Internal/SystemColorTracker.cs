@@ -48,7 +48,9 @@ namespace System.Drawing.Internal
 
                 // COM+ takes forever to Finalize() weak references, so it pays to reuse them.
                 if (list[index] == null)
+                {
                     list[index] = new WeakReference(obj);
+                }
                 else
                 {
                     Debug.Assert(list[index].Target == null, $"Trying to reuse a weak reference that isn't broken yet: list[{index}], length = {list.Length}");
@@ -134,12 +136,7 @@ namespace System.Drawing.Internal
                 for (int i = 0; i < count; i++)
                 {
                     Debug.Assert(list[i] != null, "null value in active part of list");
-                    ISystemColorTracker? tracker = (ISystemColorTracker?)list[i].Target;
-                    if (tracker != null)
-                    {
-                        // If object still around
-                        tracker.OnSystemColorChanged();
-                    }
+                    ((ISystemColorTracker?)list[i].Target)?.OnSystemColorChanged();
                 }
             }
         }

@@ -386,6 +386,7 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
 
+#if FEATURE_UNIVERSAL_GENERICS
             if (templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
             {
                 // Check if we need to wrap the method pointer into a calling convention converter thunk
@@ -420,12 +421,13 @@ namespace Internal.Runtime.TypeLoader
                 // TODO! add a new call converter thunk that will pass the instantiating arg through and use a fat function pointer.
                 // should allow us to make fewer thunks.
             }
+#endif
 
             TypeSystemContextFactory.Recycle(context);
             return true;
         }
 
-        #region Privates
+#region Privates
         private bool TryGetDynamicGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
             result = IntPtr.Zero;
@@ -547,6 +549,6 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        #endregion
+#endregion
     }
 }

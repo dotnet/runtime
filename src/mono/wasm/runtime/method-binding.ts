@@ -46,9 +46,9 @@ export function find_method(klass: MonoClass, name: string, n: number): MonoMeth
 }
 
 export function get_method(method_name: string): MonoMethod {
-    const res = find_method(runtimeHelpers.wasm_runtime_class, method_name, -1);
+    const res = find_method(runtimeHelpers.runtime_interop_exports_class, method_name, -1);
     if (!res)
-        throw "Can't find method " + runtimeHelpers.runtime_namespace + "." + runtimeHelpers.runtime_classname + ":" + method_name;
+        throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + ":" + method_name;
     return res;
 }
 
@@ -327,7 +327,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_function = <ConverterFunction>compiledFunction;
     } catch (exc) {
         converter.compiled_function = null;
-        console.warn("compiling converter failed for", bodyJs, "with error", exc);
+        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -360,7 +360,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_variadic_function = <VariadicConverterFunction>compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = null;
-        console.warn("compiling converter failed for", bodyJs, "with error", exc);
+        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 

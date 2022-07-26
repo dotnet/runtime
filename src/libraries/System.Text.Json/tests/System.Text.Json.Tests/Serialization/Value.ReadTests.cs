@@ -670,8 +670,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\\u0032\\u0034\\u003A\\u0030\\u0030\\u003A\\u0030\\u0030")]
         [InlineData("00:60:00")]
         [InlineData("00:00:60")]
+        [InlineData("-00:00:00")]
         [InlineData("00:00:00.00000009")]
         [InlineData("900000000.00:00:00")]
+        [InlineData("1.00:00:00")]
+        [InlineData("0.00:00:00")]
         [InlineData("1:00:00")] // 'g' Format
         [InlineData("1:2:00:00")] // 'g' Format
         [InlineData("+00:00:00")]

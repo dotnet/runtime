@@ -123,7 +123,7 @@ namespace System.Text.Json
                 WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
             }
 
-            return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions());
+            return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
         }
 
         private static JsonNode? WriteNodeUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
@@ -138,7 +138,7 @@ namespace System.Text.Json
                 WriteUsingSerializer(writer, value, jsonTypeInfo);
             }
 
-            return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions());
+            return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
         }
     }
 }

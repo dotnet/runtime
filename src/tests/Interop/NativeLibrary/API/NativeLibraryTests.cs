@@ -47,6 +47,22 @@ public class NativeLibraryTests : IDisposable
     }
 
     [Fact]
+    public void LoadLibraryRelativePaths_NameOnly()
+    {
+        {
+            string libName = Path.Combine("..", NativeLibraryToLoad.InvalidName, NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.InvalidName));
+            EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
+            EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.ReturnFailure);
+        }
+
+        {
+            string libName = Path.Combine("..", nameof(NativeLibraryTests), NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.Name));
+            EXPECT(LoadLibrary_NameOnly(libName), TestResult.Success);
+            EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.Success);
+        }
+    }
+
+    [Fact]
     public void LoadLibraryFullPath_WithAssembly()
     {
         string libName = libFullPath;
@@ -91,7 +107,7 @@ public class NativeLibraryTests : IDisposable
     [PlatformSpecific(TestPlatforms.Windows)]
     public void LoadLibraryFullPathWithoutNativePrefixOrSuffix_WithAssembly_Success()
     {
-        // DllImport doesn't add a prefix if the name is preceeded by a path specification.
+        // DllImport doesn't add a prefix if the name is preceded by a path specification.
         // Windows only needs a suffix, so adding only the suffix is successful
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null));
@@ -102,7 +118,7 @@ public class NativeLibraryTests : IDisposable
     [PlatformSpecific(~TestPlatforms.Windows)]
     public void LoadLibraryFullPathWithoutNativePrefixOrSuffix_WithAssembly_Failure()
     {
-        // DllImport doesn't add a prefix if the name is preceeded by a path specification.
+        // DllImport doesn't add a prefix if the name is preceded by a path specification.
         // Linux and Mac need both prefix and suffix
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);

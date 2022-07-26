@@ -1126,7 +1126,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
-                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic } parent)
+                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic })
                     {
                         var atomic = new RegexNode(RegexNodeKind.Atomic, alternation.Options);
                         atomic.AddChild(newAlternate);
@@ -1210,7 +1210,6 @@ namespace System.Text.RegularExpressions
                 }
 
                 Span<char> scratchChar = stackalloc char[1];
-                ReadOnlySpan<char> startingSpan = stackalloc char[0];
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
                     // Process the first branch to get the maximum possible common string.
@@ -1221,7 +1220,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;
-                    startingSpan = startingNode.Str.AsSpan();
+                    scoped ReadOnlySpan<char> startingSpan = startingNode.Str.AsSpan();
                     if (startingNode.Kind == RegexNodeKind.One)
                     {
                         scratchChar[0] = startingNode.Ch;
@@ -2303,7 +2302,7 @@ namespace System.Text.RegularExpressions
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, assume there's no minimum we can enforce.
+                // If we can't recur further, assume there's no maximum we can enforce.
                 return null;
             }
 

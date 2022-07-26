@@ -1,18 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-#endif
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: stores the per-type information obtained by reflecting over a type.
@@ -26,9 +19,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventOpcode opcode = (EventOpcode)(-1);
         internal readonly EventTags tags;
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         public TypeAnalysis(
             Type dataType,
             EventDataAttribute? eventAttrib,
@@ -97,10 +88,7 @@ namespace System.Diagnostics.Tracing
                 this.name = eventAttrib.Name;
             }
 
-            if (this.name == null)
-            {
-                this.name = dataType.Name;
-            }
+            this.name ??= dataType.Name;
         }
     }
 }

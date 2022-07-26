@@ -57,12 +57,26 @@
   </ItemGroup>
 
   <!--
+    Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
+    if '$(<StageName>)' == 'true' and points Arcade to the correct files.
+  -->
+  <Target Name="SignArtifacts"
+          Condition="'$(PostBuildSign)' != 'true'" >
+    <MSBuild
+      Projects="$(ArcadeSdkSignProject)"
+      Targets="Sign"
+      Properties="
+        DownloadDirectory=$(DownloadDirectory);
+        PrepareArtifacts=$(PrepareArtifacts)" />
+  </Target>
+
+  <!--
     Take assets from the build jobs, prepare them for publishing (signing, arrangement) then upload
     them to the pipeline for Arcade and custom steps to publish.
   -->
   <Target Name="PreparePublishToAzureBlobFeed"
           AfterTargets="Build"
-          DependsOnTargets="GetProductVersions;FindDownloadedArtifacts;CreateChecksums">
+          DependsOnTargets="GetProductVersions;FindDownloadedArtifacts;SignArtifacts;CreateChecksums">
     <PropertyGroup>
       <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
       <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>

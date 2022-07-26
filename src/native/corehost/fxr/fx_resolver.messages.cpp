@@ -113,11 +113,11 @@ void fx_resolver_t::display_missing_framework_error(
     // Display the error message about missing FX.
     if (fx_version.length())
     {
-        trace::error(_X("Framework: '%s', version '%s' (%s)"), fx_name.c_str(), fx_version.c_str(), get_arch());
+        trace::error(_X("Framework: '%s', version '%s' (%s)"), fx_name.c_str(), fx_version.c_str(), get_current_arch_name());
     }
     else
     {
-        trace::error(_X("Framework: '%s', (%s)"), fx_name.c_str(), get_arch());
+        trace::error(_X("Framework: '%s', (%s)"), fx_name.c_str(), get_current_arch_name());
     }
 
     trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());

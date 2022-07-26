@@ -66,7 +66,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<string> Accepts
         {
-            get => _accepts ?? (_accepts = new NullNotAllowedCollection<string>());
+            get => _accepts ??= new NullNotAllowedCollection<string>();
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
@@ -75,7 +75,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<CategoriesDocument> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<CategoriesDocument>());
+            get => _categories ??= new NullNotAllowedCollection<CategoriesDocument>();
         }
 
         public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
@@ -124,14 +124,7 @@ namespace System.ServiceModel.Syndication
             _extensions.LoadElementExtensions(buffer);
         }
 
-        private static IEnumerable<string> CreateSingleEmptyAccept()
-        {
-            if (s_singleEmptyAccept == null)
-            {
-                s_singleEmptyAccept = new List<string>(1) { string.Empty }.AsReadOnly();
-            }
-
-            return s_singleEmptyAccept;
-        }
+        private static IEnumerable<string> CreateSingleEmptyAccept() =>
+            s_singleEmptyAccept ??= new List<string>(1) { string.Empty }.AsReadOnly();
     }
 }

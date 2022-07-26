@@ -305,18 +305,12 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (ownerPrivilege != null)
-                {
-                    ownerPrivilege.Revert();
-                }
+                ownerPrivilege?.Revert();
                 throw;
             }
             finally
             {
-                if (ownerPrivilege != null)
-                {
-                    ownerPrivilege.Revert();
-                }
+                ownerPrivilege?.Revert();
             }
         }
 

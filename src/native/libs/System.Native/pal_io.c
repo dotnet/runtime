@@ -190,6 +190,7 @@ c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
+    dst->RDev = (int64_t)src->st_rdev;
     dst->Ino = (int64_t)src->st_ino;
     dst->Flags = FILESTATUS_FLAGS_NONE;
     dst->Mode = (int32_t)src->st_mode;
@@ -770,22 +771,16 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
     return result;
 }
 
-int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
+void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
 {
     dev_t castedDev = (dev_t)dev;
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
-    return ConvertErrorPlatformToPal(errno);
 }
 
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
     dev_t dev = (dev_t)makedev(major, minor);
-
-    if (errno > 0)
-    {
-        return -1;
-    }
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
@@ -1342,7 +1337,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     if (ret == 0)
     {
 #if HAVE_FUTIMENS
-        // futimens is prefered because it has a higher resolution.
+        // futimens is preferred because it has a higher resolution.
         struct timespec origTimes[2];
         origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
         origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
@@ -1677,6 +1672,19 @@ int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 #endif
 }
 
+int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
+{
+#if HAVE_LCHFLAGS
+    int32_t result;
+    while ((result = fchflags(ToFileDescriptor(fd), flags)) < 0 && errno == EINTR);
+    return result;
+#else
+    (void)fd, (void)flags;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
 #if HAVE_LCHFLAGS
@@ -1767,7 +1775,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
         if (current < 0)
         {
-            // if previous calls were succesfull, we return what we got so far
+            // if previous calls were successful, we return what we got so far
             // otherwise, we return the error code
             return count > 0 ? count : current;
         }
@@ -1807,7 +1815,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 
         if (current < 0)
         {
-            // if previous calls were succesfull, we return what we got so far
+            // if previous calls were successful, we return what we got so far
             // otherwise, we return the error code
             return count > 0 ? count : current;
         }

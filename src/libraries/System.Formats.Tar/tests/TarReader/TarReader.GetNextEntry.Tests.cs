@@ -48,7 +48,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archive = new MemoryStream();
 
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry = new UstarTarEntry(TarEntryType.Directory, "dir");
                 writer.WriteEntry(entry);
@@ -72,7 +72,7 @@ namespace System.Formats.Tar.Tests
         {
             string expectedText = "Hello world!";
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -118,7 +118,7 @@ namespace System.Formats.Tar.Tests
         {
             string expectedText = "Hello world!";
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -165,7 +165,7 @@ namespace System.Formats.Tar.Tests
         public void GetNextEntry_CopyDataFalse_UnseekableArchive_Exceptions()
         {
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();
@@ -208,7 +208,7 @@ namespace System.Formats.Tar.Tests
         public void GetNextEntry_UnseekableArchive_ReplaceDataStream_ExcludeFromDisposing(bool copyData)
         {
             MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry1 = new UstarTarEntry(TarEntryType.RegularFile, "file.txt");
                 entry1.DataStream = new MemoryStream();

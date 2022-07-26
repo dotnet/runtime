@@ -33,10 +33,7 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     ValueStringBuilder sb = default;
                     sb.Append(font.Name);
@@ -120,10 +117,7 @@ namespace System.Drawing
                 return null;
             }
 
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentCulture;
-            }
+            culture ??= CultureInfo.CurrentCulture;
 
             char separator = culture.TextInfo.ListSeparator[0]; // For vi-VN: ','
             string fontName = font; // start with the assumption that only the font name was provided.
@@ -300,25 +294,25 @@ namespace System.Drawing
 
             if ((value = propertyValues["Bold"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Bold;
             }
 
             if ((value = propertyValues["Italic"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Italic;
             }
 
             if ((value = propertyValues["Strikeout"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Strikeout;
             }
 
             if ((value = propertyValues["Underline"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Underline;
             }
 
@@ -355,8 +349,7 @@ namespace System.Drawing
                 }
 
                 // font family not found in private fonts also
-                if (fontFamily == null)
-                    fontFamily = FontFamily.GenericSansSerif;
+                fontFamily ??= FontFamily.GenericSansSerif;
             }
 
             return new Font(fontFamily, size, style, unit, charSet, vertical);

@@ -14,17 +14,8 @@ namespace System.Text.RegularExpressions.Symbolic
         Concat,
         /// <summary>A node that matches a loop (e.g. <see cref="RegexNodeKind.Loop"/>, <see cref="RegexNodeKind.Lazyloop"/>, <see cref="RegexNodeKind.Setloop"/>, etc.).</summary>
         Loop,
-
-        /// <summary>A node that matches if any of its nodes match.</summary>
-        /// <remarks>This is typically used to combine singletons.</remarks>
-        Or,
         /// <summary>A node that matches if any of its nodes match and that matches them in a fixed order that mirrors how the backtracking engines operate (e.g. <see cref="RegexNodeKind.Alternate"/>).</summary>
-        OrderedOr,
-        /// <summary>A node that matches if all of its nodes match.</summary>
-        /// <remarks>This is typically used to combine singletons.</remarks>
-        And,
-        /// <summary>A node that matches if its node doesn't (e.g. <see cref="RegexNodeKind.Notone"/>).</summary>
-        Not,
+        Alternate,
 
         /// <summary>A node that represents a beginning anchor (i.e. <see cref="RegexNodeKind.Beginning"/>).</summary>
         BeginningAnchor,
@@ -57,7 +48,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Effects to be applied when taking a transition.</summary>
         /// <remarks>
         /// Left child is the pattern itself and the right child is a concatenation of nodes whose effects should be applied.
-        /// Effect nodes are created in the rule for concatenation in <see cref="SymbolicRegexNode{TSet}.CreateDerivative(TSet, uint)"/>,
+        /// Effect nodes are created in the rule for concatenation in <see cref="SymbolicRegexNode{TSet}.CreateDerivative(SymbolicRegexBuilder{TSet}, TSet, uint)"/>,
         /// where they are used to represent additional operations that should be performed in the current position if
         /// the pattern in the left child is used to match the input. Since these Effect nodes are relative to the current
         /// position in the input, the effects from the right child must be applied in the transition that the derivative is

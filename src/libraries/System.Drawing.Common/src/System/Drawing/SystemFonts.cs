@@ -211,10 +211,7 @@ namespace System.Drawing
                 }
 
                 // Use GenericSansSerif as a last resort - this will always work.
-                if (defaultFont == null)
-                {
-                    defaultFont = new Font(FontFamily.GenericSansSerif, 8);
-                }
+                defaultFont ??= new Font(FontFamily.GenericSansSerif, 8);
 
                 if (defaultFont.Unit != GraphicsUnit.Point)
                 {

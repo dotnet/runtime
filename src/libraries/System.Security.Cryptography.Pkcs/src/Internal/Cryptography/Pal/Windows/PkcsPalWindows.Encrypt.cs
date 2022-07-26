@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class PkcsPalWindows : PkcsPal
     {
-        public sealed unsafe override byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
+        public sealed override unsafe byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             using (SafeCryptMsgHandle hCryptMsg = EncodeHelpers.CreateCryptMsgHandleToEncode(recipients, contentInfo.ContentType, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes))
             {
@@ -122,7 +122,11 @@ namespace Internal.Cryptography.Pal.Windows
                         CMSG_ENVELOPED_ENCODE_INFO* pEnvelopedEncodeInfo = CreateCmsEnvelopedEncodeInfo(recipients, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes, hb);
                         SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToEncode(MsgEncodingType.All, 0, CryptMsgType.CMSG_ENVELOPED, pEnvelopedEncodeInfo, innerContentType.Value!, IntPtr.Zero);
                         if (hCryptMsg == null || hCryptMsg.IsInvalid)
-                            throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        {
+                            Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                            hCryptMsg?.Dispose();
+                            throw e;
+                        }
 
                         return hCryptMsg;
                     }
@@ -408,7 +412,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                     case SubjectIdentifierType.SubjectKeyIdentifier:
                         {
-                            byte[] ski = hCertContext.GetSubjectKeyIdentifer();
+                            byte[] ski = hCertContext.GetSubjectKeyIdentifier();
                             IntPtr pSki = hb.AllocBytes(ski);
 
                             recipientId.dwIdChoice = CertIdChoice.CERT_ID_KEY_IDENTIFIER;

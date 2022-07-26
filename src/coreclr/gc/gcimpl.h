@@ -183,6 +183,8 @@ public:
 
     int64_t GetTotalPauseDuration();
 
+    void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
+
     uint32_t GetMemoryLoad();
 
     int GetGcLatencyMode();
@@ -278,7 +280,7 @@ public:
     //return TRUE if GC actually happens, otherwise FALSE
     bool StressHeap(gc_alloc_context * acontext);
 
-#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
 #ifdef STRESS_HEAP
 protected:
 
@@ -292,7 +294,7 @@ protected:
     PER_HEAP int m_CurStressObj;
 #endif  // !defined(MULTIPLE_HEAPS)
 #endif  // STRESS_HEAP
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
     virtual void DiagDescrGenerations (gen_walk_fn fn, void *context);
 

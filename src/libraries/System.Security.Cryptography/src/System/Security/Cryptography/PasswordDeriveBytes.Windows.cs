@@ -55,10 +55,7 @@ namespace System.Security.Cryptography
 
         private static SafeProvHandle AcquireSafeProviderHandle(CspParameters? cspParams)
         {
-            if (cspParams == null)
-            {
-                cspParams = new CspParameters(CapiHelper.DefaultRsaProviderType);
-            }
+            cspParams ??= new CspParameters(CapiHelper.DefaultRsaProviderType);
 
             CapiHelper.AcquireCsp(cspParams, out SafeProvHandle safeProvHandle);
             return safeProvHandle;

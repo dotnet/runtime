@@ -53,6 +53,8 @@ namespace System.Threading
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
+                myHandle.Dispose();
+
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)

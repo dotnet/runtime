@@ -205,10 +205,7 @@ namespace System.IO
                             if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
                                 left == 0 && top > 0)
                             {
-                                if (s_clearToEol == null)
-                                {
-                                    s_clearToEol = ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
-                                }
+                                s_clearToEol ??= ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
 
                                 // Move to end of previous line
                                 ConsolePal.SetCursorPosition(ConsolePal.WindowWidth - 1, top - 1);

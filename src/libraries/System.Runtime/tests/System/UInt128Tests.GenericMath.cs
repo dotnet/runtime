@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -244,6 +245,14 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            UInt128 compare = new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+            Assert.Equal(compare, BinaryNumberHelper<UInt128>.AllBitsSet);
+            Assert.Equal((UInt128)0, ~BinaryNumberHelper<UInt128>.AllBitsSet);
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<UInt128>.IsPow2(Zero));
@@ -314,41 +323,41 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(Zero, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(One, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(Int128MaxValue, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(Int128MaxValuePlusOne, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(Zero, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(One, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(Int128MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(Int128MaxValuePlusOne, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(Zero, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(One, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(Int128MaxValue, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(Int128MaxValuePlusOne, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(Zero, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(One, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(Int128MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(Int128MaxValuePlusOne, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(Zero, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(One, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(Int128MaxValue, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(Int128MaxValuePlusOne, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(Zero, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(One, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(Int128MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(Int128MaxValuePlusOne, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(Zero, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(One, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(Int128MaxValue, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(Int128MaxValuePlusOne, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(Zero, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(One, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(Int128MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(Int128MaxValuePlusOne, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(MaxValue, 1U));
         }
 
         //
@@ -411,21 +420,21 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(Zero, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(One, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(Int128MaxValue, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(Int128MaxValuePlusOne, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(MaxValue, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(Zero, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(One, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(Int128MaxValue, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(Int128MaxValuePlusOne, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(Zero, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(One, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(Int128MaxValue, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(Int128MaxValuePlusOne, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(MaxValue, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(Zero, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(One, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(Int128MaxValue, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(Int128MaxValuePlusOne, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(MaxValue, 1U));
         }
 
         //
@@ -721,6 +730,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateChecked<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateChecked<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<UInt128>.CreateChecked<Int128>(Int128.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<Int128>(Int128.MinValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -739,6 +758,40 @@ namespace System.Tests
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<nint>(unchecked((nint)0x80000000)));
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<nint>(unchecked((nint)0xFFFFFFFF)));
             }
+        }
+
+        [Fact]
+        public static void CreateCheckedFromNFloatTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateChecked<NFloat>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateChecked<NFloat>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateChecked<NFloat>(+NFloat.Epsilon));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateChecked<NFloat>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateChecked<NFloat>((NFloat)(+170141183460469231731687303715884105728.0)));
+                Assert.Equal(new UInt128(0xFFFF_FFFF_FFFF_F800, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateChecked<NFloat>((NFloat)(+340282366920938425684442744474606501888.0)));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>((NFloat)(+340282366920938463463374607431768211456.0)));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>((NFloat)(-340282366920938425684442744474606501888.0)));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.MaxValue));
+            }
+            else
+            {
+                Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateChecked<NFloat>(+170141183460469231731687303715884105728.0f));
+                Assert.Equal(new UInt128(0xFFFF_FF00_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateChecked<NFloat>(float.MaxValue));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(-NFloat.Epsilon));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(-1.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.NegativeInfinity));
         }
 
         [Fact]
@@ -799,6 +852,16 @@ namespace System.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<UInt128>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateChecked<ulong>(0x8000000000000000));
             Assert.Equal(UInt64MaxValue, NumberBaseHelper<UInt128>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateChecked<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateChecked<UInt128>(UInt128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<UInt128>.CreateChecked<UInt128>(Int128MaxValue));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateChecked<UInt128>(Int128MaxValuePlusOne));
+            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateChecked<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
@@ -928,6 +991,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateSaturating<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<Int128>(Int128.MaxValue));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<Int128>(Int128.MinValue));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -946,6 +1019,40 @@ namespace System.Tests
                 Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<nint>(unchecked((nint)0x80000000)));
                 Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<nint>(unchecked((nint)0xFFFFFFFF)));
             }
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromNFloatTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(+NFloat.Epsilon));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateSaturating<NFloat>((NFloat)(+170141183460469231731687303715884105728.0)));
+                Assert.Equal(new UInt128(0xFFFF_FFFF_FFFF_F800, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateSaturating<NFloat>((NFloat)(+340282366920938425684442744474606501888.0)));
+
+                Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>((NFloat)(+340282366920938463463374607431768211456.0)));
+                Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>((NFloat)(-340282366920938425684442744474606501888.0)));
+
+                Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.MaxValue));
+            }
+            else
+            {
+                Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(+170141183460469231731687303715884105728.0f));
+                Assert.Equal(new UInt128(0xFFFF_FF00_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(float.MaxValue));
+            }
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(-NFloat.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(-1.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.NegativeInfinity));
         }
 
         [Fact]
@@ -1006,6 +1113,16 @@ namespace System.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateSaturating<ulong>(0x8000000000000000));
             Assert.Equal(UInt64MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateSaturating<UInt128>(UInt128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<UInt128>(Int128MaxValue));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateSaturating<UInt128>(Int128MaxValuePlusOne));
+            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
@@ -1135,6 +1252,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateTruncating<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateTruncating<Int128>(Int128.MinValue));
+            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1153,6 +1280,40 @@ namespace System.Tests
                 Assert.Equal(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_8000_0000), NumberBaseHelper<UInt128>.CreateTruncating<nint>(unchecked((nint)0x80000000)));
                 Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<nint>(unchecked((nint)0xFFFFFFFF)));
             }
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromNFloatTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(+NFloat.Epsilon));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateTruncating<NFloat>((NFloat)(+170141183460469231731687303715884105728.0)));
+                Assert.Equal(new UInt128(0xFFFF_FFFF_FFFF_F800, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateTruncating<NFloat>((NFloat)(+340282366920938425684442744474606501888.0)));
+
+                Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>((NFloat)(+340282366920938463463374607431768211456.0)));
+                Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>((NFloat)(-340282366920938425684442744474606501888.0)));
+
+                Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.MaxValue));
+            }
+            else
+            {
+                Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(+170141183460469231731687303715884105728.0f));
+                Assert.Equal(new UInt128(0xFFFF_FF00_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(float.MaxValue));
+            }
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(-NFloat.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(-1.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.NegativeInfinity));
         }
 
         [Fact]
@@ -1213,6 +1374,16 @@ namespace System.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateTruncating<ulong>(0x8000000000000000));
             Assert.Equal(UInt64MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<UInt128>.CreateTruncating<UInt128>(UInt128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<UInt128>(Int128MaxValue));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<UInt128>.CreateTruncating<UInt128>(Int128MaxValuePlusOne));
+            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
@@ -1446,421 +1617,6 @@ namespace System.Tests
             Assert.Equal(One, NumberBaseHelper<UInt128>.MinMagnitudeNumber(MaxValue, 1));
         }
 
-        [Fact]
-        public static void TryCreateFromByteTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<byte>(0x00, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<byte>(0x01, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<byte>(0x7F, out result));
-            Assert.Equal(SByteMaxValue, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<byte>(0x80, out result));
-            Assert.Equal(SByteMaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<byte>(0xFF, out result));
-            Assert.Equal(ByteMaxValue, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromCharTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<char>((char)0x0000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<char>((char)0x0001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<char>((char)0x7FFF, out result));
-            Assert.Equal(Int16MaxValue, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<char>((char)0x8000, out result));
-            Assert.Equal(Int16MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<char>((char)0xFFFF, out result));
-            Assert.Equal(UInt16MaxValue, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromDecimalTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<decimal>(decimal.Zero, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<decimal>(decimal.One, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<decimal>(decimal.MaxValue, out result));
-            Assert.Equal(new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<decimal>(decimal.MinValue, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<decimal>(decimal.MinusOne, out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromDoubleTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<double>(+0.0, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<double>(-0.0, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<double>(+double.Epsilon, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<double>(+1.0, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<double>(+170141183460469231731687303715884105728.0, out result));
-            Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<double>(+340282366920938425684442744474606501888.0, out result));
-            Assert.Equal(new UInt128(0xFFFF_FFFF_FFFF_F800, 0x0000_0000_0000_0000), result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(-double.Epsilon, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(-1.0, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(+340282366920938463463374607431768211456.0, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(-340282366920938425684442744474606501888.0, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(double.MaxValue, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(double.MinValue, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(double.PositiveInfinity, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<double>(double.NegativeInfinity, out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromHalfTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<Half>((Half)(+0.0), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<Half>((Half)(-0.0), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<Half>(+Half.Epsilon, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<Half>((Half)(+1.0), out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<Half>(Half.MaxValue, out result));
-            Assert.Equal(+65504U, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<Half>(-Half.Epsilon, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<Half>((Half)(-1.0), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<Half>(Half.MinValue, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<Half>(Half.PositiveInfinity, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<Half>(Half.NegativeInfinity, out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromInt16Test()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<short>(0x0000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<short>(0x0001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<short>(0x7FFF, out result));
-            Assert.Equal(Int16MaxValue, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<short>(unchecked((short)0x8000), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<short>(unchecked((short)0xFFFF), out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromInt32Test()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<int>(0x00000000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<int>(0x00000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<int>(0x7FFFFFFF, out result));
-            Assert.Equal(Int32MaxValue, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<int>(unchecked((int)0x80000000), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<int>(unchecked((int)0xFFFFFFFF), out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromInt64Test()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<long>(0x0000000000000000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<long>(0x0000000000000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<long>(0x7FFFFFFFFFFFFFFF, out result));
-            Assert.Equal(Int64MaxValue, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<long>(unchecked((long)0x8000000000000000), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<long>(unchecked((long)0xFFFFFFFFFFFFFFFF), out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromIntPtrTest()
-        {
-            UInt128 result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0x0000000000000000), out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0x0000000000000001), out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0x7FFFFFFFFFFFFFFF), out result));
-                Assert.Equal(Int64MaxValue, result);
-
-                Assert.False(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0x8000000000000000), out result));
-                Assert.Equal(Zero, result);
-
-                Assert.False(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(Zero, result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nint>((nint)0x00000000, out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nint>((nint)0x00000001, out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nint>((nint)0x7FFFFFFF, out result));
-                Assert.Equal(Int32MaxValue, result);
-
-                Assert.False(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0x80000000), out result));
-                Assert.Equal(Zero, result);
-
-                Assert.False(NumberBaseHelper<UInt128>.TryCreate<nint>(unchecked((nint)0xFFFFFFFF), out result));
-                Assert.Equal(Zero, result);
-            }
-        }
-
-        [Fact]
-        public static void TryCreateFromSByteTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<sbyte>(0x00, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<sbyte>(0x01, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<sbyte>(0x7F, out result));
-            Assert.Equal(SByteMaxValue, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<sbyte>(unchecked((sbyte)0x80), out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<sbyte>(unchecked((sbyte)0xFF), out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromSingleTest()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<float>(+0.0f, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<float>(-0.0f, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<float>(+float.Epsilon, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<float>(+1.0f, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<float>(+170141183460469231731687303715884105728.0f, out result));
-            Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<float>(float.MaxValue, out result));
-            Assert.Equal(new UInt128(0xFFFF_FF00_0000_0000, 0x0000_0000_0000_0000), result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<float>(-float.Epsilon, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<float>(-1.0f, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<float>(float.MinValue, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<float>(float.PositiveInfinity, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.False(NumberBaseHelper<UInt128>.TryCreate<float>(float.NegativeInfinity, out result));
-            Assert.Equal(Zero, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromUInt16Test()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ushort>(0x0000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ushort>(0x0001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ushort>(0x7FFF, out result));
-            Assert.Equal(Int16MaxValue, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ushort>(0x8000, out result));
-            Assert.Equal(Int16MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ushort>(0xFFFF, out result));
-            Assert.Equal(UInt16MaxValue, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromUInt32Test()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<uint>(0x00000000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<uint>(0x00000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<uint>(0x7FFFFFFF, out result));
-            Assert.Equal(Int32MaxValue, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<uint>(0x80000000, out result));
-            Assert.Equal(Int32MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<uint>(0xFFFFFFFF, out result));
-            Assert.Equal(UInt32MaxValue, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromUInt64Test()
-        {
-            UInt128 result;
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ulong>(0x0000000000000000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ulong>(0x0000000000000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ulong>(0x7FFFFFFFFFFFFFFF, out result));
-            Assert.Equal(Int64MaxValue, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ulong>(0x8000000000000000, out result));
-            Assert.Equal(Int64MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<UInt128>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
-            Assert.Equal(UInt64MaxValue, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromUIntPtrTest()
-        {
-            UInt128 result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0x0000000000000000), out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0x0000000000000001), out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0x7FFFFFFFFFFFFFFF), out result));
-                Assert.Equal(Int64MaxValue, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0x8000000000000000), out result));
-                Assert.Equal(Int64MaxValuePlusOne, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(UInt64MaxValue, result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>((nuint)0x00000000, out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>((nuint)0x00000001, out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>((nuint)0x7FFFFFFF, out result));
-                Assert.Equal(Int32MaxValue, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0x80000000), out result));
-                Assert.Equal(Int32MaxValuePlusOne, result);
-
-                Assert.True(NumberBaseHelper<UInt128>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFF), out result));
-                Assert.Equal(UInt32MaxValue, result);
-            }
-        }
-
         //
         // IShiftOperators
         //
@@ -1868,31 +1624,31 @@ namespace System.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(Zero, 1));
-            Assert.Equal(Two, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(One, 1));
-            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(Int128MaxValue, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(Int128MaxValuePlusOne, 1));
-            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(Zero, 1));
+            Assert.Equal(Two, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(One, 1));
+            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(Int128MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(Int128MaxValuePlusOne, 1));
+            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(MaxValue, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(One, 1));
-            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(Int128MaxValue, 1));
-            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(Int128MaxValuePlusOne, 1));
-            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(One, 1));
+            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(Int128MaxValue, 1));
+            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(Int128MaxValuePlusOne, 1));
+            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(MaxValue, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(One, 1));
-            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(Int128MaxValue, 1));
-            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(Int128MaxValuePlusOne, 1));
-            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(One, 1));
+            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(Int128MaxValue, 1));
+            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(Int128MaxValuePlusOne, 1));
+            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(MaxValue, 1));
         }
 
         //

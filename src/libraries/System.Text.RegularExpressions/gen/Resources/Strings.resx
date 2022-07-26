@@ -134,14 +134,11 @@
   <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
     <value>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</value>
   </data>
-  <data name="InvalidLangVersionMessage" xml:space="preserve">
-    <value>C# LangVersion of 11 or greater is required</value>
-  </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
     <value>RegexGenerator limitation reached.</value>
   </data>
   <data name="LimitedSourceGenerationMessage" xml:space="preserve">
-    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</value>
+    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</value>
   </data>
   <data name="Generic" xml:space="preserve">
     <value>Regular expression parser error '{0}' at offset {1}.</value>
@@ -189,10 +186,6 @@
   <data name="InvalidUnicodePropertyEscape" xml:space="preserve">
     <value>Incomplete \\p{X} character escape.</value>
   </data>
-  <data name="InternalError_ScanRegex" xml:space="preserve">
-    <value>Internal error in ScanRegex.</value>
-    <comment>{Locked="ScanRegex"}</comment>
-  </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
   </data>
@@ -234,9 +227,6 @@
   </data>
   <data name="RegexMatchTimeoutException_Occurred" xml:space="preserve">
     <value>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
-  </data>
-  <data name="ReplacementError" xml:space="preserve">
-    <value>Replacement pattern error.</value>
   </data>
   <data name="ReversedCharacterRange" xml:space="preserve">
     <value>[x-y] range in reverse order.</value>

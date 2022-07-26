@@ -191,8 +191,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                             }
                             else
                             {
-                                if (usage == null)
-                                    usage = GetAttributeUsage(attributeType);
+                                usage ??= GetAttributeUsage(attributeType);
                                 encounteredTypes[attributeTypeKey] = usage;
                                 // Type was encountered at a lower level. Only include it if its inheritable AND allowMultiple.
                                 if (usage.Inherited && usage.AllowMultiple)

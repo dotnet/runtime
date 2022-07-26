@@ -86,15 +86,22 @@
   </Target>
 
   <Target Name="CopyNativeBinary" AfterTargets="Publish">
-    <!-- override apphost with binary we generated during native compilation -->
+    <!-- replace apphost with binary we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
-  </Target>
 
-  <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" AfterTargets="Publish">
-    <!-- dotnet CLI produces managed debug symbols - substitute with those we generated during native compilation -->
+    <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(PublishDir)" />
+
+    <PropertyGroup>
+      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
+      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
+    </PropertyGroup>    
+
+    <!-- replace native symbol file if it exists -->
+    <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
   </Target>
 
 </Project>

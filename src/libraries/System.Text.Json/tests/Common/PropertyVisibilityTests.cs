@@ -2751,8 +2751,8 @@ namespace System.Text.Json.Serialization.Tests
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
             // Without [JsonIgnore], serializer throws exceptions due to runtime-reflection-based property metadata inspection.
-            await Assert.ThrowsAsync<ArgumentException>(async () => await Serializer.SerializeWrapper(new TypeWith_RefStringProp()));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await Serializer.DeserializeWrapper<TypeWith_RefStringProp>("{}"));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new TypeWith_RefStringProp()));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<TypeWith_RefStringProp>("{}"));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new TypeWith_PropWith_BadConverter()));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<TypeWith_PropWith_BadConverter>("{}"));

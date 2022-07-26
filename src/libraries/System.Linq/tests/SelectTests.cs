@@ -808,8 +808,8 @@ namespace System.Linq.Tests
         [Fact]
         public void Select_SourceIsAnIList_Count()
         {
-            var souce = new List<int> { 1, 2, 3, 4 }.AsReadOnly();
-            Assert.Equal(souce.Count, souce.Select(i => i * 2).Count());
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly();
+            Assert.Equal(source.Count, source.Select(i => i * 2).Count());
         }
 
         [Fact]

@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail()
                 .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
                 .And.FindAnySdk(false)
-                .And.HaveStdErrContaining("aka.ms/dotnet-download")
+                .And.HaveStdErrContaining("aka.ms/dotnet/download")
                 .And.NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add SDK versions
@@ -988,7 +988,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         // This method adds a list of new sdk version folders in the specified directory.
-        // The actual contents are 'fake' and the mininum required for SDK discovery.
+        // The actual contents are 'fake' and the minimum required for SDK discovery.
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(params string[] availableVersions)
         {

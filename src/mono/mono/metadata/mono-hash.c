@@ -110,7 +110,7 @@ static void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot, MonoO
 }
 
 /* Returns position of key or of an empty slot for it */
-static int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *key)
+static guint mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *key)
 {
 	guint start = ((*hash->hash_func) (key)) % hash->table_size;
 	guint i = start;
@@ -132,9 +132,9 @@ static int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *
 	}
 
 	gint32 max_length = UnlockedRead (&mono_g_hash_table_max_chain_length);
-	if (i > start && (i - start) > max_length)
+	if (i > start && (i - start) > GINT32_TO_UINT32(max_length))
 		UnlockedWrite (&mono_g_hash_table_max_chain_length, i - start);
-	else if (i < start && (hash->table_size - (start - i)) > max_length)
+	else if (i < start && (hash->table_size - (start - i)) > GINT32_TO_UINT32(max_length))
 		UnlockedWrite (&mono_g_hash_table_max_chain_length, hash->table_size - (start - i));
 
 	return i;
@@ -199,7 +199,7 @@ do_rehash (void *_data)
 
 	for (i = 0; i < current_size; i++) {
 		if (old_keys [i]) {
-			int slot = mono_g_hash_table_find_slot (hash, old_keys [i]);
+			guint slot = mono_g_hash_table_find_slot (hash, old_keys [i]);
 			mono_g_hash_table_key_store (hash, slot, old_keys [i]);
 			mono_g_hash_table_value_store (hash, slot, old_values [i]);
 		}
@@ -221,7 +221,7 @@ rehash (MonoGHashTable *hash)
 	 * Rehash to a size that can fit the current elements. Rehash relative to in_use
 	 * to allow also for compaction.
 	 */
-	data.new_size = g_spaced_primes_closest (hash->in_use / HASH_TABLE_MAX_LOAD_FACTOR * HASH_TABLE_RESIZE_RATIO);
+	data.new_size = g_spaced_primes_closest (GFLOAT_TO_UINT (hash->in_use / HASH_TABLE_MAX_LOAD_FACTOR * HASH_TABLE_RESIZE_RATIO));
 	data.keys = g_new0 (MonoObject*, data.new_size);
 	data.values = g_new0 (MonoObject*, data.new_size);
 
@@ -277,11 +277,9 @@ mono_g_hash_table_lookup (MonoGHashTable *hash, gconstpointer key)
 gboolean
 mono_g_hash_table_lookup_extended (MonoGHashTable *hash, gconstpointer key, gpointer *orig_key, gpointer *value)
 {
-	int slot;
-
 	g_return_val_if_fail (hash != NULL, FALSE);
 
-	slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
+	guint slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
 
 	if (hash->keys [slot]) {
 		if (orig_key)
@@ -332,7 +330,7 @@ mono_g_hash_table_find (MonoGHashTable *hash, GHRFunc predicate, gpointer user_d
 gboolean
 mono_g_hash_table_remove (MonoGHashTable *hash, gconstpointer key)
 {
-	int slot, last_clear_slot;
+	guint slot, last_clear_slot;
 
 	g_return_val_if_fail (hash != NULL, FALSE);
 	slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
@@ -438,13 +436,12 @@ static void
 mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer value, gboolean replace)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	int slot;
 	g_return_if_fail (hash != NULL);
 
 	if (hash->in_use > (hash->table_size * HASH_TABLE_MAX_LOAD_FACTOR))
 		rehash (hash);
 
-	slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
+	guint slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
 
 	if (hash->keys [slot]) {
 		if (replace) {

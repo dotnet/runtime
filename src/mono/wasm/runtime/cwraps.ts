@@ -8,6 +8,7 @@ import {
     MonoType, MonoObjectRef, MonoStringRef
 } from "./types";
 import { Module } from "./imports";
+import { JSMarshalerArguments } from "./marshal";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
@@ -37,6 +38,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_assembly_load", "number", ["string"]],
     ["mono_wasm_find_corlib_class", "number", ["string", "string"]],
     ["mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
+    ["mono_wasm_runtime_run_module_cctor", "void", ["number"]],
     ["mono_wasm_find_corlib_type", "number", ["string", "string"]],
     ["mono_wasm_assembly_find_type", "number", ["number", "string", "string"]],
     ["mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
@@ -66,9 +68,13 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_get_type_aqn", "string", ["number"]],
 
     // MONO.diagnostics
-    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
+    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     ["mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
     ["mono_wasm_event_pipe_session_disable", "bool", ["number"]],
+    ["mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
+    ["mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
+    ["mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
+    ["mono_wasm_diagnostic_server_create_stream", "number", []],
 
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
@@ -79,6 +85,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_enable_on_demand_gc", "void", ["number"]],
     ["mono_profiler_init_aot", "void", ["number"]],
     ["mono_wasm_exec_regression", "number", ["number", "string"]],
+    ["mono_wasm_invoke_method_bound", "number", ["number", "number"]],
     ["mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     ["mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
     ["mono_wasm_i52_to_f64", "number", ["number", "number"]],
@@ -135,7 +142,7 @@ export interface t_Cwraps {
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
+    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
     mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_typed_array_new_ref(arr: VoidPtr, length: number, size: number, type: number, result: MonoObjectRef): void;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;
@@ -166,9 +173,13 @@ export interface t_Cwraps {
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     // MONO.diagnostics
-    mono_wasm_event_pipe_enable(outputPath: string, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
+    mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
     mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
     mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
+    mono_wasm_diagnostic_server_create_thread(websocketURL: string, threadIdOutPtr: VoidPtr): boolean;
+    mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
+    mono_wasm_diagnostic_server_post_resume_runtime(): void;
+    mono_wasm_diagnostic_server_create_stream(): VoidPtr;
 
     //DOTNET
     /**
@@ -182,12 +193,14 @@ export interface t_Cwraps {
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_profiler_init_aot(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
+    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments): MonoString;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
-    mono_wasm_i52_to_f64 (source: VoidPtr, error: Int32Ptr) : number;
-    mono_wasm_u52_to_f64 (source: VoidPtr, error: Int32Ptr) : number;
-    mono_wasm_f64_to_i52 (destination: VoidPtr, value: number) : I52Error;
-    mono_wasm_f64_to_u52 (destination: VoidPtr, value: number) : I52Error;
+    mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;
+    mono_wasm_u52_to_f64(source: VoidPtr, error: Int32Ptr): number;
+    mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
+    mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
+    mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

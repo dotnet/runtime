@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <!-- Disable nullable attributes explicitly as some tests depend on them not being present. -->
-    <Nullable>disable</Nullable>
+    <Nullable>disable</Nullable> <!-- Disable nullable attributes as some tests depend on them not being present. -->
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InternalCalls.cs" />

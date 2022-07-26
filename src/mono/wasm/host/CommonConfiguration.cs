@@ -109,10 +109,6 @@ internal sealed class CommonConfiguration
         if (HostProperties.FirefoxDebuggingPort is not null)
             options.FirefoxDebugPort = HostProperties.FirefoxDebuggingPort.Value;
         options.LogPath = ".";
-        options.AutoSetBreakpointOnEntryPoint = true;
-        if (!string.IsNullOrEmpty(HostProperties.MainAssembly))
-            options.EntrypointAssembly = HostProperties.MainAssembly;
-
         return options;
     }
 

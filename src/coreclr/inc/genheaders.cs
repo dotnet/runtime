@@ -11,7 +11,7 @@ public class GenerateHeaders {
     public static void Main(string[] args) {
 
         if (args.Length != 3) {
-            Console.WriteLine("Usage:genheaders XML-file header-file resorce-file");
+            Console.WriteLine("Usage:genheaders XML-file header-file resource-file");
             return;
         }
 

@@ -248,6 +248,19 @@ internal static partial class Interop
             }
         }
 
+        [LibraryImport(Libraries.CryptoNative)]
+        private static unsafe partial void CryptoNative_SslStapleOcsp(SafeSslHandle ssl, byte* buf, int len);
+
+        internal static unsafe void SslStapleOcsp(SafeSslHandle ssl, ReadOnlySpan<byte> stapledResponse)
+        {
+            Debug.Assert(stapledResponse.Length > 0);
+
+            fixed (byte* ptr = stapledResponse)
+            {
+                CryptoNative_SslStapleOcsp(ssl, ptr, stapledResponse.Length);
+            }
+        }
+
         internal static bool AddExtraChainCertificates(SafeSslHandle ssl, X509Certificate2[] chain)
         {
             // send pre-computed list of intermediates.

@@ -313,6 +313,13 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
         return;
     }
 
+    GUID emptyGuid  = {0};
+    if (IsEqualGUID(*componentMvid, emptyGuid))
+    {
+        // Empty guid always succeeds, as it isn't used for dependency checks
+        return;
+    }
+
     static const size_t MVID_TEXT_LENGTH = 39;
     WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
     StringFromGUID2(assemblyMvid, assemblyMvidText, MVID_TEXT_LENGTH);

@@ -511,7 +511,7 @@ namespace System.ComponentModel.Design.Tests
             var container = new ServiceContainer();
             Assert.Same(container, container.GetService(serviceType));
 
-            // Should return the container even if overriden.
+            // Should return the container even if overridden.
             container.AddService(serviceType, new ServiceContainer());
             Assert.Same(container, container.GetService(serviceType));
         }

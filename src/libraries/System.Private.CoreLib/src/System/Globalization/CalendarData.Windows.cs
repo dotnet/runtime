@@ -69,19 +69,17 @@ namespace System.Globalization
             if (value == null)
                 return;
 
-            for (int i = 0; i < destination.Length; i++)
+            int i = Array.IndexOf(destination, value);
+            if (i >= 0)
             {
-                if (destination[i] == value)
+                if (i > 0)
                 {
-                    if (i > 0)
-                    {
-                        string tmp = destination[0];
-                        destination[0] = value;
-                        destination[i] = tmp;
-                    }
-
-                    return;
+                    string tmp = destination[0];
+                    destination[0] = value;
+                    destination[i] = tmp;
                 }
+
+                return;
             }
 
             string[] newArray = new string[destination.Length + 1];

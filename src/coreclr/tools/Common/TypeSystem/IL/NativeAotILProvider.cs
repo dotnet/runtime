@@ -92,6 +92,12 @@ namespace Internal.IL
                         }
                     }
                     break;
+                case "Stream":
+                    {
+                        if (owningType.Namespace == "System.IO")
+                            return StreamIntrinsics.EmitIL(method);
+                    }
+                    break;
             }
 
             return null;

@@ -82,7 +82,7 @@ namespace System.Net
             }
         }
 
-        public ArrayList BypassArrayList => _bypassList ?? (_bypassList = new ArrayList());
+        public ArrayList BypassArrayList => _bypassList ??= new ArrayList();
 
         public ICredentials? Credentials { get; set; }
 

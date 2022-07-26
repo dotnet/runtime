@@ -31,7 +31,7 @@ namespace System.CodeDom
 
         public CodeAttributeDeclarationCollection CustomAttributes
         {
-            get => _customAttributes ?? (_customAttributes = new CodeAttributeDeclarationCollection());
+            get => _customAttributes ??= new CodeAttributeDeclarationCollection();
             set => _customAttributes = value;
         }
 
@@ -39,7 +39,7 @@ namespace System.CodeDom
 
         public CodeTypeReference Type
         {
-            get => _type ?? (_type = new CodeTypeReference(""));
+            get => _type ??= new CodeTypeReference("");
             set => _type = value;
         }
 

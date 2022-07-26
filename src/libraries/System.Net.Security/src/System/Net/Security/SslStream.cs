@@ -321,7 +321,6 @@ namespace System.Net.Security
         public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
-            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
 
             ThrowIfExceptional();
 
@@ -384,7 +383,6 @@ namespace System.Net.Security
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
-            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
 
             ThrowIfExceptional();
             _sslAuthenticationOptions.UpdateOptions(sslClientAuthenticationOptions);
@@ -624,7 +622,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslAuthenticationOptions != null ? _sslAuthenticationOptions.TargetHost : string.Empty;
+                return _sslAuthenticationOptions.TargetHost;
             }
         }
 
@@ -818,14 +816,11 @@ namespace System.Net.Security
             }
 
             // Local function to make the check method more inline friendly.
-            static void ThrowExceptional(ExceptionDispatchInfo e)
+            void ThrowExceptional(ExceptionDispatchInfo e)
             {
                 // If the stored exception just indicates disposal, throw a new ODE rather than the stored one,
                 // so as to not continually build onto the shared exception's stack.
-                if (ReferenceEquals(e, s_disposedSentinel))
-                {
-                    throw new ObjectDisposedException(nameof(SslStream));
-                }
+                ObjectDisposedException.ThrowIf(ReferenceEquals(e, s_disposedSentinel), this);
 
                 // Throw the stored exception.
                 e.Throw();

@@ -28,25 +28,18 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        private async Task AssertProtocolErrorAsync<T>(Task task, ProtocolErrors errorCode)
-            where T : Exception
+        private async Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
         {
-            Exception e = await Assert.ThrowsAsync<T>(() => task);
-            string text = e.ToString();
-            Assert.Contains(((int)errorCode).ToString("x"), text);
-            Assert.Contains(
-                Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : "(unknown error)",
-                text);
+            HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
+            _output.WriteLine(outerEx.InnerException.Message);
+            HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
+            Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
-        private Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertHttpProtocolException(Task task, ProtocolErrors errorCode)
         {
-            return AssertProtocolErrorAsync<HttpRequestException>(task, errorCode);
-        }
-
-        private Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
-        {
-            return AssertProtocolErrorAsync<IOException>(task, errorCode);
+            HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
+            Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
         private async Task<(bool, T)> IgnoreSpecificException<ExpectedException, T>(Task<T> task, string expectedExceptionContent = null) where ExpectedException : Exception
@@ -130,6 +123,37 @@ namespace System.Net.Http.Functional.Tests
                 await connection.WriteFrameAsync(invalidFrame);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_StreamResetByServerBeforePrefix_RequestFailsWithGoawayProtocolError()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout: null);
+                _ = await connection.ReadSettingsAsync();
+
+                GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
+                await connection.WriteFrameAsync(goAwayFrame);
+
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => sendTask);
+
+                // Position of HttpProtocolException in exception hierarchy can change depending on timing.
+                var current = ex;
+                do
+                {
+                    if (current is HttpProtocolException protocolException)
+                    {
+                        Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
+                        return;
+                    }
+                } while ((current = current.InnerException) != null);
+
+                Assert.Fail($"Couldn't find {nameof(HttpProtocolException)} with matching error code in exception: {ex}");
             }
         }
 
@@ -259,7 +283,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
-                connection.Dispose();
+                await connection.DisposeAsync();
             }
         }
 
@@ -931,9 +955,8 @@ namespace System.Net.Http.Functional.Tests
                         sendTask
                     }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
 
-                Assert.IsType<IOException>(exception.InnerException);
-                Assert.NotNull(exception.InnerException.InnerException);
-                Assert.Contains("PROTOCOL_ERROR", exception.InnerException.InnerException.Message);
+                var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException);
+                Assert.Equal((long)ProtocolErrors.PROTOCOL_ERROR, protocolException.ErrorCode);
             }
         }
 
@@ -1909,8 +1932,7 @@ namespace System.Net.Http.Functional.Tests
             // to ensure the request is cancelled as expected.
             const int ContentSize = DefaultInitialWindowSize + 1;
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
 
             var content = new ByteAtATimeContent(ContentSize);
 
@@ -2048,7 +2070,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 catch (System.OperationCanceledException) { };
                 Assert.Null(frame);    // Make sure we do not get any frames after getting Rst.
-                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes("final"), isFinal: true);
+                await connection.SendResponseBodyAsync(streamId, "final"u8.ToArray(), isFinal: true);
                 await connection.WaitForConnectionShutdownAsync();
             });
         }
@@ -2213,7 +2235,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 await connection.ReadBodyAsync();
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
-                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes("OK"));
+                await connection.SendResponseBodyAsync(streamId, "OK"u8.ToArray());
                 await connection.ShutdownIgnoringErrorsAsync(streamId);
             });
         }
@@ -2225,10 +2247,9 @@ namespace System.Net.Http.Functional.Tests
 
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
-                using (var handler = new SocketsHttpHandler())
+                using (var handler = CreateSocketsHttpHandler(allowAllCertificates: true))
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
 
@@ -2352,7 +2373,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_ClientSendsEndStream_Success()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2412,7 +2433,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_ServerSendsEndStream_Success()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2470,9 +2491,71 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ConnectAsync_ReadWriteWebSocketStream()
+        {
+            var clientMessage = new byte[] { 1, 2, 3 };
+            var serverMessage = new byte[] { 4, 5, 6, 7 };
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            Http2LoopbackConnection connection = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+
+                // read request headers
+                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                // send response headers
+                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
+
+                // send reply
+                await connection.SendResponseDataAsync(streamId, serverMessage, endStream: false);
+
+                // send server EOS
+                await connection.SendResponseDataAsync(streamId, Array.Empty<byte>(), endStream: true);
+            });
+
+            StreamingHttpContent requestContent = new StreamingHttpContent();
+
+            using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+            using HttpClient client = new HttpClient(handler);
+
+            HttpRequestMessage request = new(HttpMethod.Connect, server.Address);
+            request.Version = HttpVersion.Version20;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            request.Headers.Protocol = "websocket";
+
+            // initiate request
+            var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            using HttpResponseMessage response = await responseTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+            // receive data
+            var readBuffer = new byte[10];
+            int bytesRead = await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(bytesRead, serverMessage.Length);
+            Assert.Equal(serverMessage, readBuffer[..bytesRead]);
+
+            await responseStream.WriteAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+            // Send client's EOS
+            requestContent.CompleteStream();
+            // Receive server's EOS
+            Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
+
+            Assert.NotNull(connection);
+            await connection.DisposeAsync();
+        }
+
+        [Fact]
         public async Task PostAsyncDuplex_RequestContentException_ResetsStream()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2529,7 +2612,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_RequestContentExceptionAfterResponseEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnResponseStreamRead()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2593,7 +2676,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_CancelledBeforeResponseHeadersReceived_ResetsStream()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2649,7 +2732,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_ServerResetsStream_Throws()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2691,7 +2774,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.ENHANCE_YOUR_CALM, streamId));
 
                     // Trying to read on the response stream should fail now, and client should ignore any data received
-                    await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
+                    await AssertHttpProtocolException(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
                     // Attempting to write on the request body should now fail with IOException.
                     Exception e = await Assert.ThrowsAnyAsync<IOException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
@@ -2710,7 +2793,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_DisposeResponseBodyBeforeEnd_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2777,7 +2860,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_DisposeResponseBodyAfterEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2850,7 +2933,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncDuplex_FinishRequestBodyAndDisposeResponseBodyAfterEndReceivedButBeforeConsumed_DoesNotResetStream()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2904,7 +2987,7 @@ namespace System.Net.Http.Functional.Tests
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId));
 
-                    // Client should NOT send RST_STREAM. The stream was completed succesfully, but the remaining response data was discarded.
+                    // Client should NOT send RST_STREAM. The stream was completed successfully, but the remaining response data was discarded.
                 }
 
                 // On handler dispose, client should shutdown the connection without sending additional frames.
@@ -2920,7 +3003,7 @@ namespace System.Net.Http.Functional.Tests
             // We should stop sending the request body, but treat the request as successful and
             // return the completed response body to the user.
 
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2989,7 +3072,7 @@ namespace System.Net.Http.Functional.Tests
             // We should stop sending the request body, but treat the request as successful and
             // return the completed response body to the user.
 
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -3224,9 +3307,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ProtocolMismatch_Throws()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using (HttpClient client = CreateHttpClient())
             {
                 // Create HTTP/1.1 loopback server and advertise HTTP2 via ALPN.
@@ -3248,7 +3329,7 @@ namespace System.Net.Http.Functional.Tests
                         await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
 
                         // Send back HTTP/1.1 response
-                        await sslStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 400 Unrecognized request\r\n\r\n"), CancellationToken.None);
+                        await sslStream.WriteAsync("HTTP/1.1 400 Unrecognized request\r\n\r\n"u8.ToArray(), CancellationToken.None);
                     });
 
                     Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => requestTask);
@@ -3304,7 +3385,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
-                await connection.SendResponseDataAsync(streamId, Encoding.ASCII.GetBytes("hello"), endStream: false);
+                await connection.SendResponseDataAsync(streamId, "hello"u8.ToArray(), endStream: false);
                 await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader : true, headers: headers);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
@@ -3368,7 +3449,7 @@ namespace System.Net.Http.Functional.Tests
                     // An exception will be thrown by either GetAsync or ReadAsStringAsync once
                     // the inbound window size has been exceeded. Which one depends on how quickly
                     // ProcessIncomingFramesAsync() can read data off the socket.
-                    Exception requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                    HttpRequestException requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
                     {
                         using HttpClient client = CreateHttpClient();
                         using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
@@ -3379,15 +3460,9 @@ namespace System.Net.Http.Functional.Tests
                         await response.Content.ReadAsStringAsync();
                     });
 
-                    // A Http2ConnectionException will be present somewhere in the inner exceptions.
-                    // Its location depends on which method threw the exception.
-                    while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ConnectionException") == false)
-                    {
-                        requestException = requestException.InnerException;
-                    }
-
-                    Assert.NotNull(requestException);
-                    Assert.Contains("FLOW_CONTROL_ERROR", requestException.Message);
+                    HttpProtocolException protocolException = Assert.IsType<HttpProtocolException>(requestException.InnerException);
+                    Assert.Equal((long)ProtocolErrors.FLOW_CONTROL_ERROR, protocolException.ErrorCode);
+                    Assert.Contains("FLOW_CONTROL_ERROR", protocolException.Message);
                 },
                 async server =>
                 {

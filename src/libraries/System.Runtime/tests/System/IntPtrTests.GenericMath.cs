@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -369,6 +370,22 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            if (nint.Size == sizeof(int))
+            {
+                Assert.Equal(unchecked((int)0xFFFF_FFFF), BinaryNumberHelper<nint>.AllBitsSet);
+                Assert.Equal(0, ~(int)BinaryNumberHelper<nint>.AllBitsSet);
+            }
+            else
+            {
+                Assert.Equal(unchecked((long)0xFFFF_FFFF_FFFF_FFFF), BinaryNumberHelper<nint>.AllBitsSet);
+                Assert.Equal(0L, ~(long)BinaryNumberHelper<nint>.AllBitsSet);
+            }
+
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             if (Environment.Is64BitProcess)
@@ -507,19 +524,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan((nint)0x00000000, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan((nint)0x00000001, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan((nint)0x7FFFFFFF, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x80000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan((nint)0x00000000, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan((nint)0x00000001, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan((nint)0x7FFFFFFF, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x80000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -528,19 +545,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual((nint)0x00000000, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual((nint)0x00000001, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual((nint)0x7FFFFFFF, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x80000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual((nint)0x00000000, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual((nint)0x00000001, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual((nint)0x7FFFFFFF, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x80000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -549,19 +566,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan((nint)0x00000000, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan((nint)0x00000001, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan((nint)0x7FFFFFFF, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x80000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan((nint)0x00000000, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan((nint)0x00000001, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan((nint)0x7FFFFFFF, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x80000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -570,19 +587,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual((nint)0x00000000, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual((nint)0x00000001, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual((nint)0x7FFFFFFF, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x80000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual((nint)0x00000000, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual((nint)0x00000001, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual((nint)0x7FFFFFFF, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x80000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -697,19 +714,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality((nint)0x00000000, (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Equality((nint)0x00000001, (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality((nint)0x7FFFFFFF, (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x80000000), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality((nint)0x00000000, (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Equality((nint)0x00000001, (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality((nint)0x7FFFFFFF, (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x80000000), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -718,19 +735,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality((nint)0x00000000, (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Inequality((nint)0x00000001, (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality((nint)0x7FFFFFFF, (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x80000000), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality((nint)0x00000000, (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality((nint)0x00000001, (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality((nint)0x7FFFFFFF, (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x80000000), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -1094,7 +1111,97 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateCheckedFroMinMagnitudet16Test()
+        public static void CreateCheckedFromDecimalTest()
+        {
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateChecked<decimal>(-0.0m));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateChecked<decimal>(+0.0m));
+            Assert.Equal((nint)0x0000_0000_0000_0001, NumberBaseHelper<nint>.CreateChecked<decimal>(+1.0m));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<decimal>(-1.0m));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<decimal>(-1.0m));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<decimal>(decimal.MinValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69795")]
+        public static void CreateCheckedFromDoubleTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<double>(+0.0));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateChecked<double>(-0.0));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<double>(+double.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<double>(-double.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<double>(+1.0));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<double>(-1.0));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FC00), NumberBaseHelper<nint>.CreateChecked<double>(+9223372036854774784.0));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateChecked<double>(-9223372036854775808.0));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(+9223372036854775808.0));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(-9223372036854777856.0));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<double>(-1.0));
+
+                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateChecked<double>(+2147483647.0));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateChecked<double>(-2147483648.0));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(+2147483648.0));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(-2147483649.0));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(double.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(double.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(double.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<double>(double.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromHalfTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<Half>(Half.Zero));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<Half>(Half.NegativeZero));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<Half>(+Half.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<Half>(-Half.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<Half>(Half.One));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<Half>(Half.NegativeOne));
+
+                Assert.Equal((nint)0x0000_0000_0000_FFE0, NumberBaseHelper<nint>.CreateChecked<Half>(Half.MaxValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_0020), NumberBaseHelper<nint>.CreateChecked<Half>(Half.MinValue));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<Half>(Half.NegativeOne));
+
+                Assert.Equal((nint)0x0000_FFE0, NumberBaseHelper<nint>.CreateChecked<Half>(Half.MaxValue));
+                Assert.Equal(unchecked((nint)0xFFFF_0020), NumberBaseHelper<nint>.CreateChecked<Half>(Half.MinValue));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<Half>(Half.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<Half>(Half.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromInt16Test()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateChecked<short>(0x0000));
             Assert.Equal((nint)0x00000001, NumberBaseHelper<nint>.CreateChecked<short>(0x0001));
@@ -1104,7 +1211,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateCheckedFroMinMagnitudet32Test()
+        public static void CreateCheckedFromInt32Test()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateChecked<int>(0x00000000));
             Assert.Equal((nint)0x00000001, NumberBaseHelper<nint>.CreateChecked<int>(0x00000001));
@@ -1114,7 +1221,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateCheckedFroMinMagnitudet64Test()
+        public static void CreateCheckedFromInt64Test()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1135,7 +1242,25 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateCheckedFroMinMagnitudetPtrTest()
+        public static void CreateCheckedFromInt128Test()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<Int128>(Int128.Zero));
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<Int128>(Int128.One));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<Int128>(Int128.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<Int128>(Int128.MinValue));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<Int128>(Int128.NegativeOne));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<Int128>(Int128.NegativeOne));
+            }
+        }
+
+        [Fact]
+        public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1156,6 +1281,46 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69795")]
+        public static void CreateCheckedFromNFloatTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<NFloat>(+0.0f));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateChecked<NFloat>(-0.0f));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<NFloat>(+NFloat.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<NFloat>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<NFloat>((NFloat)(-1.0)));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FC00), NumberBaseHelper<nint>.CreateChecked<NFloat>((NFloat)(+9223372036854774784.0)));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateChecked<NFloat>((NFloat)(-9223372036854775808.0)));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>((NFloat)(+9223372036854775808.0)));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>((NFloat)(-9223372036854777856.0)));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<NFloat>(-1.0f));
+
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateChecked<NFloat>(+2147483520.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateChecked<NFloat>(-2147483648.0f));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(+2147483648.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(-2147483904.0f));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(NFloat.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(NFloat.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(NFloat.NegativeInfinity));
+        }
+
+        [Fact]
         public static void CreateCheckedFromSByteTest()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateChecked<sbyte>(0x00));
@@ -1163,6 +1328,46 @@ namespace System.Tests
             Assert.Equal((nint)0x0000007F, NumberBaseHelper<nint>.CreateChecked<sbyte>(0x7F));
             Assert.Equal(unchecked((nint)(int)0xFFFFFF80), NumberBaseHelper<nint>.CreateChecked<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal(unchecked((nint)(int)0xFFFFFFFF), NumberBaseHelper<nint>.CreateChecked<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69795")]
+        public static void CreateCheckedFromSingleTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<float>(+0.0f));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateChecked<float>(-0.0f));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<float>(+float.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<float>(-float.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<float>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<float>(-1.0f));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FF80_0000_0000), NumberBaseHelper<nint>.CreateChecked<float>(+9223371487098961920.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateChecked<float>(-9223372036854775808.0f));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(+9223372036854775808.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(-9223373136366403584.0f));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<float>(-1.0f));
+
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateChecked<float>(+2147483520.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateChecked<float>(-2147483648.0f));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(+2147483648.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(-2147483904.0f));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(float.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(float.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(float.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<float>(float.NegativeInfinity));
         }
 
         [Fact]
@@ -1218,6 +1423,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<UInt128>(UInt128.Zero));
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<UInt128>(UInt128.One));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<UInt128>(UInt128.MaxValue));
+        }
+
+        [Fact]
         public static void CreateCheckedFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1259,7 +1474,96 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateSaturatingFroMinMagnitudet16Test()
+        public static void CreateSaturatingFromDecimalTest()
+        {
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateSaturating<decimal>(-0.0m));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateSaturating<decimal>(+0.0m));
+            Assert.Equal((nint)0x0000_0000_0000_0001, NumberBaseHelper<nint>.CreateSaturating<decimal>(+1.0m));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<decimal>(-1.0m));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<decimal>(-1.0m));
+            }
+
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<decimal>(decimal.MinValue));
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromDoubleTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<double>(+0.0));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateSaturating<double>(-0.0));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<double>(+double.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<double>(-double.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<double>(+1.0));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<double>(-1.0));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FC00), NumberBaseHelper<nint>.CreateSaturating<double>(+9223372036854774784.0));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateSaturating<double>(-9223372036854775808.0));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<double>(+9223372036854775808.0));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<double>(-9223372036854777856.0));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<double>(-1.0));
+
+                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateSaturating<double>(+2147483647.0));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateSaturating<double>(-2147483648.0));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<double>(+2147483648.0));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<double>(-2147483649.0));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<double>(double.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<double>(double.MinValue));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<double>(double.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<double>(double.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromHalfTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.Zero));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.NegativeZero));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<Half>(+Half.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<Half>(-Half.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.One));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<Half>(Half.NegativeOne));
+
+                Assert.Equal((nint)0x0000_0000_0000_FFE0, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.MaxValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_0020), NumberBaseHelper<nint>.CreateSaturating<Half>(Half.MinValue));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<Half>(Half.NegativeOne));
+
+                Assert.Equal((nint)0x0000_FFE0, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.MaxValue));
+                Assert.Equal(unchecked((nint)0xFFFF_0020), NumberBaseHelper<nint>.CreateSaturating<Half>(Half.MinValue));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<Half>(Half.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromInt16Test()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateSaturating<short>(0x0000));
             Assert.Equal((nint)0x00000001, NumberBaseHelper<nint>.CreateSaturating<short>(0x0001));
@@ -1269,7 +1573,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateSaturatingFroMinMagnitudet32Test()
+        public static void CreateSaturatingFromInt32Test()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateSaturating<int>(0x00000000));
             Assert.Equal((nint)0x00000001, NumberBaseHelper<nint>.CreateSaturating<int>(0x00000001));
@@ -1279,7 +1583,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateSaturatingFroMinMagnitudet64Test()
+        public static void CreateSaturatingFromInt64Test()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1300,7 +1604,26 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateSaturatingFroMinMagnitudetPtrTest()
+        public static void CreateSaturatingFromInt128Test()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<Int128>(Int128.Zero));
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<Int128>(Int128.One));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<Int128>(Int128.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<Int128>(Int128.MinValue));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<Int128>(Int128.NegativeOne));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<Int128>(Int128.NegativeOne));
+            }
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1321,6 +1644,45 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromNFloatTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+0.0f));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateSaturating<NFloat>(-0.0f));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+NFloat.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<NFloat>((NFloat)(-1.0)));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FC00), NumberBaseHelper<nint>.CreateSaturating<NFloat>((NFloat)(+9223372036854774784.0)));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateSaturating<NFloat>((NFloat)(-9223372036854775808.0)));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>((NFloat)(+9223372036854775808.0)));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>((NFloat)(-9223372036854777856.0)));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<NFloat>(-1.0f));
+
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+2147483520.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateSaturating<NFloat>(-2147483648.0f));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+2147483648.0f));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(-2147483904.0f));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(NFloat.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(NFloat.NegativeInfinity));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromSByteTest()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateSaturating<sbyte>(0x00));
@@ -1328,6 +1690,45 @@ namespace System.Tests
             Assert.Equal((nint)0x0000007F, NumberBaseHelper<nint>.CreateSaturating<sbyte>(0x7F));
             Assert.Equal(unchecked((nint)(int)0xFFFFFF80), NumberBaseHelper<nint>.CreateSaturating<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal(unchecked((nint)(int)0xFFFFFFFF), NumberBaseHelper<nint>.CreateSaturating<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromSingleTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<float>(+0.0f));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateSaturating<float>(-0.0f));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<float>(+float.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<float>(-float.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<float>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<float>(-1.0f));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FF80_0000_0000), NumberBaseHelper<nint>.CreateSaturating<float>(+9223371487098961920.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateSaturating<float>(-9223372036854775808.0f));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<float>(+9223372036854775808.0f));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<float>(-9223373136366403584.0f));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<float>(-1.0f));
+
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateSaturating<float>(+2147483520.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateSaturating<float>(-2147483648.0f));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<float>(+2147483648.0f));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<float>(-2147483904.0f));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<float>(float.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<float>(float.MinValue));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<float>(float.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateSaturating<float>(float.NegativeInfinity));
         }
 
         [Fact]
@@ -1383,6 +1784,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<UInt128>(UInt128.Zero));
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<UInt128>(UInt128.One));
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<UInt128>(UInt128.MaxValue));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1424,7 +1835,96 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateTruncatingFroMinMagnitudet16Test()
+        public static void CreateTruncatingFromDecimalTest()
+        {
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateTruncating<decimal>(-0.0m));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateTruncating<decimal>(+0.0m));
+            Assert.Equal((nint)0x0000_0000_0000_0001, NumberBaseHelper<nint>.CreateTruncating<decimal>(+1.0m));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<decimal>(-1.0m));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<decimal>(-1.0m));
+            }
+
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<decimal>(decimal.MinValue));
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromDoubleTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<double>(+0.0));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateTruncating<double>(-0.0));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<double>(+double.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<double>(-double.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<double>(+1.0));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<double>(-1.0));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FC00), NumberBaseHelper<nint>.CreateTruncating<double>(+9223372036854774784.0));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateTruncating<double>(-9223372036854775808.0));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<double>(+9223372036854775808.0));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<double>(-9223372036854777856.0));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<double>(-1.0));
+
+                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateTruncating<double>(+2147483647.0));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateTruncating<double>(-2147483648.0));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<double>(+2147483648.0));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<double>(-2147483649.0));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<double>(double.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<double>(double.MinValue));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<double>(double.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<double>(double.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromHalfTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.Zero));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.NegativeZero));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<Half>(+Half.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<Half>(-Half.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.One));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<Half>(Half.NegativeOne));
+
+                Assert.Equal((nint)0x0000_0000_0000_FFE0, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.MaxValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_0020), NumberBaseHelper<nint>.CreateTruncating<Half>(Half.MinValue));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<Half>(Half.NegativeOne));
+
+                Assert.Equal((nint)0x0000_FFE0, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.MaxValue));
+                Assert.Equal(unchecked((nint)0xFFFF_0020), NumberBaseHelper<nint>.CreateTruncating<Half>(Half.MinValue));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<Half>(Half.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromInt16Test()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1445,7 +1945,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateTruncatingFroMinMagnitudet32Test()
+        public static void CreateTruncatingFromInt32Test()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateTruncating<int>(0x00000000));
             Assert.Equal((nint)0x00000001, NumberBaseHelper<nint>.CreateTruncating<int>(0x00000001));
@@ -1455,7 +1955,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateTruncatingFroMinMagnitudet64Test()
+        public static void CreateTruncatingFromInt64Test()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1476,7 +1976,27 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateTruncatingFroMinMagnitudetPtrTest()
+        public static void CreateTruncatingFromInt128Test()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.Zero));
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.One));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.MaxValue));
+                Assert.Equal(unchecked((nint)0x0000_0000_0000_0000), NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.NegativeOne));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.MaxValue));
+                Assert.Equal(unchecked((nint)0x0000_0000), NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<Int128>(Int128.NegativeOne));
+            }
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
             {
@@ -1494,6 +2014,45 @@ namespace System.Tests
                 Assert.Equal(unchecked((nint)0x80000000), NumberBaseHelper<nint>.CreateTruncating<nint>(unchecked(unchecked((nint)0x80000000))));
                 Assert.Equal(unchecked((nint)0xFFFFFFFF), NumberBaseHelper<nint>.CreateTruncating<nint>(unchecked(unchecked((nint)0xFFFFFFFF))));
             }
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromNFloatTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+0.0f));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateTruncating<NFloat>(-0.0f));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+NFloat.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<NFloat>((NFloat)(-1.0)));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FC00), NumberBaseHelper<nint>.CreateTruncating<NFloat>((NFloat)(+9223372036854774784.0)));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateTruncating<NFloat>((NFloat)(-9223372036854775808.0)));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>((NFloat)(+9223372036854775808.0)));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>((NFloat)(-9223372036854777856.0)));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<NFloat>(-1.0f));
+
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+2147483520.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateTruncating<NFloat>(-2147483648.0f));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+2147483648.0f));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(-2147483904.0f));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(NFloat.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(NFloat.NegativeInfinity));
         }
 
         [Fact]
@@ -1515,6 +2074,45 @@ namespace System.Tests
                 Assert.Equal(unchecked((nint)0xFFFFFF80), NumberBaseHelper<nint>.CreateTruncating<sbyte>(unchecked((sbyte)0x80)));
                 Assert.Equal(unchecked((nint)0xFFFFFFFF), NumberBaseHelper<nint>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF)));
             }
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromSingleTest()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<float>(+0.0f));
+            Assert.Equal((nint)0x0000_0000_0000_0000, NumberBaseHelper<nint>.CreateTruncating<float>(-0.0f));
+
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<float>(+float.Epsilon));
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<float>(-float.Epsilon));
+
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<float>(+1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<float>(-1.0f));
+
+                Assert.Equal(unchecked((nint)0x7FFF_FF80_0000_0000), NumberBaseHelper<nint>.CreateTruncating<float>(+9223371487098961920.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateTruncating<float>(-9223372036854775808.0f));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<float>(+9223372036854775808.0f));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<float>(-9223373136366403584.0f));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<float>(-1.0f));
+
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateTruncating<float>(+2147483520.0f));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateTruncating<float>(-2147483648.0f));
+
+                Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<float>(+2147483648.0f));
+                Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<float>(-2147483904.0f));
+            }
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<float>(float.MaxValue));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<float>(float.MinValue));
+
+            Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<float>(float.PositiveInfinity));
+            Assert.Equal(nint.MinValue, NumberBaseHelper<nint>.CreateTruncating<float>(float.NegativeInfinity));
         }
 
         [Fact]
@@ -1555,6 +2153,26 @@ namespace System.Tests
                 Assert.Equal(unchecked((nint)0xFFFFFFFF), NumberBaseHelper<nint>.CreateTruncating<ulong>(0x7FFFFFFFFFFFFFFF));
                 Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.CreateTruncating<ulong>(0x8000000000000000));
                 Assert.Equal(unchecked((nint)0xFFFFFFFF), NumberBaseHelper<nint>.CreateTruncating<ulong>(0xFFFFFFFFFFFFFFFF));
+            }
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128.Zero));
+            Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128.One));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+                Assert.Equal(unchecked((nint)0x0000_0000_0000_0000), NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128.MaxValue));
+            }
+            else
+            {
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+                Assert.Equal(unchecked((nint)0x0000_0000), NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<UInt128>(UInt128.MaxValue));
             }
         }
 
@@ -2020,337 +2638,6 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void TryCreateFromByteTest()
-        {
-            nint result;
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<byte>(0x00, out result));
-            Assert.Equal((nint)0x00000000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<byte>(0x01, out result));
-            Assert.Equal((nint)0x00000001, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<byte>(0x7F, out result));
-            Assert.Equal((nint)0x0000007F, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<byte>(0x80, out result));
-            Assert.Equal((nint)0x00000080, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<byte>(0xFF, out result));
-            Assert.Equal((nint)0x000000FF, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromCharTest()
-        {
-            nint result;
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<char>((char)0x0000, out result));
-            Assert.Equal((nint)0x00000000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<char>((char)0x0001, out result));
-            Assert.Equal((nint)0x00000001, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<char>((char)0x7FFF, out result));
-            Assert.Equal((nint)0x00007FFF, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<char>((char)0x8000, out result));
-            Assert.Equal((nint)0x00008000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<char>((char)0xFFFF, out result));
-            Assert.Equal((nint)0x0000FFFF, result);
-        }
-
-        [Fact]
-        public static void TryCreateFroMinMagnitudet16Test()
-        {
-            nint result;
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<short>(0x0000, out result));
-            Assert.Equal((nint)0x00000000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<short>(0x0001, out result));
-            Assert.Equal((nint)0x00000001, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<short>(0x7FFF, out result));
-            Assert.Equal((nint)0x00007FFF, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<short>(unchecked((short)0x8000), out result));
-            Assert.Equal(unchecked((nint)(int)0xFFFF8000), result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<short>(unchecked((short)0xFFFF), out result));
-            Assert.Equal(unchecked((nint)(int)0xFFFFFFFF), result);
-        }
-
-        [Fact]
-        public static void TryCreateFroMinMagnitudet32Test()
-        {
-            nint result;
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<int>(0x00000000, out result));
-            Assert.Equal((nint)0x00000000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<int>(0x00000001, out result));
-            Assert.Equal((nint)0x00000001, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<int>(0x7FFFFFFF, out result));
-            Assert.Equal((nint)0x7FFFFFFF, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<int>(unchecked((int)0x80000000), out result));
-            Assert.Equal(unchecked((nint)(int)0x80000000), result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<int>(unchecked((int)0xFFFFFFFF), out result));
-            Assert.Equal(unchecked((nint)(int)0xFFFFFFFF), result);
-        }
-
-        [Fact]
-        public static void TryCreateFroMinMagnitudet64Test()
-        {
-            nint result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(0x0000000000000000, out result));
-                Assert.Equal(unchecked((nint)0x0000000000000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(0x0000000000000001, out result));
-                Assert.Equal(unchecked((nint)0x0000000000000001), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(0x7FFFFFFFFFFFFFFF, out result));
-                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(unchecked((long)0x8000000000000000), out result));
-                Assert.Equal(unchecked((nint)0x8000000000000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(unchecked((long)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFF), result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(0x0000000000000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(0x0000000000000001, out result));
-                Assert.Equal((nint)0x00000001, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<long>(0x7FFFFFFFFFFFFFFF, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<long>(unchecked((long)0x8000000000000000), out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<long>(unchecked((long)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(unchecked((nint)0xFFFFFFFF), result);
-            }
-        }
-
-        [Fact]
-        public static void TryCreateFroMinMagnitudetPtrTest()
-        {
-            nint result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked((nint)0x0000000000000000), out result));
-                Assert.Equal(unchecked((nint)0x0000000000000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked((nint)0x0000000000000001), out result));
-                Assert.Equal(unchecked((nint)0x0000000000000001), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked((nint)0x7FFFFFFFFFFFFFFF), out result));
-                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked((nint)0x8000000000000000), out result));
-                Assert.Equal(unchecked((nint)0x8000000000000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked((nint)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFF), result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>((nint)0x00000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>((nint)0x00000001, out result));
-                Assert.Equal((nint)0x00000001, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>((nint)0x7FFFFFFF, out result));
-                Assert.Equal((nint)0x7FFFFFFF, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked(unchecked((nint)0x80000000)), out result));
-                Assert.Equal(unchecked((nint)0x80000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nint>(unchecked(unchecked((nint)0xFFFFFFFF)), out result));
-                Assert.Equal(unchecked((nint)0xFFFFFFFF), result);
-            }
-        }
-
-        [Fact]
-        public static void TryCreateFromSByteTest()
-        {
-            nint result;
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<sbyte>(0x00, out result));
-            Assert.Equal((nint)0x00000000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<sbyte>(0x01, out result));
-            Assert.Equal((nint)0x00000001, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<sbyte>(0x7F, out result));
-            Assert.Equal((nint)0x0000007F, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<sbyte>(unchecked((sbyte)0x80), out result));
-            Assert.Equal(unchecked((nint)(int)0xFFFFFF80), result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<sbyte>(unchecked((sbyte)0xFF), out result));
-            Assert.Equal(unchecked((nint)(int)0xFFFFFFFF), result);
-        }
-
-        [Fact]
-        public static void TryCreateFromUInt16Test()
-        {
-            nint result;
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<ushort>(0x0000, out result));
-            Assert.Equal((nint)0x00000000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<ushort>(0x0001, out result));
-            Assert.Equal((nint)0x00000001, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<ushort>(0x7FFF, out result));
-            Assert.Equal((nint)0x00007FFF, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<ushort>(0x8000, out result));
-            Assert.Equal((nint)0x00008000, result);
-
-            Assert.True(NumberBaseHelper<nint>.TryCreate<ushort>(0xFFFF, out result));
-            Assert.Equal((nint)0x0000FFFF, result);
-        }
-
-        [Fact]
-        public static void TryCreateFromUInt32Test()
-        {
-            nint result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x00000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x00000001, out result));
-                Assert.Equal((nint)0x00000001, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x7FFFFFFF, out result));
-                Assert.Equal((nint)0x7FFFFFFF, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x80000000, out result));
-                Assert.Equal(unchecked((nint)0x0000000080000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0xFFFFFFFF, out result));
-                Assert.Equal(unchecked((nint)0x00000000FFFFFFFF), result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x00000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x00000001, out result));
-                Assert.Equal((nint)0x00000001, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<uint>(0x7FFFFFFF, out result));
-                Assert.Equal((nint)0x7FFFFFFF, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<uint>(0x80000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<uint>(0xFFFFFFFF, out result));
-                Assert.Equal((nint)0x00000000, result);
-            }
-        }
-
-        [Fact]
-        public static void TryCreateFromUInt64Test()
-        {
-            nint result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<ulong>(0x0000000000000000, out result));
-                Assert.Equal(unchecked((nint)0x0000000000000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<ulong>(0x0000000000000001, out result));
-                Assert.Equal(unchecked((nint)0x00000000000000001), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<ulong>(0x7FFFFFFFFFFFFFFF, out result));
-                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<ulong>(0x8000000000000000, out result));
-                Assert.Equal((nint)0x0000000000000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
-                Assert.Equal((nint)0x0000000000000000, result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<ulong>(0x0000000000000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<ulong>(0x0000000000000001, out result));
-                Assert.Equal((nint)0x00000001, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<ulong>(0x7FFFFFFFFFFFFFFF, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<ulong>(0x8000000000000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
-                Assert.Equal((nint)0x00000000, result);
-            }
-        }
-
-        [Fact]
-        public static void TryCreateFromUIntPtrTest()
-        {
-            nint result;
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked((nuint)0x0000000000000000), out result));
-                Assert.Equal(unchecked((nint)0x0000000000000000), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked((nuint)0x0000000000000001), out result));
-                Assert.Equal(unchecked((nint)0x0000000000000001), result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked((nuint)0x7FFFFFFFFFFFFFFF), out result));
-                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked((nuint)0x8000000000000000), out result));
-                Assert.Equal((nint)0x0000000000000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal((nint)0x0000000000000000, result);
-            }
-            else
-            {
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nuint>((nuint)0x00000000, out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nuint>((nuint)0x00000001, out result));
-                Assert.Equal((nint)0x00000001, result);
-
-                Assert.True(NumberBaseHelper<nint>.TryCreate<nuint>((nuint)0x7FFFFFFF, out result));
-                Assert.Equal((nint)0x7FFFFFFF, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked(unchecked((nuint)0x80000000)), out result));
-                Assert.Equal((nint)0x00000000, result);
-
-                Assert.False(NumberBaseHelper<nint>.TryCreate<nuint>(unchecked(unchecked((nuint)0xFFFFFFFF)), out result));
-                Assert.Equal((nint)0x00000000, result);
-            }
-        }
-
         //
         // IShiftOperators
         //
@@ -2360,19 +2647,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x0000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000002), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x0000000000000001), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x8000000000000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000002), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_LeftShift((nint)0x00000000, 1));
-                Assert.Equal((nint)0x00000002, ShiftOperatorsHelper<nint, nint>.op_LeftShift((nint)0x00000001, 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift((nint)0x7FFFFFFF, 1));
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x80000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFF), 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_LeftShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000002, ShiftOperatorsHelper<nint, int, nint>.op_LeftShift((nint)0x00000001, 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 
@@ -2381,19 +2668,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x0000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x0000000000000001), 1));
-                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
-                Assert.Equal(unchecked((nint)0xC000000000000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x8000000000000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0xC000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x00000000, 1));
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x00000001, 1));
-                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x7FFFFFFF, 1));
-                Assert.Equal(unchecked((nint)0xC0000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x80000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0xFFFFFFFF), 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_RightShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_RightShift((nint)0x00000001, 1));
+                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, int, nint>.op_RightShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal(unchecked((nint)0xC0000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 
@@ -2402,19 +2689,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000001), 1));
-                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
-                Assert.Equal(unchecked((nint)0x4000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x8000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x4000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x00000000, 1));
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x00000001, 1));
-                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x7FFFFFFF, 1));
-                Assert.Equal((nint)0x40000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x80000000), 1));
-                Assert.Equal((nint)0x7FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFF), 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift((nint)0x00000001, 1));
+                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal((nint)0x40000000, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal((nint)0x7FFFFFFF, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 
