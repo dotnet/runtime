@@ -487,7 +487,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
-        int skipIndex = new Random().Next(managedAssemblies.Count());
+
+        int skipIndex;
+        do
+        {
+            skipIndex = new Random().Next(managedAssemblies.Count());
+        } while (managedAssemblies.Skip(skipIndex).First().GetMetadata("FileName") == "System.Private.CoreLib");
+
         Log.LogMessage(MessageImportance.High, $"** Randomly skipping {managedAssemblies.Skip(skipIndex).First()}");
         _assembliesToCompile = managedAssemblies.Where((f, idx) => !ShouldSkipForAOT(f) || idx == skipIndex).ToList();
 

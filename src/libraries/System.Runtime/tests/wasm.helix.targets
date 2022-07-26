@@ -13,7 +13,7 @@
       <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == '$(Scenario)-$(_ProjectName)'" />
 
         <!-- add two new ones - managed, and subtylecrypto -->
-      <HelixWorkItem Include="$(WorkItemPrefix)%(_AllAssemblies.FileName)-$(_ProjectName)">
+      <HelixWorkItem Include="$(WorkItemPrefix)%(_AllAssemblies.FileName)-$(_ProjectName)" Condition="'%(_AllAssemblies.FileName)' != 'System.Private.CoreLib'">
         <PayloadArchive>$(TestArchiveTestsDir)$(_ProjectName).zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
