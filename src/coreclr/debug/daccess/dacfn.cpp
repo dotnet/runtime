@@ -1481,7 +1481,7 @@ void DacEnumCodeForStackwalk(TADDR taCallEnd)
 //
 // Arguments:
 //    * range   - the address and the size of the memory range
-//    * pBuffer - the buffer containting the memory range
+//    * pBuffer - the buffer containing the memory range
 //
 // Return Value:
 //    Return S_OK if everything succeeds.

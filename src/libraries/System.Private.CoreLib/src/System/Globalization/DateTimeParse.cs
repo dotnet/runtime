@@ -607,7 +607,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             char charBeforeSeparator;
 
             TokenType sep;
-            dtok.dtt = DTT.Unk;     // Assume the token is unkown.
+            dtok.dtt = DTT.Unk;     // Assume the token is unknown.
 
             str.GetRegularToken(out TokenType tokenType, out int tokenValue, dtfi);
 
@@ -2235,7 +2235,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             switch (dps)
             {
                 case DS.DX_MNN:
-                    // Deal with the default long/short date format when the year number is ambigous (i.e. year < 100).
+                    // Deal with the default long/short date format when the year number is ambiguous (i.e. year < 100).
                     raw.year = raw.GetNumber(1);
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
@@ -2248,7 +2248,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case DS.DX_YMN:
-                    // Deal with the default long/short date format when the year number is NOT ambigous (i.e. year >= 100).
+                    // Deal with the default long/short date format when the year number is NOT ambiguous (i.e. year >= 100).
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
                         result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
@@ -4249,7 +4249,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
                     // The "r" and "u" formats incorrectly quoted 'GMT' and 'Z', respectively.  We cannot
                     // correct this mistake for DateTime.ParseExact for compatibility reasons, but we can
-                    // fix it for DateTimeOffset.ParseExact as DateTimeOffset has not been publically released
+                    // fix it for DateTimeOffset.ParseExact as DateTimeOffset has not been publicly released
                     // with this issue.
                     if ((result.flags & ParseFlags.CaptureOffset) != 0)
                     {
@@ -5438,8 +5438,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        private static readonly char[] WhiteSpaceChecks = new char[] { ' ', '\u00A0' };
-
         internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
@@ -5450,12 +5448,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
-                int wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition);
+                int wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
                 if (wsIndex < 0)
                 {
                     return false;
                 }
-                do
+                wsIndex += targetPosition;
+
+                while (true)
                 {
                     int segmentLength = wsIndex - targetPosition;
                     if (thisPosition >= Value.Length - segmentLength)
@@ -5491,7 +5491,15 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         thisPosition++;
                         matchLength++;
                     }
-                } while ((wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition)) >= 0);
+
+                    wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                    if (wsIndex < 0)
+                    {
+                        break;
+                    }
+                    wsIndex += targetPosition;
+                }
+
                 // now check the last segment;
                 if (targetPosition < target.Length)
                 {

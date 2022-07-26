@@ -309,7 +309,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     // the process heap. Why? Because our debug memory allocator will log out of memory
     // conditions. If we're low on memory, and we try to log an out of memory condition, and we try
     // and allocate memory again using the debug allocator, we could (and probably will) hit
-    // another low memory condition, try to log it, and we spin indefinately until we hit a stack overflow.
+    // another low memory condition, try to log it, and we spin indefinitely until we hit a stack overflow.
 
     const int BUFFERSIZE = 1000;
     static char rgchBuffer[BUFFERSIZE];

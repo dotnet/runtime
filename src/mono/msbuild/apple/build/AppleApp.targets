@@ -142,6 +142,8 @@
         BuildAppBundle="$(GenerateXcodeProject)"
         Optimized="$(Optimized)"
         DevTeamProvisioning="$(DevTeamProvisioning)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         OutputDirectory="$(AppleAppBundleDir)"
         AppDir="$(AppleAppDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />

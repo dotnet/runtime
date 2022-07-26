@@ -100,7 +100,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Instead, if the transaction is present we will queue up the release of the lock, otherwise we will release it when we exit this method
             // We add the "release" lock to BOTH Commit and Revert queues, because they are mutually exclusive, and we need to release the lock regardless.
 
-            // This will take the lock, if necesary
+            // This will take the lock, if necessary
             IDisposable? compositionLockHolder = _lock.IsThreadSafe ? _lock.LockComposition() : null;
             bool compositionLockTaken = (compositionLockHolder != null);
             try

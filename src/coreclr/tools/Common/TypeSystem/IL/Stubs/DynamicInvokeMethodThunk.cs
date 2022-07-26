@@ -114,7 +114,7 @@ namespace Internal.IL.Stubs
                 else if (parameterType.IsEnum)
                 {
                     // If the invoke method takes an enum as an input parameter and there is no default value for
-                    // that paramter, we don't need to specialize on the exact enum type (we only need to specialize
+                    // that parameter, we don't need to specialize on the exact enum type (we only need to specialize
                     // on the underlying integral type of the enum.)
                     if (paramMetadata == null)
                         paramMetadata = method.GetParameterMetadata();
@@ -511,7 +511,7 @@ namespace Internal.IL.Stubs
             {
                 returnCodeStream.EmitLabel(lByRefReturnNull);
                 MethodDesc nullReferencedExceptionHelper = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvokeNullRefReturned");
-                returnCodeStream.EmitCallThrowHelper(emitter, nullReferencedExceptionHelper);                
+                returnCodeStream.EmitCallThrowHelper(emitter, nullReferencedExceptionHelper);
             }
 
             return emitter.Link(this);
@@ -672,7 +672,7 @@ namespace Internal.IL.Stubs
 
             if (GetNumerOfReturnTypePointerIndirections() != other.GetNumerOfReturnTypePointerIndirections())
                 return false;
-            
+
             if (Length != other.Length)
                 return false;
 

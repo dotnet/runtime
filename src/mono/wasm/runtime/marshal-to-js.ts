@@ -476,7 +476,7 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
 }
 
 function _marshal_array_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Array<any> | TypedArray | null {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
     const element_type = get_signature_arg1_type(sig);
     return _marshal_array_to_js_impl(arg, element_type);
 }
@@ -534,7 +534,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
 }
 
 function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Span {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
 
     const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);
@@ -556,7 +556,7 @@ function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): S
 }
 
 function _marshal_array_segment_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): ArraySegment {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
 
     const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);

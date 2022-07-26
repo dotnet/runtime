@@ -23,7 +23,7 @@ unsigned int SLEEP_LENGTH = 0; //default
 unsigned int RELATION_ID  = 1001;
 
 
-//Strucuture to capture application wide statistics
+//Structure to capture application wide statistics
 struct applicationStatistics{
     DWORD        operationTime;
     unsigned int relationId;
@@ -115,7 +115,7 @@ PALTEST(composite_synchronization_criticalsection_paltest_synchronization_critic
         Fail("Error in obtaining the parameters\n");
     }
 
-   //Initialize Application Statistics Strucuture
+   //Initialize Application Statistics Structure
  	appStats.operationTime=0;
 	appStats.relationId   = RELATION_ID;
     	appStats.processCount = USE_PROCESS_COUNT;

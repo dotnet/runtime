@@ -290,9 +290,7 @@ namespace System.Security.Cryptography
             }
             else if (hashAlgorithmName == HashAlgorithmName.MD5)
             {
-#pragma warning disable CA1416 // HMACMD5 is unsupported on browser, throwing is handled later when making the HMAC call
                 return HMACMD5.HashSizeInBytes;
-#pragma warning restore CA1416
             }
             else
             {

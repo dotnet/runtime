@@ -413,6 +413,17 @@ namespace Wasm.Build.Tests
         {
             InitPaths(id);
             InitProjectDir(id);
+
+            File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
+            File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
+                """
+                <Project>
+                  <ItemGroup>
+                      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
+                  </ItemGroup>
+                </Project>
+                """);
+
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .ExecuteWithCapturedOutput($"new {template}")

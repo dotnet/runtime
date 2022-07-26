@@ -383,7 +383,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe void ToJS(Action value)
         {
             Action cpy = value;
-            // TODO: we could try to cache value -> exising GCHandle
+            // TODO: we could try to cache value -> existing GCHandle
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
                 ref JSMarshalerArgument exc = ref arguments[0];

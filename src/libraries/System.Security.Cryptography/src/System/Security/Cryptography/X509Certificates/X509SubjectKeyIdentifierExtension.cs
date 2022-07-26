@@ -8,10 +8,13 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509SubjectKeyIdentifierExtension : X509Extension
     {
+        private byte[]? _subjectKeyIdentifierBytes;
+        private string? _subjectKeyIdentifierString;
+        private bool _decoded;
+
         public X509SubjectKeyIdentifierExtension()
             : base(Oids.SubjectKeyIdentifierOid)
         {
-            _subjectKeyIdentifier = null;
             _decoded = true;
         }
 
@@ -51,12 +54,32 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (!_decoded)
                 {
-                    byte[] subjectKeyIdentifierValue;
-                    X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(RawData, out subjectKeyIdentifierValue);
-                    _subjectKeyIdentifier = subjectKeyIdentifierValue.ToHexStringUpper();
-                    _decoded = true;
+                    Decode(RawData);
                 }
-                return _subjectKeyIdentifier;
+
+                return _subjectKeyIdentifierString;
+            }
+        }
+
+        /// <summary>
+        ///   Gets a value whose contents represent the subject key identifier (SKI) for a certificate.
+        /// </summary>
+        /// <value>
+        ///   The subject key identifier (SKI) for a certificate.
+        /// </value>
+        public ReadOnlyMemory<byte> SubjectKeyIdentifierBytes
+        {
+            get
+            {
+                // Rather than check _decoded, this property checks for a null _subjectKeyIdentifierBytes so that
+                // using the default constructor, not calling CopyFrom, and then calling this property will throw
+                // instead of using Nullable to talk about that degenerate state.
+                if (_subjectKeyIdentifierBytes is null)
+                {
+                    Decode(RawData);
+                }
+
+                return _subjectKeyIdentifierBytes;
             }
         }
 
@@ -64,6 +87,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             base.CopyFrom(asnEncodedData);
             _decoded = false;
+        }
+
+        private void Decode(byte[] rawData)
+        {
+            X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(rawData, out _subjectKeyIdentifierBytes);
+            _subjectKeyIdentifierString = _subjectKeyIdentifierBytes.ToHexStringUpper();
+            _decoded = true;
         }
 
         private static byte[] EncodeExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
@@ -121,8 +151,5 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
             }
         }
-
-        private string? _subjectKeyIdentifier;
-        private bool _decoded;
     }
 }

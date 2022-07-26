@@ -1702,7 +1702,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 /*
  * mono_class_get_method_by_index:
  *
- *   Returns klass->methods [index], initializing klass->methods if neccesary.
+ *   Returns klass->methods [index], initializing klass->methods if necessary.
  *
  * LOCKING: Acquires the loader lock.
  */
@@ -1787,7 +1787,7 @@ mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method, MonoError 
 /*
  * mono_class_get_vtable_entry:
  *
- *   Returns klass->vtable [offset], computing it if neccesary. Returns NULL on failure.
+ *   Returns klass->vtable [offset], computing it if necessary. Returns NULL on failure.
  * LOCKING: Acquires the loader lock.
  */
 MonoMethod*
@@ -1971,7 +1971,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 /*
  * mono_method_get_vtable_slot:
  *
- *   Returns method->slot, computing it if neccesary. Return -1 on failure.
+ *   Returns method->slot, computing it if necessary. Return -1 on failure.
  * LOCKING: Acquires the loader lock.
  *
  * FIXME Use proper MonoError machinery here.

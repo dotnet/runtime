@@ -352,7 +352,7 @@
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
+    <value>The extension data property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
@@ -645,7 +645,7 @@
     <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' setting.</value>
   </data>
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
-    <value>Invalid JsonTypeInfo operation for metadata kind '{0}'.</value>
+    <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
   </data>
   <data name="CombineOneOfResolversIsNull" xml:space="preserve">
     <value>One of the provided resolvers is null.</value>

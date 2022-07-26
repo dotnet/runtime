@@ -22,6 +22,12 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
         where TUnmanagedElement : unmanaged
     {
+        /// <summary>
+        /// Allocates memory for the unmanaged representation of the array.
+        /// </summary>
+        /// <param name="managed">The managed array</param>
+        /// <param name="numElements">The unmanaged element count</param>
+        /// <returns>The unmanaged pointer to the allocated memory</returns>
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
             if (managed is null)
@@ -37,12 +43,29 @@ namespace System.Runtime.InteropServices.Marshalling
             return (TUnmanagedElement*)Marshal.AllocCoTaskMem(spaceToAllocate);
         }
 
+        /// <summary>
+        /// Gets a source for the managed elements in the array.
+        /// </summary>
+        /// <param name="managed">The managed array</param>
+        /// <returns>The <see cref="ReadOnlySpan{T}"/> containing the managed elements to marshal</returns>
         public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed)
             => managed;
 
+        /// <summary>
+        /// Gets a destination for the unmanaged elements in the array.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged allocation</param>
+        /// <param name="numElements">The unmanaged element count</param>
+        /// <returns>The <see cref="Span{TUnmanagedElement}"/> of unmanaged elements</returns>
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             => new Span<TUnmanagedElement>(unmanaged, numElements);
 
+        /// <summary>
+        /// Allocates memory for the managed representation of the array.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged array</param>
+        /// <param name="numElements">The unmanaged element count</param>
+        /// <returns>The managed array</returns>
         public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
@@ -51,17 +74,41 @@ namespace System.Runtime.InteropServices.Marshalling
             return new T[numElements];
         }
 
+        /// <summary>
+        /// Gets a destination for the managed elements in the array.
+        /// </summary>
+        /// <param name="managed">The managed array</param>
+        /// <returns>The <see cref="Span{T}"/> of managed elements</returns>
         public static Span<T> GetManagedValuesDestination(T[]? managed)
             => managed;
 
+        /// <summary>
+        /// Gets a source for the unmanaged elements in the array.
+        /// </summary>
+        /// <param name="unmanagedValue">The unmanaged array</param>
+        /// <param name="numElements">The unmanaged element count</param>
+        /// <returns>The <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal</returns>
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
             => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
 
+        /// <summary>
+        /// Frees memory for the unmanaged array.
+        /// </summary>
+        /// <param name="unmanaged">Unmanaged array</param>
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
+        /// <summary>
+        /// Marshaller for marshalling a array from managed to unmanaged.
+        /// </summary>
         public ref struct ManagedToUnmanagedIn
         {
+            /// <summary>
+            /// Requested caller-allocated buffer size.
+            /// </summary>
+            /// <remarks>
+            /// Represents a potential optimization for the marshaller.
+            /// </remarks>
             // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
             public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
 
@@ -134,6 +181,11 @@ namespace System.Runtime.InteropServices.Marshalling
                 NativeMemory.Free(_allocatedMemory);
             }
 
+            /// <summary>
+            /// Gets a pinnable reference to the managed array.
+            /// </summary>
+            /// <param name="array">The managed array.</param>
+            /// <returns>The reference that can be pinned and directly passed to unmanaged code.</returns>
             public static ref T GetPinnableReference(T[]? array)
             {
                 if (array is null)

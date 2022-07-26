@@ -653,7 +653,7 @@ namespace System
                     }
                     else
                     {
-                        // If we got here, the original argument object was superceded by invoking the custom binder.
+                        // If we got here, the original argument object was superseded by invoking the custom binder.
 
                         if (paramType == DynamicInvokeParamType.Ref)
                         {

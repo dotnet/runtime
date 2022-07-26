@@ -60,7 +60,7 @@ namespace Microsoft.Interop
             public const string ConstantElementCount = nameof(ConstantElementCount);
         }
 
-        private static void IgnoreDiagnostic(Diagnostic diagnostic) { }
+        private static void IgnoreArityMismatch(INamedTypeSymbol _, INamedTypeSymbol __) { }
 
         public static bool IsLinearCollectionEntryPoint(INamedTypeSymbol entryPointType)
         {
@@ -79,7 +79,17 @@ namespace Microsoft.Interop
             Compilation compilation,
             out CustomTypeMarshallers? marshallers)
         {
-            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: false, compilation, getMarshallingInfoForElement: null, out marshallers);
+            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: false, compilation, getMarshallingInfoForElement: null, IgnoreArityMismatch, out marshallers);
+        }
+
+        public static bool TryGetValueMarshallersFromEntryType(
+            INamedTypeSymbol entryPointType,
+            ITypeSymbol managedType,
+            Compilation compilation,
+            Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch,
+            out CustomTypeMarshallers? marshallers)
+        {
+            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: false, compilation, getMarshallingInfoForElement: null, onArityMismatch, out marshallers);
         }
 
         public static bool TryGetLinearCollectionMarshallersFromEntryType(
@@ -89,7 +99,29 @@ namespace Microsoft.Interop
             Func<ITypeSymbol, MarshallingInfo> getMarshallingInfo,
             out CustomTypeMarshallers? marshallers)
         {
-            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: true, compilation, getMarshallingInfo, out marshallers);
+            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: true, compilation, getMarshallingInfo, IgnoreArityMismatch, out marshallers);
+        }
+
+        public static bool TryGetLinearCollectionMarshallersFromEntryType(
+            INamedTypeSymbol entryPointType,
+            ITypeSymbol managedType,
+            Compilation compilation,
+            Func<ITypeSymbol, MarshallingInfo> getMarshallingInfo,
+            Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch,
+            out CustomTypeMarshallers? marshallers)
+        {
+            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling: true, compilation, getMarshallingInfo, onArityMismatch, out marshallers);
+        }
+
+        public static bool TryGetMarshallersFromEntryTypeIgnoringElements(
+            INamedTypeSymbol entryPointType,
+            ITypeSymbol managedType,
+            Compilation compilation,
+            Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch,
+            out CustomTypeMarshallers? marshallers)
+        {
+            bool isLinearCollectionMarshalling = IsLinearCollectionEntryPoint(entryPointType);
+            return TryGetMarshallersFromEntryType(entryPointType, managedType, isLinearCollectionMarshalling, compilation, _ => NoMarshallingInfo.Instance, onArityMismatch, out marshallers);
         }
 
         private static bool TryGetMarshallersFromEntryType(
@@ -98,6 +130,7 @@ namespace Microsoft.Interop
             bool isLinearCollectionMarshalling,
             Compilation compilation,
             Func<ITypeSymbol, MarshallingInfo> getMarshallingInfoForElement,
+            Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch,
             out CustomTypeMarshallers? marshallers)
         {
             marshallers = null;
@@ -130,17 +163,25 @@ namespace Microsoft.Interop
                 // Verify the defined marshaller is for the managed type.
                 ITypeSymbol? managedTypeOnAttr = attr.ConstructorArguments[0].Value as ITypeSymbol;
 
-                // Verify any instantiation of Generic parameters is provided by entry point.
-                // TODO: Hard failure based on previous implementation
-                ITypeSymbol? managedTypeInst = ResolveManagedType(managedTypeOnAttr, entryPointType, compilation);
+                // If there is no managed type on this attribute, then the attribute is invalid.
+                // Skip the entry as it definitely won't match the provided managed type.
+                if (managedTypeOnAttr is null)
+                    continue;
+
+                // Resolve the provided managed type to a specific generic instantiation based on the marshaller type
+                // If we're unable to resolve the instantiation based on our rules, skip this attribute. It is invalid.
+                if (!TryResolveManagedType(entryPointType, ReplaceGenericPlaceholderInType(managedTypeOnAttr, entryPointType, compilation), isLinearCollectionMarshalling, onArityMismatch, out ITypeSymbol managedTypeInst))
+                {
+                    continue;
+                }
                 if (managedTypeInst is null)
                     return false;
 
-                // Verify any instantiated managed types are derived properly.
-                // TODO: Hard failure based on previous implementation
-                if (!managedType.IsConstructedFromEqualTypes(managedTypeInst)
-                    && !compilation.HasImplicitConversion(managedType, managedTypeInst))
-                    return false;
+                // If this marshaller is for a different type, skip it.
+                if (!SymbolEqualityComparer.Default.Equals(managedType, managedTypeInst))
+                {
+                    continue;
+                }
 
                 var marshalMode = (MarshalMode)attr.ConstructorArguments[1].Value!;
 
@@ -149,7 +190,7 @@ namespace Microsoft.Interop
                     continue;
 
                 ITypeSymbol marshallerType = marshallerTypeOnAttr;
-                if (!TryResolveMarshallerType(entryPointType, marshallerType, IgnoreDiagnostic, out marshallerType))
+                if (!TryResolveMarshallerType(entryPointType, marshallerType, IgnoreArityMismatch, out marshallerType))
                 {
                     continue;
                 }
@@ -179,69 +220,96 @@ namespace Microsoft.Interop
             return true;
         }
 
-        /// <summary>
-        /// Resolve the (possibly unbound generic) marshaller type to a fully constructed type based on the entry point type's generic parameters.
-        /// </summary>
-        /// <param name="entryPointType">The entry point type</param>
-        /// <param name="attributeMarshallerType">The marshaller type from the CustomMarshallerAttribute</param>
-        /// <returns>A fully constructed marshaller type</returns>
-        public static bool TryResolveMarshallerType(INamedTypeSymbol entryPointType, ITypeSymbol? attributeMarshallerType, Action<Diagnostic> reportDiagnostic, [NotNullWhen(true)] out ITypeSymbol? marshallerType)
+        public static bool TryResolveEntryPointType(INamedTypeSymbol managedType, ITypeSymbol typeInAttribute, bool isLinearCollectionMarshalling, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? entryPoint)
         {
-            if (attributeMarshallerType is null)
+            if (typeInAttribute is not INamedTypeSymbol entryPointType)
             {
-                marshallerType = null;
-                return false;
-            }
-
-            if (attributeMarshallerType is not INamedTypeSymbol namedMarshallerType)
-            {
-                marshallerType = attributeMarshallerType;
+                entryPoint = typeInAttribute;
                 return true;
             }
 
-            // Update the marshaller type with resolved type arguments based on the entry point type
-            // We expect the entry point to already have its type arguments updated based on the managed type
-            Stack<INamedTypeSymbol> nestedTypes = new();
-            INamedTypeSymbol currentType = namedMarshallerType;
-            int totalArity = 0;
-            while (currentType is not null)
-            {
-                nestedTypes.Push(currentType);
-                totalArity += currentType.Arity;
-                currentType = currentType.ContainingType;
-            }
+            INamedTypeSymbol instantiatedEntryType = entryPointType.ResolveUnboundConstructedTypeToConstructedType(managedType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
 
-            if (totalArity != entryPointType.Arity)
+            entryPoint = instantiatedEntryType;
+            if (extraArgumentsInTemplate > 0)
             {
-                //TODO: Report diagnostic
-                marshallerType = null;
+                onArityMismatch(managedType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
+                return false;
+            }
+            if (!isLinearCollectionMarshalling && numOriginalArgsSubstituted != 0)
+            {
+                onArityMismatch(managedType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
+                return false;
+            }
+            else if (isLinearCollectionMarshalling && numOriginalArgsSubstituted != 1)
+            {
+                onArityMismatch(managedType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
                 return false;
             }
 
-            int currentArityOffset = 0;
-            currentType = null;
-            while (nestedTypes.Count > 0)
-            {
-                if (currentType is null)
-                {
-                    currentType = nestedTypes.Pop();
-                }
-                else
-                {
-                    INamedTypeSymbol originalType = nestedTypes.Pop();
-                    currentType = currentType.GetTypeMembers(originalType.Name, originalType.Arity).First();
-                }
+            return true;
+        }
 
-                if (currentType.TypeParameters.Length > 0)
-                {
-                    currentType = currentType.ConstructedFrom.Construct(
-                        ImmutableArray.CreateRange(entryPointType.TypeArguments, currentArityOffset, currentType.TypeParameters.Length, x => x),
-                        ImmutableArray.CreateRange(entryPointType.TypeArgumentNullableAnnotations, currentArityOffset, currentType.TypeParameters.Length, x => x));
-                    currentArityOffset += currentType.TypeParameters.Length;
-                }
+        /// <summary>
+        /// Resolve the (possibly unbound generic) type to a fully constructed type based on the entry point type's generic parameters.
+        /// </summary>
+        /// <param name="entryPointType">The entry point type</param>
+        /// <param name="typeInAttribute">The managed type from the CustomMarshallerAttribute</param>
+        /// <returns>A fully constructed marshaller type</returns>
+        public static bool TryResolveManagedType(INamedTypeSymbol entryPointType, ITypeSymbol typeInAttribute, bool isLinearCollectionMarshalling, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? managed)
+        {
+            if (typeInAttribute is not INamedTypeSymbol namedMarshallerType)
+            {
+                managed = typeInAttribute;
+                return true;
             }
 
-            marshallerType = currentType;
+            INamedTypeSymbol instantiatedManagedType = namedMarshallerType.ResolveUnboundConstructedTypeToConstructedType(entryPointType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
+
+            managed = instantiatedManagedType;
+            if (numOriginalArgsSubstituted > 0)
+            {
+                onArityMismatch(entryPointType.OriginalDefinition, instantiatedManagedType.OriginalDefinition);
+                return false;
+            }
+            if (!isLinearCollectionMarshalling && extraArgumentsInTemplate != 0)
+            {
+                onArityMismatch(entryPointType.OriginalDefinition, instantiatedManagedType.OriginalDefinition);
+                return false;
+            }
+            else if (isLinearCollectionMarshalling && extraArgumentsInTemplate != 1)
+            {
+                onArityMismatch(entryPointType.OriginalDefinition, instantiatedManagedType.OriginalDefinition);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Resolve the (possibly unbound generic) type to a fully constructed type based on the entry point type's generic parameters.
+        /// </summary>
+        /// <param name="entryPointType">The entry point type</param>
+        /// <param name="typeInAttribute">The marshaller type from the CustomMarshallerAttribute</param>
+        /// <returns>A fully constructed marshaller type</returns>
+        public static bool TryResolveMarshallerType(INamedTypeSymbol entryPointType, ITypeSymbol typeInAttribute, Action<INamedTypeSymbol, INamedTypeSymbol> onArityMismatch, [NotNullWhen(true)] out ITypeSymbol? marshallerType)
+        {
+            if (typeInAttribute is not INamedTypeSymbol namedMarshallerType)
+            {
+                marshallerType = typeInAttribute;
+                return true;
+            }
+
+            INamedTypeSymbol instantiatedMarshallerType = namedMarshallerType.ResolveUnboundConstructedTypeToConstructedType(entryPointType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
+
+            marshallerType = instantiatedMarshallerType;
+
+            if (numOriginalArgsSubstituted != 0 || extraArgumentsInTemplate != 0)
+            {
+                onArityMismatch(entryPointType.OriginalDefinition, instantiatedMarshallerType.OriginalDefinition);
+                return false;
+            }
+
             return true;
         }
 
@@ -254,14 +322,14 @@ namespace Microsoft.Interop
         /// <param name="entryType">The marshaller type.</param>
         /// <param name="compilation">The compilation to use to make new type symbols.</param>
         /// <returns>The resolved managed type, or <paramref name="managedType"/> if the provided type did not have any placeholders.</returns>
-        public static ITypeSymbol? ResolveManagedType(ITypeSymbol? managedType, INamedTypeSymbol entryType, Compilation compilation)
+        private static ITypeSymbol ReplaceGenericPlaceholderInType(ITypeSymbol managedType, INamedTypeSymbol entryType, Compilation compilation)
         {
-            if (managedType is null || !entryType.IsGenericType)
+            if (!entryType.IsGenericType)
             {
                 return managedType;
             }
             Stack<ITypeSymbol> typeStack = new();
-            ITypeSymbol? innerType = managedType;
+            ITypeSymbol innerType = managedType;
             while (innerType.TypeKind is TypeKind.Array or TypeKind.Pointer)
             {
                 if (innerType is IArrayTypeSymbol array)
@@ -300,48 +368,6 @@ namespace Microsoft.Interop
                 }
             }
             return resultType;
-        }
-
-        /// <summary>
-        /// Get the managed type's defined marshaller entry type.
-        /// </summary>
-        /// <param name="managedType">The managed type.</param>
-        /// <returns>The attribute data and entry type for marshalling.</returns>
-        public static (AttributeData? attribute, INamedTypeSymbol? entryType) GetDefaultMarshallerEntryType(ITypeSymbol managedType)
-        {
-            AttributeData? attr = managedType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.NativeMarshallingAttribute);
-            if (attr is null || attr.ConstructorArguments.Length == 0)
-            {
-                return (attr, null);
-            }
-
-            INamedTypeSymbol? entryType = attr.ConstructorArguments[0].Value as INamedTypeSymbol;
-            if (managedType is not INamedTypeSymbol namedType || entryType is null)
-            {
-                return (attr, null);
-            }
-
-            // Non-generic types involved, return the entry defined in the attribute.
-            if (namedType.TypeArguments.Length == 0)
-            {
-                return (attr, entryType);
-            }
-
-            // Mismatch of generic type arguments between the type and entry.
-            if (namedType.TypeArguments.Length != entryType.TypeArguments.Length)
-            {
-                return (attr, null);
-            }
-
-            // If the marshaller is generic, instantiate it based on the type.
-            if (entryType.IsGenericType)
-            {
-                // Construct the marshaler type around the same type arguments as the managed type.
-                return (attr, entryType.ConstructedFrom.Construct(namedType.TypeArguments, namedType.TypeArgumentNullableAnnotations));
-            }
-
-            // Entry isn't generic, just return it.
-            return (attr, entryType);
         }
 
         private static CustomTypeMarshallerData? GetMarshallerDataForType(
