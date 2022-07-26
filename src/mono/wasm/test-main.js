@@ -221,9 +221,6 @@ function processQueryArguments(incomingArguments) {
         } else if (currentArg.startsWith("--config-src=")) {
             const arg = currentArg.substring("--config-src=".length);
             runArgs.configSrc = arg;
-        } else if (currentArg == ("--deep-work-dir")) {
-            // PR: https://github.com/dotnet/runtime/pull/69441
-            // NOP
         } else {
             break;
         }
