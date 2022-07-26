@@ -15,7 +15,7 @@ const isPThread = `false`;
 const DotnetSupportLib = {
     $DOTNET: {},
     // these lines will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
-    // we replace implementation of readAsync and fetch
+    // we replace implementation of fetch
     // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
 let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
@@ -23,15 +23,22 @@ if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 }
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+let __dotnet_replacements = {scriptUrl: undefined, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+if (ENVIRONMENT_IS_NODE) {
+    __dotnet_replacements.requirePromise = Promise.resolve(require);
+}
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_exports: EXPORTS, marshaled_imports: IMPORTS  },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
-readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
-require = __dotnet_replacements.requireOut;
+_scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
+if (ENVIRONMENT_IS_NODE) {
+    __dotnet_replacements.requirePromise.then(someRequire => {
+        require = someRequire;
+    });
+}
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;

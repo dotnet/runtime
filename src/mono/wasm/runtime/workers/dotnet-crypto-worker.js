@@ -7,9 +7,9 @@
 
 import { setup_proxy_console } from "../debug";
 
-class FailedOrStoppedLoopError extends Error {}
-class ArgumentsError extends Error {}
-class WorkerFailedError extends Error {}
+class FailedOrStoppedLoopError extends Error { }
+class ArgumentsError extends Error { }
+class WorkerFailedError extends Error { }
 
 var ChannelWorker = {
     _impl: class {
@@ -41,7 +41,7 @@ var ChannelWorker = {
         }
 
         async run_message_loop(async_op) {
-            for (;;) {
+            for (; ;) {
                 try {
                     // Wait for signal to perform operation
                     let state;
@@ -62,7 +62,7 @@ var ChannelWorker = {
                     catch (err) {
                         resp.error_type = typeof err;
                         resp.error = _stringify_err(err);
-                        console.error(`Request error: ${resp.error}. req was: ${req}`);
+                        console.error(`MONO_WASM: Request error: ${resp.error}. req was: ${req}`);
                     }
 
                     // Send response
@@ -73,13 +73,13 @@ var ChannelWorker = {
                         if (state === this.STATE_SHUTDOWN)
                             break;
                         if (state === this.STATE_RESET)
-                            console.debug(`caller failed, resetting worker`);
+                            console.debug("MONO_WASM: caller failed, resetting worker");
                     } else {
-                        console.error(`Worker failed to handle the request: ${_stringify_err(err)}`);
+                        console.error(`MONO_WASM: Worker failed to handle the request: ${_stringify_err(err)}`);
                         this._change_state_locked(this.STATE_REQ_FAILED);
                         Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
 
-                        console.debug(`set state to failed, now waiting to get RESET`);
+                        console.debug("MONO_WASM: set state to failed, now waiting to get RESET");
                         Atomics.wait(this.comm, this.STATE_IDX, this.STATE_REQ_FAILED);
                         const state = Atomics.load(this.comm, this.STATE_IDX);
                         if (state !== this.STATE_RESET) {
@@ -96,19 +96,19 @@ var ChannelWorker = {
                 const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
 
                 if (state !== this.STATE_IDLE && state !== this.STATE_REQ && state !== this.STATE_REQ_P)
-                    console.error(`-- state is not idle at the top of the loop: ${state}, and lock_state: ${lock_state}`);
+                    console.error(`MONO_WASM: -- state is not idle at the top of the loop: ${state}, and lock_state: ${lock_state}`);
                 if (lock_state !== this.LOCK_UNLOCKED && state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_IDLE)
-                    console.error(`-- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
+                    console.error(`MONO_WASM: -- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
             }
 
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             this._change_state_locked(this.STATE_SHUTDOWN);
-            console.debug("******* run_message_loop ending");
+            console.debug("MONO_WASM: ******* run_message_loop ending");
         }
 
         _read_request() {
             var request = "";
-            for (;;) {
+            for (; ;) {
                 this._acquire_lock();
                 try {
                     this._throw_if_reset_or_shutdown();
@@ -147,13 +147,13 @@ var ChannelWorker = {
 
         _send_response(msg) {
             if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_REQ)
-                throw new WorkerFailedError(`WORKER: Invalid sync communication channel state.`);
+                throw new WorkerFailedError("WORKER: Invalid sync communication channel state.");
 
             var state; // State machine variable
             const msg_len = msg.length;
             var msg_written = 0;
 
-            for (;;) {
+            for (; ;) {
                 this._acquire_lock();
 
                 try {
@@ -199,7 +199,7 @@ var ChannelWorker = {
         }
 
         _acquire_lock() {
-            for (;;) {
+            for (; ;) {
                 const lockState = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
                 this._throw_if_reset_or_shutdown();
 
@@ -251,7 +251,7 @@ async function sign(type, key, data) {
         key = new Uint8Array([0]);
     }
 
-    const cryptoKey = await crypto.subtle.importKey("raw", key, {name: "HMAC", hash: hash_name}, false /* extractable */, ["sign"]);
+    const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: hash_name }, false /* extractable */, ["sign"]);
     const signResult = await crypto.subtle.sign("HMAC", cryptoKey, data);
     return Array.from(new Uint8Array(signResult));
 }
