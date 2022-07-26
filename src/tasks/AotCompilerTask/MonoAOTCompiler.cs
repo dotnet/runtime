@@ -487,7 +487,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
-        _assembliesToCompile = managedAssemblies.Where(f => !ShouldSkipForAOT(f)).ToList();
+        int skipIndex = new Random().Next(managedAssemblies.Count());
+        Log.LogMessage(MessageImportance.High, $"** Randomly skipping {managedAssemblies.Skip(skipIndex).First()}");
+        _assembliesToCompile = managedAssemblies.Where((f, idx) => !ShouldSkipForAOT(f) || idx == skipIndex).ToList();
 
         if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
             return false;
@@ -594,7 +596,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
                     throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {asmItem.ItemSpec}");
 
-                Log.LogMessage(MessageImportance.Low, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
+                Log.LogMessage(MessageImportance.High, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
             }
             else
             {

@@ -551,6 +551,9 @@
       <_AotInputAssemblies Condition="'%(Filename)' != '' and '@(_AotInputAssemblies->Metadata(`Filename`))' != '' and '@(_AOT_InternalForceInterpretAssemblies->Metadata(`Filename`))' != ''">
         <AOT_InternalForceToInterpret>true</AOT_InternalForceToInterpret>
       </_AotInputAssemblies>
+      <_AotInputAssemblies Condition="'%(FileName)' == '$(SKIP_ASM_FOR_AOT)'">
+        <AOT_InternalForceToInterpret>true</AOT_InternalForceToInterpret>
+      </_AotInputAssemblies>
     </ItemGroup>
 
     <PropertyGroup>

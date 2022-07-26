@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
+    <HelixExtensionTargets>$(HelixExtensionTargets);_AddExtraTests</HelixExtensionTargets>
+    <_ProjectName>System.Runtime.Tests</_ProjectName>
+  </PropertyGroup>
+
+  <Target Name="_AddExtraTests">
+    <Message Text="path: $(ArtifactsDir)\bin\$(_ProjectName)\**\publish\*.dll" Importance="High" />
+    <ItemGroup>
+      <_AllAssemblies Include="$(ArtifactsDir)\bin\$(_ProjectName)\**\publish\*.dll" />
+
+      <!-- remove the existing item -->
+      <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == '$(Scenario)-$(_ProjectName)'" />
+
+        <!-- add two new ones - managed, and subtylecrypto -->
+      <HelixWorkItem Include="$(WorkItemPrefix)%(_AllAssemblies.FileName)-$(_ProjectName)">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_ProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;SKIP_ASM_FOR_AOT=%(_AllAssemblies.FileName)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;SKIP_ASM_FOR_AOT=%(_AllAssemblies.FileName)&quot;</PreCommands>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+</Project>
