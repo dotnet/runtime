@@ -461,7 +461,7 @@ namespace Microsoft.Extensions.Caching.Memory
             RetryHelper.Execute(() =>
             {
                 Assert.Equal(size, cache.Size);
-            }, maxAttempts: 12, (iteration) => (int)Math.Pow(2, iteration)); // 2ms, 4ms.. 4096 ms. Not observed to need over 0.5 sec.
+            }, maxAttempts: 12, (iteration) => (int)Math.Pow(2, iteration)); // 2ms, 4ms.. 4096 ms. In practice, retries are rarely needed.
         }
     }
 }
