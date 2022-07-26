@@ -603,8 +603,8 @@ namespace System.ServiceModel.Syndication
                     else
                     {
                         person.Email = s;
-	    			}
-    			}
+                    }
+                }
             }
         }
 
