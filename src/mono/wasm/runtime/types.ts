@@ -310,7 +310,6 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 }
 
 export type EarlyImports = {
-    isESM: boolean,
     isGlobal: boolean,
     isNode: boolean,
     isWorker: boolean,

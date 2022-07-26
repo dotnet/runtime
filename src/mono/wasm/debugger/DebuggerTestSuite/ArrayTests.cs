@@ -582,7 +582,7 @@ namespace DebuggerTests
 
                // Trying to access object as an array
                if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
-                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in dotnet.cjs.lib.js?");
+                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in dotnet.es6.lib.js?");
 
                await GetProperties($"dotnet:array:{id.Value}", expect_ok: false);
            });

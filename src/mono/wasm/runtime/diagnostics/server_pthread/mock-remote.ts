@@ -9,7 +9,6 @@ export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
     if (monoDiagnosticsMock) {
         const mockPrefix = "mock:";
         const scriptURL = mockURL.substring(mockPrefix.length);
-        // revisit this if we ever have a need to mock using CJS, for now we just support ESM
         return import(scriptURL).then((mockModule) => {
             const script = mockModule.default;
             return mock(script, { trace: true });
