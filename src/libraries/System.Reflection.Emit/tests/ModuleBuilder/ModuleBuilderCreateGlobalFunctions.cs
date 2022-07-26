@@ -8,6 +8,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderCreateGlobalFunctions
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateGlobalFunctions_SingleGlobalMethod()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -21,6 +22,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateGlobalFunctions_MultipleGlobalMethods()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -39,6 +41,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateGlobalFunctions_CalledMultipleTimes_ThrowsInvalidOperationException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
