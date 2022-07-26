@@ -13,7 +13,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Xml;
 
 namespace LinkerAnalyzer.Core
@@ -46,9 +45,8 @@ namespace LinkerAnalyzer.Core
 			Console.WriteLine ("Loading dependency tree from: {0}", filename);
 
 			try {
-				using (var fileStream = File.OpenRead (filename))
-				using (var zipStream = new GZipStream (fileStream, CompressionMode.Decompress)) {
-					Load (zipStream);
+				using (var fileStream = File.OpenRead (filename)) {
+					Load (fileStream);
 				}
 			} catch (Exception) {
 				Console.WriteLine ("Unable to open and read the dependencies.");
@@ -56,13 +54,13 @@ namespace LinkerAnalyzer.Core
 			}
 		}
 
-		void Load (GZipStream zipStream)
+		void Load (FileStream fileStream)
 		{
-			using (XmlReader reader = XmlReader.Create (zipStream)) {
+			using (XmlReader reader = XmlReader.Create (fileStream)) {
 				while (reader.Read ()) {
 					switch (reader.NodeType) {
 					case XmlNodeType.Element:
-						//Console.WriteLine (reader.Name);
+						// Console.WriteLine (reader.Name);
 						if (reader.Name == "edge" && reader.IsStartElement ()) {
 							string b = reader.GetAttribute ("b");
 							string e = reader.GetAttribute ("e");
