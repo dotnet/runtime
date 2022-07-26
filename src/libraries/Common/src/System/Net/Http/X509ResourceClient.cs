@@ -99,7 +99,7 @@ namespace System.Net.Http
                 }
 
                 [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                   Justification = "The type, httpResponseMessageType, will be available during runtime")]
+                   Justification = "The type HttpResponseMessage is a reference type")]
                 static Type GetTaskOfHttpResponseMessageType(Type? httpResponseMessageType) => typeof(Task<>).MakeGenericType(httpResponseMessageType!);
 
                 Type taskOfHttpResponseMessageType = GetTaskOfHttpResponseMessageType(httpResponseMessageType);
