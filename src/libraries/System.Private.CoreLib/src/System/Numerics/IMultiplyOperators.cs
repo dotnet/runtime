@@ -21,6 +21,6 @@ namespace System.Numerics
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
         /// <exception cref="OverflowException">The product of <paramref name="left" /> multiplied-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
-        static abstract TResult operator checked *(TSelf left, TOther right);
+        static virtual TResult operator checked *(TSelf left, TOther right) => left * right;
     }
 }

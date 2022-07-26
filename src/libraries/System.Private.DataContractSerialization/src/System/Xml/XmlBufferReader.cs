@@ -73,10 +73,7 @@ namespace System.Xml
 
         public void SetBuffer(Stream stream, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
-            if (_streamBuffer == null)
-            {
-                _streamBuffer = new byte[128];
-            }
+            _streamBuffer ??= new byte[128];
             SetBuffer(stream, _streamBuffer, 0, 0, dictionary, session);
             _windowOffset = 0;
             _windowOffsetMax = _streamBuffer.Length;
@@ -1187,10 +1184,7 @@ namespace System.Xml
 
         private void ReadList(ValueHandle value)
         {
-            if (_listValue == null)
-            {
-                _listValue = new ValueHandle(this);
-            }
+            _listValue ??= new ValueHandle(this);
             int count = 0;
             int offset = this.Offset;
             while (true)

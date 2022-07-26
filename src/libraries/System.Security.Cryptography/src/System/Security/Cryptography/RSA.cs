@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static new partial RSA Create();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RSA? Create(string algName)
         {
@@ -843,7 +844,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.RsaPrivateKey, exported);
                 }
                 finally
                 {
@@ -874,7 +875,7 @@ namespace System.Security.Cryptography
         public string ExportRSAPublicKeyPem()
         {
             byte[] exported = ExportRSAPublicKey();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.RsaPublicKey, exported);
         }
 
         /// <summary>

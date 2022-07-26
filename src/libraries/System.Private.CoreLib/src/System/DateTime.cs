@@ -1605,8 +1605,7 @@ namespace System
             }
             if ((year & 3) != 0) return false;
             if ((year & 15) == 0) return true;
-            // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-            return (uint)year % 25 != 0 ? true : false;
+            return (uint)year % 25 != 0;
         }
 
         // Constructs a DateTime from a string. The string must specify a
@@ -1909,16 +1908,16 @@ namespace System
 
         public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTime t1, DateTime t2) => t1.Ticks <= t2.Ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTime t1, DateTime t2) => t1.Ticks > t2.Ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
 
         // Returns a string array containing all of the known date and time options for the

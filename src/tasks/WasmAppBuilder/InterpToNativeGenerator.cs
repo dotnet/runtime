@@ -127,7 +127,7 @@ internal sealed class InterpToNativeGenerator
 
         w.WriteLine("};");
 
-        w.WriteLine($"unsigned int interp_to_native_signatures_count = {signatures.Length};");
+        w.WriteLine($"static unsigned int interp_to_native_signatures_count = {signatures.Length};");
         w.WriteLine();
         w.WriteLine("""
         static int
@@ -174,7 +174,7 @@ internal sealed class InterpToNativeGenerator
                     throw new InvalidSignatureCharException(c);
             }
 
-            return $"mono_wasm_interp_method_args_get_{char.ToLower(c)}arg (margs, {argIndex})";
+            return $"mono_wasm_interp_method_args_get_{char.ToLower(c, CultureInfo.InvariantCulture)}arg (margs, {argIndex})";
         }
     }
 }

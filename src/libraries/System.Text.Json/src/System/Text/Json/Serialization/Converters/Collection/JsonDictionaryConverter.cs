@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<T> GetConverter<T>(JsonTypeInfo typeInfo)
         {
-            JsonConverter<T> converter = (JsonConverter<T>)typeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            JsonConverter<T> converter = (JsonConverter<T>)typeInfo.Converter;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;

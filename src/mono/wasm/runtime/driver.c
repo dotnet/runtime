@@ -19,6 +19,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/debug-helpers.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -41,7 +42,7 @@
 void core_initialize_internals ();
 #endif
 
-extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
+extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
@@ -54,6 +55,7 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
+void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -233,6 +235,24 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 	}
 
 	return 0;
+}
+
+const unsigned char *
+mono_wasm_get_assembly_bytes (const char *assembly_name, unsigned int *size)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		if (strcmp (entry->assembly.name, assembly_name) == 0)
+		{
+			*size = entry->assembly.size;
+			return entry->assembly.data;
+		}
+		entry = entry->next;
+	}
+	return NULL;
 }
 
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
@@ -425,9 +445,6 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
-	// TODO: what happens when two types in different assemblies have the same FQN?
-
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 
@@ -475,7 +492,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	// We should enable this as part of the wasm build later
 #ifndef DISABLE_THREADS
 	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
-	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "250", 0);
+	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
 #ifdef DEBUG
@@ -568,7 +585,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_ilgen_init ();
+	mono_marshal_lightweight_init ();
+	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
 #endif
@@ -632,6 +650,22 @@ mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, co
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
+
+extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
+{
+	assert (assembly);
+	MonoError error;
+	MONO_ENTER_GC_UNSAFE;
+	MonoImage *image = mono_assembly_get_image (assembly);
+    if (!mono_runtime_run_module_cctor(image, &error)) {
+        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
+    }
+	MONO_EXIT_GC_UNSAFE;
+}
+
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
@@ -720,8 +754,27 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	return result;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
+{
+	MonoObject *exc = NULL;
+	MonoObject *res;
+
+	void *invoke_args[1] = { args };
+
+	mono_runtime_invoke (method, NULL, invoke_args, &exc);
+	if (exc) {
+		MonoObject *exc2 = NULL;
+		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+		if (exc2)
+			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return res;
+	}
+	return NULL;
+}
+
 EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
+mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
 {
 	MonoImage *image;
 	MonoMethod *method;
@@ -774,6 +827,13 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	end:
 	MONO_EXIT_GC_UNSAFE;
+	if (auto_insert_breakpoint)
+	{
+		MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+		const char *name = mono_assembly_name_get_name (aname);
+		if (name != NULL)
+			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
+	}
 	return method;
 }
 

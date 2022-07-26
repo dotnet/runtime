@@ -1,6 +1,8 @@
 if(MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
-endif(MSVC)
+else(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-int-conversion>)
+endif()
 
 set(ZLIB_SOURCES_BASE
     adler32.c

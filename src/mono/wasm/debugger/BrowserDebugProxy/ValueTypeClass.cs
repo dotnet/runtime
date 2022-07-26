@@ -102,8 +102,10 @@ namespace BrowserDebugProxy
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                int methodId = await sdbAgent.GetMethodIdByName(TypeId, "ToString", token);
-                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token, "methodRet");
+                int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", token);
+                if (methodIds == null)
+                    throw new InternalErrorException($"Cannot find method 'ToString' on typeId = {TypeId}");
+                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
                 description = retMethod["value"]?["value"].Value<string>();
                 if (className.Equals("System.Guid"))
                     description = description.ToUpperInvariant(); //to keep the old behavior
@@ -270,7 +272,7 @@ namespace BrowserDebugProxy
                 // isParent:
                 if (i != 0) typeId = getParentsReader.ReadInt32();
 
-                allMembers = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                allMembers = await MemberObjectsExplorer.ExpandPropertyValues(
                     sdbHelper,
                     typeId,
                     className,

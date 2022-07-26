@@ -11,9 +11,12 @@ namespace System.Resources
     .Extensions
 #endif
 {
+#pragma warning disable IDE0065
 #if RESOURCES_EXTENSIONS
     using ResourceReader = DeserializingResourceReader;
 #endif
+#pragma warning restore IDE0065
+
     // A RuntimeResourceSet stores all the resources defined in one
     // particular CultureInfo, with some loading optimizations.
     //
@@ -63,7 +66,7 @@ namespace System.Resources
     // including user-defined types, in a more efficient way than using
     // Serialization, at least when your .resources file contains a reasonable
     // proportion of base data types such as Strings or ints.  We use
-    // Serialization for all the non-instrinsic types.
+    // Serialization for all the non-intrinsic types.
     //
     // The third section of the file is the name section.  It contains a
     // series of resource names, written out as byte-length prefixed little

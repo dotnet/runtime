@@ -188,10 +188,11 @@ class Template:
     def __repr__(self):
         return "<Template " + self.name + ">"
 
-    def __init__(self, templateName, fnPrototypes, dependencies, structSizes, arrays):
+    def __init__(self, templateName, fnPrototypes, dependencies, structSizes, structTypes, arrays):
         self.name = templateName
         self.signature = FunctionSignature()
         self.structs = structSizes
+        self.structTypes = structTypes
         self.arrays = arrays
 
         for variable in fnPrototypes.paramlist:
@@ -273,6 +274,7 @@ def parseTemplateNodes(templateNodes):
 
     for templateNode in templateNodes:
         structCounts = {}
+        structTypes  = {}
         arrays = {}
         templateName    = templateNode.getAttribute('tid')
         var_Dependencies = {}
@@ -337,11 +339,12 @@ def parseTemplateNodes(templateNodes):
             types = [x.attributes['inType'].value for x in structToBeMarshalled.getElementsByTagName("data")]
 
             structCounts[structName] = countVarName
+            structTypes[structName] = types
             var_Dependencies[structName] = [countVarName, structName]
             fnparam_pointer = FunctionParameter("win:Struct", structName, "win:count", countVarName)
             fnPrototypes.append(structName, fnparam_pointer)
 
-        allTemplates[templateName] = Template(templateName, fnPrototypes, var_Dependencies, structCounts, arrays)
+        allTemplates[templateName] = Template(templateName, fnPrototypes, var_Dependencies, structCounts, structTypes, arrays)
 
     return allTemplates
 
@@ -830,7 +833,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man',  type=str, required=True,
-                                    help='full path to manifest containig the description of events')
+                                    help='full path to manifest containing the description of events')
     required.add_argument('--inc',  type=str, default=None,
                                     help='full path to directory where the header files will be generated')
     required.add_argument('--dummy',  type=str,default=None,

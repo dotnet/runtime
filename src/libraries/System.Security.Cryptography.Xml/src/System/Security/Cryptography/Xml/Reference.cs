@@ -117,12 +117,7 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get
-            {
-                if (_transformChain == null)
-                    _transformChain = new TransformChain();
-                return _transformChain;
-            }
+            get => _transformChain ??= new TransformChain();
             set
             {
                 _transformChain = value;
@@ -340,7 +335,7 @@ namespace System.Security.Cryptography.Xml
             DigestValue = CalculateHashValue(document, refList);
         }
 
-        // What we want to do is pump the input throug the TransformChain and then
+        // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
         internal byte[] CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
@@ -395,11 +390,10 @@ namespace System.Security.Cryptography.Xml
                         {
                             // If we get here, then we are constructing a Reference to an embedded DataObject
                             // referenced by an Id = attribute. Go find the relevant object
-                            bool discardComments = true;
-                            string idref = Utils.GetIdFromLocalUri(_uri, out discardComments);
+                            string idref = Utils.GetIdFromLocalUri(_uri, out bool discardComments);
                             if (idref == "xpointer(/)")
                             {
-                                // This is a self referencial case
+                                // This is a self referential case
                                 if (document == null)
                                     throw new CryptographicException(SR.Format(SR.Cryptography_Xml_SelfReferenceRequiresContext, _uri));
 
@@ -473,12 +467,9 @@ namespace System.Security.Cryptography.Xml
             }
             finally
             {
-                if (hashInputStream != null)
-                    hashInputStream.Close();
-                if (response != null)
-                    response.Close();
-                if (inputStream != null)
-                    inputStream.Close();
+                hashInputStream?.Close();
+                response?.Close();
+                inputStream?.Close();
             }
 
             return hashval;

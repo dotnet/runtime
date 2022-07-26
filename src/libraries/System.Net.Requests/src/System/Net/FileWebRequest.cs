@@ -209,7 +209,7 @@ namespace System.Net
 
             try
             {
-                return _response ?? (_response = new FileWebResponse(this, _uri, _fileAccess, !_syncHint));
+                return _response ??= new FileWebResponse(this, _uri, _fileAccess, !_syncHint);
             }
             catch (Exception e)
             {

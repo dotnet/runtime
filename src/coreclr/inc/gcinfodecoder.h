@@ -29,7 +29,7 @@
 
 #else
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
 
 typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 
@@ -66,7 +66,7 @@ struct GCInfoToken
     }
 };
 
-#else // FEATURE_REDHAWK
+#else // FEATURE_NATIVEAOT
 
 // Stuff from cgencpu.h:
 
@@ -165,7 +165,7 @@ typedef void (*GCEnumCallback)(
 
 #include "regdisp.h"
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 #ifndef _strike_h
 

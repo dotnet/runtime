@@ -23,6 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+
         private class FinalizingProcess : Process
         {
             public static volatile bool WasFinalized;
@@ -1338,13 +1342,13 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
         public void TestProcessOnRemoteMachineWindows()
         {
-            Process currentProccess = Process.GetCurrentProcess();
+            Process currentProcess = Process.GetCurrentProcess();
 
-            void TestRemoteProccess(Process remoteProcess)
+            void TestRemoteProcess(Process remoteProcess)
             {
-                Assert.Equal(currentProccess.Id, remoteProcess.Id);
-                Assert.Equal(currentProccess.BasePriority, remoteProcess.BasePriority);
-                Assert.Equal(currentProccess.EnableRaisingEvents, remoteProcess.EnableRaisingEvents);
+                Assert.Equal(currentProcess.Id, remoteProcess.Id);
+                Assert.Equal(currentProcess.BasePriority, remoteProcess.BasePriority);
+                Assert.Equal(currentProcess.EnableRaisingEvents, remoteProcess.EnableRaisingEvents);
                 Assert.Equal("127.0.0.1", remoteProcess.MachineName);
                 // This property throws exception only on remote processes.
                 Assert.Throws<NotSupportedException>(() => remoteProcess.MainModule);
@@ -1352,8 +1356,8 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                TestRemoteProccess(Process.GetProcessById(currentProccess.Id, "127.0.0.1"));
-                TestRemoteProccess(Process.GetProcessesByName(currentProccess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProccess.Id).Single());
+                TestRemoteProcess(Process.GetProcessById(currentProcess.Id, "127.0.0.1"));
+                TestRemoteProcess(Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProcess.Id).Single());
             }
             catch (InvalidOperationException)
             {
@@ -2193,7 +2197,7 @@ namespace System.Diagnostics.Tests
                 // Instead of using sleep directly, we wrap it with a script.
                 sleepPath = GetTestFilePath();
                 File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-                ChMod(sleepPath, "744");
+                File.SetUnixFileMode(sleepPath, ExecutablePermissions);
             }
             else
             {
@@ -2433,7 +2437,7 @@ namespace System.Diagnostics.Tests
             Process process = CreateProcess();
             process.Start();
 
-            Assert.True(process.WaitForExit(Helpers.PassingTestTimeoutMilliseconds), $"Proccess {process.Id} did not finish in {Helpers.PassingTestTimeoutMilliseconds}.");
+            Assert.True(process.WaitForExit(Helpers.PassingTestTimeoutMilliseconds), $"Process {process.Id} did not finish in {Helpers.PassingTestTimeoutMilliseconds}.");
 
             process.Kill(killTree);
         }

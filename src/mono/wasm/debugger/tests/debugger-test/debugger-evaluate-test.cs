@@ -45,7 +45,7 @@ namespace DebuggerTests
 
         public static void EvaluateLocalsFromAnotherAssembly()
         {
-            var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-source-link.dll");
+            var asm = System.Reflection.Assembly.LoadFrom("lazy-debugger-test.dll");
             var myType = asm.GetType("DebuggerTests.ClassToCheckFieldValue");
             var myMethod = myType.GetConstructor(new Type[] { });
             var a = myMethod.Invoke(new object[]{});
@@ -421,23 +421,37 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
-            DebuggerTestsV2.EvaluateStaticClass.Run();
-            var a = 0;
+            DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run();
+            DebuggerTests.EvaluateStaticFieldsInStaticClass.Run();
+            DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStatic();
+            var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
+            instanceWithStaticFields.Run();
         }
 
-        public static void EvaluateAsyncMethods()
+        public static async Task EvaluateMethodsAsync()
         {
-            var staticClass = new EvaluateNonStaticClassWithStaticFields();
-            staticClass.run();
+            await DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
+            await DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
+            var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
+            await instanceWithStaticFields.RunAsync();
         }
-
     }
 
-    public static class EvaluateStaticClass
+    public static class EvaluateStaticFieldsInStaticClass
     {
-        public static int StaticField1 = 10;
-        public static string StaticProperty1 => "StaticProperty1";
-        public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static int StaticField = 10;
+        public static string StaticProperty => "StaticProperty1";
+        public static string StaticPropertyWithError => throw new Exception("not implemented 1");
+
+        public static void Run()
+        {
+            bool stop = true;
+        }
+
+        public async static Task RunAsync()
+        {
+            await Task.FromResult(0);
+        }
 
         public static class NestedClass1
         {
@@ -445,19 +459,39 @@ namespace DebuggerTests
             {
                 public static class NestedClass3
                 {
-                    public static int StaticField1 = 3;
-                    public static string StaticProperty1 => "StaticProperty3";
+                    public static int StaticField = 3;
+                    public static string StaticProperty => "StaticProperty3";
                     public static string StaticPropertyWithError => throw new Exception("not implemented 3");
                 }
             }
         }
     }
 
-    public class EvaluateNonStaticClassWithStaticFields
+    public class EvaluateStaticFieldsInInstanceClass
     {
-        public static int StaticField1 = 10;
-        public static string StaticProperty1 => "StaticProperty1";
-        public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static int StaticField = 70;
+        public static string StaticProperty => "StaticProperty7";
+        public static string StaticPropertyWithError => throw new Exception("not implemented 7");
+
+        public void Run()
+        {
+            bool stop = true;
+        }
+
+        public async Task RunAsync()
+        {
+            await Task.FromResult(0);
+        }
+
+        public static void RunStatic()
+        {
+            bool stop = true;
+        }
+
+        public static async Task RunStaticAsync()
+        {
+            await Task.FromResult(0);
+        }
 
         private int HelperMethod()
         {
@@ -470,7 +504,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateLocalsWithElementAccessTests
+    public class EvaluateLocalsWithIndexingTests
     {
         public class TestEvaluate
         {
@@ -1371,7 +1405,7 @@ namespace DebuggerTests
             var test = new TestClass();
         }
     }
-    
+
     public static class PrimitiveTypeMethods
     {
         public class TestClass
@@ -1401,20 +1435,102 @@ namespace DebuggerTests
             string localString = "S*T*R";
         }
     }
+
+    public static class EvaluateNullableProperties
+    {
+        class TestClass
+        {
+            public List<int> MemberListNull = null;
+            public List<int> MemberList = new List<int>() {1, 2};
+            public TestClass Sibling { get; set; }
+        }
+        static void Evaluate()
+        {
+            #nullable enable
+            List<int>? listNull = null;
+            #nullable disable
+            List<int> list = new List<int>() {1};
+            TestClass tc = new TestClass();
+            TestClass tcNull = null;
+            string str = "str#value";
+            string str_null = null;
+            int x = 5;
+            int? x_null = null;
+            int? x_val = x;
+        }
+    }
+
+    public static class TypeProperties
+    {
+        public class InstanceProperties
+        {
+            public string str = "aB.c[";
+        }
+
+        public static void Run()
+        {
+            var instance = new InstanceProperties();
+            var localString = "aB.c[";
+        }
+    }
 }
 
 namespace DebuggerTestsV2
 {
-    public static class EvaluateStaticClass
+    public static class EvaluateStaticFieldsInStaticClass
     {
-        public static int StaticField1 = 20;
-        public static string StaticProperty1 => "StaticProperty2";
-        public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static int StaticField = 20;
+        public static string StaticProperty => "StaticProperty2";
+        public static string StaticPropertyWithError => throw new Exception("not implemented 2");
 
         public static void Run()
         {
             var a = 0;
         }
+    }
+}
+
+public static class NestedWithSameNames
+{
+    public static int StaticField = 30;
+    public static string StaticProperty => "StaticProperty3";
+    public static string StaticPropertyWithError => throw new Exception("not implemented V3");
+
+    public static class B
+    {
+        public static int StaticField = 60;
+        public static string StaticProperty => "StaticProperty6";
+        public static string StaticPropertyWithError => throw new Exception("not implemented V6");
+
+        public static class NestedWithSameNames
+        {
+            public static class B
+            {
+                public static int NestedWithSameNames = 90;
+                public static int StaticField = 40;
+                public static string StaticProperty => "StaticProperty4";
+                public static string StaticPropertyWithError => throw new Exception("not implemented V4");
+
+                public static void Run()
+                {
+                    var a = 0;
+                }
+            }
+        }
+        public static class NestedWithDifferentName
+        {
+            public static class B
+            {
+                public static int StaticField = 70;
+                public static string StaticProperty => "StaticProperty7";
+                public static string StaticPropertyWithError => throw new Exception("not implemented V7");
+            }
+        }
+    }
+
+    public static void Evaluate()
+    {
+        B.NestedWithSameNames.B.Run();
     }
 }
 
@@ -1432,8 +1548,8 @@ public static class NoNamespaceClass
         {
             public static class NestedClass3
             {
-                public static int StaticField1 = 30;
-                public static string StaticProperty1 => "StaticProperty30";
+                public static int StaticField = 30;
+                public static string StaticProperty => "StaticProperty30";
                 public static string StaticPropertyWithError => throw new Exception("not implemented 30");
             }
         }

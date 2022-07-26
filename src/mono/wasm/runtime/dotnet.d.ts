@@ -155,6 +155,7 @@ declare type MonoConfig = {
     runtime_options?: string[];
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
+    diagnostic_options?: DiagnosticOptions;
     ignore_pdb_load_errors?: boolean;
     wait_for_debugger?: number;
 };
@@ -208,9 +209,18 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+declare type DiagnosticOptions = {
+    sessions?: EventPipeSessionOptions[];
+    server?: DiagnosticServerOptions;
+};
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
+    providers: string;
 }
+declare type DiagnosticServerOptions = {
+    connect_url: string;
+    suspend: string | boolean;
+};
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
@@ -241,16 +251,51 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
-
 declare type EventPipeSessionID = bigint;
+
+declare const eventLevel: {
+    readonly LogAlways: 0;
+    readonly Critical: 1;
+    readonly Error: 2;
+    readonly Warning: 3;
+    readonly Informational: 4;
+    readonly Verbose: 5;
+};
+declare type EventLevel = typeof eventLevel;
+declare type UnnamedProviderConfiguration = Partial<{
+    keyword_mask: string | 0;
+    level: number;
+    args: string;
+}>;
+interface ProviderConfiguration extends UnnamedProviderConfiguration {
+    name: string;
+}
+declare class SessionOptionsBuilder {
+    private _rundown?;
+    private _providers;
+    constructor();
+    static get Empty(): SessionOptionsBuilder;
+    static get DefaultProviders(): SessionOptionsBuilder;
+    setRundownEnabled(enabled: boolean): SessionOptionsBuilder;
+    addProvider(provider: ProviderConfiguration): SessionOptionsBuilder;
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    build(): EventPipeSessionOptions;
+}
+
 interface EventPipeSession {
     get sessionID(): EventPipeSessionID;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;
 }
+
 interface Diagnostics {
+    EventLevel: EventLevel;
+    SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+    getStartupSessions(): (EventPipeSession | null)[];
 }
 
 declare function mono_wasm_runtime_ready(): void;
@@ -343,6 +388,49 @@ declare function getF64(offset: _MemOffset): number;
 declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
 declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
 
+interface IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+}
+declare class ManagedObject implements IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+declare class ManagedError extends Error implements IDisposable {
+    constructor(message: string);
+    get stack(): string | undefined;
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+declare const enum MemoryViewType {
+    Byte = 0,
+    Int32 = 1,
+    Double = 2
+}
+interface IMemoryView {
+    /**
+     * copies elements from provided source to the wasm memory.
+     * target has to have the elements of the same type as the underlying C# array.
+     * same as TypedArray.set()
+     */
+    set(source: TypedArray, targetOffset?: number): void;
+    /**
+     * copies elements from wasm memory to provided target.
+     * target has to have the elements of the same type as the underlying C# array.
+     */
+    copyTo(target: TypedArray, sourceOffset?: number): void;
+    /**
+     * same as TypedArray.slice()
+     */
+    slice(start?: number, end?: number): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
+declare function mono_wasm_get_assembly_exports(assembly: string): Promise<any>;
+
 declare const MONO: {
     mono_wasm_setenv: typeof mono_wasm_setenv;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
@@ -357,6 +445,7 @@ declare const MONO: {
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
     mono_run_main: typeof mono_run_main;
     mono_run_main_and_exit: typeof mono_run_main_and_exit;
+    mono_wasm_get_assembly_exports: typeof mono_wasm_get_assembly_exports;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
     config: MonoConfig | MonoConfigError;
@@ -441,6 +530,8 @@ interface DotnetPublicAPI {
     MONO: typeof MONO;
     BINDING: typeof BINDING;
     INTERNAL: any;
+    EXPORTS: any;
+    IMPORTS: any;
     Module: EmscriptenModule;
     RuntimeId: number;
     RuntimeBuildInfo: {
@@ -455,4 +546,33 @@ declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;
 }
 
-export { BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntime as default };
+/**
+ * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
+ * It's ideal to be used on call from C# with the buffer pinned there or with unmanaged memory.
+ * It is disposed at the end of the call to JS.
+ */
+declare class Span implements IMemoryView, IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    set(source: TypedArray, targetOffset?: number | undefined): void;
+    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
+    slice(start?: number | undefined, end?: number | undefined): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+/**
+ * ArraySegment class is JS wrapper for System.ArraySegment<T>.
+ * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
+ * User could dispose it manualy.
+ */
+declare class ArraySegment implements IMemoryView, IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    set(source: TypedArray, targetOffset?: number | undefined): void;
+    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
+    slice(start?: number | undefined, end?: number | undefined): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
+export { ArraySegment, BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, IMemoryView, MONOType, ManagedError, ManagedObject, MemoryViewType, MonoArray, MonoObject, MonoString, Span, VoidPtr, createDotnetRuntime as default };

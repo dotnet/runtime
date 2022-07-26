@@ -126,7 +126,7 @@ namespace System.Xml.Linq
         /// <param name="namespaceName">A string containing the namespace name.</param>
         /// <returns>An <see cref="XNamespace"/> constructed from the namespace name string.</returns>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("namespaceName")]
+        [return: NotNullIfNotNull(nameof(namespaceName))]
         public static implicit operator XNamespace?(string? namespaceName)
         {
             return namespaceName != null ? Get(namespaceName) : null;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -399,10 +398,17 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => { stream.Seek(-1, SeekOrigin.Begin); });
                 Assert.Throws<IOException>(() => { stream.Seek(-stream.Position - 1, SeekOrigin.Current); });
                 Assert.Throws<IOException>(() => { stream.Seek(-stream.Length - 1, SeekOrigin.End); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
+                if (CanSetLength)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
+                }
+                else
+                {
+                    Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
+                }
             }
             else
             {
@@ -522,7 +528,7 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
@@ -530,12 +536,14 @@ namespace System.IO.Tests
             }
 
             var cts = new CancellationTokenSource();
+
             Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
-            cts.Cancel();
+
+            cts.CancelAfter(cancellationDelay);
             await AssertCanceledAsync(cts.Token, () => t);
         }
 
-        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
@@ -543,8 +551,10 @@ namespace System.IO.Tests
             }
 
             var cts = new CancellationTokenSource();
+
             Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
-            cts.Cancel();
+
+            cts.CancelAfter(cancellationDelay);
             await AssertCanceledAsync(cts.Token, () => t);
         }
 
@@ -616,10 +626,11 @@ namespace System.IO.Tests
             private readonly int _length;
             private IntPtr _ptr;
             public int PinRefCount;
+            private readonly string _ctorStack = Environment.StackTrace;
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized");
+            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 
@@ -1298,6 +1309,31 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(AllSeekModes))]
+        public virtual async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = await CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            long pos = stream.Length + 10;
+            Assert.Equal(pos, Seek(mode, stream, pos));
+
+            Assert.Equal(0, stream.Read(new byte[1], 0, 1));
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
         public virtual async Task Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
         {
             if (!CanSeek)
@@ -1638,26 +1674,30 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException()
+        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable);
+            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException()
+        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException(int cancellationDelay)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable);
+            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
         [Fact]
@@ -1855,7 +1895,7 @@ namespace System.IO.Tests
             {
                 write = Task.Run(async () =>
                 {
-                    await writeable.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                    await writeable.WriteAsync("hello"u8.ToArray());
                     await writeable.DisposeAsync();
                 });
             }
@@ -2206,7 +2246,7 @@ namespace System.IO.Tests
 
                         Task write = Task.Run(async () =>
                         {
-                            await writeable.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                            await writeable.WriteAsync("hello"u8.ToArray());
                             if (FlushRequiredToWriteData)
                             {
                                 if (FlushGuaranteesAllDataWritten)
@@ -2261,7 +2301,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public virtual async Task ZeroByteWrite_OtherDataReceivedSuccessfully(ReadWriteMode mode)
         {
-            byte[][] buffers = new[] { Array.Empty<byte>(), Encoding.UTF8.GetBytes("hello"), Array.Empty<byte>(), Encoding.UTF8.GetBytes("world") };
+            byte[][] buffers = new[] { Array.Empty<byte>(), "hello"u8.ToArray(), Array.Empty<byte>(), "world"u8.ToArray() };
 
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
@@ -2692,7 +2732,7 @@ namespace System.IO.Tests
                 return;
             }
 
-            StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync();
 
             foreach (Stream stream in streams)
             {
@@ -2915,7 +2955,7 @@ namespace System.IO.Tests
             // (a) produce at least two readable bytes, so we can unblock the reader and read a single byte without clearing its buffer; and
             // (b) produce no more than 1K of readable bytes, so we can clear the reader buffer below.
             // If this isn't the case for some Stream(s), we can modify the data or parameterize it per Stream.
-            byte[] data = Encoding.UTF8.GetBytes("hello world");
+            byte[] data = "hello world"u8.ToArray();
 
             using StreamPair innerStreams = ConnectedStreams.CreateBidirectional();
             (Stream innerWriteable, Stream innerReadable) = GetReadWritePair(innerStreams);

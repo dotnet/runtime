@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Xml;
+using System.Text;
+using System.Collections;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Xml;
-    using System.Text;
-    using System.Collections;
-
     internal sealed class XsltOutput : CompiledAction
     {
         internal enum OutputMethod
@@ -199,10 +199,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 string[] qnames = XmlConvert.SplitString(value);
 
-                if (_cdataElements == null)
-                {
-                    _cdataElements = new Hashtable(qnames.Length);
-                }
+                _cdataElements ??= new Hashtable(qnames.Length);
 
                 for (int i = 0; i < qnames.Length; i++)
                 {

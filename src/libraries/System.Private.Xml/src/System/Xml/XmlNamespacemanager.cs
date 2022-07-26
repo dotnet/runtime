@@ -82,7 +82,7 @@ namespace System.Xml
             get
             {
                 string? defaultNs = LookupNamespace(string.Empty);
-                return (defaultNs == null) ? string.Empty : defaultNs;
+                return defaultNs ?? string.Empty;
             }
         }
 

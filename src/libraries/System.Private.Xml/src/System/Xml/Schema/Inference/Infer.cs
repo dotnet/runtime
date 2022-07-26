@@ -168,10 +168,7 @@ namespace System.Xml.Schema
 
         public XmlSchemaSet InferSchema(XmlReader instanceDocument, XmlSchemaSet schemas)
         {
-            if (schemas == null)
-            {
-                schemas = new XmlSchemaSet(_nametable);
-            }
+            schemas ??= new XmlSchemaSet(_nametable);
             return InferSchema1(instanceDocument, schemas);
         }
 
@@ -902,7 +899,7 @@ namespace System.Xml.Schema
                         table.Add(qname, null);
                     }
                     if (ct == null)
-                    { //untill now the element was empty or SimpleType - it now becomes complex type
+                    {   // until now the element was empty or SimpleType - it now becomes complex type
                         ct = new XmlSchemaComplexType();
                         xse.SchemaType = ct;
                         if (!xse.SchemaTypeName.IsEmpty) //BUGBUG, This assumption is wrong
@@ -1011,15 +1008,10 @@ namespace System.Xml.Schema
                 }
                 else if (elem.SchemaTypeName != XmlQualifiedName.Empty)
                 {
-                    effectiveSchemaType = _schemaSet!.GlobalTypes[elem.SchemaTypeName] as XmlSchemaType;
-                    if (effectiveSchemaType == null)
-                    {
-                        effectiveSchemaType = XmlSchemaType.GetBuiltInSimpleType(elem.SchemaTypeName);
-                    }
-                    if (effectiveSchemaType == null)
-                    {
-                        effectiveSchemaType = XmlSchemaType.GetBuiltInComplexType(elem.SchemaTypeName);
-                    }
+                    effectiveSchemaType =
+                        _schemaSet!.GlobalTypes[elem.SchemaTypeName] as XmlSchemaType ??
+                        (XmlSchemaType?)XmlSchemaType.GetBuiltInSimpleType(elem.SchemaTypeName) ??
+                        (XmlSchemaType?)XmlSchemaType.GetBuiltInComplexType(elem.SchemaTypeName);
                 }
             }
             return effectiveSchemaType;

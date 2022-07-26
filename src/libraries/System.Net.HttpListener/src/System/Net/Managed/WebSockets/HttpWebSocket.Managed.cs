@@ -68,7 +68,7 @@ namespace System.Net.WebSockets
                                                                 request.IsLocal,
                                                                 request.IsSecureConnection,
                                                                 origin!,
-                                                                secWebSocketProtocols != null ? secWebSocketProtocols : Array.Empty<string>(),
+                                                                secWebSocketProtocols ?? Array.Empty<string>(),
                                                                 secWebSocketVersion!,
                                                                 secWebSocketKey!,
                                                                 webSocket);

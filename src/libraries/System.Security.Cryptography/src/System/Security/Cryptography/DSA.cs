@@ -27,6 +27,7 @@ namespace System.Security.Cryptography
 
         protected DSA() { }
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new DSA? Create(string algName)
         {
@@ -492,7 +493,7 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
         {
-            // This method is expected to be overriden with better implementation
+            // This method is expected to be overridden with better implementation
 
             // The only available implementation here is abstract method, use it
             byte[] sig = CreateSignature(hash.ToArray());
@@ -848,7 +849,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> signature,
             DSASignatureFormat signatureFormat)
         {
-            // This method is expected to be overriden with better implementation
+            // This method is expected to be overridden with better implementation
 
             byte[]? sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
 

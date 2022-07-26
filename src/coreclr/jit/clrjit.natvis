@@ -50,6 +50,9 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   <Type Name="GenTreeStrCon">
     <DisplayString>CNS_STR</DisplayString>
   </Type>
+  <Type Name="GenTreeVecCon">
+    <DisplayString>CNS_VEC</DisplayString>
+  </Type>
   <Type Name="GenTreeLngCon">
     <DisplayString>{gtTreeID, d}: [[LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>
   </Type>

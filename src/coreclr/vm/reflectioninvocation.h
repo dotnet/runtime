@@ -52,7 +52,6 @@ public:
 
     // TypedReference functions, should go somewhere else
     static FCDECL4(void, MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldType);
-    static FCDECL1(Object*, TypedReferenceToObject, TypedByRef * value);
 
 #ifdef FEATURE_COMINTEROP
     static FCDECL8(Object*, InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE, StringObject* nameUNSAFE, INT32 invokeAttr, Object* targetUNSAFE, PTRArray* argsUNSAFE, PTRArray* byrefModifiersUNSAFE, LCID lcid, PTRArray* namedParametersUNSAFE);
@@ -77,8 +76,7 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::
 
 class ReflectionEnum {
 public:
-    static FCDECL1(Object *, InternalGetEnumUnderlyingType, ReflectClassBaseObject *target);
-    static FCDECL1(INT32, InternalGetCorElementType, Object *pRefThis);
+    static FCDECL1(INT32, InternalGetCorElementType, MethodTable* pMT);
     static FCDECL2_IV(Object*, InternalBoxEnum, ReflectClassBaseObject* pEnumType, INT64 value);
 };
 

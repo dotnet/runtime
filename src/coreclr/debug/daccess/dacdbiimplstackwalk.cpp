@@ -821,8 +821,8 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Since return addres point to the next(!) instruction after [call IL_Throw] this sometimes can lead to incorrect exception stacktraces
         // where a next source line is spotted as an exception origin. This happens when the next instruction after [call IL_Throw] belongs to
         // a sequence point and a source line different from a sequence point and a source line of [call IL_Throw].
-        // Later on this flag is used in order to adjust nativeOffset and make ICorDebugILFrame::GetIP return IL offset withing
-        // the same sequence point as an actuall IL throw instruction.
+        // Later on this flag is used in order to adjust nativeOffset and make ICorDebugILFrame::GetIP return IL offset within
+        // the same sequence point as an actual IL throw instruction.
 
         // Here is how we detect it:
         // We can assume that nativeOffset points to an the instruction after [call IL_Throw] when these conditioins are met:

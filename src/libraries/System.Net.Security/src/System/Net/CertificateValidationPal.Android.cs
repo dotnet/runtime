@@ -42,11 +42,12 @@ namespace System.Net
         //
 
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? securityContext,
             bool retrieveChainCertificates,
-            ref X509Chain? chain)
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
-            SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
+            SafeSslHandle? sslContext = ((SafeDeleteSslContext?)securityContext)?.SslContext;
             if (sslContext == null)
                 return null;
 
@@ -65,6 +66,10 @@ namespace System.Net
             else
             {
                 chain ??= new X509Chain();
+                if (chainPolicy != null)
+                {
+                    chain.ChainPolicy = chainPolicy;
+                }
                 IntPtr[]? ptrs = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(sslContext);
                 if (ptrs != null && ptrs.Length > 0)
                 {

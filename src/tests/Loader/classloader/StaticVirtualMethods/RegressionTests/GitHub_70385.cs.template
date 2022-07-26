@@ -1,0 +1,36 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+
+interface IBase<T>
+{
+    static abstract void Method();
+}
+
+interface IDerived<T> : IBase<T>
+{
+    static void IBase<T>.Method()
+    {
+        Console.WriteLine("IDerived.Method");
+    }
+}
+
+class Final : IDerived<Final>
+{
+}
+
+class Program
+{
+    private static void CallSVM<T, U>()
+        where T : IBase<U>
+    {
+        T.Method();
+    }
+    
+    static int Main()
+    {
+        CallSVM<Final, Final>();
+        return 100;
+    }
+}

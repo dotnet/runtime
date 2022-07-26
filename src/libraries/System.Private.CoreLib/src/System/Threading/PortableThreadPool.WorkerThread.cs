@@ -23,7 +23,7 @@ namespace System.Threading
             private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline * 4;
 #endif
 
-            // This value represents an assumption of how much uncommited stack space a worker thread may use in the future.
+            // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
             // preexisting threads from running out of memory when using new stack space in low-memory situations.
             public const int EstimatedAdditionalStackUsagePerThreadBytes = 64 << 10; // 64 KB
@@ -119,7 +119,7 @@ namespace System.Threading
                     try
                     {
                         // At this point, the thread's wait timed out. We are shutting down this thread.
-                        // We are going to decrement the number of exisiting threads to no longer include this one
+                        // We are going to decrement the number of existing threads to no longer include this one
                         // and then change the max number of threads in the thread pool to reflect that we don't need as many
                         // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
                         ThreadCounts counts = threadPoolInstance._separated.counts;
@@ -128,16 +128,14 @@ namespace System.Threading
                             // Since this thread is currently registered as an existing thread, if more work comes in meanwhile,
                             // this thread would be expected to satisfy the new work. Ensure that NumExistingThreads is not
                             // decreased below NumProcessingWork, as that would be indicative of such a case.
-                            short numExistingThreads = counts.NumExistingThreads;
-                            if (numExistingThreads <= counts.NumProcessingWork)
+                            if (counts.NumExistingThreads <= counts.NumProcessingWork)
                             {
                                 // In this case, enough work came in that this thread should not time out and should go back to work.
                                 break;
                             }
 
                             ThreadCounts newCounts = counts;
-                            newCounts.SubtractNumExistingThreads(1);
-                            short newNumExistingThreads = (short)(numExistingThreads - 1);
+                            short newNumExistingThreads = --newCounts.NumExistingThreads;
                             short newNumThreadsGoal =
                                 Math.Max(
                                     threadPoolInstance.MinThreadsGoal,
@@ -173,7 +171,23 @@ namespace System.Threading
             /// </summary>
             private static void RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                threadPoolInstance._separated.counts.InterlockedDecrementNumProcessingWork();
+                // A compare-exchange loop is used instead of Interlocked.Decrement or Interlocked.Add to defensively prevent
+                // NumProcessingWork from underflowing. See the setter for NumProcessingWork.
+                ThreadCounts counts = threadPoolInstance._separated.counts;
+                while (true)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumProcessingWork--;
+
+                    ThreadCounts countsBeforeUpdate =
+                        threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                    if (countsBeforeUpdate == counts)
+                    {
+                        break;
+                    }
+
+                    counts = countsBeforeUpdate;
+                }
 
                 // It's possible that we decided we had thread requests just before a request came in,
                 // but reduced the worker count *after* the request came in.  In this case, we might
@@ -235,8 +249,8 @@ namespace System.Threading
                     while (true)
                     {
                         ThreadCounts newCounts = counts;
-                        newCounts.SubtractNumProcessingWork((short)toCreate);
-                        newCounts.SubtractNumExistingThreads((short)toCreate);
+                        newCounts.NumProcessingWork -= (short)toCreate;
+                        newCounts.NumExistingThreads -= (short)toCreate;
 
                         ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                         if (oldCounts == counts)
@@ -273,7 +287,7 @@ namespace System.Threading
                     }
 
                     ThreadCounts newCounts = counts;
-                    newCounts.SubtractNumProcessingWork(1);
+                    newCounts.NumProcessingWork--;
 
                     ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
 

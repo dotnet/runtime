@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -9,14 +9,8 @@
 
   <!-- Code included from System.Runtime.InteropServices -->
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs"
-             Link="Production\CustomTypeMarshallerKind.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs"
-             Link="Production\CustomTypeMarshallerDirection.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs"
-             Link="Production\CustomTypeMarshallerFeatures.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs"
-             Link="Production\StringMarshalling.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs" Link="Production\MarshalMode.cs" />
   </ItemGroup>
 
   <ItemGroup>

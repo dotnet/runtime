@@ -92,11 +92,6 @@
         <target state="translated">Недостаточно шестнадцатеричных цифр.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Внутренняя ошибка в ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Нераспознанная конструкция группирования.</target>
@@ -212,11 +207,6 @@
         <target state="translated">Метод RegexGenerator должен быть частичным, без параметров, неуниверсальным, неабстрактным и возвращать регулярное выражение</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Ошибка шаблона замены.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">Обратный порядок диапазона [x-y].</target>
@@ -270,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">Комментарий (?#...) без признака завершения.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">Используйте "RegexGeneratorAttribute", чтобы создавать реализацию регулярного выражения во время компиляции.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">Преобразовать в "RegexGenerator".</target>
         <note />
       </trans-unit>
     </body>

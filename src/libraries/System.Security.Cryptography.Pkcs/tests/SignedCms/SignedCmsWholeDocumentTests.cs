@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void ReadRsaPkcs1SimpleDocument()
         {
             SignedCms cms = new SignedCms();
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void ReadRsaPkcs1CounterSigned()
         {
             SignedCms cms = new SignedCms();
@@ -285,7 +285,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckHash();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void CheckNoSignatureDocument()
         {
             SignedCms cms = new SignedCms();
@@ -405,7 +405,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void NonEmbeddedCertificate()
         {
             SignedCms cms = new SignedCms();
@@ -518,7 +518,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void ReadRsaPkcs1DoubleCounterSigned()
         {
             SignedCms cms = new SignedCms();

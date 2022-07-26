@@ -92,11 +92,6 @@
         <target state="translated">Nicht genügend Hexadezimalziffern.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Interner Fehler in ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Unbekanntes Gruppierungskonstrukt.</target>
@@ -212,11 +207,6 @@
         <target state="translated">Die „RegexGenerator“-Methode muss partiell, parameterlos, nicht generisch sein und Regex zurückgeben.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Ersetzungsmusterfehler.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">[x-y]-Bereich in umgekehrter Reihenfolge.</target>
@@ -270,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">Nicht abgeschlossener (?#...)-Kommentar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">Verwenden Sie „RegexGeneratorAttribute“, um die Implementierung regulärer Ausdrücke zur Kompilierzeit zu generieren.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">In „RegexGenerator“ konvertieren.</target>
         <note />
       </trans-unit>
     </body>

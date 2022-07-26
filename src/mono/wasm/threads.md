@@ -42,7 +42,7 @@ JIT/interpreter/AOT to drop the multi-threaded implementation in the single-thre
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
 
 **TODO** For `FeatureWasmPerfTracing`, the implementation should check *some
-runtime contant* and throw PNSE if diagnostics are not enabled.
+runtime constant* and throw PNSE if diagnostics are not enabled.
 
 ## Native runtime preprocessor defines ##
 

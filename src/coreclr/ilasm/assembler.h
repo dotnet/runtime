@@ -53,10 +53,6 @@
 
 #define dwUniBuf 16384
 
-#ifdef TARGET_UNIX
-extern char *g_pszExeFile;
-#endif
-
 extern WCHAR   wzUniBuf[]; // Unicode conversion global buffer (assem.cpp)
 
 class Class;

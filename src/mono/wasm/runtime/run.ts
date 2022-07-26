@@ -15,7 +15,6 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
     }
 }
 
- 
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
     mono_wasm_set_main_args(main_assembly_name, args);
     if (runtimeHelpers.wait_for_debugger == -1) {

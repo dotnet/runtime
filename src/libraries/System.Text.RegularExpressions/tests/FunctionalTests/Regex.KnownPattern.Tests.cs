@@ -1378,12 +1378,6 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (engine != RegexEngine.Interpreter)
-                {
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/69381")]
-                    continue;
-                }
-
                 if (RegexHelpers.IsNonBacktracking(engine))
                 {
                     // NonBacktracking doesn't support lookarounds or balancing groups
@@ -1413,6 +1407,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(RecreationalRegex_Rectangle_MemberData))]
+        [OuterLoop("May take several seconds")]
         public async Task RecreationalRegex_Rectangle(RegexEngine engine, string input, bool expectedMatch)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"

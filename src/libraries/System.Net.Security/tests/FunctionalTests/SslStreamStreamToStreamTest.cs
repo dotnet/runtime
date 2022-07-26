@@ -20,7 +20,7 @@ namespace System.Net.Security.Tests
 
     public abstract class SslStreamStreamToStreamTest
     {
-        private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private readonly byte[] _sampleMsg = "Sample Test Message"u8.ToArray();
 
         protected static async Task WithServerCertificate(X509Certificate serverCertificate, Func<X509Certificate, string, Task> func)
         {
@@ -70,7 +70,6 @@ namespace System.Net.Security.Tests
         [ConditionalTheory]
         [MemberData(nameof(SslStream_StreamToStream_Authentication_Success_MemberData))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Authentication_Success(X509Certificate serverCert = null, X509Certificate clientCert = null)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -87,7 +86,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -131,7 +129,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -160,7 +157,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Write_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -185,7 +181,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Read_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -211,7 +206,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task Write_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -236,7 +230,6 @@ namespace System.Net.Security.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Dispose_Throws()
         {
             if (this is SslStreamStreamToStreamTest_SyncBase)
@@ -289,7 +282,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -485,9 +477,19 @@ namespace System.Net.Security.Tests
             X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
             await WithServerCertificate(serverCertificate, async (certificate, name) =>
             {
-                Task t1 = Task.Factory.FromAsync(clientSslStream.BeginAuthenticateAsClient(name, clientCerts, SslProtocols.None, checkCertificateRevocation: false, null, null), clientSslStream.EndAuthenticateAsClient);
-                Task t2 = Task.Factory.FromAsync(serverSslStream.BeginAuthenticateAsServer(certificate, clientCertificateRequired: clientCertificate != null, checkCertificateRevocation: false, null, null), serverSslStream.EndAuthenticateAsServer);
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                IAsyncResult clientBeginAuth = clientSslStream.BeginAuthenticateAsClient(name, clientCerts, SslProtocols.None, checkCertificateRevocation: false, null, null);
+                IAsyncResult serverBeginAuth = serverSslStream.BeginAuthenticateAsServer(certificate, clientCertificateRequired: clientCertificate != null, checkCertificateRevocation: false, null, null);
+                try
+                {
+                    Task t1 = Task.Factory.FromAsync(clientBeginAuth, clientSslStream.EndAuthenticateAsClient);
+                    Task t2 = Task.Factory.FromAsync(serverBeginAuth, serverSslStream.EndAuthenticateAsServer);
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                }
+                finally
+                {
+                    clientBeginAuth.AsyncWaitHandle.Dispose();
+                    serverBeginAuth.AsyncWaitHandle.Dispose();
+                }
             });
         }
 

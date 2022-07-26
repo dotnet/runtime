@@ -10,7 +10,12 @@ namespace System.Reflection.TestAssembly
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Assembly CallMe_AggressiveInlining()
         {
-            return CallMeActual();
+            Assembly asm = CallMeActual();
+
+            // Avoid tailcall optimization by ensuring CallMe_Actual() is not the last method invoked.
+            CallMe_AvoidTailcall();
+
+            return asm;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -18,5 +23,8 @@ namespace System.Reflection.TestAssembly
         {
             return Assembly.GetCallingAssembly();
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int CallMe_AvoidTailcall() => 42;
     }
 }

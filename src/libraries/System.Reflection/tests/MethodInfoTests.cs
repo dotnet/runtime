@@ -709,6 +709,61 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void InvokeNullableEnumParameterDefaultNo()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNo", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { Type.Missing }));
+        } 
+
+        [Fact]
+        public static void InvokeNullableEnumParameterDefaultYes()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultYes", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void InvokeNonNullableEnumParameterDefaultYes()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NonNullableEnumDefaultYes", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Equal(YesNo.No, method.Invoke(null, new object[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object[] { YesNo.Yes }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void InvokeNullableEnumParameterDefaultNull()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNull", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Null(method.Invoke(null, new object?[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void InvokeNullableEnumParameterNoDefault()
+        {
+            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumNoDefault", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
+            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
+            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
+            Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
+        }
+
+        [Fact]
         public void ValueTypeMembers_WithOverrides()
         {
             ValueTypeWithOverrides obj = new() { Id = 1 };
@@ -772,6 +827,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void CallStackFrame_AggressiveInlining()
         {
             MethodInfo mi = typeof(System.Reflection.TestAssembly.ClassToInvoke).GetMethod(nameof(System.Reflection.TestAssembly.ClassToInvoke.CallMe_AggressiveInlining),
@@ -1139,6 +1195,12 @@ namespace System.Reflection.Tests
         public int GetId() => Id;
     }
 
+    public enum YesNo
+    {
+        No = 0,
+        Yes = 1,
+    }
+
     public static class EnumMethods
     {
         public static bool PassColorsInt(ColorsInt color)
@@ -1151,6 +1213,31 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(ColorsShort.Red, color);
             return true;
+        }
+
+        static YesNo NonNullableEnumDefaultYes(YesNo yesNo = YesNo.Yes)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumDefaultNo(YesNo? yesNo = YesNo.No)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumDefaultYes(YesNo? yesNo = YesNo.Yes)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumDefaultNull(YesNo? yesNo = null)
+        {
+            return yesNo;
+        }
+
+        static YesNo? NullableEnumNoDefault(YesNo? yesNo)
+        {
+            return yesNo;
         }
     }
 #pragma warning restore 0414

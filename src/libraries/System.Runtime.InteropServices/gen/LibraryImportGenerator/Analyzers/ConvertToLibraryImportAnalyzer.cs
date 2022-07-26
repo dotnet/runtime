@@ -46,30 +46,30 @@ namespace Microsoft.Interop.Analyzers
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
             context.RegisterCompilationStartAction(
-                compilationContext =>
+                context =>
                 {
                     // Nothing to do if the LibraryImportAttribute is not in the compilation
-                    INamedTypeSymbol? libraryImportAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute);
+                    INamedTypeSymbol? libraryImportAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute);
                     if (libraryImportAttrType == null)
                         return;
 
-                    INamedTypeSymbol? marshalAsAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
+                    INamedTypeSymbol? marshalAsAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
 
                     var knownUnsupportedTypes = new List<ITypeSymbol>(s_unsupportedTypeNames.Length);
                     foreach (string typeName in s_unsupportedTypeNames)
                     {
-                        INamedTypeSymbol? unsupportedType = compilationContext.Compilation.GetTypeByMetadataName(typeName);
+                        INamedTypeSymbol? unsupportedType = context.Compilation.GetTypeByMetadataName(typeName);
                         if (unsupportedType != null)
                         {
                             knownUnsupportedTypes.Add(unsupportedType);
                         }
                     }
 
-                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes, marshalAsAttrType), SymbolKind.Method);
+                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes, marshalAsAttrType, libraryImportAttrType), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes, INamedTypeSymbol? marshalAsAttrType)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes, INamedTypeSymbol? marshalAsAttrType, INamedTypeSymbol libraryImportAttrType)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -82,7 +82,7 @@ namespace Microsoft.Interop.Analyzers
             // This can be the case when the generator creates an extern partial function for blittable signatures.
             foreach (AttributeData attr in method.GetAttributes())
             {
-                if (attr.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, libraryImportAttrType))
                 {
                     return;
                 }

@@ -46,14 +46,14 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 }
 
 // Busy spin for the given number of iterations.
-EXTERN_C REDHAWK_API void __cdecl RhSpinWait(int32_t iterations)
+EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
 {
     YieldProcessorNormalizationInfo normalizationInfo;
     YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
+EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhYield()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -62,7 +62,7 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
     return PalSwitchToThread();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
+EXTERN_C NATIVEAOT_API void __cdecl RhFlushProcessWriteBuffers()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -109,7 +109,7 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
-    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pPointerVal);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress(pPointerVal);
 
     if (pCodeManager != NULL)
         return (HANDLE)pCodeManager->GetOsModuleHandle();
@@ -360,40 +360,40 @@ COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
 
 extern CrstStatic g_CastCacheLock;
 
-EXTERN_C REDHAWK_API void __cdecl RhpAcquireCastCacheLock()
+EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireCastCacheLock()
 {
     g_CastCacheLock.Enter();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
+EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseCastCacheLock()
 {
     g_CastCacheLock.Leave();
 }
 
 extern CrstStatic g_ThunkPoolLock;
 
-EXTERN_C REDHAWK_API void __cdecl RhpAcquireThunkPoolLock()
+EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
 {
     g_ThunkPoolLock.Enter();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpReleaseThunkPoolLock()
+EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
 {
     g_ThunkPoolLock.Leave();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpGetTickCount64()
+EXTERN_C NATIVEAOT_API void __cdecl RhpGetTickCount64()
 {
     PalGetTickCount64();
 }
 
 EXTERN_C int32_t __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-EXTERN_C REDHAWK_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    ThreadStore::GetCurrentThread()->SetupHackPInvokeTunnel();
+    ThreadStore::GetCurrentThread()->DeferTransitionFrame();
 
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
@@ -432,7 +432,7 @@ COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C REDHAWK_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
+EXTERN_C NATIVEAOT_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }

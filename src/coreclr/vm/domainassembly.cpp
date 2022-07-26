@@ -113,7 +113,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
-        // we have done so because of reentrancy contraints.)
+        // we have done so because of reentrancy constraints.)
 
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }
@@ -340,7 +340,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
         // Atomically create a handle
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        FastInterlockCompareExchangePointer(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
@@ -603,6 +603,13 @@ void DomainAssembly::Activate()
     }
 #endif //_DEBUG
 
+#ifdef FEATURE_READYTORUN
+    if (m_pModule->IsReadyToRun())
+    {
+        m_pModule->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
+    }
+#endif
+
     RETURN;
 }
 
@@ -650,7 +657,7 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        FastInterlockCompareExchangePointer(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)

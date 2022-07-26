@@ -24,50 +24,56 @@ set "COMPlus_GCStress="
 set "COMPlus_HeapVerify="
 set "COMPlus_ReadyToRun="
 
-DEL test.dll
-if exist test.dll (
-    echo FAILED to delete test.dll
+md IL_DLLS
+if not exist IL_DLLS\fieldgetter.dll (
+    copy /y fieldgetter.dll IL_DLLS\fieldgetter.dll
+)
+if not exist IL_DLLS\fieldgetter.dll (
+    echo FAILED to copy fieldgetter.dll to IL_DLLS
     exit /b 1
 )
-COPY /Y ..\testv1\test\test.dll test.dll
-if not exist test.dll (
-    echo FAILED to copy test.dll
+if not exist IL_DLLS\mainv1.dll (
+    copy /y mainv1.dll IL_DLLS\mainv1.dll
+)
+if not exist IL_DLLS\mainv1.dll (
+    echo FAILED to copy mainv1.dll to IL_DLLS
     exit /b 1
 )
+IF "%__TestDotNetCmd%"=="" set __TestDotNetCmd=dotnet
 
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv1.dll -o:test.dll ..\testv1\test\test.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
     Exit /b 1
 )
-if not exist test.ni.dll (
-    echo FAILED to build test.ni.dll
+if not exist test.map (
+    echo FAILED to build test.dll
     exit /b 1
 )
 
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv1.dll -r:..\testv1\test\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
     Exit /b 1
 )
-if not exist fieldgetter.ni.dll (
-    echo FAILED to build fieldgetter.ni.dll
+if not exist fieldgetter.map (
+    echo FAILED to build fieldgetter.dll
     exit /b 1
 )
 
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:mainv1.ni.dll mainv1.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:..\testv1\test\test.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS\mainv1.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
     Exit /b 1
 )
-if not exist mainv1.ni.dll (
-    echo FAILED to build mainv1.ni.dll
+if not exist mainv1.map (
+    echo FAILED to build mainv1.dll
     exit /b 1
 )
 
@@ -79,19 +85,29 @@ $(BashCLRTestPreCommands)
 # Suppress some COMPlus variables for the duration of Crossgen2 execution
 export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 
-rm -f test.dll
-if [ -f test.dll ]
+mkdir IL_DLLS
+
+if [ ! -f IL_DLLS/fieldgetter.dll ]
 then
-  echo Failed to delete test.dll
+  cp fieldgetter.dll IL_DLLS/fieldgetter.dll
+fi
+if [ ! -f IL_DLLS/fieldgetter.dll ]
+then
+  echo Failed to copy fieldgetter.dll to IL_DLLS
   exit 1
 fi
-cp ../testv1/test/test.dll test.dll
-if [ ! -f test.dll ]
+
+if [ ! -f IL_DLLS/mainv1.dll ]
 then
-  echo Failed to copy test.dll
+  cp mainv1.dll IL_DLLS/mainv1.dll
+fi
+if [ ! -f IL_DLLS/mainv1.dll ]
+then
+  echo Failed to copy mainv1.dll to IL_DLLS
   exit 1
 fi
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:test.ni.dll test.dll
+
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv1.dll -o:test.dll ../testv1/test/test.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -99,27 +115,13 @@ then
   echo Crossgen failed with exitcode: $__cgExitCode
   exit 1
 fi
-if [ ! -f test.ni.dll ]
+if [ ! -f test.map ]
 then
-  echo Failed to build test.ni.dll
+  echo Failed to build test.dll
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:fieldgetter.ni.dll fieldgetter.dll
-
-__cgExitCode=$?
-if [ $__cgExitCode -ne 0 ]
-then
-  echo Crossgen failed with exitcode: $__cgExitCode
-  exit 1
-fi
-if [ ! -f fieldgetter.ni.dll ]
-then
-  echo Failed to build fieldgetter.ni.dll
-  exit 1
-fi
-
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -r:`pwd` -o:mainv1.ni.dll mainv1.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/mainv1.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -127,9 +129,23 @@ then
   echo Crossgen failed with exitcode: $__cgExitCode
   exit 1
 fi
-if [ ! -f mainv1.ni.dll ]
+if [ ! -f fieldgetter.map ]
 then
-  echo Failed to build mainv1.ni.dll
+  echo Failed to build fieldgetter.dll
+  exit 1
+fi
+
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS/mainv1.dll
+
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f mainv1.map ]
+then
+  echo Failed to build mainv1.dll
   exit 1
 fi
 

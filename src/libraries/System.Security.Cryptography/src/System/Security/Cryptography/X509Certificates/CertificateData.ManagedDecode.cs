@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
         catch (Exception e)
         {
-            string pem = new string(PemEncoding.Write(PemLabels.X509Certificate, rawData));
+            string pem = PemEncoding.WriteString(PemLabels.X509Certificate, rawData);
             throw new CryptographicException($"Error in reading certificate:{Environment.NewLine}{pem}", e);
         }
 #endif
@@ -243,11 +243,7 @@ namespace System.Security.Cryptography.X509Certificates
                         e = value;
                         break;
                     default:
-                        if (firstRdn == null)
-                        {
-                            firstRdn = value;
-                        }
-
+                        firstRdn ??= value;
                         break;
                 }
             }

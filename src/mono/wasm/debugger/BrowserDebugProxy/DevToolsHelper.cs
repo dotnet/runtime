@@ -401,11 +401,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ExecutionContext
     {
-        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
+        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData, PauseOnExceptionsKind pauseOnExceptions)
         {
             Id = id;
             AuxData = auxData;
             SdbAgent = sdbAgent;
+            PauseOnExceptions = pauseOnExceptions;
         }
 
         public string DebugId { get; set; }
@@ -473,6 +474,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> ObjectFields { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> EvaluationResults { get; } = new();
         public PerScopeCache(JArray objectValues)
         {
             foreach (var objectValue in objectValues)

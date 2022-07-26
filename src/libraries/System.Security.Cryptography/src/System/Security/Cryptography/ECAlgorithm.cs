@@ -878,7 +878,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.EcPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.EcPrivateKey, exported);
                 }
                 finally
                 {
