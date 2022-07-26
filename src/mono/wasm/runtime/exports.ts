@@ -304,13 +304,15 @@ function initializeImportsAndExports(
     }
     list.registerRuntime(exportedAPI);
 
-    configure_emscripten_startup(module, exportedAPI);
-
     if (ENVIRONMENT_IS_WORKER) {
         // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
         // until we have our own fix for dotnet.worker.js file
+        // we also skip all emscripten startup event and configuration of worker's JS state
+        // note that emscripten events are not firing either
         return <any>exportedAPI.Module;
     }
+
+    configure_emscripten_startup(module, exportedAPI);
 
     return exportedAPI;
 }
