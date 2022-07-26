@@ -5360,6 +5360,23 @@ void Compiler::generatePatchpointInfo()
             }
         }
 
+        // If the this pointer can be modified, the patchpoint should record
+        // the location for the modifiable this.
+        //
+        // The Tier0 method's scratch BB will have code (see `fgAddInternal`) that
+        // ensures this location always includes an appropriate `this` (either original
+        // or modified) so we don't need to worry about the relative timing of
+        // the potential modification by Tier0 vis-a-vis the timing of any OSR transition.
+        //
+        // Note when the orginal `this` must be kept alive (for say generics context
+        // reporting) its location is conveyed by a separate field in the patchpoint info.
+        // The OSR method will not need to refer to the original Tier0 `this` in codegen.
+        //
+        if ((lclNum == 0) && !info.compIsStatic && !lvaIsOriginalThisReadOnly())
+        {
+            varNum = lvaArg0Var;
+        }
+
         LclVarDsc* const varDsc = lvaGetDesc(varNum);
 
         // We expect all these to have stack homes, and be FP relative
