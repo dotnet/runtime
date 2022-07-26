@@ -20,6 +20,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(TypeAttributes.SpecialName)]
         [InlineData(TypeAttributes.StringFormatMask)]
         [InlineData(TypeAttributes.UnicodeClass)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateType(TypeAttributes attributes)
         {
             TypeBuilder type = Helpers.DynamicType(attributes);
@@ -70,6 +71,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateType_NestedType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
@@ -81,6 +83,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void CreateType_GenericType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);

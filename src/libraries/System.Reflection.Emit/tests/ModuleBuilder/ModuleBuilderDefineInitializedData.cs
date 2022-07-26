@@ -53,6 +53,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
         public void DefineInitializedData_CreateGlobalFunctionsCalled_ThrowsInvalidOperationException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -64,6 +65,8 @@ namespace System.Reflection.Emit.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65558", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+
         public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
         {
             ModuleBuilder module = Helpers.DynamicModule();
