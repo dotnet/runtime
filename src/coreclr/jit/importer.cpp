@@ -3883,10 +3883,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->numArgs == 1);
 
-                GenTree*             array    = impPopStack().val;
-                CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.methInst[0];
-                CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
-                var_types            elemType = JITtype2varType(jitType);
+                GenTree* array = impPopStack().val;
 
                 GenTree* arrayClone;
                 array = impCloneExpr(array, &arrayClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
@@ -3894,11 +3891,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 impAppendTree(gtNewNullCheck(arrayClone, compCurBB), (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
 
-                GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
-                GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, elemType, elemHnd);
-                indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
-                indexAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
-                retNode = indexAddr;
+                GenTree* offset = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
+                retNode         = gtNewOperNode(GT_ADD, TYP_BYREF, array, offset);
                 break;
             }
 
