@@ -20,55 +20,29 @@ const DotnetSupportLib = {
     // This is async init of it, note it would become available only after first tick.
     // Also fix of scriptDirectory would be delayed
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
-    // We also replace implementation of readAsync and fetch
+    // We also replace implementation of fetch
     $DOTNET__postset: `
 let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
 if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 }
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
-        const require = mod.createRequire(import.meta.url);
-        const path = require('path');
-        const url = require('url');
-        __dotnet_replacements.require = require;
-        __dirname = scriptDirectory = path.dirname(url.fileURLToPath(import.meta.url)) + '/';
-        return require;
-    });
-    getBinaryPromise = async () => {
-        if (!wasmBinary) {
-            try {
-                if (typeof fetch === 'function' && !isFileURI(wasmBinaryFile)) {
-                    const response = await fetch(wasmBinaryFile, { credentials: 'same-origin' });
-                    if (!response['ok']) {
-                        throw "failed to load wasm binary file at '" + wasmBinaryFile + "'";
-                    }
-                    return response['arrayBuffer']();
-                }
-                else if (readAsync) {
-                    return await new Promise(function (resolve, reject) {
-                        readAsync(wasmBinaryFile, function (response) { resolve(new Uint8Array(/** @type{!ArrayBuffer} */(response))) }, reject)
-                    });
-                }
-
-            }
-            catch (err) {
-                return getBinary(wasmBinaryFile);
-            }
-        }
-        return getBinary(wasmBinaryFile);
-    }
+    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_exports: EXPORTS, marshaled_imports: IMPORTS },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
-readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
-require = __dotnet_replacements.requireOut;
+_scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
+if (ENVIRONMENT_IS_NODE) {
+    __dotnet_replacements.requirePromise.then(someRequire => {
+        require = someRequire;
+    });
+}
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;

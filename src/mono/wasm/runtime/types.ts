@@ -65,12 +65,19 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 }
 
 export type MonoConfig = {
-    isError: false,
-    assembly_root: string, // the subfolder containing managed assemblies and pdbs
-    assets: AllAssetEntryTypes[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
-    debug_level?: number, // Either this or the next one needs to be set
-    enable_debugging?: number, // Either this or the previous one needs to be set
-    globalization_mode: GlobalizationMode, // configures the runtime's globalization mode
+    isError?: false,
+    assembly_root?: string, // the subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
+    assets?: AssetEntry[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
+
+    /**
+     * Either this or enable_debugging needs to be set
+     * debug_level > 0 enables debugging and sets the debug log level to debug_level
+     * debug_level == 0 disables debugging and enables interpreter optimizations
+     * debug_level < 0 enabled debugging and disables debug logging.
+     */
+    debug_level?: number,
+    enable_debugging?: number, // Either this or debug_level needs to be set
+    globalization_mode?: GlobalizationMode, // configures the runtime's globalization mode
     diagnostic_tracing?: boolean // enables diagnostic log messages during startup
     remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
     environment_variables?: {
@@ -90,46 +97,31 @@ export type MonoConfigError = {
     error: any
 }
 
-export type AllAssetEntryTypes = AssetEntry | AssemblyEntry | SatelliteAssemblyEntry | VfsEntry | IcuData;
-
-// Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
-export type AssetEntry = {
+export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
     behavior: AssetBehaviours, // determines how the asset will be handled once loaded
+    resolvedUrl?: string;
+    hash?: string;
+}
+
+// Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
+export interface AssetEntry extends ResourceRequest {
     virtual_path?: string, // if specified, overrides the path of the asset in the virtual filesystem and similar data structures once loaded.
     culture?: string,
     load_remote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remote_sources.
     is_optional?: boolean // if true, any failure to load this asset will be ignored.
     buffer?: ArrayBuffer // if provided, we don't have to fetch it
+    pending?: LoadingResource // if provided, we don't have to start fetching it
 }
 
-export interface AssemblyEntry extends AssetEntry {
-    name: "assembly"
-}
-
-export interface SatelliteAssemblyEntry extends AssetEntry {
-    name: "resource",
-    culture: string
-}
-
-export interface VfsEntry extends AssetEntry {
-    name: "vfs",
-    virtual_path: string
-}
-
-export interface IcuData extends AssetEntry {
-    name: "icu",
-    load_remote: boolean
-}
-
-// Note that since these are annoated as `declare const enum` they are replaces by tsc with their raw value during compilation
-export const enum AssetBehaviours {
-    Resource = "resource", // load asset as a managed resource assembly
-    Assembly = "assembly", // load asset as a managed assembly (or debugging information)
-    Heap = "heap", // store asset into the native heap
-    ICU = "icu", // load asset as an ICU data archive
-    VFS = "vfs", // load asset into the virtual filesystem (for fopen, File.Open, etc)
-}
+export type AssetBehaviours =
+    "resource" // load asset as a managed resource assembly
+    | "assembly" // load asset as a managed assembly 
+    | "pdb" // load asset as a managed debugging information
+    | "heap" // store asset into the native heap
+    | "icu" // load asset as an ICU data archive
+    | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
+    | "dotnetwasm"; // the binary of the dotnet runtime
 
 export type RuntimeHelpers = {
     get_call_sig_ref: MonoMethod;
@@ -154,22 +146,30 @@ export type RuntimeHelpers = {
     _class_uint32: MonoClass;
     _class_double: MonoClass;
     _class_boolean: MonoClass;
+    mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
     config: MonoConfig;
+    diagnostic_tracing: boolean;
+    enable_debugging: number;
     wait_for_debugger?: number;
-    fetch: (url: string) => Promise<Response>;
+    fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
+    scriptDirectory?: string
+    requirePromise: Promise<Function>
+    ExitStatus: ExitStatusError;
+    quit: Function,
+    locateFile: (path: string, prefix?: string) => string,
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");
 
-export const enum GlobalizationMode {
-    ICU = "icu", // load ICU globalization data from any runtime assets with behavior "icu".
-    INVARIANT = "invariant", //  operate in invariant globalization mode.
-    AUTO = "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
-}
+export type GlobalizationMode =
+    "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
+    "invariant" | //  operate in invariant globalization mode.
+    "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+
 
 export type AOTProfilerOptions = {
     write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
@@ -211,13 +211,14 @@ export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean,
 
-    config?: MonoConfig | MonoConfigError,
+    config?: MonoConfig,
     configSrc?: string,
-    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
-    onDotnetReady?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
+    onDotnetReady?: () => void | Promise<void>;
 
     imports?: DotnetModuleConfigImports;
     exports?: string[];
+    downloadResource?: (request: ResourceRequest) => LoadingResource
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {
@@ -239,6 +240,13 @@ export type DotnetModuleConfigImports = {
     };
     url?: any;
 }
+
+export interface LoadingResource {
+    name: string;
+    url: string;
+    response: Promise<Response>;
+}
+
 
 // see src\mono\wasm\runtime\rollup.config.js
 // inline this, because the lambda could allocate closure on hot path otherwise
@@ -301,6 +309,44 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
     return (value === undefined) || (value === null);
 }
 
+export type EarlyImports = {
+    isESM: boolean,
+    isGlobal: boolean,
+    isNode: boolean,
+    isWorker: boolean,
+    isShell: boolean,
+    isWeb: boolean,
+    isPThread: boolean,
+    quit_: Function,
+    ExitStatus: ExitStatusError,
+    requirePromise: Promise<Function>
+};
+export type EarlyExports = {
+    mono: any,
+    binding: any,
+    internal: any,
+    module: any,
+    marshaled_exports: any,
+    marshaled_imports: any
+};
+export type EarlyReplacements = {
+    fetch: any,
+    require: any,
+    requirePromise: Promise<Function>,
+    noExitRuntime: boolean,
+    updateGlobalBufferAndViews: Function,
+    pthreadReplacements: PThreadReplacements | undefined | null
+    scriptDirectory: string;
+    scriptUrl: string
+}
+export interface ExitStatusError {
+    new(status: number): any;
+}
+export type PThreadReplacements = {
+    loadWasmModuleToWorker: Function,
+    threadInitTLS: Function
+}
+
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
 export function assertNever(x: never): never {
@@ -317,4 +363,3 @@ export function notThenable<T>(x: T | PromiseLike<T>): x is T {
 /// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
 /// Primarily intended for debugging purposes.
 export type EventPipeSessionID = bigint;
-

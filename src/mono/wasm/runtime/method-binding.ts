@@ -327,7 +327,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_function = <ConverterFunction>compiledFunction;
     } catch (exc) {
         converter.compiled_function = null;
-        console.warn("compiling converter failed for", bodyJs, "with error", exc);
+        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -360,7 +360,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_variadic_function = <VariadicConverterFunction>compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = null;
-        console.warn("compiling converter failed for", bodyJs, "with error", exc);
+        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
