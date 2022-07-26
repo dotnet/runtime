@@ -4342,7 +4342,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     GenTree*          arrRefDefn  = nullptr; // non-NULL if we need to allocate a temp for the arrRef expression
     GenTree*          indexDefn   = nullptr; // non-NULL if we need to allocate a temp for the index expression
     GenTreeBoundsChk* boundsCheck = nullptr;
-    GenTree*          nullCheck   = nullptr;
 
     // If we're doing range checking, introduce a GT_BOUNDS_CHECK node for the address.
     if (indexAddr->IsBoundsChecked())
@@ -4422,32 +4421,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // to compute the address expression
         arrRef = arrRef2;
         index  = index2;
-    }
-    // bounds checking implies null checking, this is only for no bounds check accesses
-    else if (indexAddr->IsNullChecked())
-    {
-        GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
-
-        if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_FIELD, GT_LCL_FLD) ||
-            (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
-        {
-            unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
-            arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
-            arrRef                = gtNewLclvNode(arrRefTmpNum, arrRef->TypeGet());
-            arrRef2               = gtNewLclvNode(arrRefTmpNum, arrRef->TypeGet());
-        }
-        else
-        {
-            arrRef2 = gtCloneExpr(arrRef);
-            noway_assert(arrRef2 != nullptr);
-        }
-
-        nullCheck = gtNewNullCheck(arrRef, compCurBB);
-
-        // Now we'll switch to using the second copy for arrRef
-        // to compute the address expression
-        arrRef = arrRef2;
     }
 
     // Create the "addr" which is "*(arrRef + ((index * elemSize) + elemOffs))"
@@ -4544,7 +4517,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
     GenTree* tree = addr;
 
-    // Prepend the bounds/null check and the assignment trees that were created (if any).
+    // Prepend the bounds check and the assignment trees that were created (if any).
     if (boundsCheck != nullptr)
     {
         // This is changing a value dependency (INDEX_ADDR node) into a flow
@@ -4556,10 +4529,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
         fgSetRngChkTarget(boundsCheck);
-    }
-    else if (nullCheck != nullptr)
-    {
-        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), nullCheck, tree);
     }
 
     if (indexDefn != nullptr)
