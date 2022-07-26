@@ -2572,7 +2572,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal(Services, systemOwnedServices.ProcessName);
         }
 
-
         private IReadOnlyList<Process> CreateProcessTree()
         {
             (Process Value, string Message) rootResult = ListenForAnonymousPipeMessage(rootPipeHandleString =>
