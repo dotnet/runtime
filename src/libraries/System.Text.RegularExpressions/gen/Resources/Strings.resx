@@ -134,14 +134,11 @@
   <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
     <value>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</value>
   </data>
-  <data name="InvalidLangVersionMessage" xml:space="preserve">
-    <value>C# LangVersion of 11 or greater is required</value>
-  </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
     <value>RegexGenerator limitation reached.</value>
   </data>
   <data name="LimitedSourceGenerationMessage" xml:space="preserve">
-    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</value>
+    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</value>
   </data>
   <data name="Generic" xml:space="preserve">
     <value>Regular expression parser error '{0}' at offset {1}.</value>
