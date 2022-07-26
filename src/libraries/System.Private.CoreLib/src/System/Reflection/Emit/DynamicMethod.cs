@@ -4,12 +4,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 using System.Text;
-using System.Threading;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace System.Reflection.Emit
 {
@@ -21,7 +17,7 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-        private static volatile RuntimeModule? s_anonymouslyHostedDynamicMethodsModule;
+        private static volatile Module? s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
 
         //
@@ -204,7 +200,7 @@ namespace System.Reflection.Emit
 
         // We create a transparent assembly to host DynamicMethods. Since the assembly does not have any
         // non-public fields (or any fields at all), it is a safe anonymous assembly to host DynamicMethods
-        private static RuntimeModule GetDynamicMethodsModule()
+        private static Module GetDynamicMethodsModule()
         {
             if (s_anonymouslyHostedDynamicMethodsModule != null)
                 return s_anonymouslyHostedDynamicMethodsModule;
@@ -224,7 +220,7 @@ namespace System.Reflection.Emit
                     null);
 
                 // this always gets the internal module.
-                s_anonymouslyHostedDynamicMethodsModule = (RuntimeModule)assembly.ManifestModule!;
+                s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule!;
             }
 
             return s_anonymouslyHostedDynamicMethodsModule;

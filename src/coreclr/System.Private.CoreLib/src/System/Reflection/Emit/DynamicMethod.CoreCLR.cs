@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
         private DynamicILGenerator? m_ilGenerator;
         private DynamicILInfo? m_DynamicILInfo;
         private bool m_fInitLocals;
-        private RuntimeModule m_module;
+        private Module m_module;
         internal bool m_skipVisibility;
         internal RuntimeType? m_typeOwner; // can be null
         private MethodInvoker? _invoker;
@@ -89,13 +89,13 @@ namespace System.Reflection.Emit
                     if (m_methodHandle == null)
                     {
                         if (m_DynamicILInfo != null)
-                            m_DynamicILInfo.GetCallableMethod(m_module, this);
+                            m_DynamicILInfo.GetCallableMethod((RuntimeModule)m_module, this);
                         else
                         {
                             if (m_ilGenerator == null || m_ilGenerator.ILOffset == 0)
                                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
 
-                            m_ilGenerator.GetCallableMethod(m_module, this);
+                            m_ilGenerator.GetCallableMethod((RuntimeModule)m_module, this);
                         }
                     }
                 }

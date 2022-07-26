@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
         private RuntimeMethodHandle mhandle;
         private RuntimeType m_returnType;
         private RuntimeType[] m_parameterTypes;
-        private RuntimeModule m_module;
+        private Module m_module;
         private bool m_skipVisibility;
         private bool m_fInitLocals;
         private ILGenerator? m_ilGenerator;
