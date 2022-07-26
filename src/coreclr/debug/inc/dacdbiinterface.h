@@ -201,10 +201,10 @@ public:
     //
     // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
     // ASSERTs in VM code are ignored. The default is disabled, since DAC should do it's best to
-    // return results even with a corrupt or unsyncrhonized target. See
+    // return results even with a corrupt or unsynchronized target. See
     // code:ClrDataAccess::TargetConsistencyAssertsEnabled for more details.
     //
-    // When testing with a non-corrupt and properly syncrhonized target, this should be enabled to
+    // When testing with a non-corrupt and properly synchronized target, this should be enabled to
     // help catch bugs.
     //
     // Arguments:
@@ -2274,7 +2274,7 @@ public:
     virtual
     HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT) = 0;
 
-    // Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+    // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
     // Arguments:
     //     handle: the GC handle which refers to the object of interest

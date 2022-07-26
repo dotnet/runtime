@@ -1929,7 +1929,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            // Module whos metadata is being updated
+            // Module whose metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
             VMPTR_DomainAssembly vmDomainAssembly;
 

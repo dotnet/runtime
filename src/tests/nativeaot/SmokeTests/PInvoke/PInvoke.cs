@@ -43,6 +43,9 @@ namespace PInvokeTests
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         private static extern int VerifyByRefFoo(ref Foo value);
 
+        [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
+        private static extern ref Foo VerifyByRefFooReturn();
+
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern bool GetNextChar(ref char c);
 
@@ -432,6 +435,10 @@ namespace PInvokeTests
 
             ThrowIfNotEquals(foo.a, 11, "By ref struct unmarshalling failed");
             ThrowIfNotEquals(foo.b, 21.0f, "By ref struct unmarshalling failed");
+
+            ref Foo retfoo = ref VerifyByRefFooReturn();
+            ThrowIfNotEquals(retfoo.a, 42, "By ref struct return failed");
+            ThrowIfNotEquals(retfoo.b, 43.0, "By ref struct return failed");
         }
 
         private static void TestString()

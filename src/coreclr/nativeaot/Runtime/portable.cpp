@@ -406,27 +406,7 @@ void * ReturnFromCallDescrThunk;
 // Return address hijacking
 //
 #if !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackByref, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
+COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
@@ -543,15 +523,6 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 }
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-#ifdef CALLDESCR_FPARGREGSARERETURNREGS
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub))
-#else
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub, uintptr_t* pReturnFloatingPointReturn4Thunk, uintptr_t* pReturnFloatingPointReturn8Thunk))
-#endif
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }

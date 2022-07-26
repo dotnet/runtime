@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, Globals.TypeOfInt));
             }
 
-            if (value.IndexOfAny(JsonGlobals.FloatingPointCharacters) == -1)
+            if (value.AsSpan().IndexOfAny('.', 'e', 'E') < 0)
             {
                 int intValue;
                 if (int.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out intValue))

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//Simple arithmatic manipulation of one 2D array elements
+//Simple arithmetic manipulation of one 2D array elements
 
 using System;
 using Xunit;
@@ -106,8 +106,8 @@ public class class1
         //m = new double[size, size, size];
         //refm = new double[size][];
 
-        //for (int k=0; k<refm.Length; k++) 
-        //refm[k] = new double[size];		
+        //for (int k=0; k<refm.Length; k++)
+        //refm[k] = new double[size];
 
         while (i < size)
         {
@@ -175,7 +175,7 @@ public class class1
         Console.WriteLine();
         Console.WriteLine("2D Array");
         Console.WriteLine("Random seed: {0}; set environment variable CORECLR_SEED to this value to reproduce", seed);
-        Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmatic operations", size);
+        Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmetic operations", size);
         Console.WriteLine("Matrix is member of class, element stores random double");
         Console.WriteLine("array set/get, ref/out param are used");
 
@@ -224,7 +224,7 @@ public class class1
 
         Console.WriteLine();
         Console.WriteLine("3D Array");
-        Console.WriteLine("Element manipulation of {0} by {1} by {2} matrices with different arithmatic operations", size, size + 5, size + 10);
+        Console.WriteLine("Element manipulation of {0} by {1} by {2} matrices with different arithmetic operations", size, size + 5, size + 10);
         Console.WriteLine("Matrix is member of class, element stores random double");
 
         double[][] refa3d = new double[size][];

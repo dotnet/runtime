@@ -42,7 +42,7 @@ Heuristic `A` thru `M` are for selecting one of the free registers, while `N` th
 ```c#
 registerCandidates = 0; // bit-mask of all registers
 
-LinearScan::allocateReg(RefPostion refPosition, Inteval* interval)
+LinearScan::allocateReg(RefPosition refPosition, Interval* interval)
 {
     bool found = false;
     registerCandidates = allFreeCandidates();
@@ -102,7 +102,7 @@ HashTable<char, HeuristicFn> ScoreMappingTable = {
     {'Q', try_REG_NUM}
 };
 
-LinearScan::allocateReg(RefPostion refPosition, Inteval* interval)
+LinearScan::allocateReg(RefPosition refPosition, Interval* interval)
 {
     char *ordering = Read_COMPlus_LsraOrdering();
     HeuristicFn fn;

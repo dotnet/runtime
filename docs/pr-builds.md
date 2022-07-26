@@ -66,7 +66,7 @@ Validation may fail for several reasons:
   * Add a comment `/azp run runtime`
   * Or, click on "re-run all checks" in the GitHub Checks tab
   * Or, simply close and reopen the PR.
-  * Or, ammend your commit with `--amend --no-edit` and force push to your branch.
+  * Or, amend your commit with `--amend --no-edit` and force push to your branch.
 
 ### Additional information:
   * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.

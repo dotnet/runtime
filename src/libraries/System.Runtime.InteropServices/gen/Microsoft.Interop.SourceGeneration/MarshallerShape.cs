@@ -367,7 +367,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? AllocateContainerForManagedElementsFinally(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
             {
                 // static TCollection AllocateContainerForManagedElementsFinally(TNative unmanaged, int length);
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
                         && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32
@@ -403,7 +403,7 @@ namespace Microsoft.Interop
             public IMethodSymbol? FromManaged { get; init; }
             public IMethodSymbol? FromManagedWithBuffer { get; init; }
             public IMethodSymbol? ToManaged { get; init; }
-            public IMethodSymbol? ToManagedGuranteed { get; init; }
+            public IMethodSymbol? ToManagedGuaranteed { get; init; }
             public IMethodSymbol? FromUnmanaged { get; init; }
             public IMethodSymbol? ToUnmanaged { get; init; }
             public IMethodSymbol? Free { get; init; }
@@ -421,7 +421,7 @@ namespace Microsoft.Interop
                 return SymbolEqualityComparer.Default.Equals(method, FromManaged)
                     || SymbolEqualityComparer.Default.Equals(method, FromManagedWithBuffer)
                     || SymbolEqualityComparer.Default.Equals(method, ToManaged)
-                    || SymbolEqualityComparer.Default.Equals(method, ToManagedGuranteed)
+                    || SymbolEqualityComparer.Default.Equals(method, ToManagedGuaranteed)
                     || SymbolEqualityComparer.Default.Equals(method, FromUnmanaged)
                     || SymbolEqualityComparer.Default.Equals(method, ToUnmanaged)
                     || SymbolEqualityComparer.Default.Equals(method, Free)
@@ -509,7 +509,7 @@ namespace Microsoft.Interop
                 {
                     FromUnmanaged = fromUnmanaged,
                     ToManaged = toManaged,
-                    ToManagedGuranteed = toManagedFinally,
+                    ToManagedGuaranteed = toManagedFinally,
                     ManagedValuesDestination = managedDestination,
                     UnmanagedValuesSource = unmanagedSource
                 };

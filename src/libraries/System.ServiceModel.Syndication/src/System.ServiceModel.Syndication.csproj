@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes related to service model syndication.</PackageDescription>

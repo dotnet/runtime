@@ -564,7 +564,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
                 // The former is completly bogus. The later restriction could be
                 // lifted by supporting non-zero SIMD constants or by generating
                 // field initialization code that converts an integer constant to
-                // the appropiate SIMD value. Unlikely to be very useful, though.
+                // the appropriate SIMD value. Unlikely to be very useful, though.
                 JITDUMP(" dest contains GC and/or SIMD fields and source constant is not 0.\n");
                 return;
             }
@@ -941,7 +941,7 @@ void MorphCopyBlockHelper::MorphStructCases()
     {
         // It is not always profitable to do field by field init for structs that are allocated to memory.
         // A struct with 8 bool fields will require 8 moves instead of one if we do this transformation.
-        // A simple heuristic when field by field copy is prefered:
+        // A simple heuristic when field by field copy is preferred:
         // - if fields can be enregistered;
         // - if the struct has GCPtrs (block copy would be done via helper that is expensive);
         // - if the struct has only one field.

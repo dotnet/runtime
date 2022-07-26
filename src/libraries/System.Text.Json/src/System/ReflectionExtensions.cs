@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json.Reflection
@@ -58,6 +59,28 @@ namespace System.Text.Json.Reflection
 
             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(typeof(TAttribute), memberInfo);
             return null;
+        }
+
+        /// <summary>
+        /// Polyfill for BindingFlags.DoNotWrapExceptions
+        /// </summary>
+        public static object? InvokeNoWrapExceptions(this MethodInfo methodInfo, object? obj, object?[] parameters)
+        {
+#if NETCOREAPP
+            return methodInfo.Invoke(obj, BindingFlags.DoNotWrapExceptions, null, parameters, null);
+#else
+            object? result = null;
+            try
+            {
+                result = methodInfo.Invoke(obj, parameters);
+            }
+            catch (TargetInvocationException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+
+            return result;
+#endif
         }
     }
 }

@@ -13,7 +13,7 @@
 //   stress log will log all facilities, and only filter on logging level.
 //
 // The log has a very simple structure, and is meant to be dumped from an NTSD
-//   extention (eg. strike).
+//   extension (eg. strike).
 //
 // debug\rhsos\stresslogdump.cpp contains the dumper utility that parses this
 //   log.
@@ -315,7 +315,7 @@ public:
     static long NewChunk ()     { return PalInterlockedIncrement (&theLog.totalChunk); }
     static long ChunkDeleted () { return PalInterlockedDecrement (&theLog.totalChunk); }
 
-    //the result is not 100% accurate. If multiple threads call this funciton at the same time,
+    //the result is not 100% accurate. If multiple threads call this function at the same time,
     //we could allow the total size be bigger than required. But the memory won't grow forever
     //and this is not critical so we don't try to fix the race
     static bool AllowNewChunk (long numChunksInCurThread);

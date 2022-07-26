@@ -468,7 +468,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         internal static byte[]? ReadContentAsBase64(string? str)
         {
             if (str == null)

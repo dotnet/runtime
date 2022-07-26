@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -27,22 +26,22 @@ namespace System.Xml.Xsl.Runtime
         // XmlWriter interface
         //-----------------------------------------------
 
-        public override XmlWriterSettings Settings
+        public override XmlWriterSettings? Settings
         {
             get { return _wrapped.Settings; }
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             _wrapped.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             _wrapped.WriteStartElement(prefix, localName, ns);
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             _wrapped.WriteStartAttribute(prefix, localName, ns);
         }
@@ -52,27 +51,27 @@ namespace System.Xml.Xsl.Runtime
             _wrapped.WriteEndAttribute();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             _wrapped.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             _wrapped.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             _wrapped.WriteProcessingInstruction(name, text);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             _wrapped.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             _wrapped.WriteString(text);
         }
@@ -122,7 +121,7 @@ namespace System.Xml.Xsl.Runtime
             _wrapped.WriteValue(value);
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             _wrapped.WriteValue(value);
         }
@@ -206,7 +205,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Forward to WriteEndElement().
         /// </summary>
-        internal override void WriteEndElement(string prefix, string localName, string ns)
+        internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
             _wrapped.WriteEndElement();
         }

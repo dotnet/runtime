@@ -1095,7 +1095,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx G_GNUC_UN
  * single entry, and thus this would be an out-of-bounds access. That's where
  * the ENCMAP table comes into play: It will have an entry
  * `MONO_TOKEN_METHOD_DEF | 5`, so before accessing the new entry in the
- * minimal delta image, it has to be substracted. Thus the new relative index
+ * minimal delta image, it has to be subtracted. Thus the new relative index
  * is `1`, and no out-of-bounds acccess anymore.
  *
  * One can assume that ENCMAP is sorted (todo: verify this claim).
@@ -1620,7 +1620,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 
 		/*
 		 * So the way a non-default func_code works is that it's attached to the EnCLog
-		 * record preceding the new member defintion (so e.g. an addMethod code will be on
+		 * record preceding the new member definition (so e.g. an addMethod code will be on
 		 * the preceding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
 		 */
 		switch (func_code) {
@@ -1984,14 +1984,14 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 
 }
 
-/* do actuall enclog application */
+/* do actual enclog application */
 static gboolean
 apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	guint32 rows = table_info_get_rows (table_enclog);
 
-	/* NOTE: Suppressed colums
+	/* NOTE: Suppressed columns
 	 *
 	 * Certain column values in some tables in the deltas are not meant to be applied over the
 	 * previous generation. See CMiniMdRW::m_SuppressedDeltaColumns in CoreCLR.  For example the

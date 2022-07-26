@@ -493,9 +493,14 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr() || (isDstAddrLocal && (size <= copyBlockUnrollLimit)))
+            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
             {
                 blkNode->SetOper(GT_STORE_BLK);
+            }
+            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
+            {
+                blkNode->SetOper(GT_STORE_BLK);
+                blkNode->gtBlkOpGcUnsafe = true;
             }
         }
 

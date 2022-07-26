@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Xunit;
 
@@ -582,6 +583,32 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void AlreadyInitializedHashSetDictionaryBinding()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedHashSetDictionary:123:0", "val_1"},
+                {"AlreadyInitializedHashSetDictionary:123:1", "val_2"},
+                {"AlreadyInitializedHashSetDictionary:123:2", "val_3"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            Assert.NotNull(options.AlreadyInitializedHashSetDictionary);
+            Assert.Equal(1, options.AlreadyInitializedHashSetDictionary.Count);
+
+            Assert.Equal("This was already here", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(0));
+            Assert.Equal("val_1", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(1));
+            Assert.Equal("val_2", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(2));
+            Assert.Equal("val_3", options.AlreadyInitializedHashSetDictionary["123"].ElementAt(3));
+        }
+
+        [Fact]
         public void CanOverrideExistingDictionaryKey()
         {
             var input = new Dictionary<string, string>
@@ -682,6 +709,36 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("def_0", options.ListDictionary["def"][0]);
             Assert.Equal("def_1", options.ListDictionary["def"][1]);
             Assert.Equal("def_2", options.ListDictionary["def"][2]);
+        }
+
+        [Fact]
+        public void ISetDictionary()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ISetDictionary:abc:0", "abc_0"},
+                {"ISetDictionary:abc:1", "abc_1"},
+                {"ISetDictionary:def:0", "def_0"},
+                {"ISetDictionary:def:1", "def_1"},
+                {"ISetDictionary:def:2", "def_2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            config.Bind(options);
+
+            Assert.Equal(2, options.ISetDictionary.Count);
+            Assert.Equal(2, options.ISetDictionary["abc"].Count);
+            Assert.Equal(3, options.ISetDictionary["def"].Count);
+
+            Assert.Equal("abc_0", options.ISetDictionary["abc"].ElementAt(0));
+            Assert.Equal("abc_1", options.ISetDictionary["abc"].ElementAt(1));
+            Assert.Equal("def_0", options.ISetDictionary["def"].ElementAt(0));
+            Assert.Equal("def_1", options.ISetDictionary["def"].ElementAt(1));
+            Assert.Equal("def_2", options.ISetDictionary["def"].ElementAt(2));
         }
 
         [Fact]
@@ -1074,6 +1131,38 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindInitializedIReadOnlyDictionaryAndDoesNotMofifyTheOriginal()
+        {
+            // A field declared as IEnumerable<T> that is instantiated with a class
+            // that indirectly implements IEnumerable<T> is still bound, but with
+            // a new List<T> with the original values copied over.
+
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedDictionary:existing_key_1", "overridden!"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new InitializedCollectionsOptions();
+            config.Bind(options);
+
+            var array = options.AlreadyInitializedDictionary.ToArray();
+
+            Assert.Equal(2, array.Length);
+
+            Assert.Equal("overridden!", options.AlreadyInitializedDictionary["existing_key_1"]);
+            Assert.Equal("val_2", options.AlreadyInitializedDictionary["existing_key_2"]);
+
+            Assert.NotEqual(options.AlreadyInitializedDictionary, InitializedCollectionsOptions.ExistingDictionary);
+
+            Assert.Equal("val_1", InitializedCollectionsOptions.ExistingDictionary["existing_key_1"]);
+            Assert.Equal("val_2", InitializedCollectionsOptions.ExistingDictionary["existing_key_2"]);
+        }
+
+        [Fact]
         public void CanBindUninitializedICollection()
         {
             var input = new Dictionary<string, string>
@@ -1266,13 +1355,21 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public InitializedCollectionsOptions()
             {
                 AlreadyInitializedIEnumerableInterface = ListUsedInIEnumerableFieldAndShouldNotBeTouched;
+                AlreadyInitializedDictionary = ExistingDictionary;
             }
 
-            public List<string> ListUsedInIEnumerableFieldAndShouldNotBeTouched = new List<string>
+            public List<string> ListUsedInIEnumerableFieldAndShouldNotBeTouched = new()
             {
                 "This was here too",
                 "Don't touch me!"
             };
+
+            public static ReadOnlyDictionary<string, string> ExistingDictionary = new(
+                new Dictionary<string, string>
+                {
+                    {"existing_key_1", "val_1"},
+                    {"existing_key_2", "val_2"}
+                });
 
             public IEnumerable<string> AlreadyInitializedIEnumerableInterface { get; set; }
 
@@ -1281,6 +1378,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public IEnumerable<string> AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable { get; set; } =
                 new CustomListIndirectlyDerivedFromIEnumerable();
+
+            public IReadOnlyDictionary<string, string> AlreadyInitializedDictionary { get; set; }
         }
 
         private class CustomList : List<string>
@@ -1410,6 +1509,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 {
                     ["123"] = "This was already here"
                 };
+
+                AlreadyInitializedHashSetDictionary = new Dictionary<string, HashSet<string>>
+                {
+                    ["123"] = new HashSet<string>(new[] {"This was already here"})
+                };
             }
 
             public Dictionary<string, int> IntDictionary { get; set; }
@@ -1418,6 +1522,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public Dictionary<string, NestedOptions> ObjectDictionary { get; set; }
 
+            public Dictionary<string, ISet<string>> ISetDictionary { get; set; }
             public Dictionary<string, List<string>> ListDictionary { get; set; }
 
             public Dictionary<NestedOptions, string> NonStringKeyDictionary { get; set; }
@@ -1427,6 +1532,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IDictionary<string, string> StringDictionaryInterface { get; set; }
 
             public IDictionary<string, string> AlreadyInitializedStringDictionaryInterface { get; set; }
+            public IDictionary<string, HashSet<string>> AlreadyInitializedHashSetDictionary { get; set; }
         }
 
         private class OptionsWithInterdependentProperties

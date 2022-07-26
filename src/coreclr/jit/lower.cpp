@@ -1805,7 +1805,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
     // Args for tail call are setup in incoming arg area.  The gc-ness of args of
     // caller and callee (which being tail called) may not match.  Therefore, everything
-    // from arg setup until the epilog need to be non-interuptible by GC.  This is
+    // from arg setup until the epilog need to be non-interruptible by GC.  This is
     // achieved by inserting GT_START_NONGC before the very first GT_PUTARG_STK node
     // of call is setup.  Note that once a stack arg is setup, it cannot have nested
     // calls subsequently in execution order to setup other args, because the nested
@@ -2588,7 +2588,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         //
         // If the compare is signed then (x LT|GE y) can be transformed into ((x SUB y) LT|GE 0).
         // If the compare is unsigned we can still use SUB but we need to check the Carry flag,
-        // not the actual result. In both cases we can simply check the appropiate condition flags
+        // not the actual result. In both cases we can simply check the appropriate condition flags
         // and ignore the actual result:
         //     SUB_LO loSrc1, loSrc2
         //     SUB_HI hiSrc1, hiSrc2
@@ -3159,7 +3159,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //     A SETCC/JCC node or nullptr if `node` is not used.
 //
 // Notes:
-//     This simply replaces `node`'s use with an appropiate SETCC/JCC node,
+//     This simply replaces `node`'s use with an appropriate SETCC/JCC node,
 //     `node` is not actually changed, except by having its GTF_SET_FLAGS set.
 //     It's the caller's responsibility to change `node` such that it only
 //     sets the condition flags, without producing a boolean value.
