@@ -245,11 +245,7 @@ namespace System.Net.NetworkInformation
     public abstract partial class IPInterfaceProperties
     {
         protected IPInterfaceProperties() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract System.Net.NetworkInformation.IPAddressInformationCollection AnycastAddresses { get; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
@@ -269,11 +265,7 @@ namespace System.Net.NetworkInformation
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public abstract bool IsDnsEnabled { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract bool IsDynamicDnsEnabled { get; }
         public abstract System.Net.NetworkInformation.MulticastIPAddressInformationCollection MulticastAddresses { get; }
         public abstract System.Net.NetworkInformation.UnicastIPAddressInformationCollection UnicastAddresses { get; }
@@ -312,16 +304,18 @@ namespace System.Net.NetworkInformation
     {
         protected IPv4InterfaceProperties() { }
         public abstract int Index { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract bool IsAutomaticPrivateAddressingActive { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract bool IsAutomaticPrivateAddressingEnabled { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public abstract bool IsDhcpEnabled { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         public abstract bool IsForwardingEnabled { get; }
         public abstract int Mtu { get; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         public abstract bool UsesWins { get; }
     }
     public abstract partial class IPv4InterfaceStatistics
@@ -349,6 +343,10 @@ namespace System.Net.NetworkInformation
         protected IPv6InterfaceProperties() { }
         public abstract int Index { get; }
         public abstract int Mtu { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("freebsd")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual long GetScopeId(System.Net.NetworkInformation.ScopeLevel scopeLevel) { throw null; }
     }
     public abstract partial class MulticastIPAddressInformation : System.Net.NetworkInformation.IPAddressInformation

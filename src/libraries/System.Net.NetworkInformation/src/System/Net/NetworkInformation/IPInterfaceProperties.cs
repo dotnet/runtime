@@ -30,11 +30,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets a bool value that indicates whether this interface is configured to automatically register its IP address information with the Domain Name System (DNS).
         /// </summary>
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("osx")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("freebsd")]
+        [SupportedOSPlatform("windows")]
         public abstract bool IsDynamicDnsEnabled { get; }
 
         /// <summary>
@@ -50,11 +46,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// The address identifies multiple computers. Packets sent to an anycast address are sent to one of the computers identified by the address.
         /// </summary>
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("osx")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("freebsd")]
+        [SupportedOSPlatform("windows")]
         public abstract IPAddressInformationCollection AnycastAddresses { get; }
 
         /// <summary>
