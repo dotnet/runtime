@@ -6002,8 +6002,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
 				LLVMValueRef retval, elem;
-				MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
-				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, klass);
+				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 
 				if (is_simd) {
 					g_assert (lhs);
