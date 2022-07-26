@@ -231,7 +231,7 @@ namespace System.Xml
                 }
                 int needed = newOffsetMax - _offsetMax;
                 DiagnosticUtility.DebugAssert(needed > 0, "");
-                int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax, needed), needed, throwOnEndOfStream: false);
+                int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax), needed, throwOnEndOfStream: false);
                 _offsetMax += read;
 
                 if (read < needed)
