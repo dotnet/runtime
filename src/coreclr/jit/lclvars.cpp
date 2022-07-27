@@ -3196,8 +3196,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     if (clsHnd != NO_CLASS_HANDLE && !isExact && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         CORINFO_CLASS_HANDLE exactClass;
-        if ((info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1) &&
-            (info.compCompHnd->compareTypesForCast(exactClass, clsHnd) == TypeCompareState::Must))
+        if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)
         {
             isExact = true;
             clsHnd  = exactClass;
