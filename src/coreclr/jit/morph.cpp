@@ -2793,6 +2793,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         unsigned numRegsPartial = MAX_REG_ARG - intArgRegNum;
                         assert((unsigned char)numRegsPartial == numRegsPartial);
                         SplitArg(&arg, numRegsPartial, size - numRegsPartial);
+                        arg.AbiInfo.StructFloatFieldType[0] = TYP_I_IMPL; // maybe later will be GCType.
                         assert(!passUsingFloatRegs);
                         assert(size == 2);
                         intArgRegNum = maxRegArgs;
@@ -3728,7 +3729,19 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 #elif defined(TARGET_LOONGARCH64)
             if (arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF)
             {
-                elems[inx].Type = arg->AbiInfo.StructFloatFieldType[inx];
+                var_types Type = arg->AbiInfo.StructFloatFieldType[inx];
+                if (TYP_I_IMPL == Type)
+                {
+                    Type = getSlotType(inx);
+                    Type = varTypeIsGC(Type) ? Type : TYP_I_IMPL;
+
+                    elems[inx].Type                        = Type;
+                    arg->AbiInfo.StructFloatFieldType[inx] = Type;
+                }
+                else
+                {
+                    elems[inx].Type = Type;
+                }
                 offset += (structSize > TARGET_POINTER_SIZE) ? 8 : 4;
             }
             else

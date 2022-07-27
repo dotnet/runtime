@@ -2566,6 +2566,8 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         assert((addr & 3) == 0);
 
         dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
+
 #ifdef DEBUG
         code = emitInsCode(INS_pcaddu18i);
         assert((code | (14)) == 0x1e00000e);
@@ -2596,6 +2598,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         emitOutput_Instr(dst, code);
         dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
 
         code = emitInsCode(INS_ori);
         code |= (code_t)REG_T2;
@@ -3189,15 +3192,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(id->idIsDspReloc());
                 ins             = INS_ld_d;
                 *(code_t*)dstRW = 0x28c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
-            }
-
-            if (id->idGCref() != GCT_NONE)
-            {
-                emitGCregLiveUpd(id->idGCref(), reg1, dstRW);
-            }
-            else
-            {
-                emitGCregDeadUpd(reg1, dstRW);
             }
 
             dstRW += 4;

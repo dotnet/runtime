@@ -2973,6 +2973,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         {
             emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
             emitAttr attr1 = emitTypeSize(layout->GetGCPtrType(i + 1));
+            if (i + 2 >= slots)
+            {
+                attrSrcAddr = EA_8BYTE;
+                attrDstAddr = EA_8BYTE;
+            }
 
             emit->emitIns_R_R_I(INS_ld_d, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
             emit->emitIns_R_R_I(INS_ld_d, attr1, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
@@ -2989,6 +2994,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         if (i < slots)
         {
             emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
+            if (i + 1 >= slots)
+            {
+                attrSrcAddr = EA_8BYTE;
+                attrDstAddr = EA_8BYTE;
+            }
 
             emit->emitIns_R_R_I(INS_ld_d, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
             emit->emitIns_R_R_I(INS_addi_d, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
@@ -3010,6 +3020,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                 // Check if the next slot's type is also TYP_GC_NONE and use two ld/sd
                 if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
                 {
+                    if (i + 2 >= slots)
+                    {
+                        attrSrcAddr = EA_8BYTE;
+                        attrDstAddr = EA_8BYTE;
+                    }
                     emit->emitIns_R_R_I(INS_ld_d, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
                     emit->emitIns_R_R_I(INS_ld_d, EA_8BYTE, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
                     emit->emitIns_R_R_I(INS_addi_d, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF,
@@ -3022,6 +3037,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                 }
                 else
                 {
+                    if (i + 1 >= slots)
+                    {
+                        attrSrcAddr = EA_8BYTE;
+                        attrDstAddr = EA_8BYTE;
+                    }
                     emit->emitIns_R_R_I(INS_ld_d, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
                     emit->emitIns_R_R_I(INS_addi_d, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF,
                                         REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
@@ -7120,21 +7140,21 @@ void CodeGen::genCall(GenTreeCall* call)
             assert(compFeatureArgSplit());
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
 
-            regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
-            regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
+            regNumber argReg   = abiInfo.GetRegNum();
+            regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(0);
 
             // For LA64's ABI, the split is only using the A7 and stack for passing arg.
             assert(emitter::isGeneralRegister(argReg));
             assert(emitter::isGeneralRegister(allocReg));
             assert(abiInfo.NumRegs == 1);
 
-            inst_Mov(TYP_I_IMPL, argReg, allocReg, /* canSkip */ true);
+            inst_Mov(abiInfo.StructFloatFieldType[0], argReg, allocReg, /* canSkip */ true);
         }
         else
         {
             regNumber argReg = abiInfo.GetRegNum();
             genConsumeReg(argNode);
-            var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
+            var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : argNode->TypeGet();
             inst_Mov(dstType, argReg, argNode->GetRegNum(), /* canSkip */ true);
         }
     }
