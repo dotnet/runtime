@@ -63,6 +63,37 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Registers an action used to configure a particular type of options with access to <see cref="IServiceProvider"/>.
+        /// Note: These are run before all <seealso cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// </summary>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="name">The name of the options instance.</param>
+        /// <param name="configureOptions">The action used to configure the options.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, Action<TOptions, IServiceProvider> configureOptions) where TOptions : class
+            => services.Configure(services, (sp) => new ConfigureNamedOptions<TOptions>(name, (o) => configureOptions(o, sp)));
+
+        /// <summary>
+        /// Registers an action used to configure a particular type of options with access to <see cref="IServiceProvider"/>.
+        /// Note: These are run before all <seealso cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// </summary>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="optionsFactory">The action used to configure the options.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, Func<IServiceProvider, IConfigureOptions<TOptions>> optionsFactory) where TOptions : class
+        {
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(optionsFactory);
+
+            services.AddOptions();
+            services.AddSingleton<IConfigureOptions<TOptions>>(sp => optionsFactory(sp));
+
+            return services;
+        }
+
+        /// <summary>
         /// Registers an action used to configure all instances of a particular type of options.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
