@@ -285,16 +285,16 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadCommentHandling()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>("/* commment */"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>("/* comment */"));
 
             var options = new JsonSerializerOptions();
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>("/* commment */", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>("/* comment */", options));
 
             options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            int value = JsonSerializer.Deserialize<int>("1 /* commment */", options);
+            int value = JsonSerializer.Deserialize<int>("1 /* comment */", options);
             Assert.Equal(1, value);
         }
 

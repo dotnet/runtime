@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: false);
+            SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: true);
             if (nodeToFix is null)
             {
                 return;
@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
             context.RegisterCodeFix(
                 CodeAction.Create(
                     SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, context.Diagnostics[0], cancellationToken),
+                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, context.Diagnostics[0], cancellationToken),
                     equivalenceKey: SR.UseRegexSourceGeneratorTitle),
                 context.Diagnostics);
         }
@@ -65,10 +65,12 @@ namespace System.Text.RegularExpressions.Generator
         /// nodes in order to apply the code fix to the diagnostic.
         /// </summary>
         /// <param name="document">The original document.</param>
+        /// <param name="root">The root of the syntax tree.</param>
+        /// <param name="nodeToFix">The node to fix. This is where the diagnostic was produced.</param>
         /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, Diagnostic diagnostic, CancellationToken cancellationToken)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -86,14 +88,6 @@ namespace System.Text.RegularExpressions.Generator
                 return document;
             }
 
-            // Find the node that corresponding to the diagnostic which we will then fix.
-            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-            if (root is null)
-            {
-                return document;
-            }
-
-            SyntaxNode nodeToFix = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: false);
             // Save the operation object from the nodeToFix before it gets replaced by the new method invocation.
             // We will later use this operation to get the parameters out and pass them into the RegexGenerator attribute.
             IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
@@ -144,7 +138,7 @@ namespace System.Text.RegularExpressions.Generator
                 });
 
             // We find nodeToFix again by calculating the offset of how many partial keywords we had to add.
-            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length));
+            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length), getInnermostNodeForTie: true);
             if (nodeToFix is null)
             {
                 return document;
@@ -161,52 +155,30 @@ namespace System.Text.RegularExpressions.Generator
             // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
             DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
             SyntaxGenerator generator = editor.Generator;
-            ImmutableDictionary<string, string?> properties = diagnostic.Properties;
 
             // Generate the modified type declaration depending on whether the callsite was a Regex constructor call
             // or a Regex static method invocation.
+            SyntaxNode replacement = generator.InvocationExpression(generator.IdentifierName(methodName));
+            ImmutableArray<IArgumentOperation> operationArguments;
             if (operation is IInvocationOperation invocationOperation) // When using a Regex static method
             {
-                ImmutableArray<IArgumentOperation> arguments = invocationOperation.Arguments;
+                operationArguments = invocationOperation.Arguments;
+                IEnumerable<SyntaxNode> arguments = operationArguments
+                    .Where(arg => arg.Parameter.Name is not (UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName or UpgradeToRegexGeneratorAnalyzer.PatternArgumentName))
+                    .Select(arg => arg.Syntax);
 
-                // Parse the idices for where to get the arguments from.
-                int?[] indices = new[]
-                {
-                    TryParseInt32(properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName),
-                    TryParseInt32(properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName)
-                };
-
-                foreach (int? index in indices.Where(value => value != null).OrderByDescending(value => value))
-                {
-                    arguments = arguments.RemoveAt(index.GetValueOrDefault());
-                }
-
-                SyntaxNode createRegexMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
-                SyntaxNode method = generator.InvocationExpression(generator.MemberAccessExpression(createRegexMethod, invocationOperation.TargetMethod.Name), arguments.Select(arg => arg.Syntax).ToArray());
-
-                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(method, nodeToFix));
+                replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
             }
-            else // When using a Regex constructor
+            else
             {
-                SyntaxNode invokeMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
-                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(invokeMethod, nodeToFix));
+                operationArguments = ((IObjectCreationOperation)operation).Arguments;
             }
+
+            newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(replacement, nodeToFix));
 
             // Initialize the inputs for the RegexGenerator attribute.
-            SyntaxNode? patternValue = null;
-            SyntaxNode? regexOptionsValue = null;
-
-            // Try to get the pattern and RegexOptions values out from the diagnostic's property bag.
-            if (operation is IObjectCreationOperation objectCreationOperation) // When using the Regex constructors
-            {
-                patternValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation, cancellationToken);
-                regexOptionsValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation, cancellationToken);
-            }
-            else if (operation is IInvocationOperation invocation) // When using the Regex static methods.
-            {
-                patternValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation, cancellationToken);
-                regexOptionsValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation, cancellationToken);
-            }
+            SyntaxNode? patternValue = GetNode(operationArguments, generator, UpgradeToRegexGeneratorAnalyzer.PatternArgumentName);
+            SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName);
 
             // Generate the new static partial method
             MethodDeclarationSyntax newMethod = (MethodDeclarationSyntax)generator.MethodDeclaration(
@@ -250,58 +222,39 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Helper method that searches the passed in property bag for the property with the passed in name, and if found, it converts the
-            // value to an int.
-            static int? TryParseInt32(ImmutableDictionary<string, string?> properties, string name)
+            // Helper method that looks generates the node for pattern argument or options argument.
+            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> arguments, SyntaxGenerator generator, string parameterName)
             {
-                if (!properties.TryGetValue(name, out string? value))
+                var argument = arguments.SingleOrDefault(arg => arg.Parameter.Name == parameterName);
+                if (argument is null)
                 {
                     return null;
                 }
 
-                if (!int.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out int result))
+                Debug.Assert(parameterName is UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName or UpgradeToRegexGeneratorAnalyzer.PatternArgumentName);
+                if (parameterName == UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName)
                 {
-                    return null;
-                }
-
-                return result;
-            }
-
-            // Helper method that looks int the properties bag for the index of the passed in propertyname, and then returns that index from the args parameter.
-            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression, Compilation compilation, CancellationToken cancellationToken)
-            {
-                int? index = TryParseInt32(properties, propertyName);
-                if (index == null)
-                {
-                    return null;
-                }
-
-                if (!useOptionsMemberExpression)
-                {
-                    return generator.LiteralExpression(args[index.Value].Value.ConstantValue.Value);
+                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
+                    return SyntaxFactory.ParseExpression(optionsLiteral);
                 }
                 else
                 {
-                    RegexOptions options = (RegexOptions)(int)args[index.Value].Value.ConstantValue.Value;
-                    string optionsLiteral = Literal(options);
-                    return SyntaxFactory.ParseExpression(optionsLiteral).SyntaxTree.GetRoot(cancellationToken);
+                    return generator.LiteralExpression(argument.Value.ConstantValue.Value);
                 }
             }
 
-            static string Literal(RegexOptions options)
+            static string Literal(string stringifiedRegexOptions)
             {
-                string s = options.ToString();
-                if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                if (int.TryParse(stringifiedRegexOptions, NumberStyles.Integer, CultureInfo.InvariantCulture, out int options))
                 {
                     // The options were formatted as an int, which means the runtime couldn't
                     // produce a textual representation.  So just output casting the value as an int.
-                    Debug.Fail("This shouldn't happen, as we should only get to the point of emitting code if RegexOptions was valid.");
-                    return $"(RegexOptions)({(int)options})";
+                    return $"(RegexOptions)({options})";
                 }
 
                 // Parse the runtime-generated "Option1, Option2" into each piece and then concat
                 // them back together.
-                string[] parts = s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = stringifiedRegexOptions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < parts.Length; i++)
                 {
                     parts[i] = "RegexOptions." + parts[i].Trim();

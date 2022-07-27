@@ -2747,7 +2747,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         // contains stack trace info.
         //
         // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropiate (like OOM exception) and return the new
+        // it will set the throwable to something appropriate (like OOM exception) and return the new
         // exception. Thus, the user's exception object can be replaced here.
         pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
@@ -2855,7 +2855,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explaination.  The rethrow boolean
+    // This may look a bit odd, but there is an explanation.  The rethrow boolean
     //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
     //  and that the exception context saved on the Thread object should replace
     //  the exception context from the upcoming RaiseException().  There is logic
@@ -3795,7 +3795,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
             g_pDebugInterface->PreJitAttach(TRUE, FALSE, FALSE);
         }
 
-        // Let unhandled excpetions except stack overflow go to the OS
+        // Let unhandled exceptions except stack overflow go to the OS
         if (tore.IsUnhandledException() && !fSOException)
         {
             return EXCEPTION_CONTINUE_SEARCH;
@@ -3817,7 +3817,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
             {
                 // EEPolicy::HandleFatalStackOverflow pushes a FaultingExceptionFrame on the stack after SO
                 // exception.   Our hijack code runs in the exception context, and overwrites the stack space
-                // after SO excpetion, so we need to pop up this frame before invoking RaiseFailFast.
+                // after SO exception, so we need to pop up this frame before invoking RaiseFailFast.
                 // This cumbersome code should be removed once SO synchronization is moved to be completely
                 // out-of-process.
                 if (fSOException && pThread && pThread->GetFrame() != FRAME_TOP)
@@ -7764,7 +7764,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     //
     // @todo: we'd rather use UnwindFrameChain, but there is a concern: some of the ExceptionUnwind methods on some
     // of the Frame types do a great deal of work; load classes, throw exceptions, etc. We need to decide on some
-    // policy here. Do we want to let such funcitons throw, etc.? Right now, we believe that there are no such
+    // policy here. Do we want to let such functions throw, etc.? Right now, we believe that there are no such
     // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
     // least, we should add some way to assert that.
     pThread->SetFrame(pEntryFrame);

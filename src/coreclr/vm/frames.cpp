@@ -1840,7 +1840,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     else if (!initialInit &&
              (m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
     {
-        // explictly told depth
+        // explicitly told depth
         LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);
     }
     else

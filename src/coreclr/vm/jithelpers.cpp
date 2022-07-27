@@ -1257,7 +1257,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
 
     // We don't want to be calling JIT_InitClass at all for perf reasons
     // on the Global Class <Module> as the Class loading logic ensures that we
-    // already have initialized the Gloabl Class <Module>
+    // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
     pMT->CheckRestore();
@@ -2124,7 +2124,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // to a given type.
         if (pMT->IsICastable())
         {
-            // Make actuall call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
+            // Make actual call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
             OBJECTREF exception = NULL;
             GCPROTECT_BEGIN(exception);
 
@@ -2776,7 +2776,7 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
     {
-        // we allow enums and their primitive type to be interchangable
+        // we allow enums and their primitive type to be interchangeable
         result = objRef->GetData();
     }
     else if (pMT1->IsEquivalentTo(pMT2))
@@ -2810,7 +2810,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 
     MethodTable* pMT2 = obj->GetMethodTable();
 
-    // we allow enums and their primitive type to be interchangable.
+    // we allow enums and their primitive type to be interchangeable.
     // if suspension is requested, defer to the framed helper.
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -2855,7 +2855,7 @@ HCIMPLEND
 // JIT_GenericHandle and its cache
 //
 // Perform a "polytypic" operation related to shared generic code at runtime, possibly filling in an entry in
-// either a generic dictionary cache assocaited with a descriptor or placing an entry in the global
+// either a generic dictionary cache associated with a descriptor or placing an entry in the global
 // JitGenericHandle cache.
 //
 // A polytypic operation is one such as
@@ -2885,7 +2885,7 @@ HCIMPLEND
 //         !SharedByGenericMethodInstantiations but will be SharedByGenericClassInstantiations). Let's say
 //         this code is C<repr>::m().
 //     * the type D will be a descendent of type C. In particular D<exact> will relate to some type C<exact'>
-//         where C<repr> is the represntative instantiation of C<exact>'
+//         where C<repr> is the representative instantiation of C<exact>'
 //     * the relevant dictionary will be the one attached to C<exact'>.
 //
 // The JitGenericHandleCache is a global data structure shared across all application domains. It is only
@@ -4727,7 +4727,7 @@ HCIMPL0(void, JIT_RareDisableHelper)
 HCIMPLEND
 
 /*********************************************************************/
-// This is called by the JIT after every instruction in fully interuptable
+// This is called by the JIT after every instruction in fully interruptible
 // code to make certain our GC tracking is OK
 HCIMPL0(VOID, JIT_StressGC_NOP)
 {

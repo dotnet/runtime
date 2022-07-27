@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 {
                     newEc.ImportParameters(param);
 
-                    // The curve name is not flowed on explicit export\import (by design) so this excercises logic
+                    // The curve name is not flowed on explicit export\import (by design) so this exercises logic
                     // that regenerates based on current curve values
                     newEc.GenerateKey(param.Curve);
                     param2 = newEc.ExportExplicitParameters(true);

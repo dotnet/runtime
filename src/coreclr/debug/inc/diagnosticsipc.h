@@ -44,7 +44,7 @@ public:
             UNKNOWN   = 0x80  // unknown state
         };
 
-        // The bookeeping struct used for polling on server and client structs
+        // The bookkeeping struct used for polling on server and client structs
         struct IpcPollHandle
         {
             // Only one of these will be non-null, treat as a union

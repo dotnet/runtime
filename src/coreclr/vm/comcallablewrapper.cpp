@@ -3804,7 +3804,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
-// the DispatchInfo has not been initialized yet then it is initilized.
+// the DispatchInfo has not been initialized yet then it is initialized.
 //--------------------------------------------------------------------------
 DispatchInfo *ComMethodTable::GetDispatchInfo()
 {

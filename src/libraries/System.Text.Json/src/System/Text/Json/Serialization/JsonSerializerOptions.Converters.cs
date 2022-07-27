@@ -77,7 +77,7 @@ namespace System.Text.Json
             return null;
         }
 
-        [return: NotNullIfNotNull("converter")]
+        [return: NotNullIfNotNull(nameof(converter))]
         internal JsonConverter? ExpandConverterFactory(JsonConverter? converter, Type typeToConvert)
         {
             if (converter is JsonConverterFactory factory)

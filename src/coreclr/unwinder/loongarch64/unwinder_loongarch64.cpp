@@ -586,7 +586,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -1049,7 +1049,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     FunctionEntry - Supplies the address of the function table entry for the
         specified function. If appropriate, this should have already been

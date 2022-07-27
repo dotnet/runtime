@@ -97,11 +97,6 @@
         <target state="translated">Costrutto di raggruppamento non riconosciuto.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 11 or greater is required</source>
-        <target state="translated">LangVersion di C# 11 o superiore obbligatoria</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
         <target state="translated">L'espressione regolare specificata non è valida. '{0}'</target>
@@ -128,8 +123,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="translated">RegexGenerator non è riuscito a generare un'implementazione di origine completa per l'espressione regolare specificata a causa di una limitazione interna.</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="needs-review-translation">RegexGenerator non è riuscito a generare un'implementazione di origine completa per l'espressione regolare specificata a causa di una limitazione interna.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">

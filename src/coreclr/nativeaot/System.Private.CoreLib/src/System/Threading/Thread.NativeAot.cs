@@ -369,7 +369,7 @@ namespace System.Threading
                 if (GetThreadStateBit(ThreadState.Unstarted))
                 {
                     Exception? startException = _startException;
-                    startException = null;
+                    _startException = null;
 
                     throw new ThreadStartException(startException ?? new OutOfMemoryException());
                 }

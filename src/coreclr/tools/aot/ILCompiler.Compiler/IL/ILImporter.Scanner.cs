@@ -226,12 +226,6 @@ namespace Internal.IL
             _isReadOnly = false;
         }
 
-        private void ImportJmp(int token)
-        {
-            // JMP is kind of like a tail call (with no arguments pushed on the stack).
-            ImportCall(ILOpcode.call, token);
-        }
-
         private void ImportCasting(ILOpcode opcode, int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
@@ -390,6 +384,7 @@ namespace Internal.IL
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
+            DefaultInterfaceMethodResolution staticResolution = default;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (_constrained != null)
@@ -404,7 +399,7 @@ namespace Internal.IL
                 if (constrained.IsRuntimeDeterminedSubtype)
                     constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod == null && constrained.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
@@ -425,7 +420,7 @@ namespace Internal.IL
                         || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
 
-                    exactType = constrained;
+                    exactType = directMethod.OwningType;
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -531,7 +526,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
+                    _dependencies.Add(_factory.FatFunctionPointer(targetMethod), reason);
                 }
             }
             else if (directCall)
@@ -682,6 +677,12 @@ namespace Internal.IL
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
                 }
             }
+            else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+            {
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
+
+                ThrowHelper.ThrowBadImageFormatException();
+            }
             else if (method.Signature.IsStatic)
             {
                 // This should be an unresolved static virtual interface method call. Other static methods should
@@ -689,7 +690,14 @@ namespace Internal.IL
                 Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
 
                 var constrainedCallInfo = new ConstrainedCallInfo(_constrained, runtimeDeterminedMethod);
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ConstrainedDirectCall, constrainedCallInfo), reason);
+                var constrainedHelperId = ReadyToRunHelperId.ConstrainedDirectCall;
+
+                // Constant lookup doesn't make sense and we don't implement it. If we need constant lookup,
+                // the method wasn't implemented. Don't crash on it.
+                if (!_compilation.NeedsRuntimeLookup(constrainedHelperId, constrainedCallInfo))
+                    ThrowHelper.ThrowTypeLoadException(_constrained);
+
+                _dependencies.Add(GetGenericLookupHelper(constrainedHelperId, constrainedCallInfo), reason);
             }
             else if (method.HasInstantiation)
             {
@@ -765,6 +773,31 @@ namespace Internal.IL
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             ImportCall(opCode, token);
+        }
+
+        private void ImportJmp(int token)
+        {
+            // JMP is kind of like a tail call (with no arguments pushed on the stack).
+            ImportCall(ILOpcode.call, token);
+        }
+
+        private void ImportCalli(int token)
+        {
+            MethodSignature signature = (MethodSignature)_methodIL.GetObject(token);
+
+            // Managed calli
+            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
+                return;
+
+            // Calli in marshaling stubs
+            if (_methodIL is Internal.IL.Stubs.PInvokeILStubMethodIL)
+                return;
+
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
+                signature,
+                ((MetadataType)_methodIL.OwningMethod.OwningType).Module);
+
+            _dependencies.Add(_factory.CanonicalEntrypoint(stub), "calli");
         }
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -1316,7 +1349,6 @@ namespace Internal.IL
         private void ImportAddressOfVar(int index, bool argument) { }
         private void ImportDup() { }
         private void ImportPop() { }
-        private void ImportCalli(int token) { }
         private void ImportLoadNull() { }
         private void ImportReturn() { }
         private void ImportLoadInt(long value, StackValueKind kind) { }

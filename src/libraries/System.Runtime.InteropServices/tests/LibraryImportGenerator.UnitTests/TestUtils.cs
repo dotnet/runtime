@@ -133,12 +133,13 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="source">Source to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols, allowUnsafe);
         }
 
         /// <summary>
@@ -147,17 +148,19 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
                 targetFramework,
                 outputKind,
-                refs);
+                refs,
+                allowUnsafe);
         }
 
         /// <summary>
@@ -166,9 +169,10 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="refs">Additional metadata references</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null)
+        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, bool allowUnsafe = true)
         {
             var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
 
@@ -186,7 +190,7 @@ namespace LibraryImportGenerator.UnitTests
             return CSharpCompilation.Create("compilation",
                 sources,
                 referenceAssemblies,
-                new CSharpCompilationOptions(outputKind, allowUnsafe: true, specificDiagnosticOptions: BindingRedirectWarnings));
+                new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe, specificDiagnosticOptions: BindingRedirectWarnings));
         }
 
         /// <summary>

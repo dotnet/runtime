@@ -193,7 +193,7 @@ namespace System.ComponentModel.Design
                 if (service != null && !service.GetType().IsCOMObject && !serviceType!.IsInstanceOfType(service))
                 {
                     // Callback passed us a bad service. NULL it, rather than throwing an exception.
-                    // Callers here do not need to be prepared to handle bad callback implemetations.
+                    // Callers here do not need to be prepared to handle bad callback implementations.
                     service = null;
                 }
 
