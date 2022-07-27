@@ -241,10 +241,9 @@ namespace Internal.IL
     [Flags]
     public enum DelegateFeature
     {
-        DynamicInvoke = 0x1,
-        ObjectArrayThunk = 0x2,
-        OpenInstanceThunk = 0x4,
+        ObjectArrayThunk = 0x1,
+        OpenInstanceThunk = 0x2,
 
-        All = 0x7,
+        All = 0x3,
     }
 }
