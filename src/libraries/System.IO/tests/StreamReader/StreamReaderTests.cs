@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Tests
 {
@@ -565,7 +566,7 @@ namespace System.IO.Tests
                 _ => throw new Exception("unknown mode")
             };
 
-            string pipeName = Guid.NewGuid().ToString("N");
+            string pipeName = PlatformDetection.IsInAppContainer ? @"LOCAL\" + Path.GetRandomFileName() : Path.GetRandomFileName();
             using (var serverStream = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var clientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous))
             {
