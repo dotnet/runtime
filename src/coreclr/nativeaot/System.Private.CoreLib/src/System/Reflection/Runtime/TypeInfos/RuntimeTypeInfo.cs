@@ -605,8 +605,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal EnumInfo EnumInfo => Cache.EnumInfo;
-
         internal abstract Type InternalDeclaringType { get; }
 
         //

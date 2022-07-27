@@ -136,6 +136,7 @@
     <Compile Include="System\Reflection\Attribute.NativeAot.cs" />
     <Compile Include="System\Reflection\Assembly.NativeAot.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
+    <Compile Include="System\Reflection\DelegateDynamicInvokeInfo.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />

@@ -570,6 +570,8 @@ namespace System.Net.Quic.Tests
         [InlineData(true, true)] // the code path for uni/bidirectional streams differs only in a flag passed to MsQuic, so there is no need to test all possible combinations.
         public async Task OpenStreamAsync_ConnectionAbort_Throws(bool unidirectional, bool localAbort)
         {
+            const int expectedErrorCode = 789654;
+
             ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default) => unidirectional
                 ? connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional, token)
                 : connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, token);
@@ -595,17 +597,14 @@ namespace System.Net.Quic.Tests
 
             if (localAbort)
             {
-                await clientConnection.CloseAsync(0);
-                // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
-                // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                // To be revisited once we standartize on exceptions.
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
-                await Assert.ThrowsAsync<QuicException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                await clientConnection.CloseAsync(expectedErrorCode);
+                await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             }
             else
             {
-                await serverConnection.CloseAsync(0);
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                await serverConnection.CloseAsync(expectedErrorCode);
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
             }
 
             await clientConnection.DisposeAsync();
@@ -626,6 +625,7 @@ namespace System.Net.Quic.Tests
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
             await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
+
             await serverConnection.DisposeAsync();
             await clientConnection.DisposeAsync();
         }

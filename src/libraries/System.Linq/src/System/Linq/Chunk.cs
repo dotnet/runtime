@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -52,24 +54,56 @@ namespace System.Linq
         {
             using IEnumerator<TSource> e = source.GetEnumerator();
 
+            // Before allocating anything, make sure there's at least one element.
             if (e.MoveNext())
             {
-                List<TSource> chunkBuilder = new();
-                int lastLength;
+                // Now that we know we have at least one item, allocate an initial storage array. This is not
+                // the array we'll yield.  It starts out small in order to avoid significantly overallocating
+                // when the source has many fewer elements than the chunk size.
+                var array = new TSource[Math.Min(size, 4)];
+                int i;
                 do
                 {
-                    do
-                    {
-                        chunkBuilder.Add(e.Current);
-                    }
-                    while (chunkBuilder.Count < size && e.MoveNext());
+                    // Store the first item.
+                    array[0] = e.Current;
+                    i = 1;
 
-                    TSource[] array = chunkBuilder.ToArray();
-                    chunkBuilder.Clear();
-                    lastLength = array.Length;
-                    yield return array;
+                    if (size != array.Length)
+                    {
+                        // This is the first chunk. As we fill the array, grow it as needed.
+                        for (; i < size && e.MoveNext(); i++)
+                        {
+                            if (i >= array.Length)
+                            {
+                                Array.Resize(ref array, (int)Math.Min((uint)size, 2 * (uint)array.Length));
+                            }
+
+                            array[i] = e.Current;
+                        }
+                    }
+                    else
+                    {
+                        // For all but the first chunk, the array will already be correctly sized.
+                        // We can just store into it until either it's full or MoveNext returns false.
+                        TSource[] local = array; // avoid bounds checks by using cached local (`array` is lifted to iterator object as a field)
+                        Debug.Assert(local.Length == size);
+                        for (; (uint)i < (uint)local.Length && e.MoveNext(); i++)
+                        {
+                            local[i] = e.Current;
+                        }
+                    }
+
+                    // Extract the chunk array to yield, then clear out any references in our storage so that we don't keep
+                    // objects alive longer than needed (the caller might clear out elements from the yielded array.)
+                    var chunk = new TSource[i];
+                    Array.Copy(array, 0, chunk, 0, i);
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<TSource>())
+                    {
+                        Array.Clear(array, 0, i);
+                    }
+                    yield return chunk;
                 }
-                while (lastLength >= size && e.MoveNext());
+                while (i >= size && e.MoveNext());
             }
         }
     }
