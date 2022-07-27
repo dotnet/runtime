@@ -138,7 +138,7 @@ function set_exit_code(exit_code, reason) {
             App.INTERNAL.mono_wasm_exit(exit_code);
             console.log("after App.INTERNAL.mono_wasm_exit")
             if (typeof quit != "undefined") quit(exit_code);
-            console.log("after quit")
+            console.log("after quit 2")
         }
     }
 }
@@ -376,6 +376,11 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
         configSrc: "./mono-config.json",
         locateFile: toAbsoluteUrl,
         onConfigLoaded: (config) => {
+            Module.quit = (code) => {
+                console.log("Module.quit called" + code);
+                if (typeof quit != "undefined") quit(exit_code);
+                console.log("after quit 1 " + typeof quit)
+            }
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
                 set_exit_code(1);
