@@ -35,7 +35,7 @@ namespace Microsoft.Interop.Analyzers
             public override async Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
             {
                 ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnosticsInScope(fixAllContext).ConfigureAwait(false);
-                Dictionary<(INamedTypeSymbol marshallerType, ITypeSymbol managedType, bool isLinearCollectionMarshaller), List<string>> uniqueMarshallersToFix = new();
+                Dictionary<(INamedTypeSymbol marshallerType, ITypeSymbol managedType, bool isLinearCollectionMarshaller), HashSet<string>> uniqueMarshallersToFix = new();
                 // Organize all the diagnostics by marshaller, managed type, and whether or not it's a collection marshaller
                 foreach (Diagnostic diagnostic in diagnostics)
                 {
@@ -50,12 +50,12 @@ namespace Microsoft.Interop.Analyzers
                     SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
                     var marshallerType = (INamedTypeSymbol)model.GetSymbolInfo(node, fixAllContext.CancellationToken).Symbol;
                     var uniqueMarshallerFixKey = (marshallerType, managedType, ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointTypeSymbol));
-                    if (!uniqueMarshallersToFix.TryGetValue(uniqueMarshallerFixKey, out List<string> membersToAdd))
+                    if (!uniqueMarshallersToFix.TryGetValue(uniqueMarshallerFixKey, out HashSet<string> membersToAdd))
                     {
-                        uniqueMarshallersToFix[uniqueMarshallerFixKey] = membersToAdd = new List<string>();
+                        uniqueMarshallersToFix[uniqueMarshallerFixKey] = membersToAdd = new HashSet<string>();
                     }
 
-                    membersToAdd.AddRange(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter));
+                    membersToAdd.UnionWith(diagnostic.Properties[MissingMemberNames.Key].Split(MissingMemberNames.Delimiter));
                 }
 
                 Dictionary<INamedTypeSymbol, INamedTypeSymbol> partiallyUpdatedSymbols = new(SymbolEqualityComparer.Default);
@@ -66,7 +66,7 @@ namespace Microsoft.Interop.Analyzers
                 foreach (var marshallerInfo in uniqueMarshallersToFix)
                 {
                     var (marshallerType, managedType, isLinearCollectionMarshaller) = marshallerInfo.Key;
-                    HashSet<string> missingMembers = new(marshallerInfo.Value);
+                    HashSet<string> missingMembers = marshallerInfo.Value;
 
                     if (!partiallyUpdatedSymbols.TryGetValue(marshallerType, out INamedTypeSymbol newMarshallerType))
                     {

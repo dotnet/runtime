@@ -476,5 +476,50 @@ namespace LibraryImportGenerator.UnitTests
             test.FixedState.MarkupHandling = MarkupMode.IgnoreFixable;
             await test.RunAsync();
         }
+
+        [Fact]
+        public async Task ModeThatUsesManagedToUnmanagedShape_Missing_ConvertToUnmanagedMethod_TwoManagedTypes_ReportsDiagnostic()
+        {
+            string source = """
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                class ManagedType2 {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType2), MarshalMode.ManagedToUnmanagedIn, typeof({|#1:MarshallerType|}))]
+                static class MarshallerType
+                {
+                }
+                """;
+
+            string fixedSource = """
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                class ManagedType2 {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
+                [CustomMarshaller(typeof(ManagedType2), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
+                static class MarshallerType
+                {
+                    public static nint ConvertToUnmanaged(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static nint ConvertToUnmanaged(ManagedType2 managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource,
+                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
+                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType2"));
+        }
     }
 }
