@@ -493,6 +493,7 @@ const App = {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.MONO.mono_run_main(main_assembly_name, app_args);
+                console.log("AFTER App.MONO.mono_run_main");
                 set_exit_code(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {
