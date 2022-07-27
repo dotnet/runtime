@@ -5,8 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-using System.Runtime.Intrinsics.Wasm;
-
 namespace Sample
 {
     class SpanTask : BenchTask
@@ -19,6 +17,8 @@ namespace Sample
             measurements = new Measurement[] {
                 new ReverseByte(),
                 new ReverseChar(),
+                new IndexOfByte(),
+                new IndexOfChar(),
             };
         }
 
@@ -32,19 +32,20 @@ namespace Sample
 
         public abstract class SpanMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 30;
+            protected Random random;
         }
 
-        class ReverseByte : SpanMeasurement
+        abstract class SpanByteMeasurement : SpanMeasurement
         {
-            public override string Name => "Reverse bytes";
-            byte[] data;
+            protected byte[] data;
             int len = 64 * 1024;
 
             public override Task BeforeBatch()
             {
                 data = new byte[len];
-                Random.Shared.NextBytes(data);
+                random = new(123456);
+                random.NextBytes(data);
 
                 return Task.CompletedTask;
             }
@@ -55,6 +56,11 @@ namespace Sample
 
                 return Task.CompletedTask;
             }
+        }
+
+        class ReverseByte : SpanByteMeasurement
+        {
+            public override string Name => "Reverse bytes";
 
             public override void RunStep()
             {
@@ -63,17 +69,29 @@ namespace Sample
             }
         }
 
-        class ReverseChar : SpanMeasurement
+        class IndexOfByte : SpanByteMeasurement
         {
-            public override string Name => "Reverse chars";
-            char[] data;
+            public override string Name => "IndexOf bytes";
+            public override int InitialSamples => 1000;
+
+            public override void RunStep()
+            {
+                var span = new Span<byte>(data);
+                span.IndexOf<byte> ((byte)random.Next(256));
+            }
+        }
+
+        abstract class SpanCharMeasurement : SpanMeasurement
+        {
+            protected char[] data;
             int len = 64 * 1024;
 
             public override Task BeforeBatch()
             {
                 data = new char[len];
+                random = new(123456);
                 for (int i = 0; i < len; i++)
-                    data[i] = (char)Random.Shared.Next(0x10000);
+                    data[i] = (char)random.Next(0x10000);
 
                 return Task.CompletedTask;
             }
@@ -84,11 +102,25 @@ namespace Sample
 
                 return Task.CompletedTask;
             }
+        }
 
+        class ReverseChar : SpanCharMeasurement
+        {
+            public override string Name => "Reverse chars";
             public override void RunStep()
             {
                 var span = new Span<char>(data);
                 span.Reverse<char>();
+            }
+        }
+
+        class IndexOfChar : SpanCharMeasurement
+        {
+            public override string Name => "IndexOf chars";
+            public override void RunStep()
+            {
+                var span = new Span<char>(data);
+                span.IndexOf<char>((char)random.Next(0x10000));
             }
         }
     }
