@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
@@ -30,6 +31,7 @@ namespace Microsoft.Interop.Analyzers
         private const string ConvertToLibraryImportKey = "ConvertToLibraryImport,";
         private static string AddSuffixKey(string baseKey, char suffix) => $"{baseKey}{suffix},";
         private static string AddUnsafeKey(string baseKey) => baseKey + "AddUnsafe,";
+        private static string AddMayRequireAdditionalWorkKey(string baseKey) => baseKey + $"{ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork},";
 
         private static readonly string[] s_preferredAttributeArgumentOrder =
             {
@@ -60,13 +62,15 @@ namespace Microsoft.Interop.Analyzers
 
             ICodeActionFactory codeActionFactory = enableUnsafe ? new AddUnsafeCodeActionFactory() : new DefaultCodeActionFactory();
 
-            // Register code fix
-            context.RegisterCodeFix(
-                codeActionFactory.CreateConvertToLibraryImportCodeFix(doc, methodSyntax),
-                context.Diagnostics);
-
             foreach (Diagnostic diagnostic in context.Diagnostics)
             {
+                bool mayRequireAdditionalWork = bool.TryParse(diagnostic.Properties[ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork], out bool mayRequireAdditionalWorkValue)
+                    ? mayRequireAdditionalWorkValue
+                    : false;
+                // Register code fix
+                context.RegisterCodeFix(
+                    codeActionFactory.CreateConvertToLibraryImportCodeFix(doc, methodSyntax, mayRequireAdditionalWork),
+                    context.Diagnostics);
                 if (!bool.Parse(diagnostic.Properties[ConvertToLibraryImportAnalyzer.ExactSpelling]))
                 {
                     CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToLibraryImportAnalyzer.CharSet]);
@@ -77,13 +81,13 @@ namespace Microsoft.Interop.Analyzers
                     if (charSet is CharSet.None or CharSet.Ansi or CharSet.Auto)
                     {
                         context.RegisterCodeFix(
-                            codeActionFactory.CreateConvertToLibraryImportWithSuffixCodeFix(doc, methodSyntax, 'A'),
+                            codeActionFactory.CreateConvertToLibraryImportWithSuffixCodeFix(doc, methodSyntax, 'A', mayRequireAdditionalWork),
                             context.Diagnostics);
                     }
                     if (charSet is CharSet.Unicode or CharSet.Auto)
                     {
                         context.RegisterCodeFix(
-                            codeActionFactory.CreateConvertToLibraryImportWithSuffixCodeFix(doc, methodSyntax, 'W'),
+                            codeActionFactory.CreateConvertToLibraryImportWithSuffixCodeFix(doc, methodSyntax, 'W', mayRequireAdditionalWork),
                             context.Diagnostics);
                     }
                 }
@@ -92,40 +96,42 @@ namespace Microsoft.Interop.Analyzers
 
         internal interface ICodeActionFactory
         {
-            CodeAction CreateConvertToLibraryImportCodeFix(Document document, MethodDeclarationSyntax methodSyntax);
-            CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix);
+            CodeAction CreateConvertToLibraryImportCodeFix(Document document, MethodDeclarationSyntax methodSyntax, bool mayRequireAdditionalWork);
+            CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork);
         }
 
         private sealed class DefaultCodeActionFactory : ICodeActionFactory
         {
-            public CodeAction CreateConvertToLibraryImportCodeFix(Document document, MethodDeclarationSyntax methodSyntax)
+            public CodeAction CreateConvertToLibraryImportCodeFix(Document document, MethodDeclarationSyntax methodSyntax, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
                     SR.ConvertToLibraryImport,
                     cancelToken => ConvertToLibraryImport(
                         document,
                         methodSyntax,
+                        mayRequireAdditionalWork,
                         entryPointSuffix: null,
                         cancelToken),
-                    equivalenceKey: ConvertToLibraryImportKey);
+                    equivalenceKey: mayRequireAdditionalWork ? AddMayRequireAdditionalWorkKey(ConvertToLibraryImportKey) : ConvertToLibraryImportKey);
             }
 
-            public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix)
+            public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
                                 string.Format(SR.ConvertToLibraryImportWithSuffix, suffix),
                                 cancelToken => ConvertToLibraryImport(
                                     document,
                                     methodSyntax,
+                                    mayRequireAdditionalWork,
                                     entryPointSuffix: suffix,
                                     cancelToken),
-                                equivalenceKey: AddSuffixKey(ConvertToLibraryImportKey, suffix));
+                                equivalenceKey: AddSuffixKey(mayRequireAdditionalWork ? AddMayRequireAdditionalWorkKey(ConvertToLibraryImportKey) : ConvertToLibraryImportKey, suffix));
             }
         }
 
         private sealed class AddUnsafeCodeActionFactory : ICodeActionFactory
         {
-            public CodeAction CreateConvertToLibraryImportCodeFix(Document document, MethodDeclarationSyntax methodSyntax)
+            public CodeAction CreateConvertToLibraryImportCodeFix(Document document, MethodDeclarationSyntax methodSyntax, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
                     SR.ConvertToLibraryImportAddUnsafe,
@@ -137,14 +143,15 @@ namespace Microsoft.Interop.Analyzers
                         await ConvertToLibraryImport(
                             await editor.GetDocumentEditorAsync(document.Id, cancelToken).ConfigureAwait(false),
                             methodSyntax,
+                            mayRequireAdditionalWork,
                             entryPointSuffix: null,
                             cancelToken).ConfigureAwait(false);
                         return editor.GetChangedSolution();
                     },
-                    equivalenceKey: AddUnsafeKey(ConvertToLibraryImportKey));
+                    equivalenceKey: AddUnsafeKey(mayRequireAdditionalWork ? AddMayRequireAdditionalWorkKey(ConvertToLibraryImportKey) : ConvertToLibraryImportKey));
             }
 
-            public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix)
+            public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
                     string.Format(SR.ConvertToLibraryImportWithSuffixAddUnsafe, suffix),
@@ -156,11 +163,12 @@ namespace Microsoft.Interop.Analyzers
                         await ConvertToLibraryImport(
                             await editor.GetDocumentEditorAsync(document.Id, cancelToken).ConfigureAwait(false),
                             methodSyntax,
+                            mayRequireAdditionalWork,
                             entryPointSuffix: suffix,
                             cancelToken).ConfigureAwait(false);
                         return editor.GetChangedSolution();
                     },
-                    equivalenceKey: AddUnsafeKey(AddSuffixKey(ConvertToLibraryImportKey, suffix)));
+                    equivalenceKey: AddUnsafeKey(AddSuffixKey(mayRequireAdditionalWork ? AddMayRequireAdditionalWorkKey(ConvertToLibraryImportKey) : ConvertToLibraryImportKey, suffix)));
             }
         }
 
@@ -170,6 +178,7 @@ namespace Microsoft.Interop.Analyzers
             public override async Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
             {
                 bool addUnsafe = fixAllContext.CodeActionEquivalenceKey.Contains(",AddUnsafe,");
+                bool includeFixesWithAdditionalWork = fixAllContext.CodeActionEquivalenceKey.Contains($",{ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork},");
                 ImmutableArray<Diagnostic> diagnosticsInScope = await fixAllContext.GetDiagnosticsInScopeAsync().ConfigureAwait(false);
 
                 return CodeAction.Create(addUnsafe ? SR.ConvertToLibraryImportAddUnsafe : SR.ConvertToLibraryImport,
@@ -180,6 +189,15 @@ namespace Microsoft.Interop.Analyzers
 
                         foreach (var diagnostic in diagnosticsInScope)
                         {
+                            bool mayRequireAdditionalWork = bool.TryParse(diagnostic.Properties[ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork], out bool mayRequireAdditionalWorkValue)
+                                ? mayRequireAdditionalWorkValue
+                                : false;
+                            if (mayRequireAdditionalWork && !includeFixesWithAdditionalWork)
+                            {
+                                // Don't fix any diagnostics that require additional work if the "fix all" command wasn't triggered from a location
+                                // that was able to warn the user that additional work may be required.
+                                continue;
+                            }
                             DocumentId documentId = solutionEditor.OriginalSolution.GetDocumentId(diagnostic.Location.SourceTree)!;
                             DocumentEditor editor = await solutionEditor.GetDocumentEditorAsync(documentId, ct).ConfigureAwait(false);
                             SyntaxNode root = await diagnostic.Location.SourceTree.GetRootAsync(ct).ConfigureAwait(false);
@@ -188,7 +206,7 @@ namespace Microsoft.Interop.Analyzers
                             if (root.FindNode(diagnostic.Location.SourceSpan) is not MethodDeclarationSyntax methodSyntax)
                                 continue;
 
-                            await ConvertToLibraryImport(editor, methodSyntax, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), ct).ConfigureAwait(false);
+                            await ConvertToLibraryImport(editor, methodSyntax, mayRequireAdditionalWork, GetSuffixFromEquivalenceKey(fixAllContext.CodeActionEquivalenceKey), ct).ConfigureAwait(false);
 
                             // Record this project as a project we need to allow unsafe blocks in.
                             projectsToAddUnsafe.Add(solutionEditor.OriginalSolution.GetDocument(documentId).Project);
@@ -231,17 +249,19 @@ namespace Microsoft.Interop.Analyzers
         private static async Task<Document> ConvertToLibraryImport(
             Document doc,
             MethodDeclarationSyntax methodSyntax,
+            bool warnForAdditionalWork,
             char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
-            await ConvertToLibraryImport(editor, methodSyntax, entryPointSuffix, cancellationToken).ConfigureAwait(false);
+            await ConvertToLibraryImport(editor, methodSyntax, warnForAdditionalWork, entryPointSuffix, cancellationToken).ConfigureAwait(false);
             return editor.GetChangedDocument();
         }
 
         private static async Task ConvertToLibraryImport(
             DocumentEditor editor,
             MethodDeclarationSyntax methodSyntax,
+            bool warnForAdditionalWork,
             char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
@@ -250,7 +270,14 @@ namespace Microsoft.Interop.Analyzers
             if (editor.SemanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken) is not IMethodSymbol methodSymbol)
                 return;
 
-            SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToLibraryImport(methodSyntax, editor, generator, methodSymbol, entryPointSuffix, cancellationToken).ConfigureAwait(false);
+            SyntaxNode generatedDeclaration = await ConvertMethodDeclarationToLibraryImport(
+                methodSyntax,
+                editor,
+                generator,
+                methodSymbol,
+                warnForAdditionalWork,
+                entryPointSuffix,
+                cancellationToken).ConfigureAwait(false);
 
             if (!methodSymbol.MethodImplementationFlags.HasFlag(System.Reflection.MethodImplAttributes.PreserveSig))
             {
@@ -272,6 +299,7 @@ namespace Microsoft.Interop.Analyzers
             DocumentEditor editor,
             SyntaxGenerator generator,
             IMethodSymbol methodSymbol,
+            bool warnForAdditionalWork,
             char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
@@ -299,8 +327,11 @@ namespace Microsoft.Interop.Analyzers
                 out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
-            libraryImportSyntax = libraryImportSyntax.WithAdditionalAnnotations(
-                WarningAnnotation.Create(string.Format(SR.ConvertToLibraryImportWarning, "[TODO] Documentation link")));
+            if (warnForAdditionalWork)
+            {
+                libraryImportSyntax = libraryImportSyntax.WithAdditionalAnnotations(
+                    WarningAnnotation.Create(SR.ConvertToLibraryImportMayRequireCustomMarshalling));
+            }
 
             // Replace DllImport with LibraryImport
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, libraryImportSyntax);
@@ -553,14 +584,26 @@ namespace Microsoft.Interop.Analyzers
                     {
                         // For Unicode, we can translate the argument to StringMarshalling.Utf16
                         // TODO: Handle ANSI once we have a public marshaller type for ANSI strings that we can use with StringMarshallerCustomType
-                        if (dllImportData.CharacterSet == CharSet.Unicode)
+                        if (dllImportData.CharacterSet == CharSet.Unicode || (dllImportData.CharacterSet == CharSet.Auto && entryPointSuffix is 'W' or null))
                         {
-                            ITypeSymbol stringMarshallingType = editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.StringMarshalling)!;
+                            ITypeSymbol stringMarshallingType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.StringMarshalling)!;
                             argumentsToAdd.Add(generator.AttributeArgument(
                                 nameof(StringMarshalling),
                                 generator.MemberAccessExpression(
                                     generator.TypeExpression(stringMarshallingType),
                                     generator.IdentifierName(nameof(StringMarshalling.Utf16)))));
+                        }
+                        else if (dllImportData.CharacterSet == CharSet.Ansi || (dllImportData.CharacterSet == CharSet.Auto && entryPointSuffix == 'A'))
+                        {
+                            ITypeSymbol stringMarshallingType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.StringMarshalling)!;
+                            argumentsToAdd.Add(generator.AttributeArgument(
+                                nameof(StringMarshalling),
+                                generator.MemberAccessExpression(
+                                    generator.TypeExpression(stringMarshallingType),
+                                    generator.IdentifierName(nameof(StringMarshalling.Custom)))));
+                            argumentsToAdd.Add(generator.AttributeArgument(
+                                "StringMarshallingCustomType",
+                                generator.TypeOfExpression(generator.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.AnsiStringMarshaller)))));
                         }
                     }
 

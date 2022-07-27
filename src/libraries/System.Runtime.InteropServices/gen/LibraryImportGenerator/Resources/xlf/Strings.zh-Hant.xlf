@@ -87,6 +87,11 @@
         <target state="translated">使用 'LibraryImportAttribute' 而非 'DllImportAttribute' 在編譯時間產生 P/Invoke 封送處理程式碼</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="new">Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConvertToLibraryImportMessage">
         <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
         <target state="translated">以 'LibraryImportAttribute' 代替 'DllImportAttribute' 標示方法'{0}'，以在編譯時間產生 P/Invoke 封送處理程式碼</target>

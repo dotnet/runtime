@@ -87,6 +87,11 @@
         <target state="translated">Use 'LibraryImportAttribute' em vez de 'DllImportAttribute' para gerar código de marshalling P/Invoke no tempo de compilação</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="new">Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConvertToLibraryImportMessage">
         <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
         <target state="translated">Marque o método '{0}' com 'LibraryImportAttribute' em vez de 'DllImportAttribute' para gerar código de marshaling P/Invoke em tempo de compilação</target>

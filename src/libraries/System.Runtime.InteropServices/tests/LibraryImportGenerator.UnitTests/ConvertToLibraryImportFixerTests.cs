@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.Interop.Analyzers;
 using Xunit;
 using static Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer;
 
@@ -19,7 +20,7 @@ namespace LibraryImportGenerator.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToLibraryImportFixerTests
     {
-        private const string ConvertToLibraryImportKey = "ConvertToLibraryImport";
+        private const string ConvertToLibraryImportKey = "ConvertToLibraryImport,";
 
         [Fact]
         public async Task Basic()
@@ -289,7 +290,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry{suffix}"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"{ConvertToLibraryImportKey},{suffix},");
+            await VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"{ConvertToLibraryImportKey}{suffix},");
         }
 
         [Fact]
@@ -317,7 +318,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
             string fixedSourceWithWSuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -325,7 +326,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""EntryW"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithWSuffix, $"{ConvertToLibraryImportKey},W,");
+            await VerifyCodeFixAsync(source, fixedSourceWithWSuffix, $"{ConvertToLibraryImportKey}W,");
         }
 
         [Fact]
@@ -353,7 +354,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
         }
 
         [Fact]
@@ -375,7 +376,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = EntryPoint + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
         }
 
         [Fact]
@@ -395,7 +396,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
         }
 
         [Fact]
@@ -417,7 +418,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = nameof(Foo) + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
         }
 
         [Fact]
@@ -437,7 +438,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
         }
 
         [Fact]
@@ -593,7 +594,235 @@ partial class Test
             await VerifyCodeFixNoUnsafeAsync(
                 source,
                 fixedSource,
-                $"{ConvertToLibraryImportKey},AddUnsafe,");
+                $"{ConvertToLibraryImportKey}AddUnsafe,");
+        }
+
+        [Fact]
+        public async Task UserBlittableStructConvertsWithNoWarningCodeAction()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](Blittable b);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(Blittable b);
+}}";
+            await VerifyCodeFixAsync(
+                source,
+                fixedSource,
+                ConvertToLibraryImportKey);
+        }
+
+        [Fact]
+        public async Task UserNonBlittableStructConvertsOnlyWithWarningCodeAction()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](NonBlittable b);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @$"
+using System.Runtime.InteropServices;
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(NonBlittable b);
+}}";
+            // Verify that we don't update this signature with the "no additional work required" action.
+            await VerifyCodeFixAsync(
+                source,
+                source,
+                ConvertToLibraryImportKey);
+
+            await VerifyCodeFixAsync(
+                source,
+                fixedSource,
+                $"{ConvertToLibraryImportKey}{ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork},");
+        }
+
+        [Fact]
+        public async Task UserBlittableStructFixAllConvertsOnlyNoWarningLocations()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](int i);
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](Blittable b);
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](NonBlittable b);
+}}";
+            // Fixed sources will have CS8795 (Partial method must have an implementation) without generator run
+            string blittableOnlyFixedSource = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(int i);
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(Blittable b);
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](NonBlittable b);
+}}";
+            // Verify that we only fix the blittable cases, not the non-blittable cases.
+            await VerifyCodeFixAsync(
+                source,
+                blittableOnlyFixedSource,
+                ConvertToLibraryImportKey);
+        }
+
+        [Fact]
+        public async Task UserNonBlittableStructFixAllConvertsAllLocations()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](int i);
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](Blittable b);
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](NonBlittable b);
+}}";
+            // Fixed sources will have CS8795 (Partial method must have an implementation) without generator run
+            string nonBlittableOnlyFixedSource = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](int i);
+    [DllImport(""DoesNotExist"")]
+    public static extern void [|Method|](Blittable b);
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(NonBlittable b);
+}}";
+            // Fixed sources will have CS8795 (Partial method must have an implementation) without generator run
+            string allFixedSource = @$"
+using System.Runtime.InteropServices;
+
+struct Blittable
+{{
+    private short s;
+    private short t;
+}}
+
+struct NonBlittable
+{{
+    private string s;
+    private short t;
+}}
+
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(int i);
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(Blittable b);
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void {{|CS8795:Method|}}(NonBlittable b);
+}}";
+
+            // Verify that we fix all cases when we do fix-all on a P/Invoke with a non-blittable user type which
+            // will require the user to write additional code.
+            await VerifyCodeFixAsync(
+                source,
+                nonBlittableOnlyFixedSource,
+                allFixedSource,
+                $"{ConvertToLibraryImportKey}{ConvertToLibraryImportAnalyzer.MayRequireAdditionalWork},");
         }
 
         private static async Task VerifyCodeFixAsync(string source, string fixedSource)
@@ -615,6 +844,23 @@ partial class Test
                 FixedCode = fixedSource,
                 CodeActionEquivalenceKey = equivalenceKey,
             };
+
+            test.FixedState.MarkupHandling = Microsoft.CodeAnalysis.Testing.MarkupMode.Allow;
+
+            await test.RunAsync();
+        }
+
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource, string batchFixedSource, string equivalenceKey)
+        {
+            var test = new VerifyCS.Test
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+                BatchFixedCode = batchFixedSource,
+                CodeActionEquivalenceKey = equivalenceKey,
+            };
+
+            test.FixedState.MarkupHandling = Microsoft.CodeAnalysis.Testing.MarkupMode.Allow;
 
             await test.RunAsync();
         }
