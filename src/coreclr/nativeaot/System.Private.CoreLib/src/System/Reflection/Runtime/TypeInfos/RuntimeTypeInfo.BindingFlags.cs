@@ -211,7 +211,15 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
-        private volatile TypeComponentsCache _lazyCache;
+        // Generic cache for scenario specific data. For example, it is used to cache Enum names and values.
+        // TODO: This cache should be attached to the RuntimeType via weak reference, similar to how it is done in CoreCLR.
+        internal object? GenericCache
+        {
+            get => _lazyCache?._genericCache;
+            set => Cache._genericCache = value;
+        }
+
+        private volatile TypeComponentsCache? _lazyCache;
 
         private const int GenericParameterCountAny = -1;
     }

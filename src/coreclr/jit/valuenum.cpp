@@ -439,6 +439,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
     , m_handleMap(nullptr)
+    , m_embeddedToCompileTimeHandleMap(alloc)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
@@ -2135,6 +2136,22 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 
     ValueNum resultVN = NoVN;
 
+    // Even if the argVNs differ, if both operands runtime types constructed from handles,
+    // we can sometimes also fold.
+    //
+    // The case where the arg VNs are equal is handled by EvalUsingMathIdentity below.
+    // This is the VN analog of gtFoldTypeCompare.
+    //
+    const genTreeOps oper = genTreeOps(func);
+    if ((arg0VN != arg1VN) && GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
+    {
+        resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
+        if (resultVN != NoVN)
+        {
+            return resultVN;
+        }
+    }
+
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
@@ -3649,6 +3666,108 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// VNEvalFoldTypeCompare:
+//
+// Arguments:
+//    type   - The result type
+//    func   - The function
+//    arg0VN - VN of the first argument
+//    arg1VN - VN of the second argument
+//
+// Return Value:
+//    NoVN if this is not a foldable type compare
+//    Simplified (perhaps constant) VN if it is foldable.
+//
+// Notes:
+//    Value number counterpart to gtFoldTypeCompare
+//    Doesn't handle all the cases (yet).
+//
+//    (EQ/NE (TypeHandleToRuntimeType x) (TypeHandleToRuntimeType y)) == (EQ/NE x y)
+//
+ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
+{
+    const genTreeOps oper = genTreeOps(func);
+    assert(GenTree::StaticOperIs(oper, GT_EQ, GT_NE));
+
+    VNFuncApp  arg0Func;
+    const bool arg0IsFunc = GetVNFunc(arg0VN, &arg0Func);
+
+    if (!arg0IsFunc || (arg0Func.m_func != VNF_TypeHandleToRuntimeType))
+    {
+        return NoVN;
+    }
+
+    VNFuncApp  arg1Func;
+    const bool arg1IsFunc = GetVNFunc(arg1VN, &arg1Func);
+
+    if (!arg1IsFunc || (arg1Func.m_func != VNF_TypeHandleToRuntimeType))
+    {
+        return NoVN;
+    }
+
+    // Only re-express as handle equality when we have known
+    // class handles and the VM agrees comparing these gives the same
+    // result as comparing the runtime types.
+    //
+    // Note that VN actually tracks the value of embedded handle;
+    // we need to pass the VM the associated the compile time handles,
+    // in case they differ (say for prejitting or AOT).
+    //
+    ValueNum handle0 = arg0Func.m_args[0];
+    if (!IsVNHandle(handle0))
+    {
+        return NoVN;
+    }
+
+    ValueNum handle1 = arg1Func.m_args[0];
+    if (!IsVNHandle(handle1))
+    {
+        return NoVN;
+    }
+
+    assert(GetHandleFlags(handle0) == GTF_ICON_CLASS_HDL);
+    assert(GetHandleFlags(handle1) == GTF_ICON_CLASS_HDL);
+
+    const ssize_t handleVal0 = ConstantValue<ssize_t>(handle0);
+    const ssize_t handleVal1 = ConstantValue<ssize_t>(handle1);
+    ssize_t       compileTimeHandle0;
+    ssize_t       compileTimeHandle1;
+
+    // These mappings should always exist.
+    //
+    const bool found0 = m_embeddedToCompileTimeHandleMap.TryGetValue(handleVal0, &compileTimeHandle0);
+    const bool found1 = m_embeddedToCompileTimeHandleMap.TryGetValue(handleVal1, &compileTimeHandle1);
+    assert(found0 && found1);
+
+    // We may see null compile time handles for some constructed class handle cases.
+    // We should fix the construction if possible. But just skip those cases for now.
+    //
+    if ((compileTimeHandle0 == 0) || (compileTimeHandle1 == 0))
+    {
+        return NoVN;
+    }
+
+    JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(compileTimeHandle0),
+            m_pComp->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle0)), dspPtr(compileTimeHandle1),
+            m_pComp->eeGetClassName(CORINFO_CLASS_HANDLE(compileTimeHandle1)));
+
+    ValueNum               result = NoVN;
+    const TypeCompareState s =
+        m_pComp->info.compCompHnd->compareTypesForEquality(CORINFO_CLASS_HANDLE(compileTimeHandle0),
+                                                           CORINFO_CLASS_HANDLE(compileTimeHandle1));
+    if (s != TypeCompareState::May)
+    {
+        const bool typesAreEqual = (s == TypeCompareState::Must);
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+        result = VNForIntCon(compareResult);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -7929,8 +8048,13 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BOOL:
             if (tree->IsIconHandle())
             {
-                tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+                const ssize_t embeddedHandle = tree->AsIntCon()->IconValue();
+                tree->gtVNPair.SetBoth(vnStore->VNForHandle(embeddedHandle, tree->GetIconHandleFlag()));
+                if (tree->GetIconHandleFlag() == GTF_ICON_CLASS_HDL)
+                {
+                    const ssize_t compileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
+                    vnStore->AddToEmbeddedHandleMap(embeddedHandle, compileTimeHandle);
+                }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {

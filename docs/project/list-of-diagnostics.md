@@ -163,12 +163,12 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1052`__ | Specified configuration is not supported by source-generated P/Invokes |
 |  __`SYSLIB1053`__ | Specified LibraryImportAttribute arguments cannot be forwarded to DllImportAttribute |
 |  __`SYSLIB1054`__ | Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time |
-|  __`SYSLIB1055`__ | Invalid CustomTypeMarshallerAttribute usage |
+|  __`SYSLIB1055`__ | Invalid CustomMarshallerAttribute usage |
 |  __`SYSLIB1056`__ | Specified native type is invalid |
 |  __`SYSLIB1057`__ | Marshaller type does not have the required shape |
-|  __`SYSLIB1058`__ | Marshaller type defines a well-known method without specifying support for the corresponding feature |
+|  __`SYSLIB1058`__ | Invalid NativeMarshallingAttribute usage |
 |  __`SYSLIB1059`__ | Marshaller type does not support allocating constructor |
-|  __`SYSLIB1060`__ | BufferSize should be set on CustomTypeMarshallerAttribute |
+|  __`SYSLIB1060`__ | Specified marshaller type is invalid |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
 |  __`SYSLIB1062`__ | Project must be updated with '<AllowUnsafeBlocks>true</AllowUnsafeBlocks>' |
 |  __`SYSLIB1063`__ | *_`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |

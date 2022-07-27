@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
     public class UpgradeToRegexGeneratorAnalyzerTests
     {
-        private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1046";
+        private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
 
         [Fact]
         public async Task NoDiagnosticsForEmpty()

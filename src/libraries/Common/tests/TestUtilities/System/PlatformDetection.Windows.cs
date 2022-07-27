@@ -271,5 +271,8 @@ namespace System
                 return s_isWindowsElevated == 1;
             }
         }
+
+        public static bool IsWindowsAndNotElevated
+            => IsWindows && !IsWindowsAndElevated;
     }
 }
