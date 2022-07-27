@@ -54,7 +54,7 @@ namespace System.Reflection.Tests
         public void ModuleHandle()
         {
             Assert.Equal(typeof(PointerTests).Module.ModuleHandle, Module.ModuleHandle);
-            Assert.False(typeof(PointerTests).Module.ModuleHandle.Equals(System.ModuleHandle.EmptyHandle));
+            Assert.NotEqual(typeof(PointerTests).Module.ModuleHandle, System.ModuleHandle.EmptyHandle);
         }
 
         [Fact]
