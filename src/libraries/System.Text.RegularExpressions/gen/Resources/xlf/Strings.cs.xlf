@@ -153,8 +153,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
-        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">Na stejnou metodu se uplatnilo několik GeneratedRegexAttributes, ale je povolena jenom jedna.</target>
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="needs-review-translation">Na stejnou metodu se uplatnilo několik GeneratedRegexAttributes, ale je povolena jenom jedna.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -198,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">Metoda GeneratedRegexAttribute musí být částečná, bez parametrů, negenerická, neabstraktní a musí vracet regulární výraz.</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="needs-review-translation">Metoda GeneratedRegexAttribute musí být částečná, bez parametrů, negenerická, neabstraktní a musí vracet regulární výraz.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Pomocí regexGeneratorAttribute vygenerujte implementaci regulárního výrazu za kompilace.</target>
+        <target state="needs-review-translation">Pomocí regexGeneratorAttribute vygenerujte implementaci regulárního výrazu za kompilace.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="translated">Převod na GeneratedRegexAttribute</target>
+        <target state="needs-review-translation">Převod na GeneratedRegexAttribute</target>
         <note />
       </trans-unit>
     </body>

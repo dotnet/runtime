@@ -177,7 +177,7 @@ namespace System.Text.RegularExpressions.Generator
 
             newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(replacement, nodeToFix));
 
-            // Initialize the inputs for the RegexGenerator attribute.
+            // Initialize the inputs for the GeneratedRegex attribute.
             SyntaxNode? patternValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
             SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 

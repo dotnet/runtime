@@ -27,9 +27,9 @@ namespace System.Text.RegularExpressions.Generator
 
             Compilation compilation = sm.Compilation;
             INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
-            INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetBestTypeByMetadataName(GeneratedRegexAttributeName);
+            INamedTypeSymbol? generatedRegexAttributeSymbol = compilation.GetBestTypeByMetadataName(GeneratedRegexAttributeName);
 
-            if (regexSymbol is null || regexGeneratorAttributeSymbol is null)
+            if (regexSymbol is null || generatedRegexAttributeSymbol is null)
             {
                 // Required types aren't available
                 return null;
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions.Generator
             int? matchTimeout = null;
             foreach (AttributeData attributeData in boundAttributes)
             {
-                if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, regexGeneratorAttributeSymbol))
+                if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, generatedRegexAttributeSymbol))
                 {
                     continue;
                 }

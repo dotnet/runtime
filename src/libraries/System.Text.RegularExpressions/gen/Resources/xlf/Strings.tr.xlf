@@ -153,8 +153,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
-        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">Aynı yönteme birden çok GeneratedRegexAttributes uygulandı, ancak yalnızca birine izin veriliyor</target>
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="needs-review-translation">Aynı yönteme birden çok GeneratedRegexAttributes uygulandı, ancak yalnızca birine izin veriliyor</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -198,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">GeneratedRegexAttribute yöntemi kısmi, parametresiz, genel olmayan, soyut olmayan özellikler taşımalıdır ve Normal ifade döndürmelidir</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="needs-review-translation">GeneratedRegexAttribute yöntemi kısmi, parametresiz, genel olmayan, soyut olmayan özellikler taşımalıdır ve Normal ifade döndürmelidir</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Derleme zamanında normal ifade uygulamasını oluşturmak için “GeneratedRegexAttribute” kullanın.</target>
+        <target state="needs-review-translation">Derleme zamanında normal ifade uygulamasını oluşturmak için “GeneratedRegexAttribute” kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="translated">“GeneratedRegexAttribute”a dönüştürün.</target>
+        <target state="needs-review-translation">“GeneratedRegexAttribute”a dönüştürün.</target>
         <note />
       </trans-unit>
     </body>

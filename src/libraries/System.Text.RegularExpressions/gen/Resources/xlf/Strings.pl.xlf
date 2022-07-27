@@ -153,8 +153,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
-        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">Do tej samej metody zastosowano wiele atrybutów GeneratedRegexAttributes, ale dozwolony jest tylko jeden</target>
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="needs-review-translation">Do tej samej metody zastosowano wiele atrybutów GeneratedRegexAttributes, ale dozwolony jest tylko jeden</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -198,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">Metoda GeneratedRegexAttribute musi być częściowa, bez parametrów, niestanowa, nieabstrakcyjna i zwracać wyrażenia regularne</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="needs-review-translation">Metoda GeneratedRegexAttribute musi być częściowa, bez parametrów, niestanowa, nieabstrakcyjna i zwracać wyrażenia regularne</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Użyj atrybutu „GeneratedRegexAttribute”, aby wygenerować implementację wyrażenia regularnego w czasie kompilacji.</target>
+        <target state="needs-review-translation">Użyj atrybutu „GeneratedRegexAttribute”, aby wygenerować implementację wyrażenia regularnego w czasie kompilacji.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="translated">Konwertuj na „GeneratedRegexAttribute”.</target>
+        <target state="needs-review-translation">Konwertuj na „GeneratedRegexAttribute”.</target>
         <note />
       </trans-unit>
     </body>
