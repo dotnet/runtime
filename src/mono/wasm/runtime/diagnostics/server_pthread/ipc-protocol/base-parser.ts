@@ -124,11 +124,11 @@ const Parser = {
                     break;
                 }
             }
+            if (trailingNulStart >= 0)
+                result.splice(trailingNulStart);
         }
         const provisionalString = String.fromCharCode.apply(null, result);
 
-        if (trailingNulStart >= 0)
-            return provisionalString.substring(0, trailingNulStart);
         return provisionalString;
     }
 };
