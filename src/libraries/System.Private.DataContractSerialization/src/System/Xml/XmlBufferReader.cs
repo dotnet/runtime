@@ -348,23 +348,13 @@ namespace System.Xml
             => (sbyte)ReadUInt8();
 
         public int ReadUInt16()
-        {
-            ushort i = ReadRawBytes<ushort>();
-            if (!BitConverter.IsLittleEndian)
-                i = BinaryPrimitives.ReverseEndianness(i);
-            return i;
-        }
+            => BitConverter.IsLittleEndian ? ReadRawBytes<ushort>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<ushort>());
 
         public int ReadInt16()
             => (short)ReadUInt16();
 
         public int ReadInt32()
-        {
-            int i = ReadRawBytes<int>();
-            if (!BitConverter.IsLittleEndian)
-                i = BinaryPrimitives.ReverseEndianness(i);
-            return i;
-        }
+            => BitConverter.IsLittleEndian ? ReadRawBytes<int>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<int>());
 
         public int ReadUInt31()
         {
@@ -375,20 +365,15 @@ namespace System.Xml
         }
 
         public long ReadInt64()
-        {
-            long l = ReadRawBytes<long>();
-            if (!BitConverter.IsLittleEndian)
-                l = BinaryPrimitives.ReverseEndianness(l);
-            return l;
-        }
+            => BitConverter.IsLittleEndian ? ReadRawBytes<long>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>());
 
         public float ReadSingle()
             => ReadRawBytes<float>();
 
-        public unsafe double ReadDouble()
+        public double ReadDouble()
             => ReadRawBytes<double>();
 
-        public unsafe decimal ReadDecimal()
+        public decimal ReadDecimal()
             => ReadRawBytes<decimal>();
 
         public UniqueId ReadUniqueId()
@@ -477,15 +462,12 @@ namespace System.Xml
                 const int chunk = 256;
                 while (dst.Length >= chunk)
                 {
-                    EnsureBytes(chunk);
-                    // Get buffer, with all already read memory, but limit to dst.Length
-                    var buffer = GetBuffer(out _offset, out int offsetMax)
-                        .AsSpan(_offset, Math.Min(dst.Length, offsetMax - _offset));
+                    GetBuffer(chunk, out _offset)
+                        .AsSpan(_offset, chunk)
+                        .CopyTo(dst);
 
-                    buffer.CopyTo(dst);
-
-                    dst = dst.Slice(buffer.Length);
-                    Advance(buffer.Length);
+                    Advance(chunk);
+                    dst = dst.Slice(chunk);
                 }
             }
 
@@ -973,14 +955,10 @@ namespace System.Xml
             => ReadRawBytes<decimal>(offset);
 
         public UniqueId GetUniqueId(int offset)
-        {
-            return new UniqueId(_buffer, offset);
-        }
+            => new UniqueId(_buffer, offset);
 
         public Guid GetGuid(int offset)
-        {
-            return new Guid(_buffer.AsSpan(offset));
-        }
+            => new Guid(_buffer.AsSpan(offset, ValueHandleLength.Guid));
 
         public void GetBase64(int srcOffset, byte[] buffer, int dstOffset, int count)
         {

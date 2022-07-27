@@ -1232,7 +1232,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual)));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
