@@ -3714,7 +3714,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // FEATURE_HW_INTRINSICS
     }
 
-        if (ni == NI_System_StubHelpers_GetStubContext)
+    if (ni == NI_System_StubHelpers_GetStubContext)
     {
         // must be done regardless of DbgCode and MinOpts
         return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
