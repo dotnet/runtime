@@ -323,15 +323,7 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      r2, r3: trashed
 //
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
-          // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
-          // intent is that writes to the target object ($REFREG) will be visible across all CPUs before the
-          // write to the destination ($DESTREG). This covers most of the common scenarios where the programmer
-          // might assume strongly ordered accessess, namely where the preceding writes are used to initialize
-          // the object and the final write, made by this barrier in the instruction following the DMB,
-          // publishes that object for other threads/cpus to see.
-          //
-          // Note that none of this is relevant for single cpu machines. We may choose to implement a
-          // uniprocessor specific version of this barrier if uni-proc becomes a significant scenario again.
+          // See comment in RhpAssignRef
           dmb
 
           ldr          r2, [r1]
