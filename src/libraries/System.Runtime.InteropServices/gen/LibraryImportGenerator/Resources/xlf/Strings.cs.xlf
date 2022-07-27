@@ -102,11 +102,6 @@
         <target state="translated">K vygenerování kódu zařazování P/Invoke v době kompilace použijte LibraryImportAttribute místo DllImportAttribute</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConvertToLibraryImportWarning">
-        <source>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</source>
-        <target state="translated">Převod na LibraryImport může vést ke změně chování a kompatibility. Zjistěte více informací přechodem na {0}.</target>
-        <note>{0} is a documentation link</note>
-      </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">Převést na LibraryImport s příponou {0}</target>

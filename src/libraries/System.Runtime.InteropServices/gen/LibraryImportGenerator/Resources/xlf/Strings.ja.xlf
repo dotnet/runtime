@@ -102,11 +102,6 @@
         <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を使用します</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConvertToLibraryImportWarning">
-        <source>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</source>
-        <target state="translated">'LibraryImport' に変換すると、動作と互換性が変更される場合があります。詳細については、「{0}」を参照してください。</target>
-        <note>{0} is a documentation link</note>
-      </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">'{0}' サフィックスを持つ 'LibraryImport' への変換</target>

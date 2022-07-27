@@ -102,11 +102,6 @@
         <target state="translated">Usare 'LibraryImportAttribute' invece di 'DllImportAttribute' per generare codice di marshalling di P/Invoke in fase di compilazione</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConvertToLibraryImportWarning">
-        <source>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</source>
-        <target state="translated">La conversione in 'LibraryImport' può modificare il comportamento e la compatibilità. Per altre informazioni, vedere {0}.</target>
-        <note>{0} is a documentation link</note>
-      </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">Converti in 'LibraryImport' con il suffisso '{0}'</target>

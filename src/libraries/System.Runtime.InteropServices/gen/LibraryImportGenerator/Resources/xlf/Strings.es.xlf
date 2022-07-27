@@ -102,11 +102,6 @@
         <target state="translated">Use “LibraryImportAttribute” en lugar de “DllImportAttribute” para generar código de serialización P/Invoke en el tiempo de compilación</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConvertToLibraryImportWarning">
-        <source>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</source>
-        <target state="translated">La conversión a “LibraryImport” debe cambiar de comportamiento y compatibilidad. Vea {0} para obtener más información.</target>
-        <note>{0} is a documentation link</note>
-      </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">Convertir a “LibraryImport” con sufijo “{0}”</target>
