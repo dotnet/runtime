@@ -32,6 +32,8 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
         string tmpBundleDirName = "AppBundleTmp";
         string tmpBundleDir = Path.Combine(binDir, tmpBundleDirName);
 
+        string tmpDir = Path.Combine(Path.GetTempPath(), $"{id}-{buildArgs.ProjectName}");
+
         if (host == RunHost.Chrome)
         {
             Directory.Move(appBundleDir, tmpBundleDir);
@@ -46,10 +48,10 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
                 File.WriteAllText(indexHtmlPath, html);
             }
         } else {
-            CopyAllFiles(appBundleDir, tmpBundleDir);
+            CopyAllFiles(appBundleDir, tmpDir);
         }
 
-        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, jsRelativePath: $"../{tmpBundleDirName}/test-main.js");
+        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, jsRelativePath: Path.Combine(tmpDir, "test-main.js"));
 
         // Restore AppBundle Dir
         if (host == RunHost.Chrome)
@@ -58,7 +60,7 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
             Directory.Delete(appBundleDir, true);
             Directory.Move(tmpBundleDir, appBundleDir);
         } else {
-            Directory.Delete(tmpBundleDir, true);
+            Directory.Delete(tmpDir, true);
         }
     }
 
