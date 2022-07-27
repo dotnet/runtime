@@ -146,11 +146,8 @@
     <Exec Command="dotnet build -bl -restore -v:q --nologo -t:Pack %(_NuGetsToBuild.BuildArgs) %(_NuGetsToBuild.Project)" />
   </Target>
 
-  <!-- Restrict to !CI once we can get the runtime packs for other variants on CI -->
-  <!--<Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'Browser' and '$(ContinuousIntegrationBuild)' != 'true'">-->
   <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
-       copy that one as the other nuget files, as a workaround. It will mean that the tests will
-       actually be using that original runtime even though they might be trying to use one of the others.
+       build the other nugets with the *same runtime* but different names.
   -->
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'Browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <PropertyGroup>
