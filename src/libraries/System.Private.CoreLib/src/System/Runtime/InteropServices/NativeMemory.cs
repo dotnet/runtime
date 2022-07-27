@@ -51,6 +51,19 @@ namespace System.Runtime.InteropServices
             SpanHelpers.ClearWithoutReferences(ref *(byte*)ptr, byteCount);
         }
 
+        /// <summary>
+        /// Copies a block of memory from memory location <paramref name="source"/>
+        /// to memory location <paramref name="destination"/>.
+        /// </summary>
+        /// <param name="source">A pointer to the source of data to be copied.</param>
+        /// <param name="destination">A pointer to the destination memory block where the data is to be copied.</param>
+        /// <param name="byteCount">The size, in bytes, to be copied from the source location to the destination.</param>
+        [CLSCompliant(false)]
+        public static void Copy(void* source, void* destination, nuint byteCount)
+        {
+            Buffer.Memmove(ref *(byte*)destination, ref *(byte*)source, byteCount);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteCount(nuint elementCount, nuint elementSize)
         {
