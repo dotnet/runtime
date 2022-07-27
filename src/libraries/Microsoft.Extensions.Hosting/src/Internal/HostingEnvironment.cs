@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     {
         public string EnvironmentName { get; set; } = null!;
 
-        public string? ApplicationName { get; set; }
+        public string ApplicationName { get; set; } = string.Empty;
 
         public string ContentRootPath { get; set; } = null!;
 
