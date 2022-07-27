@@ -309,7 +309,7 @@ namespace System.Reflection
             internal GeneratedTypeInfo CreateType()
             {
                 this.Complete();
-                return new GeneratedTypeInfo(_tb.CreateType()!, _methodInfos.ToArray());
+                return new GeneratedTypeInfo(_tb.CreateType(), _methodInfos.ToArray());
             }
 
             internal void AddInterfaceImpl([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type iface)
