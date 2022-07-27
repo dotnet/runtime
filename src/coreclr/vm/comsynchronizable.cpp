@@ -1160,22 +1160,16 @@ extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-// Unmarks the current thread for abort.
-// Returns TRUE if the thread had the TS_AbortRequested flag set.
-extern "C" BOOL QCALLTYPE ThreadNative_ResetAbort()
+// Unmark the current thread for a safe abort.
+extern "C" void QCALLTYPE ThreadNative_ResetAbort()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
-
-    BOOL ret = FALSE;
 
     Thread *pThread = GetThread();
     if (pThread->IsAbortRequested())
     {
-        pThread->UnmarkThreadForAbort();
-        ret = TRUE;
+        pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
-
-    return ret;
 }
 
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
