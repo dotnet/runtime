@@ -64,6 +64,19 @@ namespace System.Runtime.InteropServices
             Buffer.Memmove(ref *(byte*)destination, ref *(byte*)source, byteCount);
         }
 
+        /// <summary>
+        /// Copies the byte <paramref name="value"/> to the first <paramref name="byteCount"/> bytes
+        /// of the memory located at <paramref name="ptr"/>.
+        /// </summary>
+        /// <param name="ptr">A pointer to the block of memory to fill.</param>
+        /// <param name="byteCount">The number of bytes to be set to <paramref name="value"/>.</param>
+        /// <param name="value">The value to be set.</param>
+        [CLSCompliant(false)]
+        public static void Fill(void* ptr, nuint byteCount, byte value)
+        {
+            SpanHelpers.Fill(ref *(byte*)ptr, byteCount, value);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteCount(nuint elementCount, nuint elementSize)
         {
