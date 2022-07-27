@@ -22801,7 +22801,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // resolve call above for class-based GDV.
         if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
         {
-            assert(call->IsDelegateInvoke());
+            assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) || call->IsDelegateInvoke());
             JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
             return;
         }
