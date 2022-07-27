@@ -39,6 +39,7 @@ namespace System.Text.Json.Serialization.Converters
                 obj = jsonTypeInfo.CreateObject()!;
 
                 jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                jsonTypeInfo.InitializeRequiredProperties(ref state);
 
                 // Process all properties.
                 while (true)
@@ -143,6 +144,8 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
+
+                    jsonTypeInfo.InitializeRequiredProperties(ref state);
                 }
                 else
                 {
@@ -250,6 +253,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            jsonTypeInfo.CheckRequiredProperties(ref state);
 
             // Unbox
             Debug.Assert(obj != null);

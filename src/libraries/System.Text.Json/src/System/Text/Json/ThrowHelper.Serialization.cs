@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -198,6 +199,33 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_SerializerPropertyNameNull(JsonPropertyInfo jsonPropertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameNull, jsonPropertyInfo.DeclaringType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyRequiredAndNotDeserializable, jsonPropertyInfo.Name, jsonPropertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyRequiredAndExtensionData, jsonPropertyInfo.Name, jsonPropertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, IEnumerable<JsonPropertyInfo> missingJsonProperties)
+        {
+            StringBuilder errorMessageBuilder = new();
+            errorMessageBuilder.AppendLine(SR.Format(SR.JsonRequiredPropertiesMissingHeader, parent.Type));
+
+            foreach (var missingProperty in missingJsonProperties)
+            {
+                Debug.Assert(missingProperty.IsRequired);
+                errorMessageBuilder.AppendLine(SR.Format(SR.JsonRequiredPropertiesMissingItem, missingProperty.Name));
+            }
+
+            throw new JsonException(errorMessageBuilder.ToString());
         }
 
         [DoesNotReturn]
@@ -689,17 +717,6 @@ namespace System.Text.Json
         public static void ThrowNotSupportedException_DerivedConverterDoesNotSupportMetadata(Type derivedType)
         {
             throw new NotSupportedException(SR.Format(SR.Polymorphism_DerivedConverterDoesNotSupportMetadata, derivedType));
-        }
-
-        public static Exception GetNotSupportedException_MemberWithRequiredKeywordNotSupported(JsonPropertyInfo property)
-        {
-            return new NotSupportedException(SR.Format(SR.MemberWithRequiredKeywordNotSupported, property.DeclaringType, property.Name));
-        }
-
-        [DoesNotReturn]
-        public static void ThrowNotSupportedException_MemberWithRequiredKeywordNotSupported(JsonPropertyInfo property)
-        {
-            throw GetNotSupportedException_MemberWithRequiredKeywordNotSupported(property);
         }
 
         [DoesNotReturn]

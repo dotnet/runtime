@@ -25,6 +25,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
         private JsonPropertyInfoList? _properties;
+        internal JsonPropertyInfo[]? RequiredProperties { get; private set; }
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -879,18 +880,35 @@ namespace System.Text.Json.Serialization.Metadata
                 ExtensionDataProperty.EnsureConfigured();
             }
 
+            int numberOfRequiredProperties = 0;
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
 
                 if (jsonPropertyInfo.IsRequired)
                 {
-                    // Deserialization is not possible if member has 'required' keyword
-                    DeserializationException = ThrowHelper.GetNotSupportedException_MemberWithRequiredKeywordNotSupported(jsonPropertyInfo);
+                    numberOfRequiredProperties++;
                 }
 
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();
+            }
+
+            if (numberOfRequiredProperties > 0)
+            {
+                JsonPropertyInfo[] requiredProperties = new JsonPropertyInfo[numberOfRequiredProperties];
+                int idx = 0;
+                foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
+                {
+                    JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
+
+                    if (jsonPropertyInfo.IsRequired)
+                    {
+                        requiredProperties[idx++] = jsonPropertyInfo;
+                    }
+                }
+
+                RequiredProperties = requiredProperties;
             }
         }
 
@@ -1007,6 +1025,30 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonPropertyDictionary<JsonPropertyInfo> CreatePropertyCache(int capacity)
         {
             return new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, capacity);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void InitializeRequiredProperties(ref ReadStack state)
+        {
+            if (RequiredProperties != null)
+            {
+                Debug.Assert(state.Current.RequiredPropertiesLeft == null);
+                state.Current.RequiredPropertiesLeft = new HashSet<JsonPropertyInfo>(RequiredProperties);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CheckRequiredProperties(ref ReadStack state)
+        {
+            if (RequiredProperties != null)
+            {
+                Debug.Assert(state.Current.RequiredPropertiesLeft != null);
+
+                if (state.Current.RequiredPropertiesLeft.Count != 0)
+                {
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(this, state.Current.RequiredPropertiesLeft);
+                }
+            }
         }
 
         private static JsonParameterInfo CreateConstructorParameter(

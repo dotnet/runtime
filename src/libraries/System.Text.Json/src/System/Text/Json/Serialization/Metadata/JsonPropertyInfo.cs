@@ -291,6 +291,19 @@ namespace System.Text.Json.Serialization.Metadata
                 DetermineIgnoreCondition();
                 DetermineSerializationCapabilities();
             }
+
+            if (IsRequired)
+            {
+                if (!CanDeserialize)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
+                }
+
+                if (IsExtensionData)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
+                }
+            }
         }
 
         private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
@@ -773,6 +786,8 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
+
+        internal abstract void SetValueAsObject(object obj, object? value, ref ReadStack state);
 
         internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
 

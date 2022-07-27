@@ -339,6 +339,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     T? value = default;
                     Set!(obj, value!);
+                    state.Current.MarkRequiredPropertyAsRead(this);
                 }
 
                 success = true;
@@ -353,6 +354,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T? fastValue = TypedEffectiveConverter.Read(ref reader, PropertyType, Options);
                     Set!(obj, fastValue!);
+                    state.Current.MarkRequiredPropertyAsRead(this);
                 }
 
                 success = true;
@@ -366,6 +368,7 @@ namespace System.Text.Json.Serialization.Metadata
                     if (success)
                     {
                         Set!(obj, value!);
+                        state.Current.MarkRequiredPropertyAsRead(this);
                     }
                 }
             }
@@ -408,11 +411,23 @@ namespace System.Text.Json.Serialization.Metadata
             return success;
         }
 
-        internal override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
+        internal sealed override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
         {
             Debug.Assert(HasSetter);
             T typedValue = (T)extensionDict!;
             Set!(obj, typedValue);
+        }
+
+        internal sealed override void SetValueAsObject(object obj, object? value, ref ReadStack state)
+        {
+            Debug.Assert(HasSetter);
+
+            if (value is not null || !IgnoreNullTokensOnRead || default(T) is not null)
+            {
+                T typedValue = (T)value!;
+                Set!(obj, typedValue);
+                state.Current.MarkRequiredPropertyAsRead(this);
+            }
         }
 
         private protected override void ConfigureIgnoreCondition(JsonIgnoreCondition? ignoreCondition)

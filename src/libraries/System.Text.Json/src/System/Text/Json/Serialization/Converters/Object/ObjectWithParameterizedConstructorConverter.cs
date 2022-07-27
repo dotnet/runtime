@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, propValue);
+                            jsonPropertyInfo.SetValueAsObject(obj, propValue, ref state);
                         }
                         else
                         {
@@ -211,6 +211,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            jsonTypeInfo.CheckRequiredProperties(ref state);
 
             // Unbox
             Debug.Assert(obj != null);
@@ -272,6 +273,7 @@ namespace System.Text.Json.Serialization.Converters
                         continue;
                     }
 
+                    Debug.Assert(jsonParameterInfo.MatchingProperty != null);
                     ReadAndCacheConstructorArgument(ref state, ref reader, jsonParameterInfo);
 
                     state.Current.EndConstructorParameter();
@@ -531,6 +533,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
             }
+
+            jsonTypeInfo.InitializeRequiredProperties(ref state);
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
             state.Current.JsonPropertyInfo = null;

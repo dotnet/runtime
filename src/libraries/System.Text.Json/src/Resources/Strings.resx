@@ -659,7 +659,16 @@
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
   </data>
-  <data name="MemberWithRequiredKeywordNotSupported" xml:space="preserve">
-    <value>The JSON property '{0}.{1}' is marked with 'required' keyword which is not supported.</value>
+  <data name="JsonPropertyRequiredAndNotDeserializable" xml:space="preserve">
+    <value>JsonPropertyInfo with name '{0}' for type '{1}' is required but is not deserializable.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndExtensionData" xml:space="preserve">
+    <value>JsonPropertyInfo with name '{0}' for type '{1}' cannot be required and be an extension data property.</value>
+  </data>
+  <data name="JsonRequiredPropertiesMissingHeader" xml:space="preserve">
+    <value>Type '{0}' contains required properties which were not set during deserialization:</value>
+  </data>
+  <data name="JsonRequiredPropertiesMissingItem" xml:space="preserve">
+    <value>- {0}</value>
   </data>
 </root>

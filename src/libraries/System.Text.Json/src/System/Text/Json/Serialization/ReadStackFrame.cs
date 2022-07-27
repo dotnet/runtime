@@ -66,6 +66,9 @@ namespace System.Text.Json
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
 
+        // Required properties left
+        public HashSet<JsonPropertyInfo>? RequiredPropertiesLeft;
+
         public void EndConstructorParameter()
         {
             CtorArgumentState!.JsonParameterInfo = null;
@@ -105,6 +108,15 @@ namespace System.Text.Json
         public bool IsProcessingEnumerable()
         {
             return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
+        }
+
+        public void MarkRequiredPropertyAsRead(JsonPropertyInfo propertyInfo)
+        {
+            if (propertyInfo.IsRequired)
+            {
+                Debug.Assert(RequiredPropertiesLeft != null);
+                RequiredPropertiesLeft.Remove(propertyInfo);
+            }
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
