@@ -3619,10 +3619,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
     switch (retVal->OperGet())
     {
-        case GT_CALL:
-            assert(retVal->TypeIs(genActualType(nativeReturnType))); // Type should be changed during call processing.
-            break;
-
         case GT_CNS_INT:
             // When we promote LCL_VAR single fields into return we could have all type of constans here.
             if (varTypeUsesFloatReg(nativeReturnType))
@@ -3657,26 +3653,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         case GT_LCL_FLD:
             retVal->ChangeType(nativeReturnType);
             break;
-
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
-        {
-            assert(!retVal->TypeIs(TYP_STRUCT));
-            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
-            {
-                GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-                ret->gtOp1       = bitcast;
-                BlockRange().InsertBefore(ret, bitcast);
-                ContainCheckBitCast(bitcast);
-            }
-        }
-        break;
-#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
 
         default:
             assert(varTypeIsEnregisterable(retVal));

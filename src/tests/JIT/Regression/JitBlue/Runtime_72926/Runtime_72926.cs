@@ -25,6 +25,10 @@ public unsafe class Runtime_72926
         {
             return 104;
         }
+        if (CallForStructWithLongAsStructWithDouble().Dbl != 0)
+        {
+            return 105;
+        }
 
         return 100;
     }
@@ -55,5 +59,28 @@ public unsafe class Runtime_72926
     {
         double value = BitConverter.Int64BitsToDouble(-1);
         return *(Vector64<double>*)&value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static StructWithDouble CallForStructWithLongAsStructWithDouble()
+    {
+        StructWithLong lng = GetStructWithLong();
+        return *(StructWithDouble*)&lng;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static StructWithLong GetStructWithLong()
+    {
+        return default;
+    }
+
+    struct StructWithDouble
+    {
+        public double Dbl;
+    }
+
+    struct StructWithLong
+    {
+        public long Lng;
     }
 }
