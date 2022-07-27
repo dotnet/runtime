@@ -7288,6 +7288,19 @@ protected:
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
 
+#ifdef DEBUG
+#define ASSERTION_VAR(name)  \
+    unsigned name##Iter = 0; \
+    unsigned name##Count = 0;
+
+ASSERTION_VAR(addAssertion);
+ASSERTION_VAR(subRange);
+ASSERTION_VAR(subType);
+ASSERTION_VAR(equalOrNotEqua);
+ASSERTION_VAR(noNull);
+
+#endif
+
     struct AssertionDscKeyFuncs
     {
         static bool Equals(const AssertionDsc& x, const AssertionDsc& y)

@@ -1989,6 +1989,8 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         {
             found      = true;
             slowAnswer = index;
+            addAssertionCount++;
+            addAssertionIter += (optAssertionCount - index  + 1);
             break;
         }
     }
@@ -2898,6 +2900,8 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 
             if (range.Contains(curAssertion->op2.u2))
             {
+                subRangeCount++;
+                subRangeIter += index;
                 return index;
             }
         }
@@ -2964,6 +2968,8 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 
         if (curAssertion->op2.u1.iconVal == methodTableVal)
         {
+            subTypeCount++;
+            subTypeIter += index;
             return index;
         }
     }
@@ -3815,6 +3821,8 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 
                 if (constantIsEqual || assertionIsEqual)
                 {
+                    equalOrNotEquaCount++;
+                    equalOrNotEquaIter += index;
                     return index;
                 }
             }
@@ -4613,6 +4621,8 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
                 (curAssertion->op1.lcl.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
+                noNullCount++;
+                noNullIter += index;
                 return index;
             }
         }
@@ -5105,13 +5115,13 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         // Search the assertion table for a non-null assertion on op1 that matches chkAssertion
         for (AssertionIndex impIndex = 1; impIndex <= optAssertionCount; impIndex++)
         {
-            AssertionDsc* impAssertion = optGetAssertion(impIndex);
-
             //  The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
+
+            AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
             // impAssertion must be a Non Null assertion on lclNum
             if ((impAssertion->assertionKind != OAK_NOT_EQUAL) ||
