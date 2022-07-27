@@ -973,7 +973,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task H3_AltUsedHeader()
+        public async Task AltSvcNotUsed_AltUsedHeaderNotPresent()
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
