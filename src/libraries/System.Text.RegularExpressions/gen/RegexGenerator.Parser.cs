@@ -111,11 +111,6 @@ namespace System.Text.RegularExpressions.Generator
                 return Diagnostic.Create(DiagnosticDescriptors.RegexMethodMustHaveValidSignature, methodSyntax.GetLocation());
             }
 
-            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: <= LanguageVersion.CSharp10 })
-            {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidLangVersion, methodSyntax.GetLocation());
-            }
-
             RegexOptions regexOptions = options is not null ? (RegexOptions)options : RegexOptions.None;
 
             // TODO: This is going to include the culture that's current at the time of compilation.

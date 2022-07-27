@@ -3,7 +3,7 @@
 
 import { BINDINGType, DotnetPublicAPI, MONOType } from "./exports";
 import { IDisposable, IMemoryView, ManagedError, ManagedObject, MemoryViewType } from "./marshal";
-import { DotnetModuleConfig, MonoArray, MonoObject, MonoString } from "./types";
+import { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoArray, MonoConfig, MonoObject, MonoString, ResourceRequest } from "./types";
 import { EmscriptenModule, TypedArray, VoidPtr } from "./types/emscripten";
 
 // -----------------------------------------------------------
@@ -55,7 +55,8 @@ export {
     VoidPtr,
     MonoObject, MonoString, MonoArray,
     BINDINGType, MONOType, EmscriptenModule,
-    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType,
+    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig,
+    AssetEntry, ResourceRequest, LoadingResource, AssetBehaviours,
     IMemoryView, MemoryViewType, ManagedObject, ManagedError, Span, ArraySegment
 };
 

@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MesageContainedTrailingData));
+                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MessageContainedTrailingData));
                 }
 
                 return new CoseSign1Message(protectedHeader, unprotectedHeader, payload, signature, protectedHeaderAsBstr, tag.HasValue);
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MesageContainedTrailingData));
+                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MessageContainedTrailingData));
                 }
 
                 return new CoseMultiSignMessage(protectedHeaders, unprotectedHeaders, payload, signatures, encodedProtectedHeaders, tag.HasValue);

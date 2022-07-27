@@ -325,7 +325,7 @@ namespace System.Data.ProviderBase
 
             if (!haveExactMatch && haveMultipleInexactMatches)
             {
-                throw ADP.AmbigousCollectionName(collectionName);
+                throw ADP.AmbiguousCollectionName(collectionName);
             }
 
             return requestedCollectionRow;

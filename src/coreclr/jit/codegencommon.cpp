@@ -3377,8 +3377,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
-                    assert(varTypeIsSIMD(varDsc) &&
-                           !compiler->isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle()));
+                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetStructHnd()));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);
@@ -5873,7 +5872,7 @@ void CodeGen::genFnProlog()
     // call arguments properly since both the arg regs and the stack allocated
     // args will be contiguous.
     //
-    // OSR methods can skip this, as the setup is done by the orignal method.
+    // OSR methods can skip this, as the setup is done by the original method.
     if (compiler->info.compIsVarArgs && !compiler->opts.IsOSR())
     {
         GetEmitter()->spillIntArgRegsToShadowSlots();
@@ -8647,7 +8646,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //
 // Arguments:
 //  liveRanges - the "LiveRangeList" of the "VariableLiveDescriptor" we want to
-//      udpate its "LiveRangeDumper".
+//      update its "LiveRangeDumper".
 //
 // Notes:
 //  This method is expected to be called once a the code for a BasicBlock has been

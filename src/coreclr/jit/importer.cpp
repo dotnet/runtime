@@ -453,25 +453,23 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         }
     }
 
-    if (tree->gtOper == GT_ASG)
+    if (tree->OperIs(GT_ASG))
     {
         // For an assignment to a local variable, all references of that
         // variable have to be spilled. If it is aliased, all calls and
         // indirect accesses have to be spilled
 
-        if (tree->AsOp()->gtOp1->gtOper == GT_LCL_VAR)
+        if (tree->AsOp()->gtOp1->OperIsLocal())
         {
             unsigned lclNum = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum));
-                assert(!lvaTable[lclNum].IsAddressExposed() ||
-                       (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
+                GenTree* stkTree = verCurrentState.esStack[level].val;
+                assert(!gtHasRef(stkTree, lclNum) || impIsInvariant(stkTree));
+                assert(!lvaTable[lclNum].IsAddressExposed() || ((stkTree->gtFlags & GTF_SIDE_EFFECT) == 0));
             }
         }
-
         // If the access may be to global memory, all side effects have to be spilled.
-
         else if (tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF)
         {
             for (unsigned level = 0; level < chkLevel; level++)
@@ -490,7 +488,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 // Arguments:
 //    stmt                   - The statement to add.
 //    chkLevel               - [0..chkLevel) is the portion of the stack which we will check
-//                             for interference with stmt and spill if needed.
+//                             for interference with stmt and spilled if needed.
 //    checkConsumedDebugInfo - Whether to check for consumption of impCurStmtDI. impCurStmtDI
 //                             marks the debug info of the current boundary and is set when we
 //                             start importing IL at that boundary. If this parameter is true,
@@ -509,61 +507,71 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
     {
         assert(chkLevel <= verCurrentState.esStackDepth);
 
-        /* If the statement being appended has any side-effects, check the stack
-           to see if anything needs to be spilled to preserve correct ordering. */
-
+        // If the statement being appended has any side-effects, check the stack to see if anything
+        // needs to be spilled to preserve correct ordering.
+        //
         GenTree*     expr  = stmt->GetRootNode();
         GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
-        // Assignment to (unaliased) locals don't count as a side-effect as
-        // we handle them specially using impSpillLclRefs(). Temp locals should
-        // be fine too.
-
-        if ((expr->gtOper == GT_ASG) && (expr->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
-            ((expr->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) == 0) && !gtHasLocalsWithAddrOp(expr->AsOp()->gtOp2))
+        // Assignments to unaliased locals require special handling. Here, we look for trees that
+        // can modify them and spill the references. In doing so, we make two assumptions:
+        //
+        // 1. All locals which can be modified indirectly are marked as address-exposed or with
+        //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
+        //    below to spill them.
+        // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
+        //    walk down the tree here), and are a subset of what is recognized here.
+        //
+        // If any of the above are violated (say for some temps), the relevant code must spill
+        // things manually.
+        //
+        LclVarDsc* dstVarDsc = nullptr;
+        if (expr->OperIs(GT_ASG) && expr->AsOp()->gtOp1->OperIsLocal())
         {
-            GenTreeFlags op2Flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
-            assert(flags == (op2Flags | GTF_ASG));
-            flags = op2Flags;
+            dstVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
+        }
+        else if (expr->OperIs(GT_CALL, GT_RET_EXPR)) // The special case of calls with return buffers.
+        {
+            GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
+
+            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg(this))
+            {
+                GenTree* retBuf;
+                if (call->AsCall()->ShouldHaveRetBufArg())
+                {
+                    assert(call->AsCall()->gtArgs.HasRetBuffer());
+                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
+                }
+                else
+                {
+                    assert(!call->AsCall()->gtArgs.HasThisPointer());
+                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+                }
+
+                assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                GenTreeLclVarCommon* lclNode = retBuf->IsLocalAddrExpr();
+                if (lclNode != nullptr)
+                {
+                    dstVarDsc = lvaGetDesc(lclNode);
+                }
+            }
+        }
+
+        if ((dstVarDsc != nullptr) && !dstVarDsc->IsAddressExposed() && !dstVarDsc->lvHasLdAddrOp)
+        {
+            impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
+
+            if (expr->OperIs(GT_ASG))
+            {
+                // For assignments, limit the checking to what the RHS could modify/interfere with.
+                flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
+            }
         }
 
         if (flags != 0)
         {
-            bool spillGlobEffects = false;
-
-            if ((flags & GTF_CALL) != 0)
-            {
-                // If there is a call, we have to spill global refs
-                spillGlobEffects = true;
-            }
-            else if (!expr->OperIs(GT_ASG))
-            {
-                if ((flags & GTF_ASG) != 0)
-                {
-                    // The expression is not an assignment node but it has an assignment side effect, it
-                    // must be an atomic op, HW intrinsic or some other kind of node that stores to memory.
-                    // Since we don't know what it assigns to, we need to spill global refs.
-                    spillGlobEffects = true;
-                }
-            }
-            else
-            {
-                GenTree* lhs = expr->gtGetOp1();
-                GenTree* rhs = expr->gtGetOp2();
-
-                if (((rhs->gtFlags | lhs->gtFlags) & GTF_ASG) != 0)
-                {
-                    // Either side of the assignment node has an assignment side effect.
-                    // Since we don't know what it assigns to, we need to spill global refs.
-                    spillGlobEffects = true;
-                }
-                else if ((lhs->gtFlags & GTF_GLOB_REF) != 0)
-                {
-                    spillGlobEffects = true;
-                }
-            }
-
-            impSpillSideEffects(spillGlobEffects, chkLevel DEBUGARG("impAppendStmt"));
+            impSpillSideEffects((flags & (GTF_ASG | GTF_CALL)) != 0, chkLevel DEBUGARG("impAppendStmt"));
         }
         else
         {
@@ -1500,11 +1508,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         {
             dest = gtNewObjNode(structHnd, destAddr);
             gtSetObjGcInfo(dest->AsObj());
-            // Although an obj as a call argument was always assumed to be a globRef
-            // (which is itself overly conservative), that is not true of the operands
-            // of a block assignment.
-            dest->gtFlags &= ~GTF_GLOB_REF;
-            dest->gtFlags |= (destAddr->gtFlags & GTF_GLOB_REF);
         }
         else
         {
@@ -2357,14 +2360,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     return gtNewLclvNode(tmp, TYP_I_IMPL);
 }
 
-/******************************************************************************
- *  Spills the stack at verCurrentState.esStack[level] and replaces it with a temp.
- *  If tnum!=BAD_VAR_NUM, the temp var used to replace the tree is tnum,
- *     else, grab a new temp.
- *  For structs (which can be pushed on the stack using obj, etc),
- *  special handling is needed
- */
-
 struct RecursiveGuard
 {
 public:
@@ -2583,21 +2578,27 @@ inline void Compiler::impSpillSpecialSideEff()
     }
 }
 
-/*****************************************************************************
- *
- *  If the stack contains any trees with references to local #lclNum, assign
- *  those trees to temps and replace their place on the stack with refs to
- *  their temps.
- */
-
-void Compiler::impSpillLclRefs(unsigned lclNum)
+//------------------------------------------------------------------------
+// impSpillLclRefs: Spill all trees referencing the given local.
+//
+// Arguments:
+//    lclNum   - The local's number
+//    chkLevel - Height (exclusive) of the portion of the stack to check
+//
+void Compiler::impSpillLclRefs(unsigned lclNum, unsigned chkLevel)
 {
-    /* Before we make any appends to the tree list we must spill the
-     * "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG */
-
+    // Before we make any appends to the tree list we must spill the
+    // "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG.
     impSpillSpecialSideEff();
 
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+    if (chkLevel == CHECK_SPILL_ALL)
+    {
+        chkLevel = verCurrentState.esStackDepth;
+    }
+
+    assert(chkLevel <= verCurrentState.esStackDepth);
+
+    for (unsigned level = 0; level < chkLevel; level++)
     {
         GenTree* tree = verCurrentState.esStack[level].val;
 
@@ -6642,7 +6643,27 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
 #endif                   // DEBUG
 }
 
-/******************************************************************************/
+typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+    if ((varDsc->TypeGet() == TYP_BLK) || (varDsc->TypeGet() == TYP_LCLBLK))
+    {
+        return typeInfo();
+    }
+    if (varDsc->TypeGet() == TYP_BYREF)
+    {
+        // Pretend all byrefs are pointing to bytes.
+        return typeInfo(TI_BYTE).MakeByRef();
+    }
+    if (varTypeIsStruct(varDsc))
+    {
+        return typeInfo(TI_STRUCT, varDsc->GetStructHnd());
+    }
+
+    return typeInfo(varDsc->TypeGet());
+}
+
 typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(ciType < CORINFO_TYPE_COUNT);
@@ -7474,7 +7495,7 @@ void Compiler::verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
         }
 
         // If it is null, we assume we can access it (since it will AV shortly)
-        // If it is anything but a refernce class, there is no hierarchy, so
+        // If it is anything but a reference class, there is no hierarchy, so
         // again, we don't need the precise instance class to compute 'protected' access
         if (tiThis->IsType(TI_REF))
         {
@@ -9695,7 +9716,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
 
                     GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
-                    assert(!compDonotInline());
+
+                    // stubAddr tree may require a new temp.
+                    // If we're inlining, this may trigger the too many locals inline failure.
+                    //
+                    // If so, we need to bail out.
+                    //
+                    if (compDonotInline())
+                    {
+                        return TYP_UNDEF;
+                    }
 
                     // This is the rough code to set up an indirect stub call
                     assert(stubAddr != nullptr);
@@ -9703,8 +9733,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // The stubAddr may be a
                     // complex expression. As it is evaluated after the args,
                     // it may cause registered args to be spilled. Simply spill it.
+                    //
+                    unsigned const lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
+                    if (compDonotInline())
+                    {
+                        return TYP_UNDEF;
+                    }
 
-                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
                     impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
@@ -10803,9 +10838,9 @@ DONE_CALL:
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
                     {
-                        unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
-                        LclVarDsc* varDsc     = lvaGetDesc(calliSlot);
-                        varDsc->lvVerTypeInfo = tiRetVal;
+                        unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
+                        LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
+
                         impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
@@ -12076,7 +12111,7 @@ const static controlFlow_t controlFlow[] = {
 #endif // DEBUG
 
 /*****************************************************************************
- *  Determine the result type of an arithemetic operation
+ *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
  */
 var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2)
@@ -12085,7 +12120,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     GenTree*  op1  = *pOp1;
     GenTree*  op2  = *pOp2;
 
-    // Arithemetic operations are generally only allowed with
+    // Arithmetic operations are generally only allowed with
     // primitive types, but certain operations are allowed
     // with byrefs
 
@@ -13194,56 +13229,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
-
-                // We need to call impSpillLclRefs() for a struct type lclVar.
-                // This is because there may be loads of that lclVar on the evaluation stack, and
-                // we need to ensure that those loads are completed before we modify it.
-                if ((op1->OperGet() == GT_ASG) && varTypeIsStruct(op1->gtGetOp1()))
-                {
-                    GenTree*             lhs    = op1->gtGetOp1();
-                    GenTreeLclVarCommon* lclVar = nullptr;
-                    if (lhs->gtOper == GT_LCL_VAR)
-                    {
-                        lclVar = lhs->AsLclVarCommon();
-                    }
-                    else if (lhs->OperIsBlk())
-                    {
-                        // Check if LHS address is within some struct local, to catch
-                        // cases where we're updating the struct by something other than a stfld
-                        GenTree* addr = lhs->AsBlk()->Addr();
-
-                        // Catches ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
-                        lclVar = addr->IsLocalAddrExpr();
-
-                        // Catches ADDR(FIELD(... ADDR(LCL_VAR)))
-                        if (lclVar == nullptr)
-                        {
-                            GenTree* lclTree = nullptr;
-                            if (impIsAddressInLocal(addr, &lclTree))
-                            {
-                                lclVar = lclTree->AsLclVarCommon();
-                            }
-                        }
-                    }
-                    if (lclVar != nullptr)
-                    {
-                        impSpillLclRefs(lclVar->GetLclNum());
-                    }
-                }
-
-                /* Append 'op1' to the list of statements */
                 impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                 goto DONE_APPEND;
 
             APPEND:
-
-                /* Append 'op1' to the list of statements */
-
                 impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
                 goto DONE_APPEND;
 
             DONE_APPEND:
-
 #ifdef DEBUG
                 // Remember at which BC offset the tree was finished
                 impNoteLastILoffs();
@@ -13452,7 +13445,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impImplicitIorI4Cast(op1, lclTyp);
 
 #ifdef TARGET_64BIT
-                // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
+                // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
                 if (varTypeIsI(op1->TypeGet()) && (genActualType(lclTyp) == TYP_INT))
                 {
                     op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
@@ -13521,24 +13514,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                /* Create the assignment node */
-
                 op2 = gtNewLclvNode(lclNum, lclTyp DEBUGARG(opcodeOffs + sz + 1));
 
-                /* If the local is aliased or pinned, we need to spill calls and
-                   indirections from the stack. */
-
-                if ((lvaTable[lclNum].IsAddressExposed() || lvaTable[lclNum].lvHasLdAddrOp ||
-                     lvaTable[lclNum].lvPinned) &&
-                    (verCurrentState.esStackDepth > 0))
+                // Stores to pinned locals can have the implicit side effect of "unpinning", so we must spill
+                // things that could depend on the pin. TODO-Bug: which can actually be anything, including
+                // unpinned unaliased locals, not just side-effecting trees.
+                if (lvaTable[lclNum].lvPinned)
                 {
-                    impSpillSideEffects(false,
-                                        (unsigned)CHECK_SPILL_ALL DEBUGARG("Local could be aliased or is pinned"));
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Spill before store to pinned local"));
                 }
-
-                /* Spill any refs to the local from the stack */
-
-                impSpillLclRefs(lclNum);
 
                 // We can generate an assignment to a TYP_FLOAT from a TYP_DOUBLE
                 // We insert a cast to the dest 'op2' type
@@ -13551,13 +13535,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (varTypeIsStruct(lclTyp))
                 {
-                    op1 = impAssignStruct(op2, op1, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op2, op1, clsHnd, CHECK_SPILL_ALL);
                 }
                 else
                 {
                     op1 = gtNewAssignNode(op2, op1);
                 }
-
                 goto SPILL_APPEND;
 
             case CEE_LDLOCA:
@@ -13643,8 +13626,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
                 assert((op1->gtFlags & GTF_GLOB_REF) == 0);
 
-                tiRetVal = lvaTable[lclNum].lvVerTypeInfo;
-
+                tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -15128,13 +15110,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
+                    // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
                     //
                     if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
                     {
                         op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                     }
-                    // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
+                    // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                     //
                     if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
                     {
@@ -15172,6 +15154,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif
 
                 op1 = gtNewOperNode(GT_IND, lclTyp, op1);
+                op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
 
                 if (prefixFlags & PREFIX_VOLATILE)
                 {
@@ -15187,15 +15170,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = gtNewAssignNode(op1, op2);
-                op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
-
-                // Spill side-effects AND global-data-accesses
-                if (verCurrentState.esStackDepth > 0)
-                {
-                    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STIND"));
-                }
-
-                goto APPEND;
+                goto SPILL_APPEND;
 
             case CEE_LDIND_I1:
                 lclTyp = TYP_BYTE;
@@ -15234,7 +15209,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impBashVarAddrsToI(op1);
 
 #ifdef TARGET_64BIT
-                // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
+                // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                 //
                 if (genActualType(op1->gtType) == TYP_INT)
                 {
@@ -16352,11 +16327,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                // "impAssignStruct" will back-substitute the field address tree into calls that return things via
-                // return buffers, so we have to delay calling it until after we have spilled everything needed.
-                bool deferStructAssign = (lclTyp == TYP_STRUCT);
-
-                if (!deferStructAssign)
+                if (lclTyp != TYP_STRUCT)
                 {
                     assert(op1->OperIs(GT_FIELD, GT_IND));
 
@@ -16418,13 +16389,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
-                        // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
+                        // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
                         //
                         if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
                         {
                             op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                         }
-                        // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
+                        // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                         //
                         if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
                         {
@@ -16445,8 +16416,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewAssignNode(op1, op2);
                 }
 
-                /* Check if the class needs explicit initialization */
-
+                // Check if the class needs explicit initialization.
                 if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
                     GenTree* helperNode = impInitClass(&resolvedToken);
@@ -16460,16 +16430,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                // An indirect store such as "st[s]fld" interferes with indirect accesses, so we must spill
-                // global refs and potentially aliased locals.
-                impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STFLD"));
-
-                if (deferStructAssign)
+                if (lclTyp == TYP_STRUCT)
                 {
-                    op1 = impAssignStruct(op1, op2, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op1, op2, clsHnd, CHECK_SPILL_ALL);
                 }
+                goto SPILL_APPEND;
             }
-                goto APPEND;
 
             case CEE_NEWARR:
             {
@@ -17397,25 +17363,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val; // Src addr
                 op1 = impPopStack().val; // Dst addr
 
-                if (op2->OperGet() == GT_ADDR)
+                if (op3->IsCnsIntOrI())
                 {
-                    op2 = op2->AsOp()->gtOp1;
+                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
+
+                    op1 = gtNewBlockVal(op1, size);
+                    op2 = gtNewBlockVal(op2, size);
+                    op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, /* isCopyBlock */ true);
                 }
                 else
                 {
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
-                }
-
-                if (op3->IsCnsIntOrI())
-                {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
-                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
-                }
-                else
-                {
-                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    size = 0;
+                    op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
 
                     if ((prefixFlags & PREFIX_VOLATILE) != 0)
                     {
@@ -17698,9 +17657,9 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET o
 
 // Load a local/argument on the operand stack
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
-void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
+void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 {
-    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), tiRetVal);
+    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
 }
 
 // Load an argument on the operand stack
@@ -20776,11 +20735,6 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
             {
                 lvaSetStruct(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
             }
-            else
-            {
-                // This is a wrapped primitive.  Make sure the verstate knows that
-                lvaTable[tmpNum].lvVerTypeInfo = inlineeLocal.lclVerTypeInfo;
-            }
         }
 
 #ifdef DEBUG
@@ -20992,11 +20946,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                     {
                         lvaSetStructUsedAsVarArg(tmpNum);
                     }
-                }
-                else
-                {
-                    // This is a wrapped primitive.  Make sure the verstate knows that
-                    lvaTable[tmpNum].lvVerTypeInfo = lclInfo.lclVerTypeInfo;
                 }
             }
 
@@ -21507,7 +21456,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
     }
 #elif defined(TARGET_LOONGARCH64)
-    // TODO-LoongArch64: add some instrinsics.
+    // TODO-LoongArch64: add some intrinsics.
     return false;
 #else
     // TODO: This portion of logic is not implemented for other arch.

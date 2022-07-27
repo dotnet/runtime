@@ -772,7 +772,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
 
         // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
-        // block indefinately if the fatal error occurred during the GC.
+        // block indefinitely if the fatal error occurred during the GC.
         if (IsGCSpecialThread() && GCHeapUtilities::IsGCInProgress())
         {
             g_fFatalErrorOccurredOnGCThread = TRUE;

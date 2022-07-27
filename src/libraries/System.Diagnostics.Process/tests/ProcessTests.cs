@@ -2545,6 +2545,37 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndNotElevated))]
+        public void NonElevatedUser_QueryProcessNameOfSystemProcess()
+        {
+            const string Services = "services";
+
+            string currentProcessUser = Helpers.GetProcessUserName(Process.GetCurrentProcess());
+            Assert.NotNull(currentProcessUser);
+
+            Process? systemOwnedServices = null;
+
+            foreach (var p in Process.GetProcessesByName(Services))
+            {
+                // returns the username of the owner of the process or null if the username can't be queried.
+                // for services.exe, this will be null.
+                string? servicesUser = Helpers.GetProcessUserName(p); 
+
+                // this isn't really verifying that services.exe is owned by SYSTEM, but we are sure it is not owned by the current user.
+                if (servicesUser != currentProcessUser)
+                {
+                    systemOwnedServices = p;
+                    break;
+                }
+            }
+
+            Assert.NotNull(systemOwnedServices);
+            Assert.Equal(Services, systemOwnedServices.ProcessName);
+
+            systemOwnedServices = Process.GetProcessById(systemOwnedServices.Id);
+            Assert.Equal(Services, systemOwnedServices.ProcessName);
+        }
+
         private IReadOnlyList<Process> CreateProcessTree()
         {
             (Process Value, string Message) rootResult = ListenForAnonymousPipeMessage(rootPipeHandleString =>

@@ -22,7 +22,7 @@ function sub(a, b) {
 
 try {
     const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime');
+        console.log('user code in createDotnetRuntime callback');
         return {
             configSrc: "./mono-config.json",
             preInit: () => { console.log('user code Module.preInit'); },
@@ -31,7 +31,7 @@ try {
             postRun: () => { console.log('user code Module.postRun'); },
         }
     });
-    console.log('after createDotnetRuntime');
+    console.log('user code after createDotnetRuntime()');
     IMPORTS.Sample = {
         Test: {
             add,

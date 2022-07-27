@@ -416,6 +416,9 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Build.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Load.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
@@ -478,6 +481,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationFlag.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationMode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationReason.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Store.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectAlternativeNameExtension.cs" />

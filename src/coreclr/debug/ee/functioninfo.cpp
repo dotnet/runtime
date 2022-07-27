@@ -1230,7 +1230,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 // Init a DJI after it's jitted.
 void DebuggerJitInfo::Init(TADDR newAddress)
 {
-    // Shouldn't initialize while holding the lock b/c intialzing may call functions that lock,
+    // Shouldn't initialize while holding the lock b/c initialzing may call functions that lock,
     // and thus we'd have a locking violation.
     _ASSERTE(!g_pDebugger->HasDebuggerDataLock());
 

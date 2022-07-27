@@ -1042,7 +1042,7 @@ class MetaSig
 
         // Is each set of constraints on the implementing method's type parameters a subset
         // of the corresponding set of constraints on the declared method's type parameters,
-        // given a subsitution for the latter's (class) type parameters.
+        // given a substitution for the latter's (class) type parameters.
         // This is used by the class loader to verify type safety of method overriding and interface implementation.
         static BOOL CompareMethodConstraints(const Substitution *pSubst1,
                                              Module *pModule1,

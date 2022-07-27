@@ -73,7 +73,7 @@ export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Mod
     }
     onDotnetReady: () => {
         // Only when there is no `onRuntimeInitialized` override.
-        // This is called after all assets are loaded , mapping to legacy `config.loaded_cb`.
+        // This is called after all assets are loaded.
         // It happens during emscripten `onRuntimeInitialized` after monoVm init + globalization + assemblies.
         // This also matches when the top level promise is resolved.
         // The original emscripten `Module.ready` promise is replaced with this.

@@ -61,7 +61,7 @@ namespace System.Xml.Xsl.Runtime
         public static readonly MethodInfo CheckScriptNamespace = typeof(XsltLibrary).GetMethod("CheckScriptNamespace")!;
         public static readonly MethodInfo FunctionAvailable = GetFunctionAvailableMethod();
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since this code path " +
+            Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since this code path " +
             "will only be emitting IL that will later be called by Transform() method which is already annotated as RequiresUnreferencedCode")]
         private static MethodInfo GetFunctionAvailableMethod() => typeof(XsltLibrary).GetMethod("FunctionAvailable")!;
         public static readonly MethodInfo ElementAvailable = typeof(XsltLibrary).GetMethod("ElementAvailable")!;

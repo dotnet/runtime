@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(type.AsType(), field.DeclaringType);
             Assert.Equal(field.Module, field.Module);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.AsType().GetFields(Helpers.AllFlags), createdType.GetFields(Helpers.AllFlags));
 
             FieldInfo fieldInfo = createdType.GetField(name, Helpers.AllFlags);
@@ -67,7 +67,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineField("Name", typeof(int), FieldAttributes.Public);
             type.DefineField("Name", typeof(int), FieldAttributes.Public);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             FieldInfo[] fields = createdType.GetFields();
             Assert.Equal(2, fields.Length);
             Assert.Equal(fields[0].Name, fields[1].Name);
@@ -136,11 +136,11 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder fieldType = module.DefineType("FieldType", TypeAttributes.Public);
             type.DefineField("Name", fieldType.AsType(), FieldAttributes.Public);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             FieldInfo field = createdType.GetField("Name");
             Assert.Throws<TypeLoadException>(() => field.FieldType);
 
-            Type createdFieldType = fieldType.CreateTypeInfo().AsType();
+            Type createdFieldType = fieldType.CreateType();
             Assert.Equal(createdFieldType, field.FieldType);
         }
 
@@ -173,7 +173,7 @@ namespace System.Reflection.Emit.Tests
 
             type.DefineField("Name", typeof(int).MakeByRefType(), FieldAttributes.Public);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             FieldInfo[] fields = createdType.GetFields();
             Assert.Equal(1, fields.Length);
             Assert.True(fields[0].FieldType.IsByRef);
@@ -200,7 +200,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ret);
             }
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             var ctorToCall = createdType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { typeof(string) });
             var str = "12345";

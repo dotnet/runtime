@@ -793,7 +793,7 @@ public:
 
 void DACNotifyCompilationFinished(MethodDesc *pMethodDesc, PCODE pCode);
 
-// These wrap the SString:L:CompareCaseInsenstive function in a way that makes it
+// These wrap the SString:L:CompareCaseInsensitive function in a way that makes it
 // easy to fix code that uses _stricmp. _stricmp should be avoided as it uses the current
 // C-runtime locale rather than the invariance culture.
 //

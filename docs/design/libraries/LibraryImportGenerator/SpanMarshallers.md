@@ -31,7 +31,7 @@ As part of this design, we would also want to include some in-box marshallers th
 - A marshaller that marshals out a pointer to the native memory as a Span instead of copying the data into a managed array.
   - This marshaller would only support blittable spans by design.
   - This marshaller will require the user to manually release the memory. Since this will be an opt-in marshaller, this scenario is already advanced and that additional requirement should be understandable to users who use this marshaller.
-  - Since there is no mechansim to provide a collection length, the question of how to provide the span's length in this case is still unresolved. One option would be to always provide a length 1 span and require the user to create a new span with the correct size, but that feels like a bad design.
+  - Since there is no mechanism to provide a collection length, the question of how to provide the span's length in this case is still unresolved. One option would be to always provide a length 1 span and require the user to create a new span with the correct size, but that feels like a bad design.
 
 ### Pros/Cons of Design 1
 
@@ -45,7 +45,7 @@ Cons:
 - Defining custom marshallers for non-empty spans of non-blittable types generically is impossible since the marshalling rules of the element's type cannot be known.
 - Custom non-default marshalling of the span element types is impossible for non-built-in types.
 - Inlining the span marshalling fully into the stub increases on-disk IL size.
-- This design does not enable developers to easily define custom marshalling support for their own collection types, which may be desireable.
+- This design does not enable developers to easily define custom marshalling support for their own collection types, which may be desirable.
 - The MarshalAs attributes will continue to fail to work on spans used in non-source-generated DllImports, so this would be the first instance of enabling the "old" MarshalAs model on a new type in the generated DllImports, which may or may not be undesirable.
   - The existing "native type marshalling" support cannot support marshalling collections of an unknown (at marshaller authoring time) non-blittable element type and cannot specify an element count for collections during unmarshalling.
 

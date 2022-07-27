@@ -243,7 +243,7 @@ void DoBounds(
     // - Sorted by native offset (so use a delta encoding for that).
     // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
     //   They may also include a sentinel value from MappingTypes.
-    // - flags is 3 indepedent bits.
+    // - flags is 3 independent bits.
 
     // Loop through and transfer each Entry in the Mapping.
     uint32_t dwLastNativeOffset = 0;
