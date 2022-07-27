@@ -29,10 +29,10 @@ namespace System.Text.Json.Serialization.Metadata
                 AddPropertiesAndParametersUsingReflection();
 
 #if NET7_0_OR_GREATER
-                bool typeHasRequiredMemberAttribute = typeof(T).IsDefined(typeof(RequiredMemberAttribute), inherit: true);
-                // Compiler adds RequiredMemberAttribute if any of the members is marked with 'required' keyword.
+                // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
                 // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
-                bool shouldCheckMembersForRequiredMemberAttribute = typeHasRequiredMemberAttribute
+                bool shouldCheckMembersForRequiredMemberAttribute =
+                    typeof(T).IsDefined(typeof(RequiredMemberAttribute), inherit: true)
                     && !(converter.ConstructorInfo?.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: true) ?? false);
 
                 if (shouldCheckMembersForRequiredMemberAttribute)
