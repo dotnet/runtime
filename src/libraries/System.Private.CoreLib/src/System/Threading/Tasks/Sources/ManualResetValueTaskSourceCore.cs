@@ -79,7 +79,7 @@ namespace System.Threading.Tasks.Sources
         {
             ValidateToken(token);
             return
-                _continuation == null || !_completed ? ValueTaskSourceStatus.Pending :
+                Volatile.Read(ref _continuation) == null || !_completed ? ValueTaskSourceStatus.Pending :
                 _error == null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
@@ -213,10 +213,12 @@ namespace System.Threading.Tasks.Sources
             }
             _completed = true;
 
-            if (_continuation is null && Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) is null)
+            if (Volatile.Read(ref _continuation) is null && Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) is null)
             {
                 return;
             }
+
+            Debug.Assert(_continuation is not null);
 
             if (_executionContext is null)
             {

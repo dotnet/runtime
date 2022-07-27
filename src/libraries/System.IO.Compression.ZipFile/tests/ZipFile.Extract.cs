@@ -34,6 +34,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ExtractToDirectoryUnicode()
         {
             string zipFileName = zfile("unicode.zip");

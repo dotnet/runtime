@@ -102,9 +102,6 @@ public sealed partial class QuicStream
     private bool _canRead;
     private bool _canWrite;
 
-    // TODO: remove once/if https://github.com/microsoft/msquic/pull/2883 is merged
-    private readonly QuicConnection.State _connectionState;
-
     private long _id = -1;
     private QuicStreamType _type;
 
@@ -141,13 +138,11 @@ public sealed partial class QuicStream
     /// <summary>
     /// Initializes a new instance of an outbound <see cref="QuicStream" />.
     /// </summary>
-    /// <param name="connectionState">Connection state</param>
     /// <param name="connectionHandle"><see cref="QuicConnection"/> safe handle, used to increment/decrement reference count with each associated stream.</param>
     /// <param name="type">The type of the stream to open.</param>
     /// <param name="defaultErrorCode">Error code used when the stream needs to abort read or write side of the stream internally.</param>
-    internal unsafe QuicStream(QuicConnection.State connectionState, MsQuicContextSafeHandle connectionHandle, QuicStreamType type, long defaultErrorCode)
+    internal unsafe QuicStream(MsQuicContextSafeHandle connectionHandle, QuicStreamType type, long defaultErrorCode)
     {
-        _connectionState = connectionState;
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
@@ -181,14 +176,12 @@ public sealed partial class QuicStream
     /// <summary>
     /// Initializes a new instance of an inbound <see cref="QuicStream" />.
     /// </summary>
-    /// <param name="connectionState">Connection state</param>
     /// <param name="connectionHandle"><see cref="QuicConnection"/> safe handle, used to increment/decrement reference count with each associated stream.</param>
     /// <param name="handle">Native handle.</param>
     /// <param name="flags">Related data from the PEER_STREAM_STARTED connection event.</param>
     /// <param name="defaultErrorCode">Error code used when the stream needs to abort read or write side of the stream internally.</param>
-    internal unsafe QuicStream(QuicConnection.State connectionState, MsQuicContextSafeHandle connectionHandle, QUIC_HANDLE* handle, QUIC_STREAM_OPEN_FLAGS flags, long defaultErrorCode)
+    internal unsafe QuicStream(MsQuicContextSafeHandle connectionHandle, QUIC_HANDLE* handle, QUIC_STREAM_OPEN_FLAGS flags, long defaultErrorCode)
     {
-        _connectionState = connectionState;
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
@@ -236,10 +229,9 @@ public sealed partial class QuicStream
                 int status = MsQuicApi.Api.ApiTable->StreamStart(
                     _handle.QuicHandle,
                     QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
-                if (StatusFailed(status))
+                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
                 {
-                    // TODO: aborted and the exception type
-                    _startedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(status));
+                    _startedTcs.TrySetException(exception);
                 }
             }
         }
@@ -374,31 +366,20 @@ public sealed partial class QuicStream
             return valueTask;
         }
 
-        try
+        _sendBuffers.Initialize(buffer);
+        unsafe
         {
-            _sendBuffers.Initialize(buffer);
-            unsafe
+            int status = MsQuicApi.Api.ApiTable->StreamSend(
+                _handle.QuicHandle,
+                _sendBuffers.Buffers,
+                (uint)_sendBuffers.Count,
+                completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                null);
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
             {
-                int status = MsQuicApi.Api.ApiTable->StreamSend(
-                    _handle.QuicHandle,
-                    _sendBuffers.Buffers,
-                    (uint)_sendBuffers.Count,
-                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                    null);
-                if (status == QUIC_STATUS_ABORTED)
-                {
-                    // If status == QUIC_STATUS_ABORTED, we either received PEER_RECEIVE_ABORTED or will receive SHUTDOWN_COMPLETE(ConnectionClose) later, all of which completes the _sendTcs.
-                    _sendBuffers.Reset();
-                    return valueTask;
-                }
-                ThrowHelper.ThrowIfMsQuicError(status, "StreamSend failed");
+                _sendBuffers.Reset();
+                _sendTcs.TrySetException(exception, final: true);
             }
-        }
-        catch (Exception ex)
-        {
-            _sendTcs.TrySetException(ex, final: true);
-            _sendBuffers.Reset();
-            throw;
         }
 
         return valueTask;
@@ -489,8 +470,10 @@ public sealed partial class QuicStream
         }
         else
         {
-            _startedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
-            // TODO: aborted and exception type
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(data.Status, out Exception? exception))
+            {
+                _startedTcs.TrySetException(exception);
+            }
         }
 
         return QUIC_STATUS_SUCCESS;
@@ -552,7 +535,21 @@ public sealed partial class QuicStream
     {
         if (data.ConnectionShutdown != 0)
         {
-            Exception exception = ThrowHelper.GetConnectionAbortedException(_connectionState.AbortErrorCode);
+            bool shutdownByApp = data.ConnectionShutdownByApp != 0;
+            bool closedRemotely = data.ConnectionClosedRemotely != 0;
+            Exception exception = (shutdownByApp, closedRemotely) switch
+            {
+                // It's remote shutdown by app, peer's side called QuicConnection.CloseAsync, throw QuicError.ConnectionAborted.
+                (shutdownByApp: true, closedRemotely: true) => ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode),
+                // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
+                (shutdownByApp: true, closedRemotely: false) => ThrowHelper.GetOperationAbortedException(),
+                // It's remote shutdown by transport, (TODO: we should propagate transport error code), throw QuicError.InternalError.
+                // https://github.com/dotnet/runtime/issues/72666
+                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_INTERNAL_ERROR, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                // It's local shutdown by transport, assuming idle connection (TODO: we should get Connection.CloseStatus), throw QuicError.ConnectionIdle.
+                // https://github.com/dotnet/runtime/issues/72666
+                (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_CONNECTION_IDLE),
+            };
             _startedTcs.TrySetException(exception);
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);

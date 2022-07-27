@@ -5,6 +5,7 @@ using Microsoft.Quic;
 using System.Security.Authentication;
 using System.Net.Security;
 using static Microsoft.Quic.MsQuic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Quic;
 
@@ -12,25 +13,40 @@ internal static class ThrowHelper
 {
     internal static QuicException GetConnectionAbortedException(long errorCode)
     {
-        return errorCode switch
-        {
-            -1 => GetOperationAbortedException(), // Shutdown initiated by us.
-            long err => new QuicException(QuicError.ConnectionAborted, err, SR.Format(SR.net_quic_connectionaborted, err)) // Shutdown initiated by peer.
-        };
+        return new QuicException(QuicError.ConnectionAborted, errorCode, SR.Format(SR.net_quic_connectionaborted, errorCode));
     }
 
     internal static QuicException GetStreamAbortedException(long errorCode)
     {
-        return errorCode switch
-        {
-            -1 => GetOperationAbortedException(), // Shutdown initiated by us.
-            long err => new QuicException(QuicError.StreamAborted, err, SR.Format(SR.net_quic_streamaborted, err)) // Shutdown initiated by peer.
-        };
+        return new QuicException(QuicError.StreamAborted, errorCode, SR.Format(SR.net_quic_streamaborted, errorCode));
     }
 
     internal static QuicException GetOperationAbortedException(string? message = null)
     {
         return new QuicException(QuicError.OperationAborted, null, message ?? SR.net_quic_operationaborted);
+    }
+
+    internal static bool TryGetStreamExceptionForMsQuicStatus(int status, [NotNullWhen(true)] out Exception? exception)
+    {
+        if (status == QUIC_STATUS_ABORTED)
+        {
+            // If status == QUIC_STATUS_ABORTED, we will receive an event later, which will complete the task source.
+            exception = null;
+            return false;
+        }
+        else if (status == QUIC_STATUS_INVALID_STATE)
+        {
+            // If status == QUIC_STATUS_INVALID_STATE, we have closed the connection.
+            exception = ThrowHelper.GetOperationAbortedException();
+            return true;
+        }
+        else if (StatusFailed(status))
+        {
+            exception = ThrowHelper.GetExceptionForMsQuicStatus(status);
+            return true;
+        }
+        exception = null;
+        return false;
     }
 
     internal static Exception GetExceptionForMsQuicStatus(int status, string? message = null)

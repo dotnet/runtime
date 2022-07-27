@@ -15,10 +15,10 @@ using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifie
 namespace LibraryImportGenerator.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
-    public class CustomMarshallerAttributeAnalyzerTests
+    public class CustomMarshallerAttributeAnalyzerTests_AttributeUsage
     {
         [Fact]
-        public async Task NullMarshallerType_ReportsDiagnostic()
+        public async Task NullManagedType_ReportsDiagnostic()
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
