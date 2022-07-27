@@ -6448,6 +6448,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
 
+#ifdef DEBUG
     addAssertionCount   = 0;
     addAssertionIter    = 0;
     subRangeCount       = 0;
@@ -6459,7 +6460,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     noNullCount         = 0;
     noNullIter          = 0;
 
-#ifdef DEBUG
     compCurBB = nullptr;
     lvaTable  = nullptr;
 
@@ -8599,6 +8599,7 @@ void JitTimer::PrintCsvHeader()
             fprintf(s_csvFile, "\"IL Bytes\",");
             fprintf(s_csvFile, "\"Basic Blocks\",");
 
+#ifdef DEBUG
 #define ASSERTION_TITLE(name) \
     fprintf(s_csvFile, "\"" ## name ## "Count\",");    \
     fprintf(s_csvFile, "\"" ## name ## "Iter\",");   \
@@ -8609,6 +8610,7 @@ ASSERTION_TITLE("SubType")
 ASSERTION_TITLE("SubRange")
 ASSERTION_TITLE("EqualOrNotEqual")
 ASSERTION_TITLE("NoNull")
+#endif
 
             fprintf(s_csvFile, "\n,");
 
@@ -8694,6 +8696,8 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
 
+#ifdef DEBUG
+
 #define ASSERTION_STATS(name) \
     assert(comp->##name##Iter >= comp->##name##Count);  \
     fprintf(s_csvFile, "%u,", comp->##name##Count); \
@@ -8713,6 +8717,7 @@ ASSERTION_STATS(subType)
 ASSERTION_STATS(equalOrNotEqua)
 ASSERTION_STATS(noNull)
 
+#endif
     fprintf(s_csvFile, "\n,");
     fflush(s_csvFile);
 }

@@ -2900,8 +2900,10 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 
             if (range.Contains(curAssertion->op2.u2))
             {
+#ifdef DEBUG
                 subRangeCount++;
                 subRangeIter += index;
+#endif
                 return index;
             }
         }
@@ -2968,8 +2970,10 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 
         if (curAssertion->op2.u1.iconVal == methodTableVal)
         {
+#ifdef DEBUG
             subTypeCount++;
             subTypeIter += index;
+#endif
             return index;
         }
     }
@@ -3821,8 +3825,10 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 
                 if (constantIsEqual || assertionIsEqual)
                 {
+#ifdef DEBUG
                     equalOrNotEquaCount++;
                     equalOrNotEquaIter += index;
+#endif
                     return index;
                 }
             }
@@ -4621,8 +4627,10 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
                 (curAssertion->op1.lcl.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
+#ifdef DEBUG
                 noNullCount++;
                 noNullIter += index;
+#endif
                 return index;
             }
         }
