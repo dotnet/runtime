@@ -338,7 +338,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Bug
-			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer)]
+			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			// Below are because we do not handle Multi dimensional arrays
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
@@ -396,7 +396,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Bug
-			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer)]
+			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			// Below are because we do not handle Multi dimensional arrays
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
@@ -418,7 +418,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Bug
-			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer)]
+			// [ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			// Below are because we do not handle Multi dimensional arrays
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]

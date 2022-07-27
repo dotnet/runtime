@@ -993,18 +993,7 @@ namespace ILCompiler.Dataflow
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
 
-            foreach (var uniqueDestination in destination.Value)
-            {
-                if (uniqueDestination is FieldValue fieldDestination)
-                {
-                    HandleStoreField(methodBody, offset, fieldDestination, valueToStore.Value);
-                }
-                else if (uniqueDestination is MethodParameterValue parameterDestination)
-                {
-                    HandleStoreParameter(methodBody, offset, parameterDestination, valueToStore.Value);
-                }
-            }
-
+            StoreInReference(destination.Value, valueToStore.Value, methodBody, offset, locals, curBasicBlock);
         }
 
         /// <summary>
