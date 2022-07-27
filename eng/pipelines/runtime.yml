@@ -284,6 +284,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: clrTools
+      timeoutInMinutes: 120
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
