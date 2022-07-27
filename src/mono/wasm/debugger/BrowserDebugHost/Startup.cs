@@ -77,7 +77,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var filtered = new Dictionary<string, string>();
             HttpRequest request = context.Request;
-            var isNode = response["type"] == "node";
+            var isNode = response.TryGetValue("type", out string type) ? type == "node" : false;
 
             foreach (string key in response.Keys)
             {
