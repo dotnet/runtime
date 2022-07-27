@@ -5,6 +5,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 using static Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer;
 
@@ -37,7 +39,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -72,7 +74,7 @@ partial class Test
     // < ... >
     public static partial int {{|CS8795:Method2|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -105,7 +107,7 @@ partial class Test
     [return: MarshalAs(UnmanagedType.I4)]
     public static partial int {{|CS8795:Method2|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -134,7 +136,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry"", StringMarshalling = StringMarshalling.Utf16)]
     public static partial string {{|CS8795:Method2|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -181,7 +183,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method4|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -204,7 +206,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial int {{|CS8795:Method1|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -232,7 +234,7 @@ partial class Test
     [UnmanagedCallConv(CallConvs = new System.Type[] {{ typeof({callConvType.FullName}) }})]
     public static partial int {{|CS8795:Method1|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -255,7 +257,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry"", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     public static partial string {{|CS8795:Method|}}(out int ret);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -279,7 +281,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
+            await VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
             string fixedSourceWithSuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -287,7 +289,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry{suffix}"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"{ConvertToLibraryImportKey}{suffix}");
+            await VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"{ConvertToLibraryImportKey},{suffix},");
         }
 
         [Fact]
@@ -307,7 +309,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
+            await VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
             string fixedSourceWithASuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -315,7 +317,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
             string fixedSourceWithWSuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -323,7 +325,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""EntryW"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithWSuffix, $"{ConvertToLibraryImportKey}W");
+            await VerifyCodeFixAsync(source, fixedSourceWithWSuffix, $"{ConvertToLibraryImportKey},W,");
         }
 
         [Fact]
@@ -343,7 +345,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
+            await VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
             string fixedSourceWithASuffix = $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -351,7 +353,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""EntryA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
         }
 
         [Fact]
@@ -373,7 +375,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = EntryPoint + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
         }
 
         [Fact]
@@ -393,7 +395,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
         }
 
         [Fact]
@@ -415,7 +417,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = nameof(Foo) + ""A"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
         }
 
         [Fact]
@@ -435,7 +437,7 @@ partial class Test
     [LibraryImport(""DoesNotExist"", EntryPoint = ""MethodA"")]
     public static partial void {{|CS8795:Method|}}();
 }}";
-            await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey},A,");
         }
 
         [Fact]
@@ -476,7 +478,7 @@ partial class Test
         Marshal.ThrowExceptionForHR(Test.Method(1, out value));
     }
 }";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -539,7 +541,7 @@ partial class EnclosingPartial
         public static partial int {|CS8795:Method3|}(out int ret);
     }
 }";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
         }
@@ -563,9 +565,75 @@ partial class Test
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool {{|CS8795:Method|}}([MarshalAs(UnmanagedType.Bool)] bool b);
 }}";
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource);
+        }
+
+        // There's not a good way today to add a unit test for any changes to project settings from a code fix.
+        // Roslyn does special testing for their cases.
+        [Fact]
+        public async Task FixThatAddsUnsafeToProjectUpdatesLibraryImport()
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern int [|Method|](out int ret);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial int {{|CS8795:Method|}}(out int ret);
+}}";
+            await VerifyCodeFixNoUnsafeAsync(
+                source,
+                fixedSource,
+                $"{ConvertToLibraryImportKey},AddUnsafe,");
+        }
+
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource)
+        {
+            var test = new VerifyCS.Test
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+            };
+
+            await test.RunAsync();
+        }
+
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource, string equivalenceKey)
+        {
+            var test = new VerifyCS.Test
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+                CodeActionEquivalenceKey = equivalenceKey,
+            };
+
+            await test.RunAsync();
+        }
+
+        private static async Task VerifyCodeFixNoUnsafeAsync(string source, string fixedSource, string equivalenceKey)
+        {
+            var test = new TestNoUnsafe
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+                CodeActionEquivalenceKey = equivalenceKey,
+            };
+
+            await test.RunAsync();
+        }
+
+        class TestNoUnsafe : VerifyCS.Test
+        {
+            protected override CompilationOptions CreateCompilationOptions() => ((CSharpCompilationOptions)base.CreateCompilationOptions()).WithAllowUnsafe(false);
         }
     }
 }

@@ -456,4 +456,10 @@
   <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code.</value>
   </data>
+  <data name="ConvertToLibraryImportAddUnsafe" xml:space="preserve">
+    <value>Convert to 'LibraryImport' and enable unsafe code</value>
+  </data>
+  <data name="ConvertToLibraryImportWithSuffixAddUnsafe" xml:space="preserve">
+    <value>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</value>
+  </data>
 </root>

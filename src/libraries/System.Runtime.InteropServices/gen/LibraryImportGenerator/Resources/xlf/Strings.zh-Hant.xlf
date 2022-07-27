@@ -77,6 +77,11 @@
         <target state="translated">轉換為 'LibraryImport'</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertToLibraryImportAddUnsafe">
+        <source>Convert to 'LibraryImport' and enable unsafe code</source>
+        <target state="new">Convert to 'LibraryImport' and enable unsafe code</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConvertToLibraryImportDescription">
         <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
         <target state="translated">使用 'LibraryImportAttribute' 而非 'DllImportAttribute' 在編譯時間產生 P/Invoke 封送處理程式碼</target>
@@ -100,6 +105,11 @@
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">轉換為具有 '{0}'後綴的 'LibraryImport'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
+        <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
+        <target state="new">Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
