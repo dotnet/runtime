@@ -48,7 +48,7 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
                 File.WriteAllText(indexHtmlPath, html);
             }
         } else {
-            CopyAllFiles(appBundleDir, tmpDir);
+            Utils.DirectoryCopy(appBundleDir, tmpDir);
         }
 
         RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, jsRelativePath: Path.Combine(tmpDir, "test-main.js"));
@@ -61,24 +61,6 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
             Directory.Move(tmpBundleDir, appBundleDir);
         } else {
             Directory.Delete(tmpDir, true);
-        }
-    }
-
-    private void CopyAllFiles(string srcDir, string destDir)
-    {
-        if (!Directory.Exists(destDir))
-        {
-            Directory.CreateDirectory(destDir);
-        }
-
-        foreach (var file in Directory.GetFiles(srcDir))
-        {
-            File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
-        }
-
-        foreach (var directory in Directory.GetDirectories(srcDir))
-        {
-            CopyAllFiles(directory, Path.Combine(destDir, Path.GetFileName(directory)));
         }
     }
 }
