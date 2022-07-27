@@ -56,7 +56,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        /// <summary>Gets or sets the media-type header value parameters.</summary>
+        /// <summary>Gets the media-type header value parameters.</summary>
         /// <value>The media-type header value parameters.</value>
         public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
