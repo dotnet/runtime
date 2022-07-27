@@ -80,8 +80,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                long? length = _httpResponseMessage.Content?.Headers.ContentLength;
-                return length.HasValue ? length.Value : -1;
+                return _httpResponseMessage.Content?.Headers.ContentLength ?? -1;
             }
         }
 
@@ -367,10 +366,7 @@ namespace System.Net
 
         private void CheckDisposed()
         {
-            if (_httpResponseMessage == null)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_httpResponseMessage == null, this);
         }
 
         private static string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);

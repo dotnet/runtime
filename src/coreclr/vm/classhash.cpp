@@ -205,14 +205,12 @@ static void ConstructKeyFromDataCaseInsensitive(EEClassHashTable::ConstructKeyCa
     StackSString nameSpace(SString::Utf8, pszNameSpace);
     nameSpace.LowerCase();
 
-    StackScratchBuffer nameSpaceBuffer;
-    Key[0] = (LPUTF8)nameSpace.GetUTF8(nameSpaceBuffer);
+    Key[0] = (LPUTF8)nameSpace.GetUTF8();
 
     StackSString name(SString::Utf8, pszName);
     name.LowerCase();
 
-    StackScratchBuffer nameBuffer;
-    Key[1] = (LPUTF8)name.GetUTF8(nameBuffer);
+    Key[1] = (LPUTF8)name.GetUTF8();
 
     pCallback->UseKeys(Key);
 }
@@ -756,7 +754,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        //Build the cannonical name (convert it to lowercase).
+        //Build the canonical name (convert it to lowercase).
         //Key[0] is the namespace, Key[1] is class name.
 
         pLoader->CreateCanonicallyCasedKey(key[0], key[1], ppszLowerNameSpace, ppszLowerClsName);

@@ -46,6 +46,12 @@ namespace ILCompiler
                 _rootAdder(_factory.ReflectableMethod(method), reason);
         }
 
+        public void AddReflectionRoot(FieldDesc field, string reason)
+        {
+            if (!_factory.MetadataManager.IsReflectionBlocked(field))
+                _rootAdder(_factory.ReflectableField(field), reason);
+        }
+
         public void RootThreadStaticBaseForType(TypeDesc type, string reason)
         {
             Debug.Assert(!type.IsGenericDefinition);

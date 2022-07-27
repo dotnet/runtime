@@ -1250,7 +1250,7 @@ namespace CorUnix
                         palErr = CPalSynchronizationManager::WakeUpLocalThread(
                             pthrCurrent,
                             ptwiWaitInfo->pthrOwner,
-                            fAbandoned ? MutexAbondoned : WaitSucceeded,
+                            fAbandoned ? MutexAbandoned : WaitSucceeded,
                             dwObjIdx);
 
                         if (NO_ERROR != palErr)
@@ -1514,7 +1514,7 @@ namespace CorUnix
                     palErr = CPalSynchronizationManager::WakeUpLocalThread(
                         pthrCurrent,
                         ptwiWaitInfo->pthrOwner,
-                        fAbandoned ? MutexAbondoned : WaitSucceeded,
+                        fAbandoned ? MutexAbandoned : WaitSucceeded,
                         dwObjIdx);
 
                     if (NO_ERROR != palErr)

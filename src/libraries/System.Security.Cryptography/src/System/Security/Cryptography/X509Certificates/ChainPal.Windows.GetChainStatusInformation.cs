@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Array.Empty<X509ChainStatus>();
 
             int count = 0;
-            for (uint bits = (uint)dwStatus; bits != 0; bits = bits >> 1)
+            for (uint bits = (uint)dwStatus; bits != 0; bits >>= 1)
             {
                 if ((bits & 0x1) != 0)
                     count++;
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             int shiftCount = 0;
-            for (uint bits = (uint)dwStatus; bits != 0; bits = bits >> 1)
+            for (uint bits = (uint)dwStatus; bits != 0; bits >>= 1)
             {
                 if ((bits & 0x1) != 0)
                 {

@@ -1,12 +1,4 @@
-function wasm_exit(exit_code) {
-    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
-
-    console.log(`WASM EXIT ${exit_code}`);
-}
+import createDotnetRuntime from "./dotnet.js";
 
 function downloadData(dataURL, filename) {
     // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
@@ -27,13 +19,6 @@ function makeTimestamp() {
     const s = t.toISOString();
     return s.replace(/[:.]/g, '-');
 }
-
-async function loadRuntime() {
-    globalThis.exports = {};
-    await import("./dotnet.js");
-    return globalThis.exports.createDotnetRuntime;
-}
-
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -71,30 +56,35 @@ async function doWork(startWork, stopWork, getIterationsDone) {
 
 function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
-        const options = MONO.diagnostics.SessionOptionsBuilder
-            .Empty
-            .setRundownEnabled(false)
-            .addProvider({ name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1' })
-            .build();
-        console.log('starting providers', options.providers);
+        let sessions = MONO.diagnostics.getStartupSessions();
 
-        const eventSession = MONO.diagnostics.createEventPipeSession(options);
+        if (typeof (sessions) !== "object" || sessions.length === "undefined")
+            console.error("expected an array of sessions, got ", sessions);
+        let eventSession = null;
+        if (sessions.length !== 0) {
+            if (sessions.length != 1)
+                console.error("expected one startup session, got ", sessions);
+            eventSession = sessions[0];
+            console.debug("eventSession state is ", eventSession._state); // ooh protected member access
+        }
 
-        eventSession.start();
         const ret = await doWork(startWork, stopWork, getIterationsDone);
-        eventSession.stop();
 
-        const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
+        if (eventSession !== null) {
+            eventSession.stop();
 
-        const blob = eventSession.getTraceBlob();
-        const uri = URL.createObjectURL(blob);
-        downloadData(uri, filename);
+            const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
+
+            const blob = eventSession.getTraceBlob();
+            const uri = URL.createObjectURL(blob);
+            downloadData(uri, filename);
+        }
+
+        console.debug("sample onclick handler done");
     }
 }
 
-
 async function main() {
-    const createDotnetRuntime = await loadRuntime();
     const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
         return {
             disableDotnet6Compatibility: true,

@@ -90,4 +90,7 @@ mono_metadata_update_added_fields_iter (MonoClass *klass, gboolean lazy, gpointe
 
 uint32_t
 mono_metadata_update_get_num_fields_added (MonoClass *klass);
+
+uint32_t
+mono_metadata_update_get_num_methods_added (MonoClass *klass);
 #endif /*__MONO_METADATA_UPDATE_H__*/

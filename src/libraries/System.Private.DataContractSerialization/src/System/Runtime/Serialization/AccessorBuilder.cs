@@ -71,10 +71,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return (obj) =>
-                    {
-                        return propInfo.GetValue(obj);
-                    };
+                    return propInfo.GetValue;
                 }
             }
             else if (memberInfo is FieldInfo fieldInfo)
@@ -95,9 +92,8 @@ namespace System.Runtime.Serialization
             Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.CreateSetterInternal<T, T1> is not annotated.")]
         public static Setter CreateSetter(MemberInfo memberInfo)
         {
-            if (memberInfo is PropertyInfo)
+            if (memberInfo is PropertyInfo propInfo)
             {
-                PropertyInfo propInfo = (PropertyInfo)memberInfo;
                 if (propInfo.CanWrite)
                 {
                     Type declaringType = propInfo.DeclaringType!;
@@ -141,9 +137,8 @@ namespace System.Runtime.Serialization
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.NoSetMethodForProperty, propInfo.DeclaringType, propInfo.Name)));
                 }
             }
-            else if (memberInfo is FieldInfo)
+            else if (memberInfo is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 return (ref object obj, object? val) =>
                 {
                     fieldInfo.SetValue(obj, val);

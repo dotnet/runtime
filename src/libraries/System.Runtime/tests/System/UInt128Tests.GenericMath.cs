@@ -245,6 +245,14 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            UInt128 compare = new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+            Assert.Equal(compare, BinaryNumberHelper<UInt128>.AllBitsSet);
+            Assert.Equal((UInt128)0, ~BinaryNumberHelper<UInt128>.AllBitsSet);
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<UInt128>.IsPow2(Zero));
@@ -315,41 +323,41 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(Zero, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(One, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(Int128MaxValue, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(Int128MaxValuePlusOne, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThan(MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(Zero, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(One, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(Int128MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(Int128MaxValuePlusOne, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThan(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(Zero, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(One, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(Int128MaxValue, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(Int128MaxValuePlusOne, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_GreaterThanOrEqual(MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(Zero, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(One, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(Int128MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(Int128MaxValuePlusOne, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_GreaterThanOrEqual(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(Zero, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(One, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(Int128MaxValue, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(Int128MaxValuePlusOne, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThan(MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(Zero, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(One, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(Int128MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(Int128MaxValuePlusOne, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThan(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(Zero, 1U));
-            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(One, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(Int128MaxValue, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(Int128MaxValuePlusOne, 1U));
-            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128>.op_LessThanOrEqual(MaxValue, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(Zero, 1U));
+            Assert.True(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(One, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(Int128MaxValue, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(Int128MaxValuePlusOne, 1U));
+            Assert.False(ComparisonOperatorsHelper<UInt128, UInt128, bool>.op_LessThanOrEqual(MaxValue, 1U));
         }
 
         //
@@ -412,21 +420,21 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(Zero, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(One, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(Int128MaxValue, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(Int128MaxValuePlusOne, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Equality(MaxValue, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(Zero, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(One, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(Int128MaxValue, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(Int128MaxValuePlusOne, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Equality(MaxValue, 1U));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(Zero, 1U));
-            Assert.False(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(One, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(Int128MaxValue, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(Int128MaxValuePlusOne, 1U));
-            Assert.True(EqualityOperatorsHelper<UInt128, UInt128>.op_Inequality(MaxValue, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(Zero, 1U));
+            Assert.False(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(One, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(Int128MaxValue, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(Int128MaxValuePlusOne, 1U));
+            Assert.True(EqualityOperatorsHelper<UInt128, UInt128, bool>.op_Inequality(MaxValue, 1U));
         }
 
         //
@@ -1616,31 +1624,31 @@ namespace System.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(Zero, 1));
-            Assert.Equal(Two, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(One, 1));
-            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(Int128MaxValue, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(Int128MaxValuePlusOne, 1));
-            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, UInt128>.op_LeftShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(Zero, 1));
+            Assert.Equal(Two, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(One, 1));
+            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(Int128MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(Int128MaxValuePlusOne, 1));
+            Assert.Equal(MaxValueMinusOne, ShiftOperatorsHelper<UInt128, int, UInt128>.op_LeftShift(MaxValue, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(One, 1));
-            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(Int128MaxValue, 1));
-            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(Int128MaxValuePlusOne, 1));
-            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, UInt128>.op_RightShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(One, 1));
+            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(Int128MaxValue, 1));
+            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(Int128MaxValuePlusOne, 1));
+            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, int, UInt128>.op_RightShift(MaxValue, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(Zero, 1));
-            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(One, 1));
-            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(Int128MaxValue, 1));
-            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(Int128MaxValuePlusOne, 1));
-            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, UInt128>.op_UnsignedRightShift(MaxValue, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(Zero, 1));
+            Assert.Equal(Zero, ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(One, 1));
+            Assert.Equal(new UInt128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(Int128MaxValue, 1));
+            Assert.Equal(new UInt128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(Int128MaxValuePlusOne, 1));
+            Assert.Equal(Int128MaxValue, ShiftOperatorsHelper<UInt128, int, UInt128>.op_UnsignedRightShift(MaxValue, 1));
         }
 
         //

@@ -41,7 +41,7 @@ namespace System.Collections.Specialized
         ///    provider and the default case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(NameValueCollection col)
-            : base(col != null ? col.Comparer : null)
+            : base(col?.Comparer)
         {
             Add(col!);
         }
@@ -387,14 +387,6 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Gets all the keys in the <see cref='System.Collections.Specialized.NameValueCollection'/>. </para>
         /// </devdoc>
-        public virtual string?[] AllKeys
-        {
-            get
-            {
-                if (_allKeys == null)
-                    _allKeys = BaseGetAllKeys();
-                return _allKeys;
-            }
-        }
+        public virtual string?[] AllKeys => _allKeys ??= BaseGetAllKeys();
     }
 }

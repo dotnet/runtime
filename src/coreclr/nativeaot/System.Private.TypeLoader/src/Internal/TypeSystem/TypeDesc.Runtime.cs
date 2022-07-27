@@ -84,10 +84,8 @@ namespace Internal.TypeSystem
             if (state != null && state.AttemptedAndFailedToRetrieveTypeHandle)
                 return false;
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 TypeDesc typeDefinition = typeAsDefType.GetTypeDefinition();
                 RuntimeTypeHandle typeDefHandle = typeDefinition.RuntimeTypeHandle;
                 if (typeDefHandle.IsNull())
@@ -155,10 +153,8 @@ namespace Internal.TypeSystem
                     }
                 }
             }
-            else if (type is ParameterizedType)
+            else if (type is ParameterizedType typeAsParameterType)
             {
-                ParameterizedType typeAsParameterType = (ParameterizedType)type;
-
                 if (typeAsParameterType.ParameterType.RetrieveRuntimeTypeHandleIfPossible())
                 {
                     RuntimeTypeHandle rtth;

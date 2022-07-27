@@ -156,14 +156,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public KeyCollection Keys
-        {
-            get
-            {
-                if (_keys == null) _keys = new KeyCollection(this);
-                return _keys;
-            }
-        }
+        public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
         ICollection<TKey> IDictionary<TKey, TValue>.Keys
         {
@@ -181,14 +174,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public ValueCollection Values
-        {
-            get
-            {
-                if (_values == null) _values = new ValueCollection(this);
-                return _values;
-            }
-        }
+        public ValueCollection Values => _values ??= new ValueCollection(this);
 
         ICollection<TValue> IDictionary<TKey, TValue>.Values
         {
@@ -899,14 +885,7 @@ namespace System.Collections.Generic
 
             public KeyValuePairComparer(IComparer<TKey>? keyComparer)
             {
-                if (keyComparer == null)
-                {
-                    this.keyComparer = Comparer<TKey>.Default;
-                }
-                else
-                {
-                    this.keyComparer = keyComparer;
-                }
+                this.keyComparer = keyComparer ?? Comparer<TKey>.Default;
             }
 
             public override int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)

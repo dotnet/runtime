@@ -5,7 +5,6 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
-    <WasmEnableES6>false</WasmEnableES6>
     <WasmBuildNative>true</WasmBuildNative>
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
@@ -22,7 +21,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.CJS.Sample.csproj</_SampleProject>
+    <_SampleProject>Wasm.Browser.ThreadsEP.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
 

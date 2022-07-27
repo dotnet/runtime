@@ -24,7 +24,11 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        private static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, bool retrieveChainCertificates, ref X509Chain? chain)
+        private static X509Certificate2? GetRemoteCertificate(
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
             bool gotReference = false;
 
@@ -48,6 +52,10 @@ namespace System.Net
                 if (retrieveChainCertificates)
                 {
                     chain ??= new X509Chain();
+                    if (chainPolicy != null)
+                    {
+                        chain.ChainPolicy = chainPolicy;
+                    }
 
                     using (SafeSharedX509StackHandle chainStack =
                         Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))

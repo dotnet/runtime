@@ -46,6 +46,12 @@ jobs:
       runAOT: true
       alwaysRun: true
 
+  # Disabled for now
+  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    #parameters:
+      #runProfile: 'v8'
+      #onlySanityCheck: true
+
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
@@ -57,11 +63,21 @@ jobs:
     parameters:
       platforms:
         - Browser_wasm
-        - Browser_wasm_win
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+  # Library tests - Windows
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm_win
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
         - WasmTestOnBrowser
         - WasmTestOnNodeJs
 
@@ -160,3 +176,9 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       # ff tests are unstable currently
       shouldContinueOnError: true
+
+  # Disable for now
+  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    #parameters:
+      #runProfile: 'v8'
+      #onlySanityCheck: true

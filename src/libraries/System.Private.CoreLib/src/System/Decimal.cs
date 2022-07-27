@@ -602,7 +602,7 @@ namespace System
         /// <exception cref="ArgumentException">The destination span was not long enough to store the binary representation.</exception>
         public static int GetBits(decimal d, Span<int> destination)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -623,7 +623,7 @@ namespace System
         /// <returns>true if the decimal's binary representation was written to the destination; false if the destination wasn't long enough.</returns>
         public static bool TryGetBits(decimal d, Span<int> destination, out int valuesWritten)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 valuesWritten = 0;
                 return false;
@@ -1016,22 +1016,22 @@ namespace System
             return d1;
         }
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) == 0;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) != 0;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) < 0;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) <= 0;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) > 0;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) >= 0;
 
         //
@@ -1240,6 +1240,19 @@ namespace System
         }
 
         //
+        // IFloatingPointConstants
+        //
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
+        static decimal IFloatingPointConstants<decimal>.E => 2.7182818284590452353602874714m;
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        static decimal IFloatingPointConstants<decimal>.Pi => 3.1415926535897932384626433833m;
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        static decimal IFloatingPointConstants<decimal>.Tau => 6.2831853071795864769252867666m;
+
+        //
         // IMinMaxValue
         //
 
@@ -1307,6 +1320,63 @@ namespace System
         public static decimal Abs(decimal value)
         {
             return new decimal(in value, value._flags & ~SignMask);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
@@ -1434,7 +1504,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result)
+        static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out decimal result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and

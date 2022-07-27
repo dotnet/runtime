@@ -9,6 +9,7 @@ namespace System.IO.Tests
     {
         protected override FileAttributes GetAttributes(string path) => File.GetAttributes(path);
         protected override void SetAttributes(string path, FileAttributes attributes) => File.SetAttributes(path, attributes);
+        protected override bool CanBeReadOnly => false;
 
         // Getting only throws for File, not FileInfo
         [Theory, MemberData(nameof(TrailingCharacters))]

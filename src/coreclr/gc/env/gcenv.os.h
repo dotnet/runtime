@@ -6,17 +6,6 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
-#ifdef Sleep
-// This is a funny workaround for the fact that "common.h" defines Sleep to be
-// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
-//
-// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
-// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
-// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
-// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
-#undef Sleep
-#endif // Sleep
-
 #ifdef HAS_SYSTEM_YIELDPROCESSOR
 // YieldProcessor is defined to Dont_Use_YieldProcessor. Restore it to the system-default implementation for the GC.
 #undef YieldProcessor

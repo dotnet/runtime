@@ -27,8 +27,8 @@ namespace System.Text.RegularExpressions.Generator
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
 
-        internal const string PatternIndexName = "PatternIndex";
-        internal const string RegexOptionsIndexName = "RegexOptionsIndex";
+        internal const string PatternArgumentName = "pattern";
+        internal const string OptionsArgumentName = "options";
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration);
@@ -39,21 +39,13 @@ namespace System.Text.RegularExpressions.Generator
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            context.RegisterCompilationStartAction(async compilationContext =>
+            context.RegisterCompilationStartAction(context =>
             {
-                Compilation compilation = compilationContext.Compilation;
+                Compilation compilation = context.Compilation;
 
                 // Validate that the project supports the Regex Source Generator based on target framework,
                 // language version, etc.
                 if (!ProjectSupportsRegexSourceGenerator(compilation, out INamedTypeSymbol? regexTypeSymbol))
-                {
-                    return;
-                }
-
-                // Validate that the project is not using top-level statements, since if it were, the code-fixer
-                // can't easily convert to the source generator without having to make the program not use top-level
-                // statements any longer.
-                if (await ProjectUsesTopLevelStatements(compilation, compilationContext.CancellationToken).ConfigureAwait(false))
                 {
                     return;
                 }
@@ -64,10 +56,10 @@ namespace System.Text.RegularExpressions.Generator
                     new HashSet<string> { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split", "Replace" });
 
                 // Register analysis of calls to the Regex constructors
-                compilationContext.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
+                context.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
 
                 // Register analysis of calls to Regex static methods
-                compilationContext.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol, staticMethodsToDetect), OperationKind.Invocation);
+                context.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol, staticMethodsToDetect), OperationKind.Invocation);
             });
 
             // Creates a HashSet of all of the method Symbols containing the static methods to analyze.
@@ -82,7 +74,7 @@ namespace System.Text.RegularExpressions.Generator
 #pragma warning restore RS1024 // Compare symbols correctly
                 ImmutableArray<ISymbol> allMembers = regexTypeSymbol.GetMembers();
 
-                foreach(ISymbol member in allMembers)
+                foreach (ISymbol member in allMembers)
                 {
                     if (member is IMethodSymbol method &&
                         method.IsStatic &&
@@ -115,26 +107,16 @@ namespace System.Text.RegularExpressions.Generator
             // code fixer can later use that property bag to generate the code fix and emit the RegexGenerator attribute.
             if (staticMethodsToDetect.Contains(method))
             {
-                string? patternArgumentIndex = null;
-                string? optionsArgumentIndex = null;
-
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!TryValidateParametersAndExtractArgumentIndices(invocationOperation.Arguments, ref patternArgumentIndex, ref optionsArgumentIndex))
+                if (!ValidateParameters(invocationOperation.Arguments))
                 {
                     return;
                 }
 
-                // Create the property bag.
-                ImmutableDictionary<string, string?> properties = ImmutableDictionary.CreateRange(new[]
-                {
-                    new KeyValuePair<string, string?>(PatternIndexName, patternArgumentIndex),
-                    new KeyValuePair<string, string?>(RegexOptionsIndexName, optionsArgumentIndex)
-                });
-
                 // Report the diagnostic.
                 SyntaxNode? syntaxNodeForDiagnostic = invocationOperation.Syntax;
                 Debug.Assert(syntaxNodeForDiagnostic != null);
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation(), properties));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
             }
         }
 
@@ -158,37 +140,25 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            string? patternArgumentIndex = null;
-            string? optionsArgumentIndex = null;
-
-            if (!TryValidateParametersAndExtractArgumentIndices(operation.Arguments, ref patternArgumentIndex, ref optionsArgumentIndex))
+            if (!ValidateParameters(operation.Arguments))
             {
                 return;
             }
 
-            // Create the property bag.
-            ImmutableDictionary<string, string?> properties = ImmutableDictionary.CreateRange(new[]
-            {
-                new KeyValuePair<string, string?>(PatternIndexName, patternArgumentIndex),
-                new KeyValuePair<string, string?>(RegexOptionsIndexName, optionsArgumentIndex)
-            });
-
             // Report the diagnostic.
             SyntaxNode? syntaxNodeForDiagnostic = operation.Syntax;
             Debug.Assert(syntaxNodeForDiagnostic is not null);
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation(), properties));
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
         }
 
         /// <summary>
         /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
         /// indices for the pattern and options. If timeout argument was used, then this returns false.
         /// </summary>
-        private static bool TryValidateParametersAndExtractArgumentIndices(ImmutableArray<IArgumentOperation> arguments, ref string? patternArgumentIndex, ref string? optionsArgumentIndex)
+        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";
-            const string patternArgumentName = "pattern";
-            const string optionsArgumentName = "options";
 
             if (arguments == null)
             {
@@ -208,19 +178,18 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // If the argument is the pattern, then we validate that it is constant and we store the index.
-                if (argumentName.Equals(patternArgumentName, StringComparison.OrdinalIgnoreCase))
+                if (argumentName.Equals(PatternArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!IsConstant(argument))
                     {
                         return false;
                     }
 
-                    patternArgumentIndex = i.ToString();
                     continue;
                 }
 
                 // If the argument is the options, then we validate that it is constant, that it doesn't have RegexOptions.NonBacktracking, and we store the index.
-                if (argumentName.Equals(optionsArgumentName, StringComparison.OrdinalIgnoreCase))
+                if (argumentName.Equals(OptionsArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!IsConstant(argument))
                     {
@@ -233,7 +202,6 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
-                    optionsArgumentIndex = i.ToString();
                     continue;
                 }
             }
@@ -249,20 +217,6 @@ namespace System.Text.RegularExpressions.Generator
         /// <returns><see langword="true"/> if the argument is constant; otherwise, <see langword="false"/>.</returns>
         private static bool IsConstant(IArgumentOperation argument)
             => argument.Value.ConstantValue.HasValue;
-
-        /// <summary>
-        /// Detects whether or not the current project is using top-level statements.
-        /// </summary>
-        private static async Task<bool> ProjectUsesTopLevelStatements(Compilation compilation, CancellationToken cancellationToken)
-        {
-            SyntaxNode? root = await compilation.SyntaxTrees.FirstOrDefault().GetRootAsync(cancellationToken).ConfigureAwait(false);
-            if (root is null)
-            {
-                return false;
-            }
-
-            return root.DescendantNodesAndSelf().Where(node => node.IsKind(SyntaxKind.GlobalStatement)).Any();
-        }
 
         /// <summary>
         /// Ensures that the compilation can find the Regex and RegexAttribute types, and also validates that the
@@ -285,7 +239,7 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            if (compilation.SyntaxTrees.FirstOrDefault().Options is CSharpParseOptions options && options.LanguageVersion <= (LanguageVersion)1000)
+            if (((CSharpCompilation)compilation).LanguageVersion <= (LanguageVersion)1000)
             {
                 return false;
             }

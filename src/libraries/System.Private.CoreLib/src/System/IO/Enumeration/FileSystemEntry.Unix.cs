@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Enumeration
 {
@@ -88,11 +89,8 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    fixed (char* c = _fileNameBuffer)
-                    {
-                        Span<char> buffer = new Span<char>(c, Interop.Sys.DirectoryEntry.NameBufferSize);
-                        _fileName = _directoryEntry.GetName(buffer);
-                    }
+                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer[0], Interop.Sys.DirectoryEntry.NameBufferSize);
+                    _fileName = _directoryEntry.GetName(buffer);
                 }
 
                 return _fileName;

@@ -63,7 +63,7 @@ namespace System.Speech.Internal.ObjectTokens
             {
                 if (disposing)
                 {
-                    if (_disposeSapiObjectToken == true && _sapiObjectToken != null)
+                    if (_disposeSapiObjectToken && _sapiObjectToken != null)
                     {
                         Marshal.ReleaseComObject(_sapiObjectToken);
                         _sapiObjectToken = null;

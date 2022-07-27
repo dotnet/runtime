@@ -12,60 +12,112 @@ namespace System.Net.NetworkInformation
     internal static class HostInformationPal
     {
         // Changing this information requires a reboot, so it's safe to cache.
-        private static Interop.IpHlpApi.FIXED_INFO s_fixedInfo;
-        private static bool s_fixedInfoInitialized;
+        private static string? s_hostName;
+        private static string? s_domainName;
+        private static uint s_nodeType;
+        private static string? s_scopeId;
+        private static bool s_enableRouting;
+        private static bool s_enableProxy;
+        private static bool s_enableDns;
+
+        private static volatile bool s_initialized;
         private static object s_syncObject = new object();
 
         public static string GetHostName()
         {
-            return FixedInfo.hostName;
+            EnsureInitialized();
+            return s_hostName!;
         }
 
         public static string GetDomainName()
         {
-            return FixedInfo.domainName;
+            EnsureInitialized();
+            return s_domainName!;
         }
 
-        private static unsafe Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
+        public static uint GetNodeType()
         {
-            uint size = 0;
-            Interop.IpHlpApi.FIXED_INFO fixedInfo = default;
+            EnsureInitialized();
+            return s_nodeType;
+        }
 
-            // First we need to get the size of the buffer
-            uint result = Interop.IpHlpApi.GetNetworkParams(IntPtr.Zero, &size);
+        public static string GetScopeId()
+        {
+            EnsureInitialized();
+            return s_scopeId!;
+        }
 
-            while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
+        public static bool GetEnableRouting()
+        {
+            EnsureInitialized();
+            return s_enableRouting;
+        }
+
+        public static bool GetEnableProxy()
+        {
+            EnsureInitialized();
+            return s_enableProxy;
+        }
+
+        public static bool GetEnableDns()
+        {
+            EnsureInitialized();
+            return s_enableDns;
+        }
+
+        private static void EnsureInitialized()
+        {
+            if (!s_initialized)
+                Initialize();
+        }
+
+        private static unsafe void Initialize()
+        {
+            lock (s_syncObject)
             {
-                IntPtr buffer = Marshal.AllocHGlobal((int)size);
-                try
+                if (s_initialized)
+                    return;
+
+                uint size = 0;
+
+                // First we need to get the size of the buffer
+                uint result = Interop.IpHlpApi.GetNetworkParams(IntPtr.Zero, &size);
+
+                while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
                 {
-                    result = Interop.IpHlpApi.GetNetworkParams(buffer, &size);
-                    if (result == Interop.IpHlpApi.ERROR_SUCCESS)
+                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    try
                     {
-                        fixedInfo = Marshal.PtrToStructure<Interop.IpHlpApi.FIXED_INFO>(buffer);
+                        result = Interop.IpHlpApi.GetNetworkParams(buffer, &size);
+                        if (result == Interop.IpHlpApi.ERROR_SUCCESS)
+                        {
+                            Interop.IpHlpApi.FIXED_INFO* pFixedInfo = (Interop.IpHlpApi.FIXED_INFO*)buffer;
+
+                            s_hostName = pFixedInfo->HostName;
+                            s_domainName = pFixedInfo->DomainName;
+
+                            s_hostName = pFixedInfo->HostName;
+                            s_domainName = pFixedInfo->DomainName;
+                            s_nodeType = pFixedInfo->nodeType;
+                            s_scopeId = pFixedInfo->ScopeId;
+                            s_enableRouting = pFixedInfo->enableRouting != 0;
+                            s_enableProxy = pFixedInfo->enableProxy != 0;
+                            s_enableDns = pFixedInfo->enableDns != 0;
+
+                            s_initialized = true;
+                        }
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(buffer);
                     }
                 }
-                finally
+
+                // If the result include there being no information, we'll still throw
+                if (result != Interop.IpHlpApi.ERROR_SUCCESS)
                 {
-                    Marshal.FreeHGlobal(buffer);
+                    throw new Win32Exception((int)result);
                 }
-            }
-
-            // If the result include there being no information, we'll still throw
-            if (result != Interop.IpHlpApi.ERROR_SUCCESS)
-            {
-                throw new Win32Exception((int)result);
-            }
-
-            return fixedInfo;
-        }
-
-        public static ref readonly Interop.IpHlpApi.FIXED_INFO FixedInfo
-        {
-            get
-            {
-                LazyInitializer.EnsureInitialized(ref s_fixedInfo, ref s_fixedInfoInitialized, ref s_syncObject, () => GetFixedInfo());
-                return ref s_fixedInfo;
             }
         }
     }

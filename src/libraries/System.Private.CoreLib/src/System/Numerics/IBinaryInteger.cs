@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
-          IShiftOperators<TSelf, TSelf>
+          IShiftOperators<TSelf, int, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
         /// <summary>Computes the quotient and remainder of two values.</summary>
@@ -76,13 +76,13 @@ namespace System.Numerics
         /// <summary>Tries to write the current value, in big-endian format, to a given span.</summary>
         /// <param name="destination">The span to which the current value should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><c>true</c> if the value was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the value was successfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
         bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten);
 
         /// <summary>Tries to write the current value, in little-endian format, to a given span.</summary>
         /// <param name="destination">The span to which the current value should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><c>true</c> if the value was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the value was successfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
         bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten);
 
         /// <summary>Writes the current value, in big-endian format, to a given array.</summary>

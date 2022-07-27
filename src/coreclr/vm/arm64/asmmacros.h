@@ -326,7 +326,7 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 ;-----------------------------------------------------------------------------
 ; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
 ; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-; to improve density, or to reduce distance betweeen the constant pool and its use.
+; to improve density, or to reduce distance between the constant pool and its use.
 ;
     SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
 

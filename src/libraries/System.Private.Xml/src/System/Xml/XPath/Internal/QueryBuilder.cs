@@ -269,10 +269,7 @@ namespace MS.Internal.Xml.XPath
             {
                 qyInput = ((DocumentOrderQuery)qyInput).input;
             }
-            if (_firstInput == null)
-            {
-                _firstInput = qyInput as BaseAxisQuery;
-            }
+            _firstInput ??= qyInput as BaseAxisQuery;
 
             bool merge = (qyInput.Properties & QueryProps.Merge) != 0;
             bool reverse = (qyInput.Properties & QueryProps.Reverse) != 0;

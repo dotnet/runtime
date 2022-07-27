@@ -225,6 +225,52 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        public async Task TestDeleteFromJsonAsync()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        Person person = Person.Create();
+                        Type typePerson = typeof(Person);
+
+                        object response = await client.DeleteFromJsonAsync(uri.ToString(), typeof(Person));
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync(uri, typeof(Person));
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync(uri.ToString(), typeof(Person), CancellationToken.None);
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync<Person>(uri, CancellationToken.None);
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync(uri.ToString(), JsonContext.Default.Person);
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync(uri, JsonContext.Default.Person);
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync(uri.ToString(), JsonContext.Default.Person, CancellationToken.None);
+                        Assert.IsType<Person>(response).Validate();
+
+                        response = await client.DeleteFromJsonAsync(uri, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.IsType<Person>(response).Validate();
+                    }
+                },
+                async server => {
+                    HttpRequestData request = await server.HandleRequestAsync();
+                    Assert.Equal("DELETE", request.Method);
+
+                    List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
+                    string json = Person.Create().Serialize();
+                    await server.HandleRequestAsync(content: json, headers: headers, statusCode: HttpStatusCode.Accepted);
+                });
+        }
+
+        [Fact]
         public void TestHttpClientIsNullAsync()
         {
             const string uriString = "http://example.com";

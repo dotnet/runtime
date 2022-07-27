@@ -602,6 +602,11 @@ namespace System
                         {
                             remLength--;
                         }
+                        else
+                        {
+                            // As soon as we find a non-zero block, the rest of remainder is significant
+                            break;
+                        }
                     }
 
                     rem._length = remLength;
