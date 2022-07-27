@@ -3599,13 +3599,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             else
             {
                 assert(comp->info.compRetNativeType == ret->TypeGet());
-                GenTree* retVal = ret->gtGetOp1();
-                if (retVal->TypeGet() != ret->TypeGet())
-                {
-                    assert(retVal->OperIs(GT_LCL_VAR));
-                    LowerRetSingleRegStructLclVar(ret);
-                }
-                return;
             }
         }
     }
@@ -3721,7 +3714,6 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     if (varDsc->lvDoNotEnregister)
     {
         lclVar->ChangeOper(GT_LCL_FLD);
-        lclVar->AsLclFld()->SetLclOffs(0);
 
         // We are returning as a primitive type and the lcl is of struct type.
         assert(comp->info.compRetNativeType != TYP_STRUCT);
