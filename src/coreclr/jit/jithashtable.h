@@ -99,7 +99,8 @@ template <typename Key,
           typename KeyFuncs,
           typename Value,
           typename Allocator = CompAllocator,
-          typename Behavior  = JitHashTableBehavior>
+          typename Behavior  = JitHashTableBehavior,
+          int BucketIndex = 500>
 class JitHashTable
 {
 public:
@@ -236,10 +237,14 @@ public:
         unsigned index = GetIndexForKey(k);
 
         Node* pN = m_table[index];
+        int   iterCount = 0;
         while ((pN != nullptr) && !KeyFuncs::Equals(k, pN->m_key))
         {
+            iterCount++;
             pN = pN->m_next;
         }
+
+        assert(iterCount < BucketIndex);
         if (pN != nullptr)
         {
             if (kind == SkipIfExist)
