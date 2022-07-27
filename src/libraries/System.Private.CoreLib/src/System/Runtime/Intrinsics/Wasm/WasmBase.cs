@@ -6,9 +6,8 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.Wasm
 {
-    [CLSCompliant(false)]
     [Intrinsic]
-    public abstract class WasmBase
+    internal abstract class WasmBase
     {
         public static bool IsSupported { get => IsSupported; }
 
