@@ -119,6 +119,7 @@
       <SdkFeatureBand Include="%(SwixProjects.SdkFeatureBand)" />
     </ItemGroup>
     
+    <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
     <ZipDirectory Overwrite="true" DestinationFile="$(ArtifactsNonShippingPackagesDir)Workloads.VSDrop.%(SdkFeatureBand.Identity).zip" SourceDirectory="$(VisualStudioSetupInsertionPath)%(SdkFeatureBand.Identity)"/>
 
     <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
