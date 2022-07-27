@@ -505,11 +505,12 @@ namespace System.Reflection.Emit
             return field.MetadataToken;
         }
 
-        internal static RuntimeModule GetRuntimeModuleFromModule(Module? m)
+        internal static Module GetRuntimeModuleFromModule(Module? m)
         {
             if (m is ModuleBuilder)
             {
-                throw new NotImplementedException();
+                // TODO: Should return RuntimeModule
+                return m;
             }
 
             return (m as RuntimeModule)!;
