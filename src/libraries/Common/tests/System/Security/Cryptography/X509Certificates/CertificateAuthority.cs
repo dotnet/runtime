@@ -703,33 +703,7 @@ SingleResponse ::= SEQUENCE {
 
         private static X509Extension CreateCdpExtension(string cdp)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // SEQUENCE OF
-            using (writer.PushSequence())
-            {
-                // DistributionPoint
-                using (writer.PushSequence())
-                {
-                    // Because DistributionPointName is a CHOICE type this tag is explicit.
-                    // (ITU-T REC X.680-201508 C.3.2.2(g)(3rd bullet))
-                    // distributionPoint [0] DistributionPointName
-                    using (writer.PushSequence(s_context0))
-                    {
-                        // [0] DistributionPointName (GeneralNames (SEQUENCE OF))
-                        using (writer.PushSequence(s_context0))
-                        {
-                            // GeneralName ([6]  IA5String)
-                            writer.WriteCharacterString(
-                                UniversalTagNumber.IA5String,
-                                cdp,
-                                new Asn1Tag(TagClass.ContextSpecific, 6));
-                        }
-                    }
-                }
-            }
-
-            return new X509Extension("2.5.29.31", writer.Encode(), false);
+            return CertificateRevocationListBuilder.BuildCrlDistributionPointExtension(new[] { cdp });
         }
 
         private X509Extension CreateAkidExtension()
