@@ -7,8 +7,6 @@ CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProces
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.SetAt(System.Int32, System.Char)' in the contract but not the implementation.
 Compat issues with assembly netstandard:
-CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Collections.Generic.IEnumerable<T>)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Linq.Expressions.Expression)' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.InteropServices.DispIdAttribute' exists on 'System.Collections.IEnumerable.GetEnumerator()' in the contract but not the implementation.
@@ -356,7 +354,6 @@ CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel
 CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
 Compat issues with assembly System.Core:
-CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Collections.Generic.IEnumerable<T>)' in the contract but not the implementation.
 CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
@@ -532,4 +529,4 @@ CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has
 MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
-Total Issues: 520
+Total Issues: 517
