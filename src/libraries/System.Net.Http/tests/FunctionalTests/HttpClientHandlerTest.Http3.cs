@@ -984,7 +984,7 @@ namespace System.Net.Http.Functional.Tests
                 connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 requestData = await connection.ReadRequestDataAsync(readBody: false);
                 Assert.NotNull(connection);
-                Assert.Throws<System.Exception>(() => requestData.GetSingleHeaderValue("alt-used"));
+                Assert.Equal(0, requestData.GetHeaderValueCount("alt-used"));
                 await connection.SendResponseAsync();
             });
 
