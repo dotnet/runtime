@@ -112,21 +112,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
-    /// Path to Dotnet PGO binary (dotnet-pgo)
-    /// </summary>
-    public string? PgoBinaryPath { get; set; }
-
-    /// <summary>
-    /// NetTrace file to use when invoking dotnet-pgo for
-    /// </summary>
-    public string? NetTracePath { get; set; }
-
-    /// <summary>
-    /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
-    /// </summary>
-    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
-
-    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -134,7 +119,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
-    public string[] MibcProfilePath { get; set; } = Array.Empty<string>();
+    public ITaskItem[] MibcProfilePath { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// List of profilers to use.
@@ -286,31 +271,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
 
-        if (!string.IsNullOrEmpty(NetTracePath))
-        {
-            if (!File.Exists(NetTracePath))
-            {
-                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
-                return false;
-            }
-            if (!File.Exists(PgoBinaryPath))
-            {
-                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
-                return false;
-            }
-            if (ReferenceAssemblyPathsForPGO.Length == 0)
-            {
-                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
-                return false;
-            }
-            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
-            {
-                string? fullPath = refAsmItem.GetMetadata("FullPath");
-                if (!File.Exists(fullPath))
-                    throw new LogAsErrorException($"ReferenceAssembly '{fullPath}' doesn't exist");
-            }
-        }
-
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -323,11 +283,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        foreach (var path in MibcProfilePath)
+        foreach (var item in MibcProfilePath)
         {
-            if (!File.Exists(path))
+            if (!File.Exists(item.ItemSpec))
             {
-                Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
+                Log.LogError($"MibcProfilePath '{item.ItemSpec}' doesn't exist.");
                 return false;
             }
         }
@@ -437,48 +397,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private bool ProcessNettrace(string netTraceFile)
-    {
-        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
-
-        if (_cache!.Enabled)
-        {
-            string hash = Utils.ComputeHash(netTraceFile);
-            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
-            {
-                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
-                return true;
-            }
-            else
-            {
-                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
-            }
-        }
-
-        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
-        pgoArgsStr.Append($"create-mibc");
-        pgoArgsStr.Append($" --trace {netTraceFile} ");
-        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
-        {
-            string? fullPath = refAsmItem.GetMetadata("FullPath");
-            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
-        }
-        pgoArgsStr.Append($" --output {outputMibcPath} ");
-        (int exitCode, string output) = Utils.TryRunProcess(Log,
-                                                            PgoBinaryPath!,
-                                                            pgoArgsStr.ToString());
-
-        if (exitCode != 0)
-        {
-            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
-            return false;
-        }
-
-        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
-        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
-        return true;
-    }
-
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
@@ -495,9 +413,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
-
-        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
-            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -841,9 +756,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (MibcProfilePath.Length > 0)
         {
             aotArgs.Add("profile-only");
-            foreach (var path in MibcProfilePath)
+            foreach (var item in MibcProfilePath)
             {
-                aotArgs.Add($"mibc-profile={path}");
+                aotArgs.Add($"mibc-profile={item.ItemSpec}");
             }
         }
 
