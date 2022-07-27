@@ -130,6 +130,7 @@ namespace Wasm.Build.Tests
                                            string id,
                                            Action<string>? test=null,
                                            string? buildDir = null,
+                                           string? bundleDir = null,
                                            int expectedExitCode = 0,
                                            string? args = null,
                                            Dictionary<string, string>? envVars = null,
@@ -152,7 +153,7 @@ namespace Wasm.Build.Tests
                     envVars[kvp.Key] = kvp.Value;
             }
 
-            string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
+            bundleDir ??= Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
 
             // Use wasm-console.log to get the xharness output for non-browser cases
             (string testCommand, string extraXHarnessArgs, bool useWasmConsoleOutput) = host switch
