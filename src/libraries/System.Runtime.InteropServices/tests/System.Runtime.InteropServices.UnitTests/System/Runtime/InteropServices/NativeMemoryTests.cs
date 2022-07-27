@@ -611,5 +611,22 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.Free(source);
         }
+
+        [Fact]
+        public void FillNullMemoryBlockShouldNoOpTest()
+        {
+            // This should not throw
+            NativeMemory.Fill(null, 0, 42);
+        }
+
+        [Fact]
+        public void FillEmptyMemoryBlockShouldNoOpTest()
+        {
+            void* source = stackalloc byte[7] { 0, 0, 0, 0, 0, 0, 0 };
+
+            NativeMemory.Fill(source, 0, 42);
+
+            Assert.Equal(-1, new Span<byte>(source, 7).IndexOf<byte>(42));
+        }
     }
 }
