@@ -560,14 +560,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void CopyNullBlockShouldNoOp()
+        public void CopyNullBlockShouldNoOpTest()
         {
             // This should not throw
             NativeMemory.Copy(null, null, 0);
         }
 
         [Fact]
-        public void CopyEmptyBlockShouldNoOp()
+        public void CopyEmptyBlockShouldNoOpTest()
         {
             int* source = stackalloc int[1] { 42 };
             int* destination = stackalloc int[1] { 0 };
@@ -600,7 +600,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void CopyToOverlappedMemory()
+        public void CopyToOverlappedMemoryTest()
         {
             byte* source = (byte*)NativeMemory.AllocZeroed(311);
             Random.Shared.NextBytes(new Span<byte>(source, 50));
