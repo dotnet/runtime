@@ -3624,14 +3624,21 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             break;
 
         case GT_CNS_INT:
-            // When we promote LCL_VAR single fields into return
-            // we could have all type of constans here.
+            // When we promote LCL_VAR single fields into return we could have all type of constans here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
-                // Do not expect `initblock` for SIMD* types,
-                // only 'initobj'.
-                assert(retVal->AsIntCon()->IconValue() == 0);
-                retVal->BashToConst(0.0, TYP_FLOAT);
+                // ZeroObj assertion propagation can create INT zeros for DOUBLE returns.
+                assert((genTypeSize(retVal) == genTypeSize(nativeReturnType)) || retVal->IsIntegralConst(0));
+                int64_t value = retVal->AsIntCon()->IconValue();
+
+                if (nativeReturnType == TYP_FLOAT)
+                {
+                    retVal->BashToConst(*reinterpret_cast<float*>(&value));
+                }
+                else
+                {
+                    retVal->BashToConst(*reinterpret_cast<double*>(&value));
+                }
             }
             break;
 
