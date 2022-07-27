@@ -465,6 +465,10 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case 8: ret |= INTRIN_vector64; break;
 	case 16: ret |= INTRIN_vector128; break;
 	}
+
+	if (!strcmp ("Vector4", m_class_get_name (klass)) || !strcmp ("Vector2", m_class_get_name (klass)))
+		return ret | INTRIN_float32;
+
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	switch (etype->type) {
 	case MONO_TYPE_I1: case MONO_TYPE_U1: ret |= INTRIN_int8; break;
@@ -1419,9 +1423,9 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 
 		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
-		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
+		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind && LLVMGetTypeKind (stype) == LLVMIntegerTypeKind)
 			return LLVMBuildIntToPtr (ctx->builder, v, dtype, "");
-		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind)
+		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMIntegerTypeKind)
 			return LLVMBuildPtrToInt (ctx->builder, v, dtype, "");
 
 		if (mono_arch_is_soft_float ()) {
@@ -4088,6 +4092,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			// FIXME: Enabling this fails on windows
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
+		case LLVMArgAsFpArgs:
 		{
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
@@ -4789,6 +4794,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE));
+		
+		load_name = "process_call_fp_struct";
+		should_promote_to_value = is_simd;
 		break;
 	case LLVMArgVtypeByVal:
 		/*
@@ -5989,10 +5997,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgAsIArgs:
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef retval;
+				LLVMValueRef retval, elem;
+				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 
-				g_assert (addresses [ins->sreg1]);
-				retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+				if (is_simd) {
+					g_assert (lhs);
+					retval = LLVMConstNull(ret_type);
+
+					int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
+					for (int i = 0; i < len; i++)
+					{
+						elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
+						retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
+					}
+				} else{
+					g_assert (addresses [ins->sreg1]);
+					retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+				}
 				LLVMBuildRet (builder, retval);
 				break;
 			}
