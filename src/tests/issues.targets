@@ -931,6 +931,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part2_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/63856</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
+            <Issue>https://github.com/dotnet/runtime/issues/72822</Issue>
+        </ExcludeList>
     </ItemGroup>
 
       <!-- NativeAOT specific -->
