@@ -134,7 +134,11 @@ function set_exit_code(exit_code, reason) {
                         App.INTERNAL.mono_wasm_exit(123456);
                     });
         } else {
+            console.log("before App.INTERNAL.mono_wasm_exit")
             App.INTERNAL.mono_wasm_exit(exit_code);
+            console.log("after App.INTERNAL.mono_wasm_exit")
+            if (typeof quit != "undefined") quit(exit_code);
+            console.log("after quit")
         }
     }
 }
@@ -495,6 +499,7 @@ const App = {
                 const result = await App.MONO.mono_run_main(main_assembly_name, app_args);
                 console.log("AFTER App.MONO.mono_run_main");
                 set_exit_code(result);
+                console.log("AFTER set_exit_code");
             } catch (error) {
                 if (error.name != "ExitStatus") {
                     set_exit_code(1, error);
