@@ -981,9 +981,9 @@ namespace System.Resources
             //
             // We don't want to regress the expected case by checking the type info before
             // getting to Type.GetType -- this is costly with v1 resource formats.
-            catch (FileNotFoundException)
+            catch (FileNotFoundException fileNotFoundException)
             {
-                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization, fileNotFoundException);
             }
             finally
             {
