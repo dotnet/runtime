@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
+        <target state="translated">Если фигура "Из управляемого в неуправляемый с буфером, выделяемым вызывающим объектом" используется путем предоставления метода "FromManaged", выполняющего "Span&lt;T&gt;" для типа маршалера, этот тип должен предоставлять статическое свойство "BufferSize", чтобы предоставить количество элементов в буфере, выделенном вызывающим объектом.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
+        <target state="translated">У типа маршалера "{0}" должно быть статическое доступное только для чтения свойство "BufferSize" со значением типа "int", чтобы указывать размер буфера, выделенного вызывающим объектом, поскольку у этого типа есть метод FromManaged, выполняющий "Span&lt;{1}&gt;", выделяемый вызывающим объектом.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
         <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
-        <target state="needs-review-translation">\"{0}\" не имеет эквивалента в \"DllImportAtttribute\" и не будет перенаправляться</target>
+        <target state="translated">"{0}" не имеет эквивалента в "DllImportAtttribute" и не будет перенаправляться</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">Конфигурация \"{0}\" не поддерживается в P/Invoke с созданием источника. Если указанная конфигурация обязательна, используйте обычный метод \"DllImport\".</target>
+        <target state="new">The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
@@ -49,17 +49,17 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">Указанная конфигурация \"{0}\" для параметра \"{1}\" не поддерживается в P/Invoke с созданием источника. Если указанная конфигурация обязательна, используйте обычный метод \"DllImport\".</target>
+        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">Указанная конфигурация \"{0}\" для возвращаемого значения метода \"{1}\" не поддерживается в P/Invoke с созданием источника. Если указанная конфигурация обязательна, используйте обычный метод \"DllImport\".</target>
+        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
-        <target state="needs-review-translation">Указанное значение “{0}” для “{1}” не поддерживается в P/Invoke с созданием источника. Если указанная конфигурация обязательна, используйте обычный метод “DllImport”.</target>
+        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -119,12 +119,12 @@
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullDescription">
         <source>An entry-point type for marshalling a given type must not be 'null'.</source>
-        <target state="new">An entry-point type for marshalling a given type must not be 'null'.</target>
+        <target state="translated">Тип точки входа для маршалирования заданного типа должен отличаться от "NULL".</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullMessage">
         <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
-        <target state="new">The entry-point marshaller type for the type '{0}' must be not 'null'</target>
+        <target state="translated">Тип маршалера точки входа для типа '{0}' должен отличаться от "NULL"</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
         <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
-        <target state="new">Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</target>
+        <target state="translated">Перегрузка метода FromUnmanaged не поддерживается, поскольку некоторые фигуры не могут различать перегрузки.</target>
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
         <source>Overloading the 'FromUnmanaged' method is not supported in custom marshallers</source>
-        <target state="new">Overloading the 'FromUnmanaged' method is not supported in custom marshallers</target>
+        <target state="translated">Перегрузка метода "FromUnmanaged" не поддерживается в настраиваемых маршалерах</target>
         <note />
       </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
@@ -194,12 +194,12 @@
       </trans-unit>
       <trans-unit id="InvalidManagedTypeTitle">
         <source>Specified managed type is invalid</source>
-        <target state="new">Specified managed type is invalid</target>
+        <target state="translated">Указан недопустимый управляемый тип</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
-        <target state="new">Specified marshaller type is invalid</target>
+        <target state="translated">Указан недопустимый тип маршалера</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
@@ -254,7 +254,7 @@
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
-        <target state="needs-review-translation">Собственный тип вида \"LinearCollection\", который поддерживает маршализацию в направлении \"внутрь\", должен предоставлять метод \"GetManagedValuesSource\", который возвращает \"ReadOnlySpan&lt;&gt;\", и метод \"GetNativeValuesDestination\", который возвращает \"Span&lt;byte&gt;\".</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
@@ -264,7 +264,7 @@
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="needs-review-translation">Собственный тип вида \"LinearCollection\", который поддерживает маршализацию в направлении \"наружу\", должен предоставлять метод \"GetManagedValuesDestination\", который принимает значение \"int\" и возвращает \"Span&lt;&gt;\", и метод \"GetNativeValuesSource\", который принимает значение \"int\" и возвращает \"ReadOnlySpan&lt;byte&gt;\".</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
@@ -274,42 +274,42 @@
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
-        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</target>
+        <target state="translated">Тип маршалера должен быть закрытым универсальным типом или у него должно быть столько же универсальных параметров, как у управляемого типа, чтобы генератор мог определить, какие методы доступны для определенных типов маршалеров.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
         <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
-        <target state="new">The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
+        <target state="translated">Управляемый тип "{0}" для типа маршалера точки входа "{1}" должен быть закрытым универсальным типом, его арность должна быть такой же, как у управляемого типа, если это маршалер значений, либо у него должен быть один дополнительный универсальный параметр, если это маршалер коллекций.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeNonNullDescription">
         <source>The managed type for a custom marshaller must be non-null.</source>
-        <target state="new">The managed type for a custom marshaller must be non-null.</target>
+        <target state="translated">Управляемый тип для настраиваемого маршалера должен отличаться от "NULL".</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeNonNullMessage">
         <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
-        <target state="new">The managed type for the entry-point marshaller type '{0}' must not be 'null'</target>
+        <target state="translated">Управляемый тип для типа маршалера точки входа "{0}" должен отличаться от "NULL"</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
+        <target state="translated">Тип маршалера должен быть закрытым универсальным или иметь то же количество универсальных параметров, что и управляемый тип, чтобы создаваемый код мог использовать конкретный экземпляр.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
-        <target state="new">The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</target>
+        <target state="translated">Тип маршалера "{0}", на который ссылается тип маршалера точки входа "{1}", должен быть закрытым универсальным или иметь такую же арность, что и управляемый тип</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeNonNullDescription">
         <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
-        <target state="new">The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</target>
+        <target state="translated">У параметра "marshallerType" в "System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute" не может быть значение "NULL".</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeNonNullMessage">
         <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
-        <target state="new">The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</target>
+        <target state="translated">У параметра "marshallerType" в "System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute" не может быть значение "NULL"</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
@@ -324,37 +324,37 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
-        <target state="new">A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</target>
+        <target state="translated">Тип с атрибутом "System.Runtime.InteropServices.CustomMarshallerAttribute" должен указывать управляемый тип, отличный от "NULL"</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
-        <target state="new">The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</target>
+        <target state="translated">Тип "{0}" не указывает управляемый тип в примененном к нему атрибуте "System.Runtime.InteropServices.CustomMarshallerAttribute"</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
+        <target state="translated">Тип маршалера должен быть закрытым универсальным или иметь то же количество универсальных параметров, что и управляемый тип, чтобы создаваемый код мог использовать конкретный экземпляр.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
+        <target state="translated">Управляемый тип "{0}" для управляемого типа "{1}" должен быть закрытым универсальным типом, его арность должна быть такой же, как у управляемого типа, если это маршалер значений, либо у него должен быть один дополнительный универсальный параметр, если это маршалер коллекций.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
         <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <target state="translated">Для LibraryImportAttribute требуется небезопасный код. Проект необходимо обновить с использованием значения "&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;".</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksMessage">
         <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
+        <target state="translated">Для LibraryImportAttribute требуется небезопасный код. Проект необходимо обновить с использованием значения "&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;".</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksTitle">
         <source>LibraryImportAttribute requires unsafe code.</source>
-        <target state="new">LibraryImportAttribute requires unsafe code.</target>
+        <target state="translated">Для LibraryImportAttribute требуется небезопасный код.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
@@ -449,12 +449,12 @@
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
         <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
-        <target state="new">The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</target>
+        <target state="translated">Тип возвращаемого значения "ConvertToUnmanaged" и тип параметра "ConvertToManaged" должны совпадать.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
         <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
-        <target state="new">The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</target>
+        <target state="translated">Тип возвращаемого значения "ConvertToUnmanaged" и тип параметра "ConvertToManaged" должны совпадать</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
@@ -469,22 +469,22 @@
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
         <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
-        <target state="new">'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</target>
+        <target state="translated">"void*" должен быть приводимым к типу, чтобы закрепленный результат статического метода "GetPinnableReference" можно было передавать в собственный контекст после закрепления.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
         <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
-        <target state="new">'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</target>
+        <target state="translated">"void*" должен быть приводимым к типу "{0}", поскольку у управляемого типа "{1}" есть статический метод "GetPinnableReference"</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
         <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="new">An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</target>
+        <target state="translated">У типа точки входа для маршалирования указанного типа должен быть атрибут "System.Runtime.InteropServices.CustomMarshallerAttribute", указывающий этот тип в качестве управляемого.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
         <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="new">The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</target>
+        <target state="translated">Тип маршалера точки входа "{0}" для типа "{1}" должен содержать хотя бы один атрибут "System.Runtime.InteropServices.CustomMarshallerAttribute", указывающий этот тип в качестве управляемого типа</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -499,12 +499,12 @@
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
-        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</target>
+        <target state="translated">Тип возвращаемого значения "ToUnmanaged" и тип параметра "FromUnmanaged" должны совпадать.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
-        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</target>
+        <target state="translated">Тип возвращаемого значения "ToUnmanaged" и тип параметра "FromUnmanaged" должны совпадать</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

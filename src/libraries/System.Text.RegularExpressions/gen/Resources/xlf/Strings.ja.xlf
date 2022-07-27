@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
-        <target state="needs-review-translation">内部制限により、RegexGenerator は指定された正規表現の完全なソース実装を生成できませんでした。</target>
+        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
