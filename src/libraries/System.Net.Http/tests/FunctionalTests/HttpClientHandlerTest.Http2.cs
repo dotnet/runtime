@@ -339,18 +339,17 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
 
-                // Send response headers
-                await connection.SendDefaultResponseHeadersAsync(streamId);
-
-                // Send a reset stream frame so that the stream moves to a terminal state.
-                RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.INTERNAL_ERROR, streamId);
-                await connection.WriteFrameAsync(resetStream);
+                // Send response headers and RST_STREAM combined
+                await connection.WriteFramesAsync(new Frame[] {
+                    new HeadersFrame(new byte[] { 0x88 /* :status: 200 */}, FrameFlags.EndHeaders, 0, 0, 0, streamId),
+                    new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, streamId)
+                });
 
                 // Headers should be received successfully
                 HttpResponseMessage response = await sendTask;
 
                 // Reading the actual content should throw
-                await AssertHttpProtocolException((await response.Content.ReadAsStreamAsync()).ReadAsync(new byte[10]).AsTask(), ProtocolErrors.INTERNAL_ERROR);
+                await AssertHttpProtocolException((await response.Content.ReadAsStreamAsync()).ReadAsync(new byte[10]).AsTask(), ProtocolErrors.NO_ERROR);
             }
         }
 
