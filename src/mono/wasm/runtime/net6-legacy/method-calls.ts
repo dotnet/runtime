@@ -85,7 +85,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
     if (typeof (signature) !== "string")
         signature = mono_method_get_call_signature_ref(method, undefined);
 
-    const js_method = mono_bind_method(method, signature!, false, assembly + "__entrypoint");
+    const js_method = mono_bind_method(method, signature!, false, "_" + assembly + "__entrypoint");
 
     return async function (...args: any[]) {
         if (args.length > 0 && Array.isArray(args[0]))
