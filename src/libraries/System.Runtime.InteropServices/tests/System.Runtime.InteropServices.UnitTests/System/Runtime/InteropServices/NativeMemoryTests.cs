@@ -579,8 +579,10 @@ namespace System.Runtime.InteropServices.Tests
 
         [Theory]
         [InlineData(1, 1, 1)]
+        [InlineData(7, 9, 5)]
         [InlineData(1, 16, 1)]
         [InlineData(16, 16, 16)]
+        [InlineData(29, 37, 19)]
         [InlineData(1024, 16, 16)]
         public void CopyTest(int sourceSize, int destinationSize, int byteCount)
         {
@@ -595,6 +597,19 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.Free(source);
             NativeMemory.Free(destination);
+        }
+
+        [Fact]
+        public void CopyToOverlappedMemory()
+        {
+            byte* source = (byte*)NativeMemory.AllocZeroed(311);
+            Random.Shared.NextBytes(new Span<byte>(source, 50));
+
+            NativeMemory.Copy(source, source + 100, 50);
+
+            Assert.True(new ReadOnlySpan<byte>(source, 50).SequenceEqual(new ReadOnlySpan<byte>(source + 100, 50)));
+
+            NativeMemory.Free(source);
         }
     }
 }
