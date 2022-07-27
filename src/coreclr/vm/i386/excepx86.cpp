@@ -1235,8 +1235,6 @@ void InitializeExceptionHandling()
 {
     WRAPPER_NO_CONTRACT;
 
-    InitSavedExceptionInfo();
-
     CLRAddVectoredHandlers();
 
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
@@ -1584,7 +1582,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!DebugIsEECxxException(pExceptionRecord) && "EE C++ Exception leaked into managed code!");
 
-    STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHander EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
+    STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHandler EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
         pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
         pContext ? GetIP(pContext) : 0, pContext ? GetSP(pContext) : 0, pEstablisherFrame);
 
@@ -1658,7 +1656,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -1710,7 +1708,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd(&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -1767,7 +1765,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherLeave();
 
     // no need to set pExInfo->m_ClauseType = (DWORD)COR_PRF_CLAUSE_NONE now that the
-    // notification is done because because the ExInfo record is about to be popped off anyway
+    // notification is done because the ExInfo record is about to be popped off anyway
 
     LOG((LF_EH, LL_INFO1000, "COMPlusPEndCatch:pThread:0x%x\n",pThread));
 
@@ -1805,7 +1803,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // will not be available. Thus, we should reset the severity only if its not such a thread.
     //
     // This behaviour (of debugger doing SetIP) is not allowed on 64bit since the catch clauses are implemented
-    // as a seperate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
+    // as a separate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
     // clause to outside of the catch clause.
     bool fIsDebuggerHelperThread = (g_pDebugInterface == NULL) ? false : g_pDebugInterface->ThisIsHelperThread();
 
@@ -3284,7 +3282,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusNestedExceptionHandler)
         // previous exception is overridden -- and needs to be unwound.
 
         // The preceding is ALMOST true.  There is one more case, where we use setjmp/longjmp
-        // from withing a nested handler.  We won't have a nested exception in that case -- just
+        // from within a nested handler.  We won't have a nested exception in that case -- just
         // the unwind.
 
         Thread* pThread = GetThread();

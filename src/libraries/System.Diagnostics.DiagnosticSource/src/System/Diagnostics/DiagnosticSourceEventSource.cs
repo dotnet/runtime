@@ -233,10 +233,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(2, Keywords = Keywords.Events)]
         private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
@@ -256,10 +254,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(4, Keywords = Keywords.Events)]
         private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -269,10 +265,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(5, Keywords = Keywords.Events)]
         private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -282,10 +276,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(6, Keywords = Keywords.Events)]
         private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -295,10 +287,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(7, Keywords = Keywords.Events)]
         private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -308,10 +298,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -321,10 +309,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -347,10 +333,8 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
@@ -361,10 +345,8 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
-#endif
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
@@ -483,8 +465,7 @@ namespace System.Diagnostics
             public static void CreateFilterAndTransformList(ref FilterAndTransform? specList, string? filterAndPayloadSpecs, DiagnosticSourceEventSource eventSource)
             {
                 DestroyFilterAndTransformList(ref specList, eventSource);        // Stop anything that was on before.
-                if (filterAndPayloadSpecs == null)
-                    filterAndPayloadSpecs = "";
+                filterAndPayloadSpecs ??= "";
 
                 // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
                 int endIdx = filterAndPayloadSpecs.Length;
@@ -642,10 +623,7 @@ namespace System.Diagnostics
                         _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
                 }
 
-                if (writeEvent == null)
-                {
-                    writeEvent = _eventSource.Event;
-                }
+                writeEvent ??= _eventSource.Event;
 
                 // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
                 // to the EventSource.
@@ -660,6 +638,9 @@ namespace System.Diagnostics
 
                         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
+                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
+                            Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
+                                            "method that requires unreferenced code. EventSource will not access this local function.")]
                         void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
@@ -755,13 +736,13 @@ namespace System.Diagnostics
                 {
                     activitySourceName = entry.Slice(0, eventNameIndex).Trim();
 
-                    ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1, entry.Length - eventNameIndex - 1).Trim();
+                    ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1).Trim();
                     int samplingResultIndex = suffixPart.IndexOf('-');
                     if (samplingResultIndex >= 0)
                     {
                         // We have the format "[AS]SourceName/[EventName]-[SamplingResult]
                         eventName = suffixPart.Slice(0, samplingResultIndex).Trim();
-                        suffixPart = suffixPart.Slice(samplingResultIndex + 1, suffixPart.Length - samplingResultIndex - 1).Trim();
+                        suffixPart = suffixPart.Slice(samplingResultIndex + 1).Trim();
 
                         if (suffixPart.Length > 0)
                         {
@@ -1190,12 +1171,11 @@ namespace System.Diagnostics
                     if (0 <= dotIdx)
                         idIdx = dotIdx + 1;
 
-                    string propertName = transformSpec.Substring(idIdx, endIdx - idIdx);
-                    _fetches = new PropertySpec(propertName, _fetches);
+                    string propertyName = transformSpec.Substring(idIdx, endIdx - idIdx);
+                    _fetches = new PropertySpec(propertyName, _fetches);
 
                     // If the user did not explicitly set a name, it is the last one (first to be processed from the end).
-                    if (_outputName == null)
-                        _outputName = propertName;
+                    _outputName ??= propertyName;
 
                     endIdx = dotIdx;    // This works even when LastIndexOf return -1.
                 }

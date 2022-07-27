@@ -336,7 +336,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
             m_MethodProps[i].pName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpName * sizeof(WCHAR)));
 
             m_MethodProps[i].pMeth = (MethodDesc*)pFieldMeth;
-            // It's safe to do the following case becasue that FieldSemanticOffset is 100, msSetter = 1, msGetter = 2
+            // It's safe to do the following case because that FieldSemanticOffset is 100, msSetter = 1, msGetter = 2
             m_MethodProps[i].semantic = static_cast<USHORT>(FieldSemanticOffset + (pFieldMeth->IsFieldGetter() ? msGetter : msSetter));
             m_MethodProps[i].property = mdPropertyNil;
             wcscpy_s(m_MethodProps[i].pName, cchpName, rName.Ptr());
@@ -348,7 +348,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
             ++i;
             pFieldMeth = pCMT->GetFieldCallMethodDescForSlot(i);
             m_MethodProps[i].pMeth = (MethodDesc*)pFieldMeth;
-            // It's safe to do the following case becasue that FieldSemanticOffset is 100, msSetter = 1, msGetter = 2
+            // It's safe to do the following case because that FieldSemanticOffset is 100, msSetter = 1, msGetter = 2
             m_MethodProps[i].semantic = static_cast<USHORT>(FieldSemanticOffset + (pFieldMeth->IsFieldGetter() ? msGetter : msSetter));
             m_MethodProps[i].property = i - 1;
             m_MethodProps[i].dispid = dispid;

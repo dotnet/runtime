@@ -2453,7 +2453,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation("Unitialized and NULL return values from the methods in the extension object")]
+        //[Variation("Uninitialized and NULL return values from the methods in the extension object")]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Reader, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Writer, DocType.XPathDocument)]
@@ -2788,9 +2788,9 @@ namespace System.Xml.Tests
         public void AddExtObject19(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
-		Overloaded Double: Int Overlaod
-		Overloaded Int: Int Overlaod
-		Overloaded String: String Overlaod</result>";
+		Overloaded Double: Int Overload
+		Overloaded Int: Int Overload
+		Overloaded String: String Overload</result>";
 
             MyObject obj = new MyObject(19, _output);
             m_xsltArg = new XsltArgumentList();
@@ -2823,7 +2823,7 @@ namespace System.Xml.Tests
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
 		DoNothing Function Test Pass
-		Construtor Function
+		Constructor Function
 		Return Int  Function Test Pass
 		Return String Function Test Pass
 		ReturnInt  Function Test Pass

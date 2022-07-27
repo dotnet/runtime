@@ -14,20 +14,10 @@ namespace System.Reflection.Metadata
 
         private static string? s_platformSpecificDirectorySeparator;
 
-        private static string PlatformSpecificDirectorySeparator
-        {
-            get
-            {
-                if (s_platformSpecificDirectorySeparator == null)
-                {
-                    // '*' is a valid char on Unix-based FS
-                    s_platformSpecificDirectorySeparator =
-                        (Array.IndexOf(Path.GetInvalidFileNameChars(), '*') >= 0 ? DirectorySeparatorChar : AltDirectorySeparatorChar).ToString();
-                }
-
-                return s_platformSpecificDirectorySeparator;
-            }
-        }
+        private static string PlatformSpecificDirectorySeparator =>
+            // '*' is a valid char on Unix-based FS
+            s_platformSpecificDirectorySeparator ??=
+                (Array.IndexOf(Path.GetInvalidFileNameChars(), '*') >= 0 ? DirectorySeparatorChar : AltDirectorySeparatorChar).ToString();
 
         /// <summary>
         /// Returns the position in given path where the file name starts.

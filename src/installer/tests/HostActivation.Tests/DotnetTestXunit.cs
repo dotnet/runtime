@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
                     appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
+                .Execute(expectedToFail:true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Total: 2")
                 .And.HaveStdOutContaining("Failed: 1");

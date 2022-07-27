@@ -46,19 +46,18 @@ namespace System.Text.RegularExpressions.Generator
             isEnabledByDefault: true,
             customTags: WellKnownDiagnosticTags.NotConfigurable);
 
-        public static DiagnosticDescriptor InvalidLangVersion { get; } = new DiagnosticDescriptor(
-            id: "SYSLIB1044",
-            title: new LocalizableResourceString(nameof(SR.InvalidRegexGeneratorAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
-            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLangVersionMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
-            category: Category,
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true,
-            customTags: WellKnownDiagnosticTags.NotConfigurable);
-
         public static DiagnosticDescriptor LimitedSourceGeneration { get; } = new DiagnosticDescriptor(
-            id: "SYSLIB1045",
+            id: "SYSLIB1044",
             title: new LocalizableResourceString(nameof(SR.LimitedSourceGenerationTitle), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LimitedSourceGenerationMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
+            category: Category,
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor UseRegexSourceGeneration { get; } = new DiagnosticDescriptor(
+            id: "SYSLIB1045",
+            title: new LocalizableResourceString(nameof(SR.UseRegexSourceGeneratorTitle), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.UseRegexSourceGeneratorMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
             category: Category,
             DiagnosticSeverity.Info,
             isEnabledByDefault: true);

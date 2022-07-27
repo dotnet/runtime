@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="BigIntegerTests.GenericMath.cs" />
     <Compile Include="ComplexTests.GenericMath.cs" />
   </ItemGroup>
   <ItemGroup>

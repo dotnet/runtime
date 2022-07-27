@@ -291,8 +291,8 @@ namespace System.IO.Ports.Tests
                 byte[] expectedBytes = new byte[numBytesToSend];
                 byte[] rcvBytes = new byte[numBytesToSend];
 
-                //Create a mask that when logicaly and'd with the transmitted byte will
-                //will result in the byte recievied due to the leading bits being chopped
+                //Create a mask that when logically and'd with the transmitted byte will
+                //will result in the byte received due to the leading bits being chopped
                 //off due to DataBits less then 8
                 shiftMask >>= 8 - com1.DataBits;
 

@@ -389,7 +389,7 @@ namespace Microsoft.Extensions.Http
             Assert.False(factory.CleanupTimerStarted.IsSet, "Cleanup timer not started");
         }
 
-        // Seprate to avoid the HttpClient getting its lifetime extended by
+        // Separate to avoid the HttpClient getting its lifetime extended by
         // the state machine of the test.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private async Task<ExpiredHandlerTrackingEntry> SimulateClientUse_Factory_CleanupCycle_DisposesEligibleHandler(TestHttpClientFactory factory)
@@ -459,7 +459,7 @@ namespace Microsoft.Extensions.Http
             Assert.False(factory.CleanupTimerStarted.IsSet, "Cleanup timer not started");
         }
 
-        // Seprate to avoid the HttpClient getting its lifetime extended by
+        // Separate to avoid the HttpClient getting its lifetime extended by
         // the state machine of the test.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private async Task<ExpiredHandlerTrackingEntry> SimulateClientUse_Factory_CleanupCycle_DisposesLiveHandler(

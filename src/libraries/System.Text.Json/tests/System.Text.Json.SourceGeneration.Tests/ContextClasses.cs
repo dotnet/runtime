@@ -38,6 +38,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<JsonElement> JsonElement { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
+#if NETCOREAPP
+        public JsonTypeInfo<RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues> ClassWithDateOnlyAndTimeOnlyValues { get; }
+#endif
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
         public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }
         public JsonTypeInfo<ClassWithCustomConverterFactory> ClassWithCustomConverterFactory { get; }
@@ -115,4 +118,36 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     [JsonSerializable(typeof(JsonMessage))]
     public partial class PublicContext : JsonSerializerContext { }
+
+    [JsonSerializable(typeof(JsonMessage))]
+    public partial class GenericContext<T> : JsonSerializerContext { }
+
+    public partial class ContextGenericContainer<T>
+    {
+        [JsonSerializable(typeof(JsonMessage))]
+        public partial class NestedInGenericContainerContext : JsonSerializerContext { }
+
+        [JsonSerializable(typeof(JsonMessage))]
+        public partial class NestedGenericInGenericContainerContext<T1> : JsonSerializerContext { }
+
+        public partial class NestedGenericContainer<T1>
+        {
+            [JsonSerializable(typeof(JsonMessage))]
+            public partial class NestedInNestedGenericContainerContext : JsonSerializerContext { }
+
+            [JsonSerializable(typeof(JsonMessage))]
+            public partial class NestedGenericInNestedGenericContainerContext<T2> : JsonSerializerContext { }
+        }
+    }
+
+    [JsonSerializable(typeof(MyContainingClass.MyNestedClass.MyNestedNestedClass))]
+    [JsonSerializable(typeof(MyContainingClass.MyNestedClass.MyNestedNestedGenericClass<int>))]
+    [JsonSerializable(typeof(MyContainingClass.MyNestedGenericClass<int>.MyNestedGenericNestedClass))]
+    [JsonSerializable(typeof(MyContainingClass.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
+    [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedClass.MyNestedNestedClass))]
+    [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedClass.MyNestedNestedGenericClass<int>))]
+    [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedClass))]
+    [JsonSerializable(typeof(MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
+    [JsonSerializable(typeof(MyContainingGenericClass<MyContainingGenericClass<int>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>>.MyNestedGenericClass<int>.MyNestedGenericNestedGenericClass<int>))]
+    internal partial class NestedGenericTypesContext : JsonSerializerContext { }
 }

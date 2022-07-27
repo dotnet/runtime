@@ -143,7 +143,7 @@ namespace System.IO
 
             _charBytes ??= new byte[MaxCharBytesSize];
 
-            Span<char> singleChar = stackalloc char[1];
+            char singleChar = '\0';
 
             while (charsRead == 0)
             {
@@ -178,7 +178,7 @@ namespace System.IO
 
                 try
                 {
-                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), singleChar, flush: false);
+                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), new Span<char>(ref singleChar), flush: false);
                 }
                 catch
                 {
@@ -196,7 +196,7 @@ namespace System.IO
                 Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
             }
             Debug.Assert(charsRead > 0);
-            return singleChar[0];
+            return singleChar;
         }
 
         public virtual byte ReadByte() => InternalReadByte();
@@ -483,18 +483,7 @@ namespace System.IO
             }
 
             byte[] result = new byte[count];
-            int numRead = 0;
-            do
-            {
-                int n = _stream.Read(result, numRead, count);
-                if (n == 0)
-                {
-                    break;
-                }
-
-                numRead += n;
-                count -= n;
-            } while (count > 0);
+            int numRead = _stream.ReadAtLeast(result, result.Length, throwOnEndOfStream: false);
 
             if (numRead != result.Length)
             {
@@ -521,16 +510,7 @@ namespace System.IO
             {
                 ThrowIfDisposed();
 
-                int bytesRead = 0;
-                do
-                {
-                    int n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
-                    if (n == 0)
-                    {
-                        ThrowHelper.ThrowEndOfFileException();
-                    }
-                    bytesRead += n;
-                } while (bytesRead < numBytes);
+                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
 
                 return _buffer;
             }
@@ -547,9 +527,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }
 
-            int bytesRead = 0;
-            int n;
-
             ThrowIfDisposed();
 
             // Need to find a good threshold for calling ReadByte() repeatedly
@@ -557,7 +534,7 @@ namespace System.IO
             // streams.
             if (numBytes == 1)
             {
-                n = _stream.ReadByte();
+                int n = _stream.ReadByte();
                 if (n == -1)
                 {
                     ThrowHelper.ThrowEndOfFileException();
@@ -567,15 +544,19 @@ namespace System.IO
                 return;
             }
 
-            do
+            if (numBytes > 0)
             {
-                n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
+                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
+            }
+            else
+            {
+                // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
+                int n = _stream.Read(_buffer, 0, 0);
                 if (n == 0)
                 {
                     ThrowHelper.ThrowEndOfFileException();
                 }
-                bytesRead += n;
-            } while (bytesRead < numBytes);
+            }
         }
 
         public int Read7BitEncodedInt()

@@ -697,6 +697,28 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void AssemblyLoadWithPublicKey()
+        {
+            AssemblyName an = new AssemblyName("System.Runtime");
+
+            Assembly a = Assembly.Load(an);
+
+            byte[] publicKey = a.GetName().GetPublicKey();
+            Assert.True(publicKey.Length > 0);
+            an.SetPublicKey(publicKey);
+
+            Assembly a1 = Assembly.Load(an);
+            Assert.Equal(a, a1);
+
+            // Force the public key token to be created
+            Assert.True(an.GetPublicKeyToken().Length > 0);
+
+            // Verify that we can still load the assembly
+            Assembly a2 = Assembly.Load(an);
+            Assert.Equal(a, a2);
+        }
+
+        [Fact]
         public void AssemblyLoadFromString()
         {
             AssemblyName an = typeof(AssemblyTests).Assembly.GetName();

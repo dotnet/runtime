@@ -248,7 +248,8 @@ enum gc_heap_compact_reason
     compact_high_mem_frag = 8,
     compact_vhigh_mem_frag = 9,
     compact_no_gc_mode = 10,
-    max_compact_reasons_count = 11
+    compact_aggressive_compacting = 11,
+    max_compact_reasons_count = 12
 };
 
 #ifndef DACCESS_COMPILE
@@ -264,7 +265,8 @@ static BOOL gc_heap_compact_reason_mandatory_p[] =
     FALSE, //compact_high_mem_load = 7,
     TRUE, //compact_high_mem_frag = 8,
     TRUE, //compact_vhigh_mem_frag = 9,
-    TRUE //compact_no_gc_mode = 10
+    TRUE, //compact_no_gc_mode = 10,
+    TRUE //compact_aggressive_compacting = 11
 };
 
 static BOOL gc_expand_mechanism_mandatory_p[] =

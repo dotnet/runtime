@@ -275,13 +275,23 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     AssemblySpec spec;
     spec.InitializeWithAssemblyIdentity(assemblyName);
 
-    StackScratchBuffer nameBuffer;
-    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+    StackSString nameBuffer;
+    nameBuffer.SetAndConvertToUTF8(assemblyName->GetSimpleName().GetUnicode());
+    spec.SetName(nameBuffer.GetUTF8());
 
-    StackScratchBuffer cultureBuffer;
+    StackSString cultureBuffer;
     if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
     {
-        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        LPCSTR culture;
+        if (assemblyName->IsNeutralCulture())
+        {
+            culture = "";
+        }
+        else
+        {
+            cultureBuffer.SetAndConvertToUTF8(assemblyName->GetCulture().GetUnicode());
+            culture = cultureBuffer.GetUTF8();
+        }
         spec.SetCulture(culture);
     }
 
@@ -503,7 +513,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     if (!pILImage->CheckILFormat())
         THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage);
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()
@@ -954,7 +964,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
             }
             else
             {
-                // OK if we have have a matching PEAssembly
+                // OK if we have a matching PEAssembly
                 if (entry->GetFile() != NULL
                     && pAssembly->GetPEAssembly()->Equals(entry->GetFile()))
                 {

@@ -26,17 +26,8 @@ namespace System.Runtime.Serialization
         private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
         private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
 
-        private static MethodInfo CollectionSetItemDelegateMethod
-        {
-            get
-            {
-                if (s_getCollectionSetItemDelegateMethod == null)
-                {
-                    s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
-                }
-                return s_getCollectionSetItemDelegateMethod!;
-            }
-        }
+        private static MethodInfo CollectionSetItemDelegateMethod =>
+            s_getCollectionSetItemDelegateMethod ??= typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract)

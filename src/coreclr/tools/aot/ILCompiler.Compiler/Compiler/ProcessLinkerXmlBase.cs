@@ -50,7 +50,7 @@ namespace ILCompiler
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
 
-        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        protected ProcessLinkerXmlBase(TypeSystemContext context, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
             _context = context;
             using (documentStream)
@@ -61,7 +61,7 @@ namespace ILCompiler
             _featureSwitchValues = featureSwitchValues;
         }
 
-        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        protected ProcessLinkerXmlBase(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
             : this(context, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
             _owningModule = resourceAssembly ?? throw new ArgumentNullException(nameof(resourceAssembly));
@@ -208,7 +208,7 @@ namespace ILCompiler
         {
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, type);
-            if (regex.Match(sb.ToString()).Success)
+            if (regex.IsMatch(sb.ToString()))
                 ProcessType(type, nav);
         }
 
@@ -487,6 +487,31 @@ namespace ILCompiler
         protected static string GetAttribute(XPathNavigator nav, string attribute)
         {
             return nav.GetAttribute(attribute, XmlNamespace);
+        }
+
+        public static string GetMethodSignature(MethodDesc meth, bool includeGenericParameters)
+        {
+            StringBuilder sb = new StringBuilder();
+            CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
+            sb.Append(' ');
+            sb.Append(meth.Name);
+            if (includeGenericParameters && meth.HasInstantiation)
+            {
+                sb.Append('`');
+                sb.Append(meth.Instantiation.Length);
+            }
+
+            sb.Append('(');
+            for (int i = 0; i < meth.Signature.Length; i++)
+            {
+                if (i > 0)
+                    sb.Append(',');
+
+                CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature[i]);
+            }
+
+            sb.Append(')');
+            return sb.ToString();
         }
 
 #if false

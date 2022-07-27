@@ -68,7 +68,7 @@ namespace BrowserDebugProxy
             JArray fields = new();
             foreach (var field in writableFields)
             {
-                var fieldValue = await sdbAgent.CreateJObjectForVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
+                var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
 
                 fieldValue["__section"] = field.Attributes switch
                 {
@@ -102,8 +102,10 @@ namespace BrowserDebugProxy
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                int methodId = await sdbAgent.GetMethodIdByName(TypeId, "ToString", token);
-                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodId, token, "methodRet");
+                int[] methodIds = await sdbAgent.GetMethodIdsByName(TypeId, "ToString", token);
+                if (methodIds == null)
+                    throw new InternalErrorException($"Cannot find method 'ToString' on typeId = {TypeId}");
+                var retMethod = await sdbAgent.InvokeMethod(Buffer, methodIds[0], token, "methodRet");
                 description = retMethod["value"]?["value"].Value<string>();
                 if (className.Equals("System.Guid"))
                     description = description.ToUpperInvariant(); //to keep the old behavior
@@ -114,9 +116,14 @@ namespace BrowserDebugProxy
                 if (displayString != null)
                     description = displayString;
             }
-
-            var obj = MonoSDBHelper.CreateJObject<string>(null, "object", description, false, className, Id.ToString(), null, null, true, true, IsEnum);
-            return obj;
+            return JObjectValueCreator.Create(
+                IsEnum ? fields[0]["value"] : null,
+                "object",
+                description,
+                className,
+                Id.ToString(),
+                isValueType: true,
+                isEnum: IsEnum);
         }
 
         public async Task<JArray> GetProxy(MonoSDBHelper sdbHelper, CancellationToken token)
@@ -265,7 +272,7 @@ namespace BrowserDebugProxy
                 // isParent:
                 if (i != 0) typeId = getParentsReader.ReadInt32();
 
-                allMembers = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                allMembers = await MemberObjectsExplorer.ExpandPropertyValues(
                     sdbHelper,
                     typeId,
                     className,

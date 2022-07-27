@@ -77,25 +77,9 @@ namespace System.Xml
         }
 
 
-        private static Base64Encoding Base64Encoding
-        {
-            get
-            {
-                if (s_base64Encoding == null)
-                    s_base64Encoding = new Base64Encoding();
-                return s_base64Encoding;
-            }
-        }
+        private static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
 
-        private static BinHexEncoding BinHexEncoding
-        {
-            get
-            {
-                if (s_binHexEncoding == null)
-                    s_binHexEncoding = new BinHexEncoding();
-                return s_binHexEncoding;
-            }
-        }
+        private static BinHexEncoding BinHexEncoding => s_binHexEncoding ??= new BinHexEncoding();
 
         protected XmlBufferReader BufferReader
         {
@@ -173,10 +157,7 @@ namespace System.Xml
                 }
             }
 
-            if (_declarationNode == null)
-            {
-                _declarationNode = new XmlDeclarationNode(_bufferReader);
-            }
+            _declarationNode ??= new XmlDeclarationNode(_bufferReader);
             MoveToNode(_declarationNode);
             return _declarationNode;
         }
@@ -212,20 +193,14 @@ namespace System.Xml
         }
         protected XmlCommentNode MoveToComment()
         {
-            if (_commentNode == null)
-            {
-                _commentNode = new XmlCommentNode(_bufferReader);
-            }
+            _commentNode ??= new XmlCommentNode(_bufferReader);
             MoveToNode(_commentNode);
             return _commentNode;
         }
 
         protected XmlCDataNode MoveToCData()
         {
-            if (_cdataNode == null)
-            {
-                _cdataNode = new XmlCDataNode(_bufferReader);
-            }
+            _cdataNode ??= new XmlCDataNode(_bufferReader);
             MoveToNode(_cdataNode);
             return _cdataNode;
         }
@@ -239,20 +214,14 @@ namespace System.Xml
 
         protected XmlComplexTextNode MoveToComplexText()
         {
-            if (_complexTextNode == null)
-            {
-                _complexTextNode = new XmlComplexTextNode(_bufferReader);
-            }
+            _complexTextNode ??= new XmlComplexTextNode(_bufferReader);
             MoveToNode(_complexTextNode);
             return _complexTextNode;
         }
 
         protected XmlTextNode MoveToWhitespaceText()
         {
-            if (_whitespaceTextNode == null)
-            {
-                _whitespaceTextNode = new XmlWhitespaceTextNode(_bufferReader);
-            }
+            _whitespaceTextNode ??= new XmlWhitespaceTextNode(_bufferReader);
             if (_nsMgr.XmlSpace == XmlSpace.Preserve)
                 _whitespaceTextNode.NodeType = XmlNodeType.SignificantWhitespace;
             else
@@ -501,10 +470,8 @@ namespace System.Xml
                 _elementNodes = null;
             _nsMgr.Close();
             _bufferReader.Close();
-            if (_signingWriter != null)
-                _signingWriter.Close();
-            if (_attributeSorter != null)
-                _attributeSorter.Close();
+            _signingWriter?.Close();
+            _attributeSorter?.Close();
         }
 
         public sealed override int Depth
@@ -593,10 +560,10 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(localName);
 
-            if (namespaceUri == null)
-                namespaceUri = string.Empty;
+            namespaceUri ??= string.Empty;
             if (!_node.CanGetAttribute)
                 return null;
+
             XmlAttributeNode[]? attributeNodes = _attributeNodes;
             int attributeCount = _attributeCount;
             int attributeIndex = _attributeStart;
@@ -620,10 +587,10 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(localName);
 
-            if (namespaceUri == null)
-                namespaceUri = XmlDictionaryString.Empty;
+            namespaceUri ??= XmlDictionaryString.Empty;
             if (!_node.CanGetAttribute)
                 return null;
+
             XmlAttributeNode[]? attributeNodes = _attributeNodes;
             int attributeCount = _attributeCount;
             int attributeIndex = _attributeStart;
@@ -801,13 +768,12 @@ namespace System.Xml
         private void CheckAttributes(XmlAttributeNode[] attributeNodes, int attributeCount)
         {
             // For large numbers of attributes, sorting the attributes (n * lg(n)) is faster
-            if (_attributeSorter == null)
-                _attributeSorter = new AttributeSorter();
+            _attributeSorter ??= new AttributeSorter();
 
             if (!_attributeSorter.Sort(attributeNodes, attributeCount))
             {
                 int attribute1, attribute2;
-                _attributeSorter.GetIndeces(out attribute1, out attribute2);
+                _attributeSorter.GetIndices(out attribute1, out attribute2);
                 if (attributeNodes[attribute1].QNameType == QNameType.Xmlns)
                     XmlExceptionHelper.ThrowDuplicateXmlnsAttribute(this, attributeNodes[attribute1].Namespace.Prefix.GetString(), xmlnsNamespace);
                 else
@@ -1014,7 +980,7 @@ namespace System.Xml
 
             return _node.IsNamespaceUri(namespaceUri);
         }
-        public override sealed bool IsStartElement()
+        public sealed override bool IsStartElement()
         {
             XmlNodeType nodeType = _node.NodeType;
             if (nodeType == XmlNodeType.Element)
@@ -1483,9 +1449,8 @@ namespace System.Xml
                     _trailCharCount = (charCount % charBlock);
                     if (_trailCharCount > 0)
                     {
-                        if (_trailChars == null)
-                            _trailChars = new char[4];
-                        charCount = charCount - _trailCharCount;
+                        _trailChars ??= new char[4];
+                        charCount -= _trailCharCount;
                         Array.Copy(chars, charCount, _trailChars, 0, _trailCharCount);
                     }
                 }
@@ -1493,8 +1458,7 @@ namespace System.Xml
                 {
                     if (byteCount < byteBlock)
                     {
-                        if (_trailBytes == null)
-                            _trailBytes = new byte[3];
+                        _trailBytes ??= new byte[3];
                         _trailByteCount = encoding.GetBytes(chars, 0, charCount, _trailBytes, 0);
                         int actual = Math.Min(_trailByteCount, byteCount);
                         Buffer.BlockCopy(_trailBytes, 0, buffer, offset, actual);
@@ -1752,18 +1716,7 @@ namespace System.Xml
             }
         }
 
-        public override string Value
-        {
-            get
-            {
-                if (_value == null)
-                {
-                    _value = _node.ValueAsString;
-                }
-
-                return _value;
-            }
-        }
+        public override string Value => _value ??= _node.ValueAsString;
 
         public override Type ValueType
         {
@@ -2029,8 +1982,7 @@ namespace System.Xml
             if (_signing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlCanonicalizationStarted));
 
-            if (_signingWriter == null)
-                _signingWriter = CreateSigningNodeWriter();
+            _signingWriter ??= CreateSigningNodeWriter();
 
             _signingWriter.SetOutput(XmlNodeWriter.Null, stream, includeComments, inclusivePrefixes);
             _nsMgr.Sign(_signingWriter);
@@ -2619,7 +2571,7 @@ namespace System.Xml
 
         private sealed class AttributeSorter : IComparer
         {
-            private object[]? _indeces;
+            private object[]? _indices;
             private XmlAttributeNode[]? _attributeNodes;
             private int _attributeCount;
             private int _attributeIndex1;
@@ -2637,7 +2589,7 @@ namespace System.Xml
                 return sorted;
             }
 
-            public void GetIndeces(out int attributeIndex1, out int attributeIndex2)
+            public void GetIndices(out int attributeIndex1, out int attributeIndex2)
             {
                 attributeIndex1 = _attributeIndex1;
                 attributeIndex2 = _attributeIndex2;
@@ -2645,9 +2597,9 @@ namespace System.Xml
 
             public void Close()
             {
-                if (_indeces != null && _indeces.Length > 32)
+                if (_indices != null && _indices.Length > 32)
                 {
-                    _indeces = null;
+                    _indices = null;
                 }
             }
 
@@ -2655,25 +2607,25 @@ namespace System.Xml
             {
                 // Optimistically use the last sort order and check to see if that works.  This helps the case
                 // where elements with large numbers of attributes are repeated.
-                if (_indeces != null && _indeces.Length == _attributeCount && IsSorted())
+                if (_indices != null && _indices.Length == _attributeCount && IsSorted())
                     return true;
 
-                object[] newIndeces = new object[_attributeCount];
-                for (int i = 0; i < newIndeces.Length; i++)
-                    newIndeces[i] = i;
-                _indeces = newIndeces;
-                Array.Sort(_indeces, 0, _attributeCount, this);
+                object[] newIndices = new object[_attributeCount];
+                for (int i = 0; i < newIndices.Length; i++)
+                    newIndices[i] = i;
+                _indices = newIndices;
+                Array.Sort(_indices, 0, _attributeCount, this);
                 return IsSorted();
             }
 
             private bool IsSorted()
             {
-                for (int i = 0; i < _indeces!.Length - 1; i++)
+                for (int i = 0; i < _indices!.Length - 1; i++)
                 {
-                    if (Compare(_indeces[i], _indeces[i + 1]) >= 0)
+                    if (Compare(_indices[i], _indices[i + 1]) >= 0)
                     {
-                        _attributeIndex1 = (int)_indeces[i];
-                        _attributeIndex2 = (int)_indeces[i + 1];
+                        _attributeIndex1 = (int)_indices[i];
+                        _attributeIndex2 = (int)_indices[i + 1];
                         return false;
                     }
                 }
@@ -2758,15 +2710,7 @@ namespace System.Xml
                 {
                     if (s_xmlNamespace == null)
                     {
-                        byte[] xmlBuffer =
-                            {
-                                (byte)'x', (byte)'m', (byte)'l',
-                                (byte)'h', (byte)'t', (byte)'t', (byte)'p', (byte)':', (byte)'/', (byte)'/', (byte)'w',
-                                (byte)'w', (byte)'w', (byte)'.', (byte)'w', (byte)'3', (byte)'.', (byte)'o', (byte)'r',
-                                (byte)'g', (byte)'/', (byte)'X', (byte)'M', (byte)'L', (byte)'/', (byte)'1', (byte)'9',
-                                (byte)'9', (byte)'8', (byte)'/', (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)'s',
-                                (byte)'p', (byte)'a', (byte)'c', (byte)'e'
-                            };
+                        byte[] xmlBuffer = "xmlhttp://www.w3.org/XML/1998/namespace"u8.ToArray();
                         Namespace nameSpace = new Namespace(new XmlBufferReader(xmlBuffer));
                         nameSpace.Prefix.SetValue(0, 3);
                         nameSpace.Uri.SetValue(3, xmlBuffer.Length - 3);
@@ -2994,7 +2938,7 @@ namespace System.Xml
                 if (length == 1)
                 {
                     char ch = s[0];
-                    if (ch >= 'a' && ch <= 'z')
+                    if (char.IsAsciiLetterLower(ch))
                     {
                         shortPrefix = PrefixHandle.GetAlphaPrefix(ch - 'a');
                         return true;

@@ -114,10 +114,6 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var method in allSlots)
             {
-                // Static virtual methods don't go in vtables
-                if (method.Signature.IsStatic)
-                    continue;
-
                 // GVMs are not emitted in the type's vtable.
                 if (method.HasInstantiation)
                     continue;
@@ -223,10 +219,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Generic virtual methods are tracked by an orthogonal mechanism.
                 if (method.HasInstantiation)
-                    continue;
-
-                // Static interface methods don't go into vtables
-                if (method.Signature.IsStatic)
                     continue;
 
                 // Current type doesn't define this slot. Another VTableSlice will take care of this.

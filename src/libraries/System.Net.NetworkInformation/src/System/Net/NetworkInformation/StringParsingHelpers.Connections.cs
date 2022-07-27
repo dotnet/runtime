@@ -24,13 +24,30 @@ namespace System.Net.NetworkInformation
             return sockstatParser.ParseNextInt32();
         }
 
-        internal static TcpConnectionInformation[] ParseActiveTcpConnectionsFromFiles(string tcp4ConnectionsFile, string tcp6ConnectionsFile)
+        internal static TcpConnectionInformation[] ParseActiveTcpConnectionsFromFiles(string? tcp4ConnectionsFile, string? tcp6ConnectionsFile)
         {
-            string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
-            string[] v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            string[] v4connections;
+            string[] v6connections;
 
-            string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
-            string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            if (tcp4ConnectionsFile != null)
+            {
+                string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
+                v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                v4connections = Array.Empty<string>();
+            }
+
+            if (tcp6ConnectionsFile != null)
+            {
+                string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
+                v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                v6connections = Array.Empty<string>();
+            }
 
             // First line is header in each file. On WSL, this file may be empty.
             int count = 0;
@@ -87,13 +104,30 @@ namespace System.Net.NetworkInformation
             return connections;
         }
 
-        internal static IPEndPoint[] ParseActiveTcpListenersFromFiles(string tcp4ConnectionsFile, string tcp6ConnectionsFile)
+        internal static IPEndPoint[] ParseActiveTcpListenersFromFiles(string? tcp4ConnectionsFile, string? tcp6ConnectionsFile)
         {
-            string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
-            string[] v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            string[] v4connections;
+            string[] v6connections;
 
-            string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
-            string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            if (tcp4ConnectionsFile != null)
+            {
+                string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
+                v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                v4connections = Array.Empty<string>();
+            }
+
+            if (tcp6ConnectionsFile != null)
+            {
+                string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
+                v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                v6connections = Array.Empty<string>();
+            }
 
             // First line is header in each file. On WSL, this file may be empty.
             int count = 0;
@@ -150,13 +184,30 @@ namespace System.Net.NetworkInformation
             return endPoints;
         }
 
-        public static IPEndPoint[] ParseActiveUdpListenersFromFiles(string udp4File, string udp6File)
+        public static IPEndPoint[] ParseActiveUdpListenersFromFiles(string? udp4File, string? udp6File)
         {
-            string udp4FileContents = ReadAllText(udp4File);
-            string[] v4connections = udp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            string[] v4connections;
+            string[] v6connections;
 
-            string udp6FileContents = ReadAllText(udp6File);
-            string[] v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            if (udp4File != null)
+            {
+                string udp4FileContents = ReadAllText(udp4File);
+                v4connections = udp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                v4connections = Array.Empty<string>();
+            }
+
+            if (udp6File != null)
+            {
+                string udp6FileContents = ReadAllText(udp6File);
+                v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                v6connections = Array.Empty<string>();
+            }
 
             // First line is header in each file. On WSL, this file may be empty.
             int count = 0;
@@ -303,7 +354,7 @@ namespace System.Net.NetworkInformation
         // First number corresponds to lower address part
         // E.g. IP-address:                           fe80::215:5dff:fe00:402
         //      It's bytes in direct order:           FE-80-00-00  00-00-00-00  02-15-5D-FF  FE-00-04-02
-        //      It's represenation in /proc/net/tcp6: 00-00-80-FE  00-00-00-00  FF-5D-15-02  02-04-00-FE
+        //      It's representation in /proc/net/tcp6: 00-00-80-FE  00-00-00-00  FF-5D-15-02  02-04-00-FE
         //                                             (dashes and spaces added above for readability)
         // Strings passed to this must be 32 characters in length.
         private static IPAddress ParseIPv6HexString(ReadOnlySpan<char> hexAddress, bool isNetworkOrder = false)

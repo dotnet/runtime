@@ -12,8 +12,6 @@ class Program
 {
     static int Main(string[] args)
     {
-        // Ensure the internal GlobalizationMode class is trimmed correctly
-        Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
         const BindingFlags allStatics = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
 
         try
@@ -29,32 +27,42 @@ class Program
         {
             return -3;
         }
+        
+        // Ensure the internal GlobalizationMode class is trimmed correctly.
+        Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
 
-        foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
+        if (OperatingSystem.IsWindows())
         {
-            // properties and their backing getter methods are OK
-            if (member is PropertyInfo || member.Name.StartsWith("get_"))
+            foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
             {
-                continue;
-            }
+                // properties and their backing getter methods are OK
+                if (member is PropertyInfo || member.Name.StartsWith("get_"))
+                {
+                    continue;
+                }
 
-            if (OperatingSystem.IsWindows())
-            {
-                // Windows still contains a static cctor and a backing field for UseNls
+                // Windows still contains a static cctor and a backing field for UseNls.
                 if (member is ConstructorInfo || (member is FieldInfo field && field.Name.Contains("UseNls")))
                 {
                     continue;
                 }
-            }
 
-            // Some unexpected member was left on GlobalizationMode, fail
-            Console.WriteLine($"Member '{member.Name}' was not trimmed from GlobalizationMode, but should have been.");
-            return -4;
+                // Some unexpected member was left on GlobalizationMode, fail
+                Console.WriteLine($"Member '{member.Name}' was not trimmed from GlobalizationMode, but should have been.");
+                return -4;
+            }
+        }
+        // On non Windows platforms, the full type is trimmed.
+        else if (globalizationMode is not null)
+        {
+            Console.WriteLine("It is expected to have System.Globalization.GlobalizationMode type trimmed in non-Windows platforms");
+            return -5;
         }
 
         return 100;
     }
 
+    // The intention of this method is to ensure the trimmer doesn't preserve the Type.
     private static Type GetCoreLibType(string name) =>
-        typeof(object).Assembly.GetType(name, throwOnError: true);
+        typeof(object).Assembly.GetType(name, throwOnError: false);
 }

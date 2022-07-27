@@ -98,17 +98,16 @@ namespace System.Reflection.Emit.Tests
 
             if (declaringType == null && !type.IsInterface && (implementedInterfaces == null || implementedInterfaces.Length == 0))
             {
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateType();
                 Assert.Equal(createdType, module.GetType(name, false, false));
                 Assert.Equal(createdType, module.GetType(name, true, false));
 
                 Assert.Equal(type.AsType().GetNestedTypes(AllFlags), createdType.GetNestedTypes(AllFlags));
                 Assert.Equal(type.AsType().GetNestedType(name, AllFlags), createdType.GetNestedType(name, AllFlags));
 
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/18231", TestPlatforms.AnyUnix)]
-                // Assert.Equal(createdType, module.GetType(name, true, true));
-                // Assert.Equal(createdType, module.GetType(name.ToLowerInvariant(), true, true));
-                // Assert.Equal(createdType, module.GetType(name.ToUpperInvariant(), true, true));
+                Assert.Equal(createdType, module.GetType(name, true, true));
+                Assert.Equal(createdType, module.GetType(name.ToLowerInvariant(), true, true));
+                Assert.Equal(createdType, module.GetType(name.ToUpperInvariant(), true, true));
             }
         }
 
@@ -126,7 +125,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<NotSupportedException>(() => constructor.Invoke(null));
             Assert.Throws<NotSupportedException>(() => constructor.Invoke(null, null));
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.AsType().GetConstructors(AllFlags), createdType.GetConstructors(AllFlags));
             Assert.Equal(type.AsType().GetConstructor(parameterTypes), createdType.GetConstructor(parameterTypes));
 

@@ -45,8 +45,6 @@ GPTR_IMPL(IdDispenser,       g_pThinLockThreadIdDispenser);
 
 GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 
-IBCLogger                    g_IBCLogger;
-
 // For [<I1, etc. up to and including [Object
 GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
@@ -59,7 +57,6 @@ GPTR_IMPL(MethodTable,      g_pStringClass);
 GPTR_IMPL(MethodTable,      g_pArrayClass);
 GPTR_IMPL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_IMPL(MethodTable,      g_pNullableClass);
-GPTR_IMPL(MethodTable,      g_pByReferenceClass);
 GPTR_IMPL(MethodTable,      g_pExceptionClass);
 GPTR_IMPL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_IMPL(MethodTable,      g_pOutOfMemoryExceptionClass);
@@ -244,7 +241,7 @@ void OBJECTREF_EnumMemoryRegions(OBJECTREF ref)
 extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
 
 #else
-__GlobalVal< GSCookie > s_gsCookie(&g_dacGlobals.dac__s_gsCookie);
+__GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);
 #endif //!DACCESS_COMPILE
 
 //==============================================================================

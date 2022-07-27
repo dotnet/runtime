@@ -43,8 +43,6 @@ inline PTR_EEClass MethodTable::GetClass()
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE_IMPL(GetClass_NoLogging() != NULL);
-
-    g_IBCLogger.LogEEClassAndMethodTableAccess(this);
     return GetClass_NoLogging();
 }
 
@@ -300,8 +298,6 @@ inline BOOL MethodTable::IsEnum()
 inline BOOL MethodTable::IsValueType()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    g_IBCLogger.LogMethodTableAccess(this);
 
     return GetFlag(enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 }
@@ -839,7 +835,6 @@ inline BOOL MethodTable::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemp
     }
     CONTRACTL_END;
 
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     return GetClass_NoLogging()->SetComCallWrapperTemplate(pTemplate);
 }
 
@@ -862,7 +857,6 @@ inline BOOL MethodTable::SetComClassFactory(ClassFactoryBase *pFactory)
     }
     CONTRACTL_END;
 
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     return GetClass_NoLogging()->SetComClassFactory(pFactory);
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -999,8 +993,6 @@ inline DWORD MethodTable::GetInstAndDictSize(DWORD *pSlotSize)
 inline BOOL MethodTable::IsSharedByGenericInstantiations()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    g_IBCLogger.LogMethodTableAccess(this);
 
     return TestFlagWithMask(enum_flag_GenericsMask, enum_flag_GenericsMask_SharedInst);
 }

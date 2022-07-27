@@ -9,10 +9,10 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         // Pre-encoded metadata properties.
-        internal static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
-        internal static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
-        internal static readonly JsonEncodedText s_metadataType = JsonEncodedText.Encode("$type", encoder: null);
-        internal static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+        internal static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode(IdPropertyName, encoder: null);
+        internal static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode(RefPropertyName, encoder: null);
+        internal static readonly JsonEncodedText s_metadataType = JsonEncodedText.Encode(TypePropertyName, encoder: null);
+        internal static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode(ValuesPropertyName, encoder: null);
 
         internal static MetadataPropertyName WriteMetadataForObject(
             JsonConverter jsonConverter,
@@ -32,7 +32,7 @@ namespace System.Text.Json
                 state.NewReferenceId = null;
             }
 
-            if (state.PolymorphicTypeDiscriminator is string typeDiscriminatorId)
+            if (state.PolymorphicTypeDiscriminator is object discriminator)
             {
                 Debug.Assert(state.Parent.JsonPropertyInfo!.JsonTypeInfo.PolymorphicTypeResolver != null);
 
@@ -41,7 +41,16 @@ namespace System.Text.Json
                     ? customPropertyName
                     : s_metadataType;
 
-                writer.WriteString(propertyName, typeDiscriminatorId);
+                if (discriminator is string stringId)
+                {
+                    writer.WriteString(propertyName, stringId);
+                }
+                else
+                {
+                    Debug.Assert(discriminator is int);
+                    writer.WriteNumber(propertyName, (int)discriminator);
+                }
+
                 writtenMetadata |= MetadataPropertyName.Type;
                 state.PolymorphicTypeDiscriminator = null;
             }

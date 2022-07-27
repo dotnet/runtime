@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 .Select(i => new Point(i, i + 1))
                 .ToArray();
 
-            // This should not throw a SerializationException as we removed the artifical limit in the ObjectIDGenerator.
+            // This should not throw a SerializationException as we removed the artificial limit in the ObjectIDGenerator.
             // Instead of round tripping we only serialize to minimize test time.
             // This will throw on .NET Framework as the artificial limit is still enabled.
             var bf = new BinaryFormatter();
@@ -700,8 +700,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
 
                 Regex regex = new Regex(pattern);
-                Match match = regex.Match(testDataLine);
-                if (match.Success)
+                if (regex.IsMatch(testDataLine))
                 {
                     numberOfFoundBlobs++;
                 }
@@ -727,6 +726,38 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             public Func<string, string, Type> BindToTypeDelegate = null;
             public override Type BindToType(string assemblyName, string typeName) => BindToTypeDelegate?.Invoke(assemblyName, typeName);
+        }
+
+        public struct MyStruct
+        {
+            public int A;
+        }
+
+        public static IEnumerable<object[]> NullableComparersTestData()
+        {
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<byte?>.Default };
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<int?>.Default };
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<float?>.Default };
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<Guid?>.Default }; // implements IEquatable<>
+
+            yield return new object[] { "ObjectEqualityComparer`1", EqualityComparer<MyStruct?>.Default };  // doesn't implement IEquatable<>
+            yield return new object[] { "ObjectEqualityComparer`1", EqualityComparer<DayOfWeek?>.Default };
+
+            yield return new object[] { "NullableComparer`1", Comparer<byte?>.Default };
+            yield return new object[] { "NullableComparer`1", Comparer<int?>.Default };
+            yield return new object[] { "NullableComparer`1", Comparer<float?>.Default };
+            yield return new object[] { "NullableComparer`1", Comparer<Guid?>.Default };
+
+            yield return new object[] { "ObjectComparer`1", Comparer<MyStruct?>.Default };
+            yield return new object[] { "ObjectComparer`1", Comparer<DayOfWeek?>.Default };
+        }
+
+        [Theory]
+        [MemberData(nameof(NullableComparersTestData))]
+        public void NullableComparersRoundtrip(string expectedType, object obj)
+        {
+            string serialized = BinaryFormatterHelpers.ToBase64String(obj);
+            Assert.Equal(expectedType, BinaryFormatterHelpers.FromBase64String(serialized).GetType().Name);
         }
     }
 }

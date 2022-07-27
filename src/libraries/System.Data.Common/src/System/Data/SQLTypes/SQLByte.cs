@@ -450,10 +450,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlByte)
+            if (value is SqlByte i)
             {
-                SqlByte i = (SqlByte)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlByte));

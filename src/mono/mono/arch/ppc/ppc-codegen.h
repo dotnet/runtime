@@ -129,6 +129,7 @@ enum {
 #define ppc_is_imm16(val) ((((val)>> 15) == 0) || (((val)>> 15) == -1))
 #define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)
 #define ppc_ha(val) (((val >> 16) + ((val & 0x8000) ? 1 : 0)) & 0xffff)
+#define ppc_is_dsoffset_valid(offset) (((offset)& 3) == 0)
 
 #define ppc_load32(c,D,v) G_STMT_START {	\
 		ppc_lis ((c), (D),      (guint32)(v) >> 16);	\
@@ -137,7 +138,7 @@ enum {
 
 /* Macros to load/store pointer sized quantities */
 
-#if defined(__mono_ppc64__) && !defined(MONO_ARCH_ILP32)
+#if defined(TARGET_POWERPC64) && !defined(MONO_ARCH_ILP32)
 
 #define ppc_ldptr(c,D,d,A)         ppc_ld   ((c), (D), (d), (A))
 #define ppc_ldptr_update(c,D,d,A)  ppc_ldu  ((c), (D), (d), (A))
@@ -170,7 +171,7 @@ enum {
 
 /* Macros to load/store regsize quantities */
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 #define ppc_ldr(c,D,d,A)         ppc_ld  ((c), (D), (d), (A))
 #define ppc_ldr_indexed(c,D,A,B) ppc_ldx  ((c), (D), (A), (B))
 #define ppc_str(c,S,d,A)         ppc_std ((c), (S), (d), (A))
@@ -191,7 +192,7 @@ enum {
 
 /* PPC32 macros */
 
-#ifndef __mono_ppc64__
+#ifndef TARGET_POWERPC64
 
 #define ppc_load_sequence(c,D,v) ppc_load32 ((c), (D), (guint32)(v))
 
@@ -800,7 +801,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_fctidz(c,D,B)  ppc_fctidzx(c,D,B,0)
 #define ppc_fctidzd(c,D,B) ppc_fctidzx(c,D,B,1)
 
-#ifdef __mono_ppc64__
+#ifdef TARGET_POWERPC64
 
 #define ppc_load_sequence(c,D,v) G_STMT_START {	\
 		ppc_lis  ((c), (D),      ((guint64)(v) >> 48) & 0xffff);	\
@@ -890,7 +891,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_extsw(c,A,S)  ppc_extswx(c,S,A,0)
 #define ppc_extswd(c,A,S) ppc_extswx(c,S,A,1)
 
-/* These move float to/from instuctions are only available on POWER6 in
+/* These move float to/from instructions are only available on POWER6 in
    native mode.  These instruction are faster then the equivalent
    store/load because they avoid the store queue and associated delays.
    These instructions should only be used in 64-bit mode unless the

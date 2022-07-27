@@ -92,7 +92,6 @@ namespace System.Text.RegularExpressions
     {
         public RegexReplacement(string rep, RegexNode concat, Hashtable caps) { }
 
-        private const int Specials = 4;
         public const int LeftPortion = -1;
         public const int RightPortion = -2;
         public const int LastGroup = -3;

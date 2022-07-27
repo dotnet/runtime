@@ -5,6 +5,12 @@ namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo
     {
+#pragma warning disable CA1823
+        private static readonly byte[] s_http1 = SslApplicationProtocol.Http11.Protocol.ToArray();
+        private static readonly byte[] s_http2 = SslApplicationProtocol.Http2.Protocol.ToArray();
+        private static readonly byte[] s_http3 = SslApplicationProtocol.Http3.Protocol.ToArray();
+#pragma warning restore CA1823
+
         public int Protocol { get; private set; }
         public TlsCipherSuite TlsCipherSuite { get; private set; }
         public int DataCipherAlg { get; private set; }

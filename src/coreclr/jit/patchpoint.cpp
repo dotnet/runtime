@@ -78,7 +78,7 @@ public:
                 // If we're instrumenting, we should not have decided to
                 // put class probes here, as that is driven by looking at IL.
                 //
-                assert((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0);
+                assert((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0);
 
                 // Clear the partial comp flag.
                 //

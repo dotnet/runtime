@@ -52,13 +52,7 @@ namespace System
           IComparable<DateTime>,
           IEquatable<DateTime>,
           ISerializable,
-          IAdditionOperators<DateTime, TimeSpan, DateTime>,
-          IAdditiveIdentity<DateTime, TimeSpan>,
-          IComparisonOperators<DateTime, DateTime>,
-          IMinMaxValue<DateTime>,
-          ISpanParsable<DateTime>,
-          ISubtractionOperators<DateTime, TimeSpan, DateTime>,
-          ISubtractionOperators<DateTime, DateTime, TimeSpan>
+          ISpanParsable<DateTime>
     {
         // Number of 100ns ticks per time unit
         internal const int MicrosecondsPerMillisecond = 1000;
@@ -1611,8 +1605,7 @@ namespace System
             }
             if ((year & 3) != 0) return false;
             if ((year & 15) == 0) return true;
-            // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-            return (uint)year % 25 != 0 ? true : false;
+            return (uint)year % 25 != 0;
         }
 
         // Constructs a DateTime from a string. The string must specify a
@@ -1915,16 +1908,16 @@ namespace System
 
         public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTime t1, DateTime t2) => t1.Ticks <= t2.Ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTime t1, DateTime t2) => t1.Ticks > t2.Ticks;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
 
         // Returns a string array containing all of the known date and time options for the
@@ -2031,28 +2024,6 @@ namespace System
         }
 
         //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator checked +(DateTime left, TimeSpan right) => left + right;
-
-        //
-        // IAdditiveIdentity
-        //
-
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static TimeSpan IAdditiveIdentity<DateTime, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IMinMaxValue
-        //
-
-        static DateTime IMinMaxValue<DateTime>.MinValue => MinValue;
-
-        static DateTime IMinMaxValue<DateTime>.MaxValue => MaxValue;
-
-        //
         // IParsable
         //
 
@@ -2068,15 +2039,5 @@ namespace System
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTime result) => TryParse(s, provider, DateTimeStyles.None, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator checked -(DateTime left, TimeSpan right) => left - right;
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator checked -(DateTime left, DateTime right) => left - right;
     }
 }

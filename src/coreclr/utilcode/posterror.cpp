@@ -97,7 +97,7 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
 //*****************************************************************************
 // Format a Runtime Error message.
 //*****************************************************************************
-HRESULT __cdecl FormatRuntimeErrorVa(
+static HRESULT FormatRuntimeErrorVA(
     _Inout_updates_(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
     ULONG       cchMsg,                 // Size of buffer, characters.
     HRESULT     hrRpt,                  // The HR to report.
@@ -110,7 +110,8 @@ HRESULT __cdecl FormatRuntimeErrorVa(
     }
     CONTRACTL_END;
 
-    WCHAR       rcBuf[512];             // Resource string.
+    WCHAR       rcBuf[512]; // Resource string.
+    char        msgBufUtf8[2048];
     HRESULT     hr;
 
     // Ensure nul termination.
@@ -122,7 +123,10 @@ HRESULT __cdecl FormatRuntimeErrorVa(
         hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, ARRAY_SIZE(rcBuf), true);
         if (hr == S_OK)
         {
-            _vsnwprintf_s(rcMsg, cchMsg, _TRUNCATE, rcBuf, marker);
+            MAKE_UTF8PTR_FROMWIDE(rcUtf8, rcBuf);
+            _vsnprintf_s(msgBufUtf8, ARRAY_SIZE(msgBufUtf8), _TRUNCATE, rcUtf8, marker);
+            MAKE_WIDEPTR_FROMUTF8(msgBuf, msgBufUtf8);
+            wcscpy_s(rcMsg, cchMsg, msgBuf);
         }
     }
     // Otherwise it isn't one of ours, so we need to see if the system can
@@ -144,32 +148,9 @@ HRESULT __cdecl FormatRuntimeErrorVa(
             hr = HRESULT_FROM_GetLastError();
     }
 
-    // If we failed to find the message anywhere, then issue a hard coded message.
-    if (FAILED(hr))
-    {
-        _snwprintf_s(rcMsg, cchMsg, _TRUNCATE, W("Common Language Runtime Internal error: 0x%08x"), hrRpt);
-        DEBUG_STMT(DbgWriteEx(rcMsg));
-    }
-
+    _ASSERTE(SUCCEEDED(hr));
     return hrRpt;
-} // FormatRuntimeErrorVa
-
-//*****************************************************************************
-// Format a Runtime Error message, varargs.
-//*****************************************************************************
-HRESULT __cdecl FormatRuntimeError(
-    _Out_writes_(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
-    ULONG       cchMsg,                 // Size of buffer, characters.
-    HRESULT     hrRpt,                  // The HR to report.
-    ...)                                // Optional args.
-{
-    WRAPPER_NO_CONTRACT;
-    va_list     marker;                 // User text.
-    va_start(marker, hrRpt);
-    hrRpt = FormatRuntimeErrorVa(rcMsg, cchMsg, hrRpt, marker);
-    va_end(marker);
-    return hrRpt;
-}
+} // FormatRuntimeErrorVA
 
 #ifdef FEATURE_COMINTEROP
 //*****************************************************************************
@@ -257,8 +238,7 @@ Exit1:
 // not formatted so no add'l parameters are required.  If any errors in this
 // process occur, hrRpt is returned for the client with no error posted.
 //*****************************************************************************
-extern "C"
-HRESULT __cdecl PostErrorVA(                      // Returned error.
+static HRESULT PostErrorVA(                      // Returned error.
     HRESULT     hrRpt,                  // Reported error.
     va_list     marker)                  // Error arguments.
 {
@@ -292,7 +272,7 @@ HRESULT __cdecl PostErrorVA(                      // Returned error.
     }
 
     // Format the error.
-    FormatRuntimeErrorVa(rcMsg, cchMsg, hrRpt, marker);
+    FormatRuntimeErrorVA(rcMsg, cchMsg, hrRpt, marker);
 
     // Turn the error into a posted error message.  If this fails, we still
     // return the original error message since a message caused by our error
@@ -319,8 +299,7 @@ ErrExit:
 // not formatted so no add'l parameters are required.  If any errors in this
 // process occur, hrRpt is returned for the client with no error posted.
 //*****************************************************************************
-extern "C"
-HRESULT __cdecl PostError(
+HRESULT PostError(
     HRESULT hrRpt,      // Reported error.
     ...)                // Error arguments.
 {

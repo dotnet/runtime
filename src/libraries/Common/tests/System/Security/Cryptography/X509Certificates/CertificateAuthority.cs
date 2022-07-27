@@ -42,7 +42,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context0 = new Asn1Tag(TagClass.ContextSpecific, 0);
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
-        private static readonly Asn1Tag s_context4 = new Asn1Tag(TagClass.ContextSpecific, 4);
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -118,6 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         public void Dispose()
         {
             _cert.Dispose();
+            _ocspResponder?.Dispose();
         }
 
         internal string SubjectName => _cert.Subject;
@@ -141,8 +141,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 _revocationList = new List<(byte[], DateTimeOffset)>();
             }
 
-            byte[] serial = certificate.GetSerialNumber();
-            Array.Reverse(serial);
+            byte[] serial = certificate.SerialNumberBytes.ToArray();
             _revocationList.Add((serial, revocationTime));
             _crl = null;
         }
@@ -218,8 +217,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             req.CertificateExtensions.Add(cdpExtension);
             req.CertificateExtensions.Add(aiaExtension);
 
-            byte[] serial = _cert.GetSerialNumber();
-            Array.Reverse(serial);
+            byte[] serial = _cert.SerialNumberBytes.ToArray();
 
             X509Certificate2 dispose = _cert;
 
@@ -687,41 +685,20 @@ SingleResponse ::= SEQUENCE {
 
         private static X509Extension CreateAiaExtension(string certLocation, string ocspStem)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            string[] ocsp = null;
+            string[] caIssuers = null;
 
-            // AuthorityInfoAccessSyntax (SEQUENCE OF)
-            using (writer.PushSequence())
+            if (ocspStem is not null)
             {
-                if (!string.IsNullOrEmpty(ocspStem))
-                {
-                    // AccessDescription for id-ad-ocsp
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1");
-
-                        writer.WriteCharacterString(
-                            UniversalTagNumber.IA5String,
-                            ocspStem,
-                            new Asn1Tag(TagClass.ContextSpecific, 6));
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(certLocation))
-                {
-                    // AccessDescription for id-ad-caIssuers
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.2");
-
-                        writer.WriteCharacterString(
-                            UniversalTagNumber.IA5String,
-                            certLocation,
-                            new Asn1Tag(TagClass.ContextSpecific, 6));
-                    }
-                }
+                ocsp = new[] { ocspStem };
             }
 
-            return new X509Extension("1.3.6.1.5.5.7.1.1", writer.Encode(), false);
+            if (certLocation is not null)
+            {
+                caIssuers = new[] { certLocation };
+            }
+
+            return new X509AuthorityInformationAccessExtension(ocsp, caIssuers);
         }
 
         private static X509Extension CreateCdpExtension(string cdp)
@@ -760,49 +737,15 @@ SingleResponse ::= SEQUENCE {
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // AuthorityKeyIdentifier
-            using (writer.PushSequence())
+            if (skid is null)
             {
-                if (skid == null)
-                {
-                    // authorityCertIssuer [1] GeneralNames (SEQUENCE OF)
-                    using (writer.PushSequence(s_context1))
-                    {
-                        // directoryName [4] Name
-                        byte[] dn = _cert.SubjectName.RawData;
-
-                        if (s_context4.Encode(dn) != 1)
-                        {
-                            throw new InvalidOperationException();
-                        }
-
-                        writer.WriteEncodedValue(dn);
-                    }
-
-                    // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
-                    byte[] serial = _cert.GetSerialNumber();
-                    Array.Reverse(serial);
-                    writer.WriteInteger(serial, s_context2);
-                }
-                else
-                {
-                    // keyIdentifier [0] KeyIdentifier (OCTET STRING)
-                    AsnReader reader = new AsnReader(skid.RawData, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> contents;
-
-                    if (!reader.TryReadPrimitiveOctetString(out contents))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    reader.ThrowIfNotEmpty();
-                    writer.WriteOctetString(contents.Span, s_context0);
-                }
+                return X509AuthorityKeyIdentifierExtension.CreateFromCertificate(
+                    _cert,
+                    includeKeyIdentifier: false,
+                    includeIssuerAndSerial: true);
             }
 
-            return new X509Extension("2.5.29.35", writer.Encode(), false);
+            return X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(skid);
         }
 
         private enum OcspResponseStatus
@@ -920,7 +863,9 @@ SingleResponse ::= SEQUENCE {
                     eeKey,
                     extensions);
 
+                X509Certificate2 tmp = endEntityCert;
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
+                tmp.Dispose();
             }
 
             if (registerAuthorities)

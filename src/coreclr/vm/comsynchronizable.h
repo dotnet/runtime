@@ -52,21 +52,12 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    enum
-    {
-        ApartmentSTA = 0,
-        ApartmentMTA = 1,
-        ApartmentUnknown = 2
-    };
-
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsAlive,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(FC_BOOL_RET, Join,          ThreadBaseObject* pThisUNSAFE, INT32 Timeout);
-#undef Sleep
     static FCDECL1(void,    Sleep,             INT32 iTime);
-#define Sleep(a) Dont_Use_Sleep(a)
     static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetBackground,     ThreadBaseObject* pThisUNSAFE, CLR_BOOL isBackground);
     static FCDECL1(FC_BOOL_RET, IsBackground,  ThreadBaseObject* pThisUNSAFE);

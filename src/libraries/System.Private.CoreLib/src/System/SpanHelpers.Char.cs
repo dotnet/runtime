@@ -2061,7 +2061,7 @@ namespace System
                 bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
                 length -= numIters * (nuint)Vector256<short>.Count * 2;
             }
-            else if (Sse2.IsSupported && (nuint)Vector128<short>.Count * 2 <= length)
+            else if (Ssse3.IsSupported && (nuint)Vector128<short>.Count * 2 <= length)
             {
                 Vector128<byte> reverseMask = Vector128.Create((byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1);
                 nuint numElements = (nuint)Vector128<byte>.Count;
@@ -2096,12 +2096,7 @@ namespace System
 
             // Store any remaining values one-by-one
             buf = ref Unsafe.As<byte, char>(ref bufByte);
-            for (nuint i = 0; i < (length / 2); i++)
-            {
-                ref char first = ref Unsafe.Add(ref buf, i);
-                ref char last = ref Unsafe.Add(ref buf, length - 1 - i);
-                (last, first) = (first, last);
-            }
+            ReverseInner(ref buf, length);
         }
     }
 }

@@ -973,7 +973,7 @@ Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateRea
 to turn the contents of a file into an ICertificatePal object.
 
 Return values:
-If bio containns a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
+If bio contains a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
 otherwise NULL.
 */
 X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio)

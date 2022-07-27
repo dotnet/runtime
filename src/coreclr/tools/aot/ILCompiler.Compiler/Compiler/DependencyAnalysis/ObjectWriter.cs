@@ -998,7 +998,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (node is ObjectNode)
                             count++;
 
-                    logger.Writer.WriteLine($"Writing {count} object nodes...");
+                    logger.LogMessage($"Writing {count} object nodes...");
 
                     progressReporter = new ProgressReporter(logger, count);
                 }
@@ -1176,7 +1176,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (logger.IsVerbose)
-                    logger.Writer.WriteLine($"Finalizing output to '{objectFilePath}'...");
+                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
 
                 objectWriter.EmitDebugModuleInfo();
 
@@ -1316,7 +1316,7 @@ namespace ILCompiler.DependencyAnalysis
                 int adjusted = _current + Steps - 1;
                 if ((adjusted % _increment) == 0)
                 {
-                    _logger.Writer.WriteLine($"{(adjusted / _increment) * (100 / Steps)}%...");
+                    _logger.LogMessage($"{(adjusted / _increment) * (100 / Steps)}%...");
                 }
             }
         }

@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime.InteropServices
 {
@@ -17,7 +18,7 @@ namespace System.Runtime.InteropServices
         internal static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
         {
             Debug.Assert(throwIfNotMarshalable);
-            return RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(t.TypeHandle);
+            return RuntimeInteropData.GetStructUnsafeStructSize(t.TypeHandle);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -32,7 +33,7 @@ namespace System.Runtime.InteropServices
             if (t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            return new IntPtr(RuntimeAugments.InteropCallbacks.GetStructFieldOffset(t.TypeHandle, fieldName));
+            return new IntPtr(RuntimeInteropData.GetStructFieldOffset(t.TypeHandle, fieldName));
         }
 
         private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
@@ -58,14 +59,14 @@ namespace System.Runtime.InteropServices
             IntPtr unmarshalStub;
             if (structureTypeHandle.IsBlittable())
             {
-                if (!RuntimeAugments.InteropCallbacks.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
+                if (!RuntimeInteropData.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
                 {
                     unmarshalStub = IntPtr.Zero;
                 }
             }
             else
             {
-                unmarshalStub = RuntimeAugments.InteropCallbacks.GetStructUnmarshalStub(structureTypeHandle);
+                unmarshalStub = RuntimeInteropData.GetStructUnmarshalStub(structureTypeHandle);
             }
 
             if (unmarshalStub != IntPtr.Zero)
@@ -81,7 +82,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                nuint size = (nuint)RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(structureTypeHandle);
+                nuint size = (nuint)RuntimeInteropData.GetStructUnsafeStructSize(structureTypeHandle);
 
                 Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
@@ -115,7 +116,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            IntPtr destroyStructureStub = RuntimeAugments.InteropCallbacks.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
+            IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
             if (hasInvalidLayout)
                 throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
             // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
@@ -150,14 +151,14 @@ namespace System.Runtime.InteropServices
             IntPtr marshalStub;
             if (structureTypeHandle.IsBlittable())
             {
-                if (!RuntimeAugments.InteropCallbacks.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
+                if (!RuntimeInteropData.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
                 {
                     marshalStub = IntPtr.Zero;
                 }
             }
             else
             {
-                marshalStub = RuntimeAugments.InteropCallbacks.GetStructMarshalStub(structureTypeHandle);
+                marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
             }
 
             if (marshalStub != IntPtr.Zero)
@@ -173,7 +174,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                nuint size = (nuint)RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(structureTypeHandle);
+                nuint size = (nuint)RuntimeInteropData.GetStructUnsafeStructSize(structureTypeHandle);
 
                 Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
             }
@@ -293,7 +294,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
-            Buffer.ZeroMemory((byte*)nativeBytes, (nuint)size);
+            NativeMemory.Clear((void*)nativeBytes, (nuint)size);
 
             try
             {
@@ -372,7 +373,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
-            Buffer.ZeroMemory((byte*)nativeBytes, (nuint)size);
+            NativeMemory.Clear((void*)nativeBytes, (nuint)size);
 
             try
             {

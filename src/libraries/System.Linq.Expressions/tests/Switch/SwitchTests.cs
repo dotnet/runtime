@@ -577,7 +577,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("switchValue", () => Expression.Switch(typeof(int), Expression.Empty(), Expression.Constant(1), default(MethodInfo), Enumerable.Empty<SwitchCase>()));
         }
 
-        public static IEnumerable<object[]> ComparisonsWithInvalidParmeterCounts()
+        public static IEnumerable<object[]> ComparisonsWithInvalidParameterCounts()
         {
             Func<bool> nullary = () => true;
             yield return new object[] { nullary.GetMethodInfo() };
@@ -589,7 +589,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { quaternary.GetMethodInfo() };
         }
 
-        [Theory, MemberData(nameof(ComparisonsWithInvalidParmeterCounts))]
+        [Theory, MemberData(nameof(ComparisonsWithInvalidParameterCounts))]
         public void InvalidComparisonMethodParameterCount(MethodInfo comparison)
         {
             AssertExtensions.Throws<ArgumentException>("comparison", () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparison));

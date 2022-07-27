@@ -278,6 +278,7 @@ namespace System.Runtime.Intrinsics
     {
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector128<T> AllBitsSet { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -564,6 +565,7 @@ namespace System.Runtime.Intrinsics
     {
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector256<T> AllBitsSet { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -820,6 +822,7 @@ namespace System.Runtime.Intrinsics
     {
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector64<T> AllBitsSet { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public static int Count { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -4792,6 +4795,20 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
             public static bool IsSupported { get { throw null; } }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class X86Serialize : System.Runtime.Intrinsics.X86.X86Base
+    {
+        internal X86Serialize() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public static void Serialize() { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
         }
     }
 }

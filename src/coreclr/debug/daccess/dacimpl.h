@@ -1209,7 +1209,7 @@ public:
         size_t *taggedMemorySizeInBytes);
 
     // ISOSDacInterface12
-    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext(
         CLRDATA_ADDRESS *allocPtr,
         CLRDATA_ADDRESS *allocLimit);
 
@@ -1397,6 +1397,7 @@ public:
     ICorDebugMutableDataTarget * m_pMutableTarget;
 
     TADDR m_globalBase;
+    DacGlobals m_dacGlobals;
     DacInstanceManager m_instances;
     ULONG32 m_instanceAge;
     bool m_debugMode;
@@ -1427,8 +1428,8 @@ public:
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 private:
-    // Read the DAC table and initialize g_dacGlobals
-    HRESULT GetDacGlobals();
+    // Read the DAC table and initialize m_dacGlobals
+    HRESULT GetDacGlobalValues();
 
     // Verify the target mscorwks.dll matches the version expected
     HRESULT VerifyDlls();
@@ -1485,8 +1486,6 @@ private:
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
 
-    static LONG s_procInit;
-
 protected:
 #ifdef FEATURE_COMWRAPPERS
     HRESULT DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle);
@@ -1530,7 +1529,7 @@ extern ClrDataAccess* g_dacImpl;
  *     all handles, or filled the array.
  * 3.  Storage variables to hold the overflow.  That is, we were walking the handle
  *     table, filled the array that the user gave us, then needed to store the extra
- *     handles the handle table continued to enumerate to us.  This is implmeneted
+ *     handles the handle table continued to enumerate to us.  This is implemented
  *     as a linked list of arrays (mHead, mHead.Next, etc).
  * 4.  Variables which store the location of where we are in the overflow data.
  *

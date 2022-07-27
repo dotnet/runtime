@@ -960,7 +960,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     }
 }
 
-// Dequeues the next method in the optmization queue.
+// Dequeues the next method in the optimization queue.
 // This runs on the background thread.
 NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 {

@@ -467,7 +467,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
                     {
                         Environment.FailFast(
-                            "Failed to locate statics table entry for for field '" +
+                            "Failed to locate statics table entry for field '" +
                             fieldName +
                             "' on type " +
                             type.ToString());

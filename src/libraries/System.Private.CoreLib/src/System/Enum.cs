@@ -1008,7 +1008,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool StartsNumber(char c) => char.IsInRange(c, '0', '9') || c == '-' || c == '+';
+        private static bool StartsNumber(char c) => char.IsAsciiDigit(c) || c == '-' || c == '+';
 
         public static object ToObject(Type enumType, object value)
         {
@@ -1486,10 +1486,10 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(enumType);
 
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
             if (enumType is not RuntimeType rtType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+            if (!rtType.IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 #if NATIVEAOT
             // Check for the unfortunate "typeof(Outer<>.InnerEnum)" corner case.
             // https://github.com/dotnet/runtime/issues/7976

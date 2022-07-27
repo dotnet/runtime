@@ -107,6 +107,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     pgo.cpp
     precode.cpp
     prestub.cpp
+    readytorunstandalonemethodmetadata.cpp
     rejit.cpp
     sigformat.cpp
     siginfo.cpp
@@ -333,7 +334,6 @@ set(VM_SOURCES_WKS
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
-    ibclogger.cpp
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
@@ -365,7 +365,6 @@ set(VM_SOURCES_WKS
     runtimehandles.cpp
     safehandle.cpp
     simplerwlock.cpp
-    sourceline.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
     stubcache.cpp
@@ -436,7 +435,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    ibclogger.h
     ilmarshalers.h
     interopconverter.h
     interoputil.h
@@ -467,7 +465,6 @@ set(VM_HEADERS_WKS
     reflectioninvocation.h
     runtimehandles.h
     simplerwlock.hpp
-    sourceline.h
     stackingallocator.h
     stringliteralmap.h
     stubcache.h

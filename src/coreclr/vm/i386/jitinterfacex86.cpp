@@ -420,27 +420,18 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     CodeLabel *noLock  = sl.NewCodeLabel();
     CodeLabel *noAlloc = sl.NewCodeLabel();
+    CodeLabel *nullRef = sl.NewCodeLabel();
 
     // Save address of value to be boxed
     sl.X86EmitPushReg(kEBX);
     sl.Emit16(0xda8b);
 
-    // Save the MethodTable ptr
-    sl.X86EmitPushReg(kECX);
+    // Check for null ref
+    // test edx, edx
+    sl.X86EmitR2ROp(0x85, kEDX, kEDX);
 
-    // mov             ecx, [ecx]MethodTable.m_pWriteableData
-    sl.X86EmitOffsetModRM(0x8b, kECX, kECX, offsetof(MethodTable, m_pWriteableData));
-
-    // Check whether the class has not been initialized
-    // test [ecx]MethodTableWriteableData.m_dwFlags,MethodTableWriteableData::enum_flag_Unrestored
-    sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTableWriteableData, m_dwFlags));
-    sl.Emit32(MethodTableWriteableData::enum_flag_Unrestored);
-
-    // Restore the MethodTable ptr in ecx
-    sl.X86EmitPopReg(kECX);
-
-    // jne              noAlloc
-    sl.X86EmitCondJump(noAlloc, X86CondCode::kJNE);
+    // je nullRef
+    sl.X86EmitCondJump(nullRef, X86CondCode::kJE);
 
     // Emit the main body of the trial allocator
     EmitCore(&sl, noLock, noAlloc, flags);
@@ -527,8 +518,9 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     sl.X86EmitReturn(0);
 
-    // Come here in case of no space
+    // Come here in case of no space or null ref
     sl.EmitLabel(noAlloc);
+    sl.EmitLabel(nullRef);
 
     // Release the lock in the uniprocessor case
     EmitNoAllocCode(&sl, flags);

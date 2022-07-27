@@ -44,7 +44,32 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="FixedWindowRateLimiter"/>.</param>
         public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            if (options.PermitLimit <= 0)
+            {
+                throw new ArgumentException($"{nameof(options.PermitLimit)} must be set to a value greater than 0.", nameof(options));
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+            }
+            if (options.Window < TimeSpan.Zero)
+            {
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+            }
+
+            _options = new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = options.PermitLimit,
+                QueueProcessingOrder = options.QueueProcessingOrder,
+                QueueLimit = options.QueueLimit,
+                Window = options.Window,
+                AutoReplenishment = options.AutoReplenishment
+            };
+
             _requestCount = options.PermitLimit;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
@@ -93,7 +118,7 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int requestCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (requestCount > _options.PermitLimit)

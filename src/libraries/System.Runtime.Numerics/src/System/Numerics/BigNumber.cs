@@ -696,7 +696,7 @@ namespace System.Numerics
                         // |  A + B * multiplier   |  C + D * multiplier   |
                         for (int i = 0; i < bufferSize; i += blockSize * 2)
                         {
-                            Span<uint> curBufffer = buffer.Slice(i);
+                            Span<uint> curBuffer = buffer.Slice(i);
                             Span<uint> curNewBuffer = newBuffer.Slice(i);
 
                             int len = Math.Min(bufferSize - i, blockSize * 2);
@@ -707,14 +707,14 @@ namespace System.Numerics
                                 Debug.Assert(blockSize == lowerLen);
                                 Debug.Assert(blockSize == multiplier.Length);
                                 Debug.Assert(multiplier.Length == lowerLen);
-                                BigIntegerCalculator.Multiply(multiplier, curBufffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
+                                BigIntegerCalculator.Multiply(multiplier, curBuffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
                             }
 
                             long carry = 0;
                             int j = 0;
                             for (; j < lowerLen; j++)
                             {
-                                long digit = (curBufffer[j] + carry) + curNewBuffer[j];
+                                long digit = (curBuffer[j] + carry) + curNewBuffer[j];
                                 curNewBuffer[j] = unchecked((uint)digit);
                                 carry = digit >> 32;
                             }
@@ -865,15 +865,15 @@ namespace System.Numerics
 
             int i = 0;
             char ch = format[i];
-            if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z')
+            if (char.IsAsciiLetter(ch))
             {
                 i++;
                 int n = -1;
 
-                if (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                if (i < format.Length && char.IsAsciiDigit(format[i]))
                 {
                     n = format[i++] - '0';
-                    while (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                    while (i < format.Length && char.IsAsciiDigit(format[i]))
                     {
                         int temp = n * 10 + (format[i++] - '0');
                         if (temp < n)
@@ -1041,7 +1041,7 @@ namespace System.Numerics
                 for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
                     Debug.Assert(rguDst[iuDst] < kuBase);
-                    ulong uuRes = NumericsHelpers.MakeUlong(rguDst[iuDst], uCarry);
+                    ulong uuRes = NumericsHelpers.MakeUInt64(rguDst[iuDst], uCarry);
                     rguDst[iuDst] = (uint)(uuRes % kuBase);
                     uCarry = (uint)(uuRes / kuBase);
                 }

@@ -79,9 +79,7 @@
 
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
-      <!-- TestUsingWorkloads=false - Disabled due to https://github.com/dotnet/arcade/issues/9025 -->
-      <!--<_TestUsingWorkloadsValues Include="true;false" />-->
-      <_TestUsingWorkloadsValues Include="true" />
+      <_TestUsingWorkloadsValues Include="true;false" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>

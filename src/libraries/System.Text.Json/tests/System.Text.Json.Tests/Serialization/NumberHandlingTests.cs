@@ -13,6 +13,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -60,7 +61,11 @@ namespace System.Text.Json.Serialization.Tests
             RunAsRootTypeTest(JsonNumberTestData.UInts);
             RunAsRootTypeTest(JsonNumberTestData.ULongs);
             RunAsRootTypeTest(JsonNumberTestData.Floats);
-            RunAsRootTypeTest(JsonNumberTestData.Doubles);
+            // https://github.com/dotnet/runtime/issues/72862
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAsRootTypeTest(JsonNumberTestData.Doubles);
+            }
             RunAsRootTypeTest(JsonNumberTestData.Decimals);
             RunAsRootTypeTest(JsonNumberTestData.NullableBytes);
             RunAsRootTypeTest(JsonNumberTestData.NullableSBytes);
@@ -71,7 +76,11 @@ namespace System.Text.Json.Serialization.Tests
             RunAsRootTypeTest(JsonNumberTestData.NullableUInts);
             RunAsRootTypeTest(JsonNumberTestData.NullableULongs);
             RunAsRootTypeTest(JsonNumberTestData.NullableFloats);
-            RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
+            // https://github.com/dotnet/runtime/issues/72862
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
+            }
             RunAsRootTypeTest(JsonNumberTestData.NullableDecimals);
         }
 
@@ -88,16 +97,19 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
-            // Took out float case from switch due to nan conversion
+            // Added float case for x86 android due to nan conversion in below switch
             // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
-            if (number is float)
+#if NETCOREAPP
+            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && Type.GetTypeCode(typeof(T)) == TypeCode.Single)
             {
-                return ((float)(object)number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                return Convert.ToSingle(number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
             }
+#endif
 
             return number switch
             {
                 double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),
+                float @float => @float.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture),
                 decimal @decimal => @decimal.ToString(CultureInfo.InvariantCulture),
                 _ => number.ToString()
             };
@@ -376,7 +388,11 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.UInts);
             RunAsCollectionElementTest(JsonNumberTestData.ULongs);
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
-            RunAsCollectionElementTest(JsonNumberTestData.Doubles);
+            // https://github.com/dotnet/runtime/issues/72862
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAsCollectionElementTest(JsonNumberTestData.Doubles);
+            }
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
 
             // https://github.com/dotnet/runtime/issues/66220
@@ -391,7 +407,11 @@ namespace System.Text.Json.Serialization.Tests
                 RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
                 RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                // https://github.com/dotnet/runtime/issues/72862
+                if (!PlatformDetection.IsAndroidX86)
+                {
+                    RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                }
                 RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
             }
         }
@@ -617,7 +637,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
             RunAllDictionariessRoundTripTest(JsonNumberTestData.Floats);
-            RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
+            // https://github.com/dotnet/runtime/issues/72862
+            if (!PlatformDetection.IsAndroidX86)
+            {
+                RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
+            }
         }
 
         private static void RunAllDictionariessRoundTripTest<T>(List<T> numbers)

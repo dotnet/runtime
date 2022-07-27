@@ -142,7 +142,12 @@ enum HWIntrinsicFlag : unsigned int
     // NoContainment
     // the intrinsic cannot be handled by containment,
     // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x10000
+    HW_Flag_NoContainment = 0x10000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x20000
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
@@ -636,6 +641,18 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoContainment) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_SupportsContainment) != 0;
+#else
+#error Unsupported platform
+#endif
+    }
+
+    static bool ReturnsPerElementMask(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
+        return (flags & HW_Flag_ReturnsPerElementMask) != 0;
+#elif defined(TARGET_ARM64)
+        unreached();
 #else
 #error Unsupported platform
 #endif

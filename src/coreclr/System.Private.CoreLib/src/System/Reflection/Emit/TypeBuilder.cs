@@ -1430,10 +1430,7 @@ namespace System.Reflection.Emit
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
-            if (con == null)
-            {
-                con = m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
-            }
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
@@ -1680,16 +1677,23 @@ namespace System.Reflection.Emit
         #region Create Type
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo? CreateTypeInfo()
+        public TypeInfo CreateTypeInfo()
         {
-            lock (SyncRoot)
-            {
-                return CreateTypeNoLock();
-            }
+            TypeInfo? typeInfo = CreateTypeInfoImpl();
+            Debug.Assert(typeInfo != null);
+            return typeInfo;
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
+        {
+            Type? type = CreateTypeInfoImpl();
+            Debug.Assert(type != null);
+            return type;
+        }
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        internal TypeInfo? CreateTypeInfoImpl()
         {
             lock (SyncRoot)
             {
@@ -1698,6 +1702,10 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2068:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2069:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? CreateTypeNoLock()
@@ -1796,7 +1804,7 @@ namespace System.Reflection.Emit
 
                 MethodAttributes methodAttrs = meth.Attributes;
 
-                // Any of these flags in the implemenation flags is set, we will not attach the IL method body
+                // Any of these flags in the implementation flags is set, we will not attach the IL method body
                 if (((meth.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
                     ((methodAttrs & MethodAttributes.PinvokeImpl) != (MethodAttributes)0))
                 {

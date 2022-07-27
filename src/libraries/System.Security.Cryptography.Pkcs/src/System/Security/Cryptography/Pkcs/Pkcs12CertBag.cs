@@ -62,10 +62,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid GetCertificateType()
         {
-            if (_certTypeOid == null)
-            {
-                _certTypeOid = new Oid(_decoded.CertId);
-            }
+            _certTypeOid ??= new Oid(_decoded.CertId);
 
             return _certTypeOid.CopyOid();
         }

@@ -60,19 +60,18 @@ if __name__ == "__main__":
       currLine = oldTests[j]
       matchObj = re.search( r'[(.+)]', currLine)
       if matchObj:
-        nextLine = oldTests[j+1] 
+        nextLine = oldTests[j+1]
         matchObj = re.search( r'(RelativePath=)(.+)(\\)(.+)(.exe)', nextLine)
         if matchObj:
           relPath = matchObj.group(2)
           if (relPath in exclusions):
             # Skip to the next item. Currently each test consists of 7 lines.
             removed += 1
-            j += 7 
+            j += 7
             continue
 
       newTestsHandle.write(currLine)
       j += 1
 
   print "Removed Tests: ", removed
-  print newTestFile + " is successfuly built."
-
+  print newTestFile + " is successfully built."

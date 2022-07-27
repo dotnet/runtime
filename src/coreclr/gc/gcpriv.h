@@ -52,7 +52,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_REDHAWK)
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -92,10 +92,10 @@ inline void FATAL_GC_ERROR()
 #define DOUBLY_LINKED_FL
 #endif //HOST_64BIT
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 #define HEAP_ANALYZE
 #define COLLECTIBLE_CLASS
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
 #ifdef HEAP_ANALYZE
 #define initial_internal_roots        (1024*16)
@@ -257,24 +257,23 @@ const int policy_expand  = 2;
 void GCLog (const char *fmt, ... );
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
-// Nobody used the logging mechanism that used to be here. If we find ourselves
-// wanting to inspect GC logs on unmodified builds, we can use this define here
-// to do so.
-//#define dprintf(l, x)
+#ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
-
+#else
+#error Logging dprintf to stress log on 32 bits platforms is not supported.
+#endif
 #endif //SIMPLE_DPRINTF
 
 #else //TRACE_GC
 #define dprintf(l,x)
 #endif //TRACE_GC
 
-#if !defined(FEATURE_REDHAWK) && !defined(BUILD_AS_STANDALONE)
+#if !defined(FEATURE_NATIVEAOT) && !defined(BUILD_AS_STANDALONE)
 #undef  assert
 #define assert _ASSERTE
 #undef  ASSERT
 #define ASSERT _ASSERTE
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 struct GCDebugSpinLock {
     VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
@@ -860,7 +859,7 @@ struct static_data
     float limit;
     float max_limit;
     uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
-    size_t gc_clock; // nubmer of gcs after which to collect generation
+    size_t gc_clock; // number of gcs after which to collect generation
 };
 
 // The dynamic data fields are grouped into 3 categories:
@@ -1477,10 +1476,14 @@ public:
     static
     void shutdown_gc();
 
-    // If the hard limit is specified, take that into consideration
-    // and this means it may modify the # of heaps.
     PER_HEAP_ISOLATED
-    size_t get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps);
+    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit_va (size_t seg_size);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
 
     PER_HEAP_ISOLATED
     bool should_retry_other_heap (int gen_number, size_t size);
@@ -2030,7 +2033,7 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL); 
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
     bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
     PER_HEAP_ISOLATED

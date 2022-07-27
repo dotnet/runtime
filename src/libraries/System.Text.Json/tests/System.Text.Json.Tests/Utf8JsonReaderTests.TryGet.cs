@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Xunit;
@@ -14,6 +15,7 @@ namespace System.Text.Json.Tests
     public static partial class Utf8JsonReaderTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static void TestingNumbers_TryGetMethods()
         {
             byte[] dataUtf8 = JsonNumberTestData.JsonData;
@@ -152,6 +154,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public static void TestingNumbers_GetMethods()
         {
             byte[] dataUtf8 = JsonNumberTestData.JsonData;
@@ -736,7 +739,7 @@ namespace System.Text.Json.Tests
                     }
                     else
                     {
-                        JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetString());
+                        JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader jsonReader) => jsonReader.GetString());
                     }
 
                     try
@@ -787,9 +790,9 @@ namespace System.Text.Json.Tests
                     catch (InvalidOperationException)
                     { }
 
-                    JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetGuid());
+                    JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader jsonReader) => jsonReader.GetGuid());
 
-                    JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetGuid(out _));
+                    JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader jsonReader) => jsonReader.TryGetGuid(out _));
                 }
 
                 if (json.TokenType != JsonTokenType.Comment)
@@ -1025,7 +1028,7 @@ namespace System.Text.Json.Tests
             var expectedPropertyNames = new List<string>();
             var expectedValues = new List<string>();
 
-            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString));
+            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
             while (jsonNewtonsoft.Read())
             {
                 if (jsonNewtonsoft.TokenType == JsonToken.String)
@@ -1092,12 +1095,10 @@ namespace System.Text.Json.Tests
 
                 Assert.True(json.Read());
                 Assert.Equal(JsonTokenType.String, json.TokenType);
-                try
-                {
-                    string val = json.GetString();
-                    Assert.True(false, "Expected InvalidOperationException when trying to get string value for invalid UTF-16 JSON text.");
-                }
-                catch (InvalidOperationException) { }
+
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.GetString());
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new byte[6 * jsonString.Length]));
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new char[6 * jsonString.Length]));
             }
         }
 
@@ -1123,17 +1124,138 @@ namespace System.Text.Json.Tests
                 {
                     if (json.TokenType == JsonTokenType.String)
                     {
-                        try
-                        {
-                            string val = json.GetString();
-                            Assert.True(false, "Expected InvalidOperationException when trying to get string value for invalid UTF-8 JSON text.");
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            Assert.Equal(typeof(DecoderFallbackException), ex.InnerException.GetType());
-                        }
+                        int length = json.HasValueSequence ? (int)json.ValueSequence.Length : json.ValueSpan.Length;
+
+                        InvalidOperationException ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.GetString());
+                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+
+                        ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new byte[length]));
+                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+
+                        ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new char[length]));
+                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
                     }
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData("", "")]
+        [InlineData("1", "1")]
+        [InlineData("this is a string without escaping", "this is a string without escaping")]
+        [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
+        public static void CopyString_Utf8_SuccessPath(string jsonString, string expectedOutput)
+        {
+            string json = $"\"{jsonString}\"";
+            byte[] expectedOutputUtf8 = Encoding.UTF8.GetBytes(expectedOutput);
+            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(json, Test);
+
+            void Test(ref Utf8JsonReader reader)
+            {
+                Assert.True(reader.Read());
+                Span<byte> destination = new byte[128];
+                int bytesWritten = reader.CopyString(destination);
+                Assert.Equal(expectedOutputUtf8.Length, bytesWritten);
+                Assert.True(expectedOutputUtf8.AsSpan().SequenceEqual(destination.Slice(0, bytesWritten)));
+            }
+        }
+
+        [Theory]
+        [InlineData("", "")]
+        [InlineData("1", "1")]
+        [InlineData("this is a string without escaping", "this is a string without escaping")]
+        [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
+        public static void CopyString_Utf16_SuccessPath(string jsonString, string expectedOutput)
+        {
+            string json = $"\"{jsonString}\"";
+            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(json, Test);
+
+            void Test(ref Utf8JsonReader reader)
+            {
+                Assert.True(reader.Read());
+                Span<char> destination = new char[128];
+                int charsWritten = reader.CopyString(destination);
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.True(expectedOutput.AsSpan().SequenceEqual(destination.Slice(0, charsWritten)));
+            }
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("false")]
+        [InlineData("true")]
+        [InlineData("42")]
+        [InlineData("[]")]
+        [InlineData("{}")]
+        [InlineData("/* comment */ null", JsonCommentHandling.Allow)]
+        public static void CopyString_InvalidToken_ThrowsInvalidOperationException(string json, JsonCommentHandling commentHandling = default)
+        {
+            var options = new JsonReaderOptions { CommentHandling = commentHandling };
+            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(json, Test, options);
+
+            static void Test(ref Utf8JsonReader reader)
+            {
+                do
+                {
+                    JsonTestHelper.AssertThrows<InvalidOperationException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(new byte[128]));
+                    JsonTestHelper.AssertThrows<InvalidOperationException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(new char[128]));
+                }
+                while (reader.Read());
+
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(new byte[128]));
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(new char[128]));
+            }
+        }
+
+        [Theory]
+        [InlineData("this is a string without escaping", "this is a string without escaping")]
+        [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
+        public static void CopyString_Utf8_DestinationTooShort_ThrowsArgumentException(string jsonString, string expectedOutput)
+        {
+            int expectedUtf8Size = Encoding.UTF8.GetByteCount(expectedOutput);
+            string json = $"\"{jsonString}\"";
+            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(json, Test);
+
+            void Test(ref Utf8JsonReader reader)
+            {
+                Assert.True(reader.Read());
+
+                byte[] buffer = new byte[expectedUtf8Size];
+                for (int i = 0; i < expectedUtf8Size; i++)
+                {
+                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan().Slice(0, i)));
+                    Assert.All(buffer, static b => Assert.Equal(0, b));
+                }
+
+                Assert.Equal(expectedUtf8Size, reader.CopyString(buffer));
+            }
+        }
+
+        [Theory]
+        [InlineData("this is a string without escaping", "this is a string without escaping")]
+        [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
+        public static void CopyString_Utf16_DestinationTooShort_ThrowsArgumentException(string jsonString, string expectedOutput)
+        {
+            int expectedSize = expectedOutput.Length;
+            string json = $"\"{jsonString}\"";
+            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(json, Test);
+
+            void Test(ref Utf8JsonReader reader)
+            {
+                Assert.True(reader.Read());
+
+                char[] buffer = new char[expectedSize];
+                for (int i = 0; i < expectedSize; i++)
+                {
+                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan().Slice(0, i)));
+                    Assert.All(buffer, static c => Assert.Equal(0, c));
+                }
+
+                Assert.Equal(expectedSize, reader.CopyString(buffer));
             }
         }
 
@@ -1371,7 +1493,7 @@ namespace System.Text.Json.Tests
             Assert.False(json.TryGetGuid(out Guid actual));
             Assert.Equal(default, actual);
 
-            JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
+            JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader jsonReader) => jsonReader.GetGuid());
         }
 
         [Theory]
@@ -1392,7 +1514,7 @@ namespace System.Text.Json.Tests
                 Assert.False(json.TryGetGuid(out Guid actual), "json.TryGetGuid(out Guid actual)");
                 Assert.Equal(Guid.Empty, actual);
 
-                JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
+                JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader jsonReader) => jsonReader.GetGuid());
             }
 
             Test(testString, isFinalBlock: true);

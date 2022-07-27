@@ -29,6 +29,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70012", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsArm64Process))]
         private static void VerifyUnbox(object value, Type type, bool shouldThrow, bool useInterpreter)
         {
             Expression<Func<object>> e =

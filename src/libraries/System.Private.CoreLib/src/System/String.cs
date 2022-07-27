@@ -21,6 +21,7 @@ namespace System
     // positions (indices) are zero-based.
 
     [Serializable]
+    [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
     {
@@ -327,7 +328,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
-        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
+        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument(nameof(provider))] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
         /// <summary>Creates a new string by using the specified provider to control the formatting of the specified interpolated string.</summary>
@@ -418,7 +419,7 @@ namespace System
         {
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
             }
             else
             {
@@ -435,7 +436,7 @@ namespace System
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
                 retVal = true;
             }
             return retVal;
@@ -482,12 +483,9 @@ namespace System
             return chars;
         }
 
-        [NonVersionable]
         public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
         {
-            // Ternary operator returning true/false prevents redundant asm generation:
-            // https://github.com/dotnet/runtime/issues/4207
-            return (value == null || 0 == value.Length) ? true : false;
+            return value == null || value.Length == 0;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] string? value)

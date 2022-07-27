@@ -25,21 +25,8 @@ namespace System.Text.Json.Serialization.Converters
                 type == typeof(SerializationInfo) ||
                 type == typeof(IntPtr) ||
                 type == typeof(UIntPtr) ||
-                // Exlude delegates.
-                typeof(Delegate).IsAssignableFrom(type) ||
-                // DateOnly/TimeOnly support to be added in future releases;
-                // guard against invalid object-based serializations for now.
-                // cf. https://github.com/dotnet/runtime/issues/53539
-                //
-                // For simplicity we elide equivalent checks for targets
-                // that are older than net6.0, since they do not include
-                // DateOnly or TimeOnly.
-#if NETCOREAPP
-                type == typeof(DateOnly) ||
-                type == typeof(TimeOnly);
-#else
-                false;
-#endif
+                // Exclude delegates.
+                typeof(Delegate).IsAssignableFrom(type);
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)

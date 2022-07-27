@@ -153,6 +153,7 @@ namespace System.Text.RegularExpressions.Tests
         // This test takes a long time to run since it needs to compute all possible lowercase mappings across
         // 3 different cultures and then creates Regex matches for all of our engines for each mapping.
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67793")]
         [Theory]
         [MemberData(nameof(Unicode_IgnoreCase_TestData))]
         public async Task Unicode_IgnoreCase_Tests(RegexEngine engine, string culture, RegexOptions options)

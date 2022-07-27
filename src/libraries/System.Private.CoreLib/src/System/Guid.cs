@@ -23,7 +23,6 @@ namespace System
           IComparable,
           IComparable<Guid>,
           IEquatable<Guid>,
-          IComparisonOperators<Guid, Guid>,
           ISpanParsable<Guid>
     {
         public static readonly Guid Empty;
@@ -49,7 +48,7 @@ namespace System
         // Creates a new guid from a read-only span.
         public Guid(ReadOnlySpan<byte> b)
         {
-            if ((uint)b.Length != 16)
+            if (b.Length != 16)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
             }
@@ -379,7 +378,7 @@ namespace System
         {
             // e.g. "{d85b1407-351d-4694-9392-03acc5870eb1}"
 
-            if ((uint)guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
+            if (guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -392,7 +391,7 @@ namespace System
         {
             // e.g. "d85b1407-351d-4694-9392-03acc5870eb1"
 
-            if ((uint)guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
+            if (guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
             {
                 result.SetFailure(overflow: false, guidString.Length != 36 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
                 return false;
@@ -478,7 +477,7 @@ namespace System
         {
             // e.g. "d85b1407351d4694939203acc5870eb1"
 
-            if ((uint)guidString.Length != 32)
+            if (guidString.Length != 32)
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -521,7 +520,7 @@ namespace System
         {
             // e.g. "(d85b1407-351d-4694-9392-03acc5870eb1)"
 
-            if ((uint)guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
+            if (guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -548,7 +547,7 @@ namespace System
             guidString = EatAllWhitespace(guidString);
 
             // Check for leading '{'
-            if ((uint)guidString.Length == 0 || guidString[0] != '{')
+            if (guidString.Length == 0 || guidString[0] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
                 return false;
@@ -736,14 +735,14 @@ namespace System
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out uint result, ref bool overflow)
         {
-            if ((uint)guidString.Length > 0)
+            if (guidString.Length > 0)
             {
                 if (guidString[0] == '+')
                 {
                     guidString = guidString.Slice(1);
                 }
 
-                if ((uint)guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
+                if (guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
                 {
                     guidString = guidString.Slice(2);
                 }
@@ -827,7 +826,7 @@ namespace System
             return g;
         }
 
-        // Returns whether bytes are sucessfully written to given span.
+        // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
             if (BitConverter.IsLittleEndian)
@@ -1239,7 +1238,7 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1300,7 +1299,7 @@ namespace System
             return false;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1361,7 +1360,7 @@ namespace System
             return true;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1422,7 +1421,7 @@ namespace System
             return false;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Guid left, Guid right)
         {
             if (left._a != right._a)

@@ -168,8 +168,8 @@ namespace System
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
@@ -216,8 +216,8 @@ namespace System
         /// <summary>Produces the full product of two 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
             if (ArmBase.Arm64.IsSupported)
@@ -888,8 +888,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the greater of the inputs. It
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -946,8 +946,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the greater of the inputs. It
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -999,8 +999,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a greater magnitude.
+            // It treats +0 as greater than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);
@@ -1037,12 +1037,17 @@ namespace System
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the lesser of the inputs. It
+            // treats +0 as lesser than -0 as per the specification.
 
-            if (val1 != val2 && !double.IsNaN(val1))
+            if (val1 != val2)
             {
-                return val1 < val2 ? val1 : val2;
+                if (!double.IsNaN(val1))
+                {
+                    return val1 < val2 ? val1 : val2;
+                }
+
+                return val1;
             }
 
             return double.IsNegative(val1) ? val1 : val2;
@@ -1090,12 +1095,17 @@ namespace System
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the lesser of the inputs. It
+            // treats +0 as lesser than -0 as per the specification.
 
-            if (val1 != val2 && !float.IsNaN(val1))
+            if (val1 != val2)
             {
-                return val1 < val2 ? val1 : val2;
+                if (!float.IsNaN(val1))
+                {
+                    return val1 < val2 ? val1 : val2;
+                }
+
+                return val1;
             }
 
             return float.IsNegative(val1) ? val1 : val2;
@@ -1138,8 +1148,8 @@ namespace System
             // This matches the IEEE 754:2019 `minimumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a lesser magnitude.
+            // It treats +0 as lesser than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);
@@ -1476,7 +1486,7 @@ namespace System
         }
 
         [DoesNotReturn]
-        private static void ThrowMinMaxException<T>(T min, T max)
+        internal static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
         }

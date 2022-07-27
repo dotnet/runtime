@@ -533,9 +533,9 @@ namespace SerializationTestTypes
             return Globals.DefaultNamespace + clrNs.Replace('.', '/');
         }
 
-        static string GetGlobalContractNamespace(string clrNs, ICustomAttributeProvider customAttribuetProvider)
+        static string GetGlobalContractNamespace(string clrNs, ICustomAttributeProvider customAttributeProvider)
         {
-            object[] nsAttributes = customAttribuetProvider.GetCustomAttributes(typeof(ContractNamespaceAttribute), false);
+            object[] nsAttributes = customAttributeProvider.GetCustomAttributes(typeof(ContractNamespaceAttribute), false);
             string dataContractNs = null;
             for (int i = 0; i < nsAttributes.Length; i++)
             {
@@ -656,26 +656,16 @@ namespace SerializationTestTypes
             get { return GetIsReferenceValue(); }
         }
 
-        static bool IsAlpha(char ch)
-        {
-            return (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z');
-        }
-
-        static bool IsDigit(char ch)
-        {
-            return (ch >= '0' && ch <= '9');
-        }
-
         static bool IsAsciiLocalName(string localName)
         {
             if (string.IsNullOrEmpty(localName) || localName.Length == 0)
                 return false;
-            if (!IsAlpha(localName[0]))
+            if (!char.IsAsciiLetter(localName[0]))
                 return false;
             for (int i = 1; i < localName.Length; i++)
             {
                 char ch = localName[i];
-                if (!IsAlpha(ch) && !IsDigit(ch))
+                if (!char.IsAsciiLetterOrDigit(ch))
                     return false;
             }
             return true;

@@ -6,8 +6,6 @@
 // Definitions of a Com+ Object
 //
 
-
-
 #include "common.h"
 
 #include "vars.hpp"
@@ -398,7 +396,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
 
     if (argDest->IsStructPassedInRegs())
     {
-        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes());
+        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes(), destOffset);
         return;
     }
 
@@ -465,14 +463,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    if (g_IBCLogger.InstrEnabled() && !GCStress<cfg_any>::IsEnabled())
-    {
-        // If we are instrumenting for IBC (and GCStress is not enabled)
-        // then skip these Object::Validate() as they slow down the
-        // instrument phase by an order of magnitude
-        return;
-    }
 
     if (g_fEEShutDown & ShutDown_Phase2)
     {
@@ -582,6 +572,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         {
             Object * nextObj = GCHeapUtilities::GetGCHeap ()->NextObj (this);
             if ((nextObj != NULL) &&
+                (nextObj->GetGCSafeMethodTable() != nullptr) &&
                 (nextObj->GetGCSafeMethodTable() != g_pFreeObjectMethodTable))
             {
                 // we need a read barrier here - to make sure we read the object header _after_
@@ -885,7 +876,8 @@ BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChar
     unsigned charA;
     unsigned charB;
 
-    for(;;) {
+    while (true)
+    {
         charA = *strAChars;
         charB = (unsigned) *strBChars;
 
@@ -1170,7 +1162,7 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
     {
         // REVISIT_TODO: Weakening the contract system a little bit here. We should really
         // add a special NULLOBJECTREF which can be used for these situations and have
-        // a seperate code path for that with the correct contract protections.
+        // a separate code path for that with the correct contract protections.
         STATIC_CONTRACT_VIOLATION(ModeViolation);
 
         VALIDATEOBJECT(objref.m_asObj);
@@ -1208,7 +1200,7 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
     {
         // REVISIT_TODO: Weakening the contract system a little bit here. We should really
         // add a special NULLOBJECTREF which can be used for these situations and have
-        // a seperate code path for that with the correct contract protections.
+        // a separate code path for that with the correct contract protections.
         STATIC_CONTRACT_VIOLATION(ModeViolation);
 
         VALIDATEOBJECT(objref.m_asObj);

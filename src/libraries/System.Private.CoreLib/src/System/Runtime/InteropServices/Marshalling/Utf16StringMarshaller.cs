@@ -9,101 +9,38 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Marshaller for UTF-16 strings
     /// </summary>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
-        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
-    public unsafe ref struct Utf16StringMarshaller
+    [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(Utf16StringMarshaller))]
+    public static unsafe class Utf16StringMarshaller
     {
-        private ushort* _allocated;
-        private readonly Span<ushort> _span;
+        /// <summary>
+        /// Convert a string to an unmanaged version.
+        /// </summary>
+        /// <param name="managed">A managed string</param>
+        /// <returns>An unmanaged string</returns>
+        public static ushort* ConvertToUnmanaged(string? managed)
+            => (ushort*)Marshal.StringToCoTaskMemUni(managed);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
+        /// Convert an unmanaged string to a managed version.
         /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        public Utf16StringMarshaller(string? str)
-            : this(str, default)
-        {
-        }
+        /// <param name="unmanaged">An unmanaged string</param>
+        /// <returns>A managed string</returns>
+        public static string? ConvertToManaged(ushort* unmanaged)
+            => Marshal.PtrToStringUni((IntPtr)unmanaged);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
+        /// Free the memory for the unmanaged string.
         /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        /// <param name="buffer">Buffer that may be used for marshalling.</param>
-        /// <remarks>
-        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
-        /// on the managed heap or it should be pinned.
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
-        /// </remarks>
-        public Utf16StringMarshaller(string? str, Span<ushort> buffer)
-        {
-            _allocated = null;
-            if (str is null)
-            {
-                _span = default;
-                return;
-            }
-
-            // + 1 for null terminator
-            if (buffer.Length >= str.Length + 1)
-            {
-                _span = buffer;
-                str.CopyTo(MemoryMarshal.Cast<ushort, char>(buffer));
-                _span[str.Length] = '\0'; // null-terminate
-            }
-            else
-            {
-                _allocated = (ushort*)Marshal.StringToCoTaskMemUni(str);
-                _span = default;
-            }
-        }
+        /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
+        public static void Free(ushort* unmanaged)
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
-        /// Returns a reference to the marshalled string.
+        /// Get a pinnable reference for the string.
         /// </summary>
-        public ref ushort GetPinnableReference()
-        {
-            if (_allocated != null)
-                return ref Unsafe.AsRef<ushort>(_allocated);
-
-            return ref _span.GetPinnableReference();
-        }
-
-        /// <summary>
-        /// Returns the native value representing the string.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
-        public ushort* ToNativeValue() => _allocated != null ? _allocated : (ushort*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_span));
-
-        /// <summary>
-        /// Sets the native value representing the string.
-        /// </summary>
-        /// <param name="value">The native value.</param>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
-        public void FromNativeValue(ushort* value) => _allocated = value;
-
-        /// <summary>
-        /// Returns the managed string.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
-        public string? ToManaged() => _allocated == null ? null : new string((char*)_allocated);
-
-        /// <summary>
-        /// Frees native resources.
-        /// </summary>
-        /// <remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        /// </remarks>
-        public void FreeNative()
-        {
-            if (_allocated != null)
-                Marshal.FreeCoTaskMem((IntPtr)_allocated);
-        }
+        /// <param name="str">The string.</param>
+        /// <returns>A pinnable reference.</returns>
+        public static ref readonly char GetPinnableReference(string? str)
+            => ref str is null ? ref *(char*)0 : ref str.GetPinnableReference();
     }
 }

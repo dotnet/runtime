@@ -217,10 +217,7 @@ namespace System.Drawing
             /// </summary>
             private void OnFrameChanged(EventArgs e)
             {
-                if (_onFrameChangedHandler != null)
-                {
-                    _onFrameChangedHandler(_image, e);
-                }
+                _onFrameChangedHandler?.Invoke(_image, e);
             }
         }
     }

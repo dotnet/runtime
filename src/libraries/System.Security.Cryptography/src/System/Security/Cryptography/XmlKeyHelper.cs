@@ -98,9 +98,8 @@ namespace System.Security.Cryptography
             // .NET Framework compat
             if (value == 0)
             {
-                Span<byte> single = stackalloc byte[1];
-                single[0] = 0;
-                WriteCryptoBinary(name, single, builder);
+                byte single = 0;
+                WriteCryptoBinary(name, new ReadOnlySpan<byte>(in single), builder);
                 return;
             }
 
@@ -117,7 +116,7 @@ namespace System.Security.Cryptography
                 start++;
             }
 
-            WriteCryptoBinary(name, valBuf.Slice(start, valBuf.Length - start), builder);
+            WriteCryptoBinary(name, valBuf.Slice(start), builder);
         }
 
         internal static void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)
@@ -202,10 +201,7 @@ namespace System.Security.Cryptography
                     return null;
                 }
 
-                if (_enumerator == null)
-                {
-                    _enumerator = _enumerable.GetEnumerator();
-                }
+                _enumerator ??= _enumerable.GetEnumerator();
 
                 int origIdx = _index;
                 int idx = origIdx;

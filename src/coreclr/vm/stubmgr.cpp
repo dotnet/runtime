@@ -675,8 +675,7 @@ StubManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     // Report the global list head.
-    DacEnumMemoryRegion(DacGlobalBase() +
-                        g_dacGlobals.StubManager__g_pFirstManager,
+    DacEnumMemoryRegion(DacGlobalValues()->StubManager__g_pFirstManager,
                         sizeof(TADDR));
 
     //
@@ -1840,7 +1839,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
 BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
-    //@dbgtodo dharvey implement DAC suport
+    //@dbgtodo dharvey implement DAC support
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP

@@ -146,7 +146,7 @@ namespace System.Net
                 {
                     throw new ArgumentException(SR.net_listener_host, nameof(uriPrefix));
                 }
-                if (uriPrefix[uriPrefix.Length - 1] != '/')
+                if (!uriPrefix.EndsWith('/'))
                 {
                     throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
                 }
