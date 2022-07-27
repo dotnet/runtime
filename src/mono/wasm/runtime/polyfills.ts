@@ -250,6 +250,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
         return <Response><any>{
             ok: false,
             url,
+            status: 500,
+            statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
             json: () => { throw e; }
         };
