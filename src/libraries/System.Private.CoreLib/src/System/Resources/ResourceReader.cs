@@ -983,6 +983,7 @@ namespace System.Resources
             // getting to Type.GetType -- this is costly with v1 resource formats.
             catch (FileNotFoundException fileNotFoundException)
             {
+                // Include the FileNotFoundException as an inner exception to make it more diagnosable
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization, fileNotFoundException);
             }
             finally
