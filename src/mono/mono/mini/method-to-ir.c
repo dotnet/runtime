@@ -9570,10 +9570,16 @@ calli_end:
 			if((callvirt_ip = il_read_callvirt(next_ip, end, &gettype_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip))
 			{
 				MonoMethod* iface_method = mini_get_method(cfg, method, gettype_token, NULL, generic_context);
-				MonoMethod* struct_method = mono_class_get_method_from_name(klass, iface_method->name, iface_method->signature->param_count);
-				*(sp++) = val;
-				cmethod_override = struct_method;
-				break;
+				MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
+
+				if(is_ok(error)) {
+					*(sp++) = val;
+					cmethod_override = struct_method;
+					break;
+				} else {
+					// TODO: we may want to be more vocal here, now we merely fall back to unoptimized box+callvirt
+					mono_error_cleanup(error);
+				}
 			}			
 
 			gboolean is_true;
