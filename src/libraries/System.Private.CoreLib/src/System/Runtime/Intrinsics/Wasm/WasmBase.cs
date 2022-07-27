@@ -100,5 +100,30 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> a, Vector128<sbyte> s) => Swizzle(a, s);
         [Intrinsic]
         public static Vector128<byte>  Swizzle(Vector128<byte>  a, Vector128<byte>  s) => Swizzle(a, s);
+
+        [Intrinsic]
+        public static Vector128<sbyte> And(Vector128<sbyte> left, Vector128<sbyte> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<byte> And(Vector128<byte> left, Vector128<byte> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<short> And(Vector128<short> left, Vector128<short> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<ushort> And(Vector128<ushort> left, Vector128<ushort> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<int> And(Vector128<int> left, Vector128<int> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<uint> And(Vector128<uint> left, Vector128<uint> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<long> And(Vector128<long> left, Vector128<long> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<ulong> And(Vector128<ulong> left, Vector128<ulong> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<float> And(Vector128<float> left, Vector128<float> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<double> And(Vector128<double> left, Vector128<double> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<nint> And(Vector128<nint> left, Vector128<nint> right) => And(left, right);
+        [Intrinsic]
+        public static Vector128<nuint> And(Vector128<nuint> left, Vector128<nuint> right) => And(left, right);
     }
 }
