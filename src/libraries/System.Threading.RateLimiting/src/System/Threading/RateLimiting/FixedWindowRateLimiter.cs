@@ -112,9 +112,11 @@ namespace System.Threading.RateLimiting
                 // Requests will be allowed if the total served request is less than the max allowed requests (permit limit).
                 if (_requestCount > 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     return SuccessfulLease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return CreateFailedWindowLease(requestCount);
             }
 
@@ -144,6 +146,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulAcquisition if requestCount is 0 and resources are available
             if (requestCount == 0 && _requestCount > 0)
             {
+                Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
@@ -222,6 +225,7 @@ namespace System.Threading.RateLimiting
             {
                 if (requestCount == 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     // Edge case where the check before the lock showed 0 available permit counters but when we got the lock, some permits were now available
                     lease = SuccessfulLease;
                     return true;
@@ -335,10 +339,7 @@ namespace System.Threading.RateLimiting
                         }
                         else
                         {
-                            if (nextPendingRequest.Count != 0)
-                            {
-                                Interlocked.Increment(ref _successfulLeasesCount);
-                            }
+                            Interlocked.Increment(ref _successfulLeasesCount);
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);

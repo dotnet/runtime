@@ -1021,7 +1021,14 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void GetStatisticsReturnsNewInstances()
         {
-            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1, TimeSpan.Zero, false));
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.Zero,
+                AutoReplenishment = false
+            });
 
             var stats = limiter.GetStatistics();
             Assert.Equal(1, stats.CurrentAvailablePermits);
@@ -1037,7 +1044,14 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task GetStatisticsHasCorrectValues()
         {
-            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions(100, QueueProcessingOrder.OldestFirst, 50, TimeSpan.Zero, false));
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 50,
+                Window = TimeSpan.Zero,
+                AutoReplenishment = false
+            });
 
             var stats = limiter.GetStatistics();
             Assert.Equal(100, stats.CurrentAvailablePermits);
@@ -1088,6 +1102,39 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(0, stats.CurrentQueuedCount);
             Assert.Equal(2, stats.TotalFailedLeases);
             Assert.Equal(2, stats.TotalSuccessfulLeases);
+        }
+
+        [Fact]
+        public override async Task GetStatisticsWithZeroPermitCount()
+        {
+            var limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 50,
+                Window = TimeSpan.Zero,
+                AutoReplenishment = false
+            });
+            var lease = limiter.Acquire(0);
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(1, limiter.GetStatistics().TotalSuccessfulLeases);
+            Assert.Equal(100, limiter.GetStatistics().CurrentAvailablePermits);
+
+            lease = await limiter.WaitAndAcquireAsync(0);
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(2, limiter.GetStatistics().TotalSuccessfulLeases);
+            Assert.Equal(100, limiter.GetStatistics().CurrentAvailablePermits);
+
+            lease = limiter.Acquire(100);
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(3, limiter.GetStatistics().TotalSuccessfulLeases);
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+
+            var lease2 = limiter.Acquire(0);
+            Assert.False(lease2.IsAcquired);
+            Assert.Equal(3, limiter.GetStatistics().TotalSuccessfulLeases);
+            Assert.Equal(1, limiter.GetStatistics().TotalFailedLeases);
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
         }
     }
 }

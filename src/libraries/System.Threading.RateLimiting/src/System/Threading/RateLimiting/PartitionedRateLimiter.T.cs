@@ -127,8 +127,8 @@ namespace System.Threading.RateLimiting
         /// <typeparam name="TOuter">The type to translate into <typeparamref name="TResource"/>.</typeparam>
         /// <param name="keyAdapter">The function to be called every time a <typeparamref name="TOuter"/> is passed to
         /// PartitionedRateLimiter&lt;TOuter&gt;.Acquire(TOuter, int) or PartitionedRateLimiter&lt;TOuter&gt;.WaitAsync(TOuter, int, CancellationToken).</param>
+        /// <remarks><paramref name="keyAdapter"/> should be implemented in a thread-safe way.
         /// <param name="leaveOpen">Specifies whether the returned <see cref="PartitionedRateLimiter{TOuter}"/> will dispose the wrapped <see cref="PartitionedRateLimiter{TResource}"/>.</param>
-        /// <remarks><see cref="PartitionedRateLimiter{TResource}.Dispose()"/> or <see cref="PartitionedRateLimiter{TResource}.DisposeAsync()"/> does not dispose the wrapped <see cref="PartitionedRateLimiter{TResource}"/>.</remarks>
         /// <returns>A new PartitionedRateLimiter&lt;TOuter&gt; that translates <typeparamref name="TOuter"/>
         /// to <typeparamref name="TResource"/> and calls the inner <see cref="PartitionedRateLimiter{TResource}"/>.</returns>
         public PartitionedRateLimiter<TOuter> WithTranslatedKey<TOuter>(Func<TOuter, TResource> keyAdapter, bool leaveOpen)

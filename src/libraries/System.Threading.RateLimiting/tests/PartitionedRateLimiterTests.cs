@@ -766,13 +766,13 @@ namespace System.Threading.RateLimiting.Tests
                 return i.ToString();
             }, leaveOpen: true);
 
-            Assert.Equal(1, translateLimiter.GetAvailablePermits(1));
+            Assert.Equal(1, translateLimiter.GetStatistics(1).CurrentAvailablePermits);
             Assert.Equal(1, translateCallCount);
 
             var lease = translateLimiter.AttemptAcquire(1);
             Assert.True(lease.IsAcquired);
             Assert.Equal(2, translateCallCount);
-            Assert.Equal(0, translateLimiter.GetAvailablePermits(1));
+            Assert.Equal(0, translateLimiter.GetStatistics(1).CurrentAvailablePermits);
             Assert.Equal(3, translateCallCount);
 
             var lease2 = limiter.AttemptAcquire("1");
@@ -780,13 +780,13 @@ namespace System.Threading.RateLimiting.Tests
 
             lease.Dispose();
 
-            Assert.Equal(1, translateLimiter.GetAvailablePermits(1));
+            Assert.Equal(1, translateLimiter.GetStatistics(1).CurrentAvailablePermits);
             Assert.Equal(4, translateCallCount);
 
             lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
-            Assert.Equal(0, translateLimiter.GetAvailablePermits(1));
+            Assert.Equal(0, translateLimiter.GetStatistics(1).CurrentAvailablePermits);
             Assert.Equal(5, translateCallCount);
         }
 
@@ -952,6 +952,25 @@ namespace System.Threading.RateLimiting.Tests
 
             Assert.Throws<ObjectDisposedException>(() => limiter.AttemptAcquire("1"));
             Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
+        }
+
+        [Fact]
+        public void Translate_GetStatisticsCallsUnderlyingLimiter()
+        {
+            var limiterFactory = new TrackingRateLimiterFactory<int>();
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, key => limiterFactory.GetLimiter(key));
+            });
+
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
+            {
+                return i.ToString();
+            }, leaveOpen: false);
+
+            translateLimiter.GetStatistics(1);
+            Assert.Equal(1, limiterFactory.Limiters.Count);
+            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.GetStatisticsCallCount);
         }
     }
 }

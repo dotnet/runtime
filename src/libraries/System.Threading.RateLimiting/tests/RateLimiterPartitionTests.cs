@@ -70,6 +70,50 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
+        public async Task NoLimiter_GetStatistics()
+        {
+            var partition = RateLimitPartition.GetNoLimiter(1);
+
+            var limiter = partition.Factory(1);
+
+            var stats = limiter.GetStatistics();
+            Assert.NotSame(stats, limiter.GetStatistics());
+            Assert.Equal(long.MaxValue, stats.CurrentAvailablePermits);
+            Assert.Equal(0, stats.CurrentQueuedCount);
+            Assert.Equal(0, stats.TotalFailedLeases);
+            Assert.Equal(0, stats.TotalSuccessfulLeases);
+
+            var leaseCount = 0;
+            for (var i = 0; i < 134; i++)
+            {
+                var lease = limiter.Acquire(i);
+                Assert.True(lease.IsAcquired);
+                ++leaseCount;
+            }
+
+            stats = limiter.GetStatistics();
+            Assert.Equal(long.MaxValue, stats.CurrentAvailablePermits);
+            Assert.Equal(0, stats.CurrentQueuedCount);
+            Assert.Equal(0, stats.TotalFailedLeases);
+            Assert.Equal(leaseCount, stats.TotalSuccessfulLeases);
+
+            for (var i = 0; i < 165; i++)
+            {
+                var wait = limiter.WaitAndAcquireAsync(int.MaxValue);
+                Assert.True(wait.IsCompletedSuccessfully);
+                var lease = await wait;
+                Assert.True(lease.IsAcquired);
+                ++leaseCount;
+            }
+
+            stats = limiter.GetStatistics();
+            Assert.Equal(long.MaxValue, stats.CurrentAvailablePermits);
+            Assert.Equal(0, stats.CurrentQueuedCount);
+            Assert.Equal(0, stats.TotalFailedLeases);
+            Assert.Equal(leaseCount, stats.TotalSuccessfulLeases);
+        }
+
+        [Fact]
         public void Create_AnyLimiter()
         {
             var partition = RateLimitPartition.Get(1, key => new ConcurrencyLimiter(new ConcurrencyLimiterOptions

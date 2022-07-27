@@ -160,15 +160,30 @@ namespace System.Threading.RateLimiting.Tests
         {
             using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(34, QueueProcessingOrder.NewestFirst, 4));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 34,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 4
+                });
             });
             using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(22, QueueProcessingOrder.NewestFirst, 2));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 22,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 2
+                });
             });
             using var limiter3 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(13, QueueProcessingOrder.NewestFirst, 10));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 13,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 10
+                });
             });
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2, limiter3);
@@ -183,15 +198,30 @@ namespace System.Threading.RateLimiting.Tests
         {
             using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(34, QueueProcessingOrder.NewestFirst, 4));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 34,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 4
+                });
             });
             using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(22, QueueProcessingOrder.NewestFirst, 2));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 22,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 2
+                });
             });
             using var limiter3 = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(13, QueueProcessingOrder.NewestFirst, 10));
+                return RateLimitPartition.GetConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = 13,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 10
+                });
             });
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2, limiter3);
@@ -211,6 +241,15 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(3, stats.CurrentAvailablePermits);
             Assert.Equal(0, stats.CurrentQueuedCount);
             Assert.Equal(5, stats.TotalSuccessfulLeases);
+            Assert.Equal(1, stats.TotalFailedLeases);
+
+            var task = chainedLimiter.WaitAndAcquireAsync("", 10);
+            Assert.False(task.IsCompleted);
+            stats = chainedLimiter.GetStatistics("");
+
+            Assert.Equal(2, stats.CurrentAvailablePermits);
+            Assert.Equal(10, stats.CurrentQueuedCount);
+            Assert.Equal(7, stats.TotalSuccessfulLeases);
             Assert.Equal(1, stats.TotalFailedLeases);
         }
 

@@ -121,5 +121,8 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task GetStatisticsHasCorrectValues();
+
+        [Fact]
+        public abstract Task GetStatisticsWithZeroPermitCount();
     }
 }
