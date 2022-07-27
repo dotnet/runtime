@@ -132,13 +132,50 @@ namespace System.IO.Pipes.Tests
         }
 
         [OuterLoop]
+        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
+        public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_DoesNotBlockOthers()
+        {
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
+            bool invalidClientShouldStop = false;
+
+            using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            Task serverWait = server.WaitForConnectionAsync();
+
+            Task invalidClient = Task.Run(() =>
+            {
+                // invalid non-current user tries to connect to server.
+                _testAccountImpersonator.RunImpersonated(() =>
+                {
+                    while (!Volatile.Read(ref invalidClientShouldStop))
+                    {
+                        using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
+                        Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+                    }
+                });
+            });
+
+            Thread.Sleep(1000); // give it a sec to allow above tasks to perform some work before this.
+
+            Assert.False(serverWait.IsCompleted);
+
+            // valid client tries to connect and succeeds.
+            using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
+            client.Connect();
+            await serverWait;
+            Volatile.Write(ref invalidClientShouldStop, true);
+        }
+
+        [OuterLoop]
         [ConditionalTheory(nameof(IsAdminOnSupportedWindowsVersions))]
-        [InlineData(PipeOptions.None, PipeOptions.None)]
-        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly)]
+        [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
         public void Connection_UnderDifferentUsers_BehavesAsExpected(
-            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
+            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientDirection)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var cts = new CancellationTokenSource())
@@ -148,16 +185,25 @@ namespace System.IO.Pipes.Tests
 
                 _testAccountImpersonator.RunImpersonated(() =>
                 {
-                    using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, clientPipeOptions))
+                    using (var client = new NamedPipeClientStream(".", name, clientDirection, clientPipeOptions))
                     {
                         Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
                     }
                 });
 
-                // Server is expected to not have received any request.
-                cts.Cancel();
-                AggregateException e = Assert.Throws<AggregateException>(() => serverTask.Wait(10_000));
-                Assert.IsType<TaskCanceledException>(e.InnerException);
+                if (serverPipeOptions == PipeOptions.None && clientPipeOptions == PipeOptions.CurrentUserOnly && clientDirection == PipeDirection.In)
+                {
+                    // When CurrentUserOnly is only on client side and asks for ReadOnly access, the connection is not rejected
+                    // but we get the UnauthorizedAccessException on the client regardless.
+                    Assert.True(serverTask.IsCompletedSuccessfully);
+                }
+                else
+                {
+                    // Server is expected to not have received any request.
+                    cts.Cancel();
+                    AggregateException ex = Assert.Throws<AggregateException>(() => serverTask.Wait(10_000));
+                    Assert.IsType<TaskCanceledException>(ex.InnerException);
+                }
             }
         }
 
