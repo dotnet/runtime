@@ -273,7 +273,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
-        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65500 bytes.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
         /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
         /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
@@ -303,7 +303,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
-        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65500 bytes.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
         /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
         /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
@@ -337,7 +337,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
-        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65500 bytes.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
         /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
         /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
@@ -382,7 +382,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
-        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65500 bytes.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
         /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
         /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
@@ -433,7 +433,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> represents a time less than zero milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
-        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65500 bytes.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
         /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
         /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
@@ -465,7 +465,7 @@ namespace System.Net.NetworkInformation
         /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> represents a time less than zero milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
-        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65500 bytes.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
         /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
         /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
         /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
