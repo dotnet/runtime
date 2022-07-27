@@ -47,6 +47,38 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public async Task ValidateOnStart_ConfigureAndValidateThenCallValidateOnStart_CacheOption()
+        {
+            int configureCalledCount = 0;
+            int validateCalledCount = 0;
+
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddOptions<ComplexOptions>()
+                    .Configure(o =>
+                    {
+                        o.Boolean = true;
+                        configureCalledCount++;
+                    })
+                    .Validate(o =>
+                    {
+                        validateCalledCount++;
+                        return o.Boolean;
+                    })
+                    .ValidateOnStart();
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+                _ = host.Services.GetRequiredService<IOptions<ComplexOptions>>().Value;
+            }
+
+            Assert.Equal(1, configureCalledCount);
+            Assert.Equal(1, validateCalledCount);
+        }
+
+        [Fact]
         public async Task ValidateOnStart_CallFirstThenConfigureAndValidate_ValidatesFailure()
         {
             var hostBuilder = CreateHostBuilder(services =>

@@ -26,13 +26,24 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(optionsBuilder);
 
             optionsBuilder.Services.AddHostedService<ValidationHostedService>();
-            optionsBuilder.Services.AddOptions<ValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
+            OptionsBuilder<ValidatorOptions> validatorOptionsBuilder = optionsBuilder.Services.AddOptions<ValidatorOptions>();
+
+            if (optionsBuilder.Name == Options.Options.DefaultName)
+            {
+                validatorOptionsBuilder.Configure<IOptions<TOptions>>((vo, options) =>
                 {
                     // This adds an action that resolves the options value to force evaluation
                     // We don't care about the result as duplicates are not important
-                    vo.Validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
+                    vo.Validators[(typeof(TOptions), Options.Options.DefaultName)] = () => _ = options.Value;
                 });
+            }
+            else
+            {
+                validatorOptionsBuilder.Configure<IOptionsMonitor<TOptions>>((vo, optionsMonitor) =>
+                {
+                    vo.Validators[(typeof(TOptions), optionsBuilder.Name)] = () => optionsMonitor.Get(optionsBuilder.Name);
+                });
+            }
 
             return optionsBuilder;
         }
