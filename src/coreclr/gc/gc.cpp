@@ -11422,6 +11422,16 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
     return new_segment;
 }
 
+inline void save_allocated(heap_segment* seg)
+{
+#ifndef MULTIPLE_HEAP
+    if (!heap_segment_saved_allocated(seg))
+#endif // !MULTIPLE_HEAP
+    {
+        heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
+    }
+}
+
 void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifdef USE_REGIONS
                                  , uint8_t* start, size_t size, int gen_num
@@ -11432,7 +11442,7 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     heap_segment_next (seg) = 0;
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
-    heap_segment_saved_allocated (seg) = heap_segment_mem (seg);
+    save_allocated(seg);
     heap_segment_decommit_target (seg) = heap_segment_reserved (seg);
 #ifdef BACKGROUND_GC
     heap_segment_background_allocated (seg) = 0;
@@ -28236,6 +28246,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             heap_segment* fseg = seg;
             do
             {
+                heap_segment_saved_allocated(seg) = 0;
                 if (in_range_for_segment (slow, seg))
                 {
                     uint8_t* start_unmarked = 0;
@@ -28283,7 +28294,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         bgc_clear_batch_mark_array_bits ((shigh + Align (size (shigh))), heap_segment_allocated (seg));
                     }
 #endif //BACKGROUND_GC
-                    heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
+                    save_allocated(seg);
                     heap_segment_allocated (seg) = shigh + Align (size (shigh));
                 }
                 // test if the segment is in the range of [slow, shigh]
@@ -28302,7 +28313,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //USE_REGIONS
                     }
 #endif //BACKGROUND_GC
-                    heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
+                    save_allocated(seg);
                     // shorten it to minimum
                     heap_segment_allocated (seg) =  heap_segment_mem (seg);
                 }
@@ -28336,7 +28347,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     bgc_clear_batch_mark_array_bits (start_unmarked, heap_segment_allocated (seg));
                 }
 #endif //BACKGROUND_GC
-                heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
+                save_allocated(seg);
                 heap_segment_allocated (seg) = start_unmarked;
 
                 seg = heap_segment_next_rw (seg);
@@ -28619,7 +28630,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //USE_REGIONS
             {
                 assert (heap_segment_allocated (seg1) == end);
-                heap_segment_saved_allocated (seg1) = heap_segment_allocated (seg1);
+                save_allocated(seg1);
                 heap_segment_allocated (seg1) = plug_end;
                 current_brick = update_brick_table (tree, current_brick, x, plug_end);
                 dprintf (REGIONS_LOG, ("region %Ix-%Ix(%Ix) non SIP",
@@ -30897,7 +30908,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
 #endif //_DEBUG
 
     assert (last_marked_obj_end);
-    heap_segment_saved_allocated (region) = heap_segment_allocated (region);
+    save_allocated(region);
     heap_segment_allocated (region) = last_marked_obj_end;
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
 
