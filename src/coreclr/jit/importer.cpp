@@ -3664,55 +3664,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
         ni = lookupNamedIntrinsic(method);
 
-        if (ni == NI_System_StubHelpers_GetStubContext)
-        {
-            *pIntrinsicName = ni;
-
-            // must be done regardless of DbgCode and MinOpts
-            return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
-        }
-
-        if (ni == NI_System_StubHelpers_NextCallReturnAddress)
-        {
-            *pIntrinsicName = ni;
-
-            // For now we just avoid inlining anything into these methods since
-            // this intrinsic is only rarely used. We could do this better if we
-            // wanted to by trying to match which call is the one we need to get
-            // the return address of.
-            info.compHasNextCallRetAddr = true;
-            return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
-        }
-
-        switch (ni)
-        {
-            // CreateSpan must be expanded for NativeAOT
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-                mustExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-                break;
-
-            case NI_Internal_Runtime_MethodTable_Of:
-            case NI_System_Activator_AllocatorOf:
-            case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
-                mustExpand = true;
-                break;
-
-            default:
-                break;
-        }
-
-        // NextCallReturnAddress intrinsic returns the return address of the next call.
-        // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
-        // To avoid that we conservatively expand only required intrinsics in methods that call
-        // the NextCallReturnAddress intrinsic.
-        if (!mustExpand && info.compHasNextCallRetAddr)
-        {
-            *pIntrinsicName = NI_Illegal;
-            return nullptr;
-        }
-
         // We specially support the following on all platforms to allow for dead
         // code optimization and to more generally support recursive intrinsics.
 
@@ -3763,9 +3714,54 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // FEATURE_HW_INTRINSICS
     }
 
-    *pIntrinsicName = ni;
+        if (ni == NI_System_StubHelpers_GetStubContext)
+    {
+        // must be done regardless of DbgCode and MinOpts
+        return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+    }
 
-    GenTree*    retNode     = nullptr;
+    if (ni == NI_System_StubHelpers_NextCallReturnAddress)
+    {
+        // For now we just avoid inlining anything into these methods since
+        // this intrinsic is only rarely used. We could do this better if we
+        // wanted to by trying to match which call is the one we need to get
+        // the return address of.
+        info.compHasNextCallRetAddr = true;
+        return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
+    switch (ni)
+    {
+        // CreateSpan must be expanded for NativeAOT
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            mustExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+            break;
+
+        case NI_Internal_Runtime_MethodTable_Of:
+        case NI_System_Activator_AllocatorOf:
+        case NI_System_Activator_DefaultConstructorOf:
+        case NI_System_EETypePtr_EETypePtrOf:
+            mustExpand = true;
+            break;
+
+        default:
+            break;
+    }
+
+    GenTree* retNode = nullptr;
+
+    // Under debug and minopts, only expand what is required.
+    // NextCallReturnAddress intrinsic returns the return address of the next call.
+    // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
+    // To avoid that we conservatively expand only required intrinsics in methods that call
+    // the NextCallReturnAddress intrinsic.
+    if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
+    {
+        *pIntrinsicName = NI_Illegal;
+        return retNode;
+    }
+
     CorInfoType callJitType = sig->retType;
     var_types   callType    = JITtype2varType(callJitType);
 
@@ -4948,6 +4944,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig)
 {
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     assert(sig->sigInst.classInstCount == 0);
 
     switch (intrinsic)
