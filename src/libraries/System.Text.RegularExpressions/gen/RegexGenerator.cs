@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information.
                 .ForAttributeWithMetadataName(
                     context,
-                    RegexGeneratorAttributeName,
+                    GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax,
                     GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)

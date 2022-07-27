@@ -90,7 +90,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0033`__ | Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead. |
 |  __`SYSLIB0034`__ | CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead. |
 |  __`SYSLIB0035`__ | ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner. |
-|  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead. |
+|  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use GeneratedRegexAttribute with the regular expression source generator instead. |
 |  __`SYSLIB0037`__ | AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported. |
 |  __`SYSLIB0038`__ | SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information. |
 |  __`SYSLIB0039`__ | TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults. |
@@ -148,11 +148,11 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1037`__ | JsonSourceGenerator encountered a type with init-only properties for which deserialization is not supported |
 |  __`SYSLIB1038`__ | JsonSourceGenerator encountered a property annotated with [JsonInclude] that has inaccessible accessors |
 |  __`SYSLIB1039`__ | *_`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
-|  __`SYSLIB1040`__ | Invalid RegexGenerator attribute |
-|  __`SYSLIB1041`__ | Multiple RegexGenerator attribute |
-|  __`SYSLIB1042`__ | Invalid RegexGenerator arguments |
-|  __`SYSLIB1043`__ | RegexGenerator method must have a valid signature |
-|  __`SYSLIB1044`__ | RegexGenerator only supports C# 10 and newer |
+|  __`SYSLIB1040`__ | Invalid GeneratedRegex attribute |
+|  __`SYSLIB1041`__ | Multiple GeneratedRegex attribute |
+|  __`SYSLIB1042`__ | Invalid GeneratedRegex arguments |
+|  __`SYSLIB1043`__ | GeneratedRegex method must have a valid signature |
+|  __`SYSLIB1044`__ | GeneratedRegex only supports C# 11 and newer |
 |  __`SYSLIB1045`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
 |  __`SYSLIB1046`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
 |  __`SYSLIB1047`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
