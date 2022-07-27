@@ -3714,6 +3714,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // FEATURE_HW_INTRINSICS
     }
 
+    *pIntrinsicName = ni;
+
     if (ni == NI_System_StubHelpers_GetStubContext)
     {
         // must be done regardless of DbgCode and MinOpts
