@@ -58,7 +58,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override bool Equals(object obj) => obj is MessageId other && Equals(other);
 
-        public bool Equals(MessageId other) => other.sessionId == sessionId && other.id == id;
+        public bool Equals(MessageId other) => other.id == id;
     }
 
     internal sealed class DotnetObjectId
