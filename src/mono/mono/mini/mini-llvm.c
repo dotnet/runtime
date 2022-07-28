@@ -748,7 +748,7 @@ create_llvm_type_for_type (MonoLLVMModule *module, MonoClass *klass)
 		 */
 		/* SIMD types have size 16 in mono_class_value_size () */
 		if (m_class_is_simd_type (klass))
-			nfields = 16/ esize;
+			nfields = 16 / esize;
 		size = nfields;
 		eltypes = g_new (LLVMTypeRef, size);
 		for (i = 0; i < size; ++i)
