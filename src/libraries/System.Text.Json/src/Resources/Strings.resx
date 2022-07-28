@@ -668,7 +668,4 @@
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
     <value>Type '{0}' contains required properties which were not set during deserialization: {1}</value>
   </data>
-  <data name="JsonPropertyRequiredAndIgnoreNullValues" xml:space="preserve">
-    <value>Required JSON properties cannot be used in conjunction with JsonSerializerOptions.IgnoreNullValues.</value>
-  </data>
 </root>

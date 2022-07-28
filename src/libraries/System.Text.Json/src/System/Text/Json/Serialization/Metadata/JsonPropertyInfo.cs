@@ -304,10 +304,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
                 }
 
-                if (IgnoreNullTokensOnRead)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndIgnoreNullValues();
-                }
+                Debug.Assert(!IgnoreNullTokensOnRead);
             }
         }
 
@@ -371,7 +368,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
                 if (PropertyTypeCanBeNull)
                 {
-                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter;
+                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter && !IsRequired;
                     IgnoreDefaultValuesOnWrite = ShouldSerialize is null;
                 }
             }

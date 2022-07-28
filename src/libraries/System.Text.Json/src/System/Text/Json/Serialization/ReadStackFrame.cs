@@ -122,11 +122,12 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializeRequiredProperties(JsonTypeInfo typeInfo)
+        internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
         {
+            Debug.Assert(RequiredPropertiesLeft == null);
+
             if (typeInfo.RequiredPropertiesIndices != null)
             {
-                Debug.Assert(RequiredPropertiesLeft == null);
                 RequiredPropertiesLeft = new HashSet<int>(typeInfo.RequiredPropertiesIndices);
             }
         }

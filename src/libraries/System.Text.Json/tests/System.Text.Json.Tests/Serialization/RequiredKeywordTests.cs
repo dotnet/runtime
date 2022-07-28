@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-#if !NETFRAMEWORK
     public class RequiredKeywordTests_Span : RequiredKeywordTests
     {
         public RequiredKeywordTests_Span() : base(JsonSerializerWrapper.SpanSerializer) { }
@@ -63,52 +62,57 @@ namespace System.Text.Json.Serialization.Tests
         {
         }
 
-        [Fact]
-        public async void ClassWithRequiredKeywordDeserialization()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async void ClassWithRequiredKeywordDeserialization(bool ignoreNullValues)
         {
+            JsonSerializerOptions options = new()
+            {
+                IgnoreNullValues = ignoreNullValues
+            };
+
             var obj = new PersonWithRequiredMembers()
             {
                 FirstName = "foo",
                 LastName = "bar"
             };
 
-            string json = await Serializer.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("""{"FirstName":"foo","MiddleName":"","LastName":"bar"}""", json);
 
-            PersonWithRequiredMembers deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json);
+            PersonWithRequiredMembers deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options);
             Assert.Equal(obj.FirstName, deserialized.FirstName);
             Assert.Equal(obj.MiddleName, deserialized.MiddleName);
             Assert.Equal(obj.LastName, deserialized.LastName);
 
             json = """{"LastName":"bar"}""";
-            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json));
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
             Assert.Contains("FirstName", exception.Message);
             Assert.DoesNotContain("LastName", exception.Message);
             Assert.DoesNotContain("MiddleName", exception.Message);
 
             json = """{"LastName":null}""";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json));
+            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
             Assert.Contains("FirstName", exception.Message);
             Assert.DoesNotContain("LastName", exception.Message);
             Assert.DoesNotContain("MiddleName", exception.Message);
 
             json = "{}";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json));
+            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
             Assert.Contains("FirstName", exception.Message);
             Assert.Contains("LastName", exception.Message);
             Assert.DoesNotContain("MiddleName", exception.Message);
         }
 
         [Fact]
-        public async void IgnoreNullValuesParameterlessCtorNullValuesAreNotAcceptedAsRequired()
+        public async void RequiredPropertyOccuringTwiceInThePayloadWorksAsExpected()
         {
-            JsonSerializerOptions options = new()
-            {
-                IgnoreNullValues = true,
-            };
-
-            string json = """{"FirstName":null,"MiddleName":"","LastName":null}""";
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
+            string json = """{"FirstName":"foo","MiddleName":"","LastName":"bar","FirstName":"newfoo"}""";
+            PersonWithRequiredMembers deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json);
+            Assert.Equal("newfoo", deserialized.FirstName);
+            Assert.Equal("", deserialized.MiddleName);
+            Assert.Equal("bar", deserialized.LastName);
         }
 
         private class PersonWithRequiredMembers
@@ -118,9 +122,16 @@ namespace System.Text.Json.Serialization.Tests
             public required string LastName { get; set; }
         }
 
-        [Fact]
-        public async void ClassWithRequiredKeywordAndSmallParametrizedCtorFailsDeserialization()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async void ClassWithRequiredKeywordAndSmallParametrizedCtorFailsDeserialization(bool ignoreNullValues)
         {
+            JsonSerializerOptions options = new()
+            {
+                IgnoreNullValues = ignoreNullValues
+            };
+
             var obj = new PersonWithRequiredMembersAndSmallParametrizedCtor("badfoo", "badbar")
             {
                 // note: these must be set during initialize or otherwise we get compiler errors
@@ -130,10 +141,10 @@ namespace System.Text.Json.Serialization.Tests
                 Info2 = "info2",
             };
 
-            string json = await Serializer.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("""{"FirstName":"foo","MiddleName":"","LastName":"bar","Info1":"info1","Info2":"info2"}""", json);
 
-            PersonWithRequiredMembersAndSmallParametrizedCtor deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json);
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options);
             Assert.Equal(obj.FirstName, deserialized.FirstName);
             Assert.Equal(obj.MiddleName, deserialized.MiddleName);
             Assert.Equal(obj.LastName, deserialized.LastName);
@@ -141,7 +152,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(obj.Info2, deserialized.Info2);
 
             json = """{"FirstName":"foo","MiddleName":"","LastName":null,"Info1":null,"Info2":"info2"}""";
-            deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json);
+            deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options);
             Assert.Equal(obj.FirstName, deserialized.FirstName);
             Assert.Equal(obj.MiddleName, deserialized.MiddleName);
             Assert.Null(deserialized.LastName);
@@ -149,7 +160,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(obj.Info2, deserialized.Info2);
 
             json = """{"LastName":"bar","Info1":"info1"}""";
-            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json));
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
             Assert.Contains("FirstName", exception.Message);
             Assert.DoesNotContain("LastName", exception.Message);
             Assert.DoesNotContain("MiddleName", exception.Message);
@@ -157,7 +168,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("Info2", exception.Message);
 
             json = """{"LastName":null,"Info1":null}""";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json));
+            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
             Assert.Contains("FirstName", exception.Message);
             Assert.DoesNotContain("LastName", exception.Message);
             Assert.DoesNotContain("MiddleName", exception.Message);
@@ -165,24 +176,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("Info2", exception.Message);
 
             json = "{}";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json));
+            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
             Assert.Contains("FirstName", exception.Message);
             Assert.Contains("LastName", exception.Message);
             Assert.DoesNotContain("MiddleName", exception.Message);
             Assert.Contains("Info1", exception.Message);
             Assert.Contains("Info2", exception.Message);
-        }
-
-        [Fact]
-        public async void IgnoreNullValuesSmallParametrizedCtorNullValuesAreNotAcceptedAsRequired()
-        {
-            JsonSerializerOptions options = new()
-            {
-                IgnoreNullValues = true,
-            };
-
-            string json = """{"FirstName":null,"MiddleName":"","LastName":"bar","Info1":"info1","Info2":"info2"}""";
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
         }
 
         private class PersonWithRequiredMembersAndSmallParametrizedCtor
@@ -200,9 +199,16 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public async void ClassWithRequiredKeywordAndLargeParametrizedCtorFailsDeserialization()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async void ClassWithRequiredKeywordAndLargeParametrizedCtorFailsDeserialization(bool ignoreNullValues)
         {
+            JsonSerializerOptions options = new()
+            {
+                IgnoreNullValues = ignoreNullValues
+            };
+
             var obj = new PersonWithRequiredMembersAndLargeParametrizedCtor("bada", "badb", "badc", "badd", "bade", "badf", "badg")
             {
                 // note: these must be set during initialize or otherwise we get compiler errors
@@ -217,10 +223,10 @@ namespace System.Text.Json.Serialization.Tests
                 IProp = "i",
             };
 
-            string json = await Serializer.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("""{"AProp":"a","BProp":"b","CProp":"c","DProp":"d","EProp":"e","FProp":"f","GProp":"g","HProp":"h","IProp":"i"}""", json);
 
-            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json);
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options);
             Assert.Equal(obj.AProp, deserialized.AProp);
             Assert.Equal(obj.BProp, deserialized.BProp);
             Assert.Equal(obj.CProp, deserialized.CProp);
@@ -232,7 +238,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(obj.IProp, deserialized.IProp);
 
             json = """{"AProp":"a","BProp":"b","CProp":"c","DProp":"d","EProp":null,"FProp":"f","GProp":"g","HProp":null,"IProp":"i"}""";
-            deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json);
+            deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options);
             Assert.Equal(obj.AProp, deserialized.AProp);
             Assert.Equal(obj.BProp, deserialized.BProp);
             Assert.Equal(obj.CProp, deserialized.CProp);
@@ -244,7 +250,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(obj.IProp, deserialized.IProp);
 
             json = """{"AProp":"a","IProp":"i"}""";
-            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json));
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options));
             Assert.DoesNotContain("AProp", exception.Message);
             Assert.Contains("BProp", exception.Message);
             Assert.Contains("CProp", exception.Message);
@@ -256,7 +262,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.DoesNotContain("IProp", exception.Message);
 
             json = """{"AProp":null,"IProp":null}""";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json));
+            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options));
             Assert.DoesNotContain("AProp", exception.Message);
             Assert.Contains("BProp", exception.Message);
             Assert.Contains("CProp", exception.Message);
@@ -268,7 +274,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.DoesNotContain("IProp", exception.Message);
 
             json = """{"BProp":"b","CProp":"c","DProp":"d","EProp":"e","FProp":"f","HProp":"h"}""";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json));
+            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options));
             Assert.Contains("AProp", exception.Message);
             Assert.DoesNotContain("BProp", exception.Message);
             Assert.DoesNotContain("CProp", exception.Message);
@@ -278,18 +284,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("GProp", exception.Message);
             Assert.DoesNotContain("HProp", exception.Message);
             Assert.Contains("IProp", exception.Message);
-        }
-
-        [Fact]
-        public async void IgnoreNullValuesLargeParametrizedCtorNullValuesAreNotAcceptedAsRequired()
-        {
-            JsonSerializerOptions options = new()
-            {
-                IgnoreNullValues = true,
-            };
-
-            string json = """{"AProp":"a","BProp":"b","CProp":"c","DProp":"d","EProp":null,"FProp":"f","GProp":"g","HProp":null,"IProp":"i"}""";
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options));
         }
 
         private class PersonWithRequiredMembersAndLargeParametrizedCtor
@@ -524,5 +518,4 @@ namespace System.Text.Json.Serialization.Tests
             public required Dictionary<string, JsonElement>? TestExtensionData { get; set; }
         }
     }
-#endif
 }

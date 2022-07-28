@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -28,20 +29,20 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 AddPropertiesAndParametersUsingReflection();
 
-#if NET7_0_OR_GREATER
                 // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
                 // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
                 bool shouldCheckMembersForRequiredMemberAttribute =
-                    typeof(T).IsDefined(typeof(RequiredMemberAttribute), inherit: true)
-                    && !(converter.ConstructorInfo?.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: true) ?? false);
+                    typeof(T).HasRequiredMemberAttribute()
+                    && !(converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
                 if (shouldCheckMembersForRequiredMemberAttribute)
                 {
                     Debug.Assert(PropertyCache != null);
-                    foreach (var (_, property) in PropertyCache.List)
+                    foreach (KeyValuePair<string, JsonPropertyInfo> kv in PropertyCache.List)
                     {
+                        JsonPropertyInfo property = kv.Value;
                         Debug.Assert(property.AttributeProvider != null);
-                        if (property.AttributeProvider.IsDefined(typeof(RequiredMemberAttribute), inherit: true))
+                        if (property.AttributeProvider.HasRequiredMemberAttribute())
                         {
                             property.IsRequired = true;
                         }
@@ -50,7 +51,7 @@ namespace System.Text.Json.Serialization.Metadata
                     if (ExtensionDataProperty != null)
                     {
                         Debug.Assert(ExtensionDataProperty.AttributeProvider != null);
-                        if (ExtensionDataProperty.AttributeProvider.IsDefined(typeof(RequiredMemberAttribute), inherit: true))
+                        if (ExtensionDataProperty.AttributeProvider.HasRequiredMemberAttribute())
                         {
                             // This will end up in error in Configure
                             // but we need to give contract resolver a chance to fix this
@@ -58,7 +59,6 @@ namespace System.Text.Json.Serialization.Metadata
                         }
                     }
                 }
-#endif
             }
 
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));

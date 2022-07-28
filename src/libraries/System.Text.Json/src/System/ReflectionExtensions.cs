@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -41,6 +42,39 @@ namespace System.Text.Json.Reflection
 
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
             => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
+
+        public static bool HasRequiredMemberAttribute(this ICustomAttributeProvider memberInfo)
+        {
+#if NET7_0_OR_GREATER
+            return memberInfo.IsDefined(typeof(RequiredMemberAttribute), inherit: true);
+#else
+            return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute");
+#endif
+        }
+
+        public static bool HasSetsRequiredMembersAttribute(this ICustomAttributeProvider memberInfo)
+        {
+#if NET7_0_OR_GREATER
+            return memberInfo.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: true);
+#else
+            return memberInfo.HasCustomAttributeWithName("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
+#endif
+        }
+
+#if !NET7_0_OR_GREATER
+        private static bool HasCustomAttributeWithName(this ICustomAttributeProvider memberInfo, string name)
+        {
+            foreach (object attribute in memberInfo.GetCustomAttributes(inherit: true))
+            {
+                if (attribute.GetType().FullName == name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
 
         public static TAttribute? GetUniqueCustomAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit)
             where TAttribute : Attribute

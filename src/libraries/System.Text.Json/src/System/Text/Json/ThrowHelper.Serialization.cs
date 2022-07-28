@@ -215,12 +215,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonPropertyRequiredAndIgnoreNullValues()
-        {
-            throw new InvalidOperationException(SR.Format(SR.JsonPropertyRequiredAndIgnoreNullValues));
-        }
-
-        [DoesNotReturn]
         public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, IEnumerable<int> missingJsonProperties)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
