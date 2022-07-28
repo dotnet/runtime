@@ -104,11 +104,6 @@ namespace System
         // All OA dates must be less than (not <=) OADateMaxAsDouble
         private const double OADateMaxAsDouble = 2958466.0;
 
-        private const int DatePartYear = 0;
-        private const int DatePartDayOfYear = 1;
-        private const int DatePartMonth = 2;
-        private const int DatePartDay = 3;
-
         // Euclidean Affine Functions Algorithm constants
         private const ulong TicksPer6Hours = TicksPerHour * 6;
         private const int March1BasedDayOfNewYear = 306;       // Days between March 1 and January 1
@@ -1353,38 +1348,12 @@ namespace System
             }
         }
 
-        // Returns a given date part of this DateTime. This method is used
-        // to compute the year, day-of-year, month, or day part.
+        // Exactly the same as Year, Month, Day properties, except computing all of
+        // year/month/day rather than just one of them. Used when all three
+        // are needed rather than redoing the computations for each.
         //
         // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
         //   Cassio Neri, Lorenz Schneiderhttps - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetDatePart(int part)
-        {
-            // y400 = number of whole 400-year periods since 3/1/0000
-            // r1 = day number within 400-year period
-            (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
-            ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
-            ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
-            int n3 = 2141 * daySinceMarch1 + 197913;
-            // Return 1-based day-of-month
-            if (part == DatePartDay)
-                return (ushort)n3 / 2141 + 1;
-            // If month was requested, return it
-            if (part == DatePartMonth)
-                return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
-
-            int year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
-            return part == DatePartYear
-                ? year                                                      // If year was requested, compute and return it
-                : daySinceMarch1 >= March1BasedDayOfNewYear                 // DatePartDayOfYear case
-                    ? daySinceMarch1 - March1BasedDayOfNewYear + 1          // rollover December 31
-                    : daySinceMarch1 + (366 - March1BasedDayOfNewYear) + (IsLeapYear(year) ? 1 : 0);
-        }
-
-        // Exactly the same as GetDatePart, except computing all of
-        // year/month/day rather than just one of them. Used when all three
-        // are needed rather than redoing the computations for each.
         internal void GetDate(out int year, out int month, out int day)
         {
             // y400 = number of whole 400-year periods since 3/1/0000
@@ -1446,7 +1415,19 @@ namespace System
         // Returns the day-of-month part of this DateTime. The returned
         // value is an integer between 1 and 31.
         //
-        public int Day => GetDatePart(DatePartDay);
+        public int Day
+        {
+            get
+            {
+                // r1 = day number within 400-year period
+                uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
+                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                // Return 1-based day-of-month
+                return (ushort)n3 / 2141 + 1;
+            }
+        }
 
         // Returns the day-of-week part of this DateTime. The returned value
         // is an integer between 0 and 6, where 0 indicates Sunday, 1 indicates
@@ -1458,7 +1439,22 @@ namespace System
         // Returns the day-of-year part of this DateTime. The returned value
         // is an integer between 1 and 366.
         //
-        public int DayOfYear => GetDatePart(DatePartDayOfYear);
+        public int DayOfYear
+        {
+            get
+            {
+                // y400 = number of whole 400-year periods since 3/1/0000
+                // r1 = day number within 400-year period
+                (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+
+                int year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
+                return daySinceMarch1 >= March1BasedDayOfNewYear                // DatePartDayOfYear case
+                        ? daySinceMarch1 - March1BasedDayOfNewYear + 1          // rollover December 31
+                        : daySinceMarch1 + (366 - March1BasedDayOfNewYear) + (IsLeapYear(year) ? 1 : 0);
+            }
+        }
 
         // Returns the hash code for this DateTime.
         //
@@ -1510,7 +1506,18 @@ namespace System
         // Returns the month part of this DateTime. The returned value is an
         // integer between 1 and 12.
         //
-        public int Month => GetDatePart(DatePartMonth);
+        public int Month
+        {
+            get
+            {
+                // r1 = day number within 400-year period
+                uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
+                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
+            }
+        }
 
         // Returns a DateTime representing the current date and time. The
         // resolution of the returned value depends on the system timer.
@@ -1558,7 +1565,19 @@ namespace System
         // Returns the year part of this DateTime. The returned value is an
         // integer between 1 and 9999.
         //
-        public int Year => GetDatePart(DatePartYear);
+        public int Year
+        {
+            get
+            {
+                // y400 = number of whole 400-year periods since 3/1/0000
+                // r1 = day number within 400-year period
+                (uint y400, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+
+                return (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
+            }
+        }
 
         // Checks whether a given year is a leap year. This method returns true if
         // year is a leap year, or false if not.
