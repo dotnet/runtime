@@ -2547,7 +2547,6 @@ void Compiler::fgCreateFiltersForGenericExceptions()
             lvaTable[tempNum].lvType = TYP_REF;
             GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
             arg                      = gtNewLclvNode(tempNum, TYP_REF);
-            filterBb->bbStkTempsIn   = tempNum;
             fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg, handlerBb->firstStmt()->GetDebugInfo()));
 
             // Create "catchArg is TException" tree
