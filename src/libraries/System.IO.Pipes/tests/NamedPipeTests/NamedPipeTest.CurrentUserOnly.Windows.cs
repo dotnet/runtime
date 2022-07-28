@@ -145,8 +145,11 @@ namespace System.IO.Pipes.Tests
                 _testAccountImpersonator.RunImpersonated(() =>
                 {
                     using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
-                    @event.WaitOne();
-                    Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+                    Assert.Throws<UnauthorizedAccessException>(() =>
+                    {
+                        @event.WaitOne();
+                        client.Connect();
+                    });
                 });
             });
 
