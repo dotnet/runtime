@@ -275,10 +275,10 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     register_aot_modules();
 #endif // STATIC_AOT
 
-#if PROFILE_AOT
-    mono_jit_set_aot_mode(MONO_AOT_MODE_NORMAL);
-#else
+#if FULL_AOT
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
+#else
+    mono_jit_set_aot_mode(MONO_AOT_MODE_NORMAL);
 #endif // PROFILE_AOT
 #endif // FORCE_INTERPRETER
 

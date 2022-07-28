@@ -39,9 +39,9 @@ public class AndroidAppBuilderTask : Task
     public bool ForceAOT { get; set; }
 
     /// <summary>
-    /// Indicates if the assemblies to aot were gathered from a profile
+    /// Indicates if we want to AOT all assemblies or not
     /// </summary>
-    public bool ProfileAOT { get; set; }
+    public bool ForceFullAOT { get; set; }
 
     /// <summary>
     /// Static linked runtime
@@ -116,7 +116,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
-        apkBuilder.ProfileAOT = ProfileAOT;
+        apkBuilder.ForceFullAOT = ForceFullAOT;
         apkBuilder.EnvironmentVariables = EnvironmentVariables;
         apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
         apkBuilder.RuntimeComponents = RuntimeComponents;
