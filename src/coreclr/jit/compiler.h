@@ -7126,27 +7126,27 @@ public:
             return false;
         }
 
-        bool HasSameOp1(AssertionDsc* that)
+        bool HasSameOp1(const AssertionDsc& that) const
         {
-            if (op1.kind != that->op1.kind)
+            if (op1.kind != that.op1.kind)
             {
                 return false;
             }
             else if (op1.kind == O1K_ARR_BND)
             {
                 assert(vnBased);
-                return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+                return (op1.bnd.vnIdx == that.op1.bnd.vnIdx) && (op1.bnd.vnLen == that.op1.bnd.vnLen);
             }
             else
             {
-                return ((vnBased && (op1.vn == that->op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
+                return ((vnBased && (op1.vn == that.op1.vn)) ||
+                        (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
             }
         }
 
-        bool HasSameOp2(AssertionDsc* that)
+        bool HasSameOp2(const AssertionDsc& that) const
         {
-            if (op2.kind != that->op2.kind)
+            if (op2.kind != that.op2.kind)
             {
                 return false;
             }
@@ -7155,24 +7155,24 @@ public:
             {
                 case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.u1.iconFlags == that->op2.u1.iconFlags));
+                    return ((op2.u1.iconVal == that.op2.u1.iconVal) && (op2.u1.iconFlags == that.op2.u1.iconFlags));
 
                 case O2K_CONST_LONG:
-                    return (op2.lconVal == that->op2.lconVal);
+                    return (op2.lconVal == that.op2.lconVal);
 
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
-                    return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
+                    return (memcmp(&op2.dconVal, &that.op2.dconVal, sizeof(double)) == 0);
 
                 case O2K_ZEROOBJ:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
+                    return (op2.lcl.lclNum == that.op2.lcl.lclNum) &&
+                           (!vnBased || (op2.lcl.ssaNum == that.op2.lcl.ssaNum));
 
                 case O2K_SUBRANGE:
-                    return op2.u2.Equals(that->op2.u2);
+                    return op2.u2.Equals(that.op2.u2);
 
                 case O2K_INVALID:
                     // we will return false
@@ -7186,14 +7186,14 @@ public:
             return false;
         }
 
-        bool Complementary(AssertionDsc* that)
+        bool Complementary(const AssertionDsc& that)
         {
-            return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that) && HasSameOp2(that);
+            return ComplementaryKind(assertionKind, that.assertionKind) && HasSameOp1(that) && HasSameOp2(that);
         }
 
-        bool Equals(AssertionDsc* that)
+        bool Equals(const AssertionDsc& that) const
         {
-            if (assertionKind != that->assertionKind)
+            if (assertionKind != that.assertionKind)
             {
                 return false;
             }
@@ -7209,7 +7209,7 @@ public:
         }
 
     public:
-        unsigned GetHashCode()
+        unsigned GetHashCode() const
         {
             assert(assertionKind != OAK_INVALID);
             unsigned op2Valid = op2.kind ^ O2K_INVALID;
@@ -7291,18 +7291,18 @@ protected:
 
     struct AssertionDscKeyFuncs
     {
-        static bool Equals(AssertionDsc x, AssertionDsc y)
+        static bool Equals(const AssertionDsc& x, const AssertionDsc& y)
         {
-            return (&x)->Equals(&y);
+            return x.Equals(y);
         }
 
-        static unsigned GetHashCode(AssertionDsc dsc)
+        static unsigned GetHashCode(const AssertionDsc& dsc)
         {
             return dsc.GetHashCode();
         }
     };
 
-    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
+    typedef JitHashTable<const AssertionDsc&, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
     AssertionDscMap* optAssertionDscMap;
 
 public:

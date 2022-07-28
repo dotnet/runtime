@@ -3265,7 +3265,6 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         }
 
         optAssertionCount--;
-        JITDUMP("-- Removed map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs::GetHashCode(*curAssertion));
 
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaCount);
@@ -3290,8 +3289,6 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionDsc*  curAssertion = optGetAssertion(index);
 
         optAssertionDscMap->Set(*curAssertion, optAssertionCount);
-        JITDUMP("++ Added map[%d] = %u\n", optAssertionCount - 1,
-                AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*curAssertion));
 
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
@@ -3354,8 +3351,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 
         optAssertionDscMap->Remove(*curAssertion);
         optAssertionCount--;
-        JITDUMP("-- Removed map[%d] = %u\n", optAssertionCount,
-                AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*curAssertion));
     }
     else
     {
