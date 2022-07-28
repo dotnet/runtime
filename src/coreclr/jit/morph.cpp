@@ -2785,7 +2785,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 // Increment intArgRegNum by 'size' registers
                 if (nonStdRegNum == REG_NA)
                 {
-                    bool isGCTypes = false;
                     if ((size > 1) && ((intArgRegNum + 1) == maxRegArgs) && (nextOtherRegNum == REG_STK))
                     {
                         // This indicates a partial enregistration of a struct type
@@ -2794,11 +2793,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         unsigned numRegsPartial = MAX_REG_ARG - intArgRegNum;
                         assert((unsigned char)numRegsPartial == numRegsPartial);
                         SplitArg(&arg, numRegsPartial, size - numRegsPartial);
-                        arg.AbiInfo.StructFloatFieldType[0] = TYP_I_IMPL; // maybe later will be GCType
                         assert(!passUsingFloatRegs);
                         assert(size == 2);
                         intArgRegNum = maxRegArgs;
-                        isGCTypes    = true;
                     }
                     else if ((floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) == 0x0)
                     {
@@ -2823,17 +2820,15 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         intArgRegNum += 1;
                         if ((floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
                         {
-                            isGCTypes = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0;
-
                             arg.AbiInfo.StructFloatFieldType[0] =
                                 (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                            arg.AbiInfo.StructFloatFieldType[1] = isGCTypes ? TYP_LONG : TYP_INT;
+                            arg.AbiInfo.StructFloatFieldType[1] =
+                                (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
                         }
                         else
                         {
-                            isGCTypes = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0;
-
-                            arg.AbiInfo.StructFloatFieldType[0] = isGCTypes ? TYP_LONG : TYP_INT;
+                            arg.AbiInfo.StructFloatFieldType[0] =
+                                (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
                             arg.AbiInfo.StructFloatFieldType[1] =
                                 (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                         }
@@ -2845,33 +2840,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                             (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                         arg.AbiInfo.StructFloatFieldType[1] =
                             (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    }
-
-                    if (isGCTypes)
-                    {
-                        ClassLayout* layout = nullptr;
-                        if (argx->OperGet() == GT_OBJ)
-                        {
-                            layout = argx->AsObj()->GetLayout();
-                        }
-                        else
-                        {
-                            assert(argx->TypeIs(TYP_STRUCT));
-                            assert(argx->OperIsLocalRead());
-                            layout = argx->AsLclVarCommon()->GetLayout(comp);
-                        }
-
-                        auto getSlotType = [layout](unsigned inx) {
-                            return (layout != nullptr) ? layout->GetGCPtrType(inx) : TYP_I_IMPL;
-                        };
-
-                        var_types Type = getSlotType(0);
-                        arg.AbiInfo.StructFloatFieldType[0] =
-                            varTypeIsGC(Type) ? Type : arg.AbiInfo.StructFloatFieldType[0];
-
-                        Type = getSlotType(1);
-                        arg.AbiInfo.StructFloatFieldType[1] =
-                            varTypeIsGC(Type) ? Type : arg.AbiInfo.StructFloatFieldType[1];
                     }
                 }
 #else
@@ -3758,7 +3726,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             }
             else
 #elif defined(TARGET_LOONGARCH64)
-            if (!varTypeIsGC(getSlotType(inx)) && (arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF))
+            if ((arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF) &&
+                !varTypeIsGC(getSlotType(offset / TARGET_POINTER_SIZE)))
             {
                 elems[inx].Type = arg->AbiInfo.StructFloatFieldType[inx];
                 offset += (structSize > TARGET_POINTER_SIZE) ? 8 : 4;

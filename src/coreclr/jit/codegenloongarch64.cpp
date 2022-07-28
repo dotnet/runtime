@@ -7142,13 +7142,14 @@ void CodeGen::genCall(GenTreeCall* call)
 
             regNumber argReg   = abiInfo.GetRegNum();
             regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(0);
+            var_types regType  = argNode->AsPutArgSplit()->GetRegType(0);
 
             // For LA64's ABI, the split is only using the A7 and stack for passing arg.
             assert(emitter::isGeneralRegister(argReg));
             assert(emitter::isGeneralRegister(allocReg));
             assert(abiInfo.NumRegs == 1);
 
-            inst_Mov(abiInfo.StructFloatFieldType[0], argReg, allocReg, /* canSkip */ true);
+            inst_Mov(regType, argReg, allocReg, /* canSkip */ true);
         }
         else
         {
