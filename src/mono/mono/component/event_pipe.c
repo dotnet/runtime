@@ -418,6 +418,7 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 // JS callback to invoke on the main thread early during runtime initialization once eventpipe is functional but before too much of the rest of the runtime is loaded.
 extern void mono_wasm_event_pipe_early_startup_callback (void);
 
+
 static void
 mono_wasm_event_pipe_init (void)
 {

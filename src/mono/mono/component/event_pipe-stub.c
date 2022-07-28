@@ -550,5 +550,3 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 }
 
 #endif /* HOST_WASM && !HOST_WASI */
-
-
