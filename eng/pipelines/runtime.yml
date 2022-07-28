@@ -263,7 +263,7 @@ jobs:
       isSingleFile: true
       nameSuffix: NativeAOT
       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
-      timeoutInMinutes: 180
+      timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
