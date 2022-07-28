@@ -31,7 +31,7 @@ FrozenObjectHeap::~FrozenObjectHeap()
 
 bool FrozenObjectHeap::Initialize()
 {
-    m_Size = m_PageSize * 1024;
+    m_Size = m_PageSize * 1024; // e.g. 4Mb
 
     _ASSERT(m_PageSize > MIN_OBJECT_SIZE);
     _ASSERT(m_SegmentHandle == nullptr);
@@ -43,8 +43,8 @@ bool FrozenObjectHeap::Initialize()
 
     if (alloc != nullptr)
     {
-        segment_info si{};
-        si.pvMem = m_pStart;
+        segment_info si;
+        si.pvMem = alloc;
         si.ibFirstObject = sizeof(ObjHeader);
         si.ibAllocated = m_Size;
         si.ibCommit = m_Size;
@@ -61,7 +61,7 @@ bool FrozenObjectHeap::Initialize()
             return true;
         }
 
-        // GC refused to register frozen segment
+        // GC refused to register frozen segment (OOM?)
         ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
         m_pStart = nullptr;
     }
@@ -95,15 +95,16 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
     _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
 
     uint8_t* obj = ALIGN_UP(m_pCurrent, DATA_ALIGNMENT);
-    if ((obj + objectSize + OBJHEADER_SIZE) > (m_pStart + m_Size))
+    if (objectSize > (size_t)(m_pStart + m_Size))
     {
         // heap is full
         return nullptr;
     }
 
     INDEBUG(m_ObjectsCount++);
-    m_pCurrent = obj + sizeof(ObjHeader) + objectSize;
-    ZeroMemory(obj, objectSize); // is it needed?
+    m_pCurrent = obj + objectSize;
+
+    // Skip object header (NOTE: objectSize already includes it)
     return reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
 }
 
