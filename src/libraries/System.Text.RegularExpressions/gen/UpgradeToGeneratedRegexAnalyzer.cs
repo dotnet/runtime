@@ -22,10 +22,10 @@ namespace System.Text.RegularExpressions.Generator
     /// If so, it will emit an informational diagnostic to suggest use the Regex Generator.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public sealed class UpgradeToRegexGeneratorAnalyzer : DiagnosticAnalyzer
+    public sealed class UpgradeToGeneratedRegexAnalyzer : DiagnosticAnalyzer
     {
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
-        private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
+        private const string GeneratedRegexTypeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
 
         internal const string PatternArgumentName = "pattern";
         internal const string OptionsArgumentName = "options";
@@ -104,7 +104,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We need to save the parameters as properties so that we can save them onto the diagnostic so that the
-            // code fixer can later use that property bag to generate the code fix and emit the RegexGenerator attribute.
+            // code fixer can later use that property bag to generate the code fix and emit the GeneratedRegex attribute.
             if (staticMethodsToDetect.Contains(method))
             {
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
@@ -233,8 +233,8 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            INamedTypeSymbol regexGeneratorAttributeTypeSymbol = compilation.GetTypeByMetadataName(RegexGeneratorTypeName);
-            if (regexGeneratorAttributeTypeSymbol == null)
+            INamedTypeSymbol generatedRegexAttributeTypeSymbol = compilation.GetTypeByMetadataName(GeneratedRegexTypeName);
+            if (generatedRegexAttributeTypeSymbol == null)
             {
                 return false;
             }

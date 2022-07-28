@@ -878,7 +878,10 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                                     if (!th.IsNull())
                                                     {
                                                         MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8());
-                                                        newPtr = (INT_PTR)pMD;
+                                                        if (pMD != nullptr && !pMD->IsGenericMethodDefinition())
+                                                        {
+                                                            newPtr = (INT_PTR)pMD;
+                                                        }
                                                     }
                                                 }
                                             }

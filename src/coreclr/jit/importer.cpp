@@ -3661,7 +3661,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = mustExpand || (gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL));
+        mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
 
         ni = lookupNamedIntrinsic(method);
 
@@ -4947,6 +4947,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig)
 {
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     assert(sig->sigInst.classInstCount == 0);
 
     switch (intrinsic)
@@ -17330,25 +17336,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val; // Src addr
                 op1 = impPopStack().val; // Dst addr
 
-                if (op2->OperGet() == GT_ADDR)
+                if (op3->IsCnsIntOrI())
                 {
-                    op2 = op2->AsOp()->gtOp1;
+                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
+
+                    op1 = gtNewBlockVal(op1, size);
+                    op2 = gtNewBlockVal(op2, size);
+                    op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, /* isCopyBlock */ true);
                 }
                 else
                 {
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
-                }
-
-                if (op3->IsCnsIntOrI())
-                {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
-                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
-                }
-                else
-                {
-                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    size = 0;
+                    op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
 
                     if ((prefixFlags & PREFIX_VOLATILE) != 0)
                     {
@@ -22808,7 +22807,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // resolve call above for class-based GDV.
         if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
         {
-            assert(call->IsDelegateInvoke());
+            assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) || call->IsDelegateInvoke());
             JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
             return;
         }

@@ -26,10 +26,10 @@ namespace System.Text.RegularExpressions.Generator
     /// source generation.
     /// </summary>
     [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
-    public sealed class UpgradeToRegexGeneratorCodeFixer : CodeFixProvider
+    public sealed class UpgradeToGeneratedRegexCodeFixer : CodeFixProvider
     {
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
-        private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
+        private const string GeneratedRegexTypeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
         private const string DefaultRegexMethodName = "MyRegex";
 
         /// <inheritdoc />
@@ -81,16 +81,16 @@ namespace System.Text.RegularExpressions.Generator
             }
             Compilation compilation = semanticModel.Compilation;
 
-            // We then get the symbols for the Regex and RegexGeneratorAttribute types.
+            // We then get the symbols for the Regex and GeneratedRegexAttribute types.
             INamedTypeSymbol? regexSymbol = compilation.GetTypeByMetadataName(RegexTypeName);
-            INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetTypeByMetadataName(RegexGeneratorTypeName);
-            if (regexSymbol is null || regexGeneratorAttributeSymbol is null)
+            INamedTypeSymbol? generatedRegexAttributeSymbol = compilation.GetTypeByMetadataName(GeneratedRegexTypeName);
+            if (regexSymbol is null || generatedRegexAttributeSymbol is null)
             {
                 return document;
             }
 
             // Save the operation object from the nodeToFix before it gets replaced by the new method invocation.
-            // We will later use this operation to get the parameters out and pass them into the RegexGenerator attribute.
+            // We will later use this operation to get the parameters out and pass them into the Regex attribute.
             IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
             if (operation is null)
             {
@@ -165,7 +165,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 operationArguments = invocationOperation.Arguments;
                 IEnumerable<SyntaxNode> arguments = operationArguments
-                    .Where(arg => arg.Parameter.Name is not (UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName or UpgradeToRegexGeneratorAnalyzer.PatternArgumentName))
+                    .Where(arg => arg.Parameter.Name is not (UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName))
                     .Select(arg => arg.Syntax);
 
                 replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
@@ -177,9 +177,9 @@ namespace System.Text.RegularExpressions.Generator
 
             newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(replacement, nodeToFix));
 
-            // Initialize the inputs for the RegexGenerator attribute.
-            SyntaxNode? patternValue = GetNode(operationArguments, generator, UpgradeToRegexGeneratorAnalyzer.PatternArgumentName);
-            SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName);
+            // Initialize the inputs for the GeneratedRegex attribute.
+            SyntaxNode? patternValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+            SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 
             // Generate the new static partial method
             MethodDeclarationSyntax newMethod = (MethodDeclarationSyntax)generator.MethodDeclaration(
@@ -191,8 +191,8 @@ namespace System.Text.RegularExpressions.Generator
             // Allow user to pick a different name for the method.
             newMethod = newMethod.ReplaceToken(newMethod.Identifier, SyntaxFactory.Identifier(methodName).WithAdditionalAnnotations(RenameAnnotation.Create()));
 
-            // Generate the RegexGenerator attribute syntax node with the specified parameters.
-            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(regexGeneratorAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue) switch
+            // Generate the GeneratedRegex attribute syntax node with the specified parameters.
+            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue) switch
             {
                 ({ }, null) => new[] { patternValue },
                 ({ }, { }) => new[] { patternValue, regexOptionsValue },
@@ -232,8 +232,8 @@ namespace System.Text.RegularExpressions.Generator
                     return null;
                 }
 
-                Debug.Assert(parameterName is UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName or UpgradeToRegexGeneratorAnalyzer.PatternArgumentName);
-                if (parameterName == UpgradeToRegexGeneratorAnalyzer.OptionsArgumentName)
+                Debug.Assert(parameterName is UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+                if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
                 {
                     string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
                     return SyntaxFactory.ParseExpression(optionsLiteral);

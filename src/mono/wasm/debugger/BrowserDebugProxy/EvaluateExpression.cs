@@ -144,7 +144,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = eaStr.Trim().Replace(".", "_").Replace("[", "_").Replace("]", "_");
+                        string prefix = regexForReplaceVarName.Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
