@@ -97,9 +97,10 @@ namespace BrowserDebugProxy
                 // GetFieldValue returns JObject without name and we need this information
                 if (isStatic)
                     fieldValue["name"] = field.Name;
-                fieldValue["__section"] = field.Attributes.HasFlag(FieldAttributes.Public)
+                FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
+                fieldValue["__section"] = attr == FieldAttributes.Public
                     ? "public" :
-                    field.Attributes.HasFlag(FieldAttributes.Assembly) ? "internal" : "private";
+                    attr == FieldAttributes.Private ? "private" : "internal";
 
                 if (field.IsBackingField)
                 {
