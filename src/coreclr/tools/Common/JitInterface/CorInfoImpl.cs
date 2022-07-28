@@ -2948,6 +2948,10 @@ namespace Internal.JitInterface
             int index = 0;
             foreach (TypeDesc implClass in implClasses)
             {
+                if (implClass.IsRuntimeDeterminedType)
+                {
+                    return 0;
+                }
                 exactClsRet[index++] = ObjectToHandle(implClass);
             }
 
