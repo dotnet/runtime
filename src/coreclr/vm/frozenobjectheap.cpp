@@ -9,8 +9,8 @@ FrozenObjectHeap::FrozenObjectHeap():
     m_pCurrent(nullptr),
     m_pCommited(nullptr),
     m_Size(0),
-    m_SegmentHandle(nullptr),
-    m_ObjectsCount(0)
+    m_SegmentHandle(nullptr)
+    COMMA_INDEBUG(m_ObjectsCount(0))
 {
     m_PageSize = GetOsPageSize();
     m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE);
