@@ -463,25 +463,25 @@
     <value>LibraryImportAttribute requires unsafe code.</value>
   </data>
   <data name="StatefulMarshallerRequiresFromManagedDescription" xml:space="preserve">
-    <value>A stateful marshaller that supports a managed-to-unmanaged marshal mode must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</value>
+    <value>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</value>
   </data>
   <data name="StatefulMarshallerRequiresFromManagedMessage" xml:space="preserve">
     <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</value>
   </data>
   <data name="StatefulMarshallerRequiresToUnmanagedDescription" xml:space="preserve">
-    <value>A stateful marshaller that supports a managed-to-unmanaged marshal mode must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</value>
+    <value>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</value>
   </data>
   <data name="StatefulMarshallerRequiresToUnmanagedMessage" xml:space="preserve">
     <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' returns the 'unmanaged' type for the marshaller</value>
   </data>
   <data name="StatefulMarshallerRequiresFromUnmanagedDescription" xml:space="preserve">
-    <value>A stateful marshaller that supports a unmanaged-to-managed marshal mode must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</value>
+    <value>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</value>
   </data>
   <data name="StatefulMarshallerRequiresFromUnmanagedMessage" xml:space="preserve">
     <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</value>
   </data>
   <data name="StatefulMarshallerRequiresToManagedDescription" xml:space="preserve">
-    <value>A stateful marshaller that supports a unmanaged-to-managed marshal mode must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</value>
+    <value>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</value>
   </data>
   <data name="StatefulMarshallerRequiresToManagedMessage" xml:space="preserve">
     <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' returns '{2}'</value>
