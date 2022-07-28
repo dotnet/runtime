@@ -9788,7 +9788,7 @@ namespace System.Xml
         }
 
 #pragma warning disable IDE0060
-        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver);
+        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull(nameof(url))] ref string? url, XmlResolver? resolver);
 #pragma warning restore IDE0060
     }
 }

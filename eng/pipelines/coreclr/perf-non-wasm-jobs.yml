@@ -1,0 +1,452 @@
+jobs:
+
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+
+  # build mono
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - Linux_x64
+
+  # build coreclr and libraries
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      buildConfig: release
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+
+  # build coreclr and libraries
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      buildConfig: release
+      platforms:
+      - Linux_x64
+      - windows_x64
+      - windows_x86
+      - Linux_musl_x64
+      jobParameters:
+        testGroup: perf
+
+  # build mono for AOT
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_x64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: AOT
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: AOT Mono Artifacts
+          artifactName: LinuxMonoAOTx64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  # build mono Android scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Android_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: AndroidMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: Android Mono Artifacts
+          artifactName: AndroidMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  # build mono iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: iOSMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: iOS Mono Artifacts
+          artifactName: iOSMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  # build mono
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - Linux_x64
+
+  # run mono and maui android scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
+      jobParameters:
+        testGroup: perf
+        runtimeType: AndroidMono
+        projectFile: android_scenarios.proj
+        runKind: android_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        additionalSetupParameters: "-MauiVersion $env:mauiVersion"
+
+  # run mono iOS scenarios and maui iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - OSX_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: False
+        additionalSetupParameters: "--mauiversion $(mauiVersion)"
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - OSX_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: True
+        additionalSetupParameters: "--mauiversion $(mauiVersion)"
+
+  # run maui android scenarios for net6
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
+      jobParameters:
+        testGroup: perf
+        runtimeType: AndroidMobileNet6
+        projectFile: android_scenarios_net6.proj
+        runKind: android_scenarios_net6
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        additionalSetupParameters: "-MauiVersion $env:mauiVersion"
+
+  # run maui iOS scenarios for net6 (Maui doesn't need Llmv true build (for net6))
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - OSX_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMobileNet6
+        projectFile: ios_scenarios_net6.proj
+        runKind: ios_scenarios_net6
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: False
+        additionalSetupParameters: "--mauiversion $(mauiVersion)"
+
+  # run mono microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+
+  # run mono interpreter perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'Interpreter'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+
+  # run mono aot microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildConfig: release
+      runtimeFlavor: aot
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'AOT'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+
+  # run coreclr perftiger microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_x64
+      - windows_x64
+      - windows_x86
+      - Linux_musl_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+
+  # run coreclr perftiger microbenchmarks pgo perf jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -NoPgo
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -DynamicPgo
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -FullPgo
+
+  # run coreclr perfowl microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfowl'
+
+  # run coreclr crossgen perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_x64
+      - windows_x64
+      - windows_x86
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: crossgen_perf.proj
+        runKind: crossgen_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perftiger'
+
+  # Uncomment to reenable package replacement
+  ## build maui runtime packs
+  #- template: /eng/pipelines/common/platform-matrix.yml
+  #  parameters:
+  #    jobTemplate: /eng/pipelines/common/global-build-job.yml
+  #    buildConfig: release
+  #    runtimeFlavor: mono
+  #    platforms:
+  #    - Android_x86
+  #    - Android_x64
+  #    - Android_arm
+  #    - Android_arm64
+  #    - MacCatalyst_x64
+  #    - iOSSimulator_x64
+  #    - iOS_arm64
+  #    - iOS_arm
+  #    jobParameters:
+  #      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+  #      nameSuffix: Maui_Packs_Mono
+  #      isOfficialBuild: false
+  #      extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+  #      extraStepsParameters:
+  #        name: MonoRuntimePacks
+
+  # build maui app net7.0
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+      # Uncomment to reenable package replacement for main
+        #dependsOn:
+        #  - Build_Android_arm_release_Maui_Packs_Mono
+        #  - Build_Android_arm64_release_Maui_Packs_Mono
+        #  - Build_Android_x86_release_Maui_Packs_Mono
+        #  - Build_Android_x64_release_Maui_Packs_Mono
+        #  - Build_MacCatalyst_x64_release_Maui_Packs_Mono
+        #  - Build_iOSSimulator_x64_release_Maui_Packs_Mono
+        #  - Build_iOS_arm_release_Maui_Packs_Mono
+        #  - Build_iOS_arm64_release_Maui_Packs_Mono
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: MACiOSAndroidMauiNet7
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-11'
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-net7.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: MAC, iOS, and Android Maui Artifacts Net7
+          artifactName: MACiOSAndroidMauiArmNet7
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+    # build maui app net6.0
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: MACiOSAndroidMauiNet6
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-11'
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-net6.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: MAC, iOS, and Android Maui Artifacts Net6
+          artifactName: MACiOSAndroidMauiArmNet6
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz

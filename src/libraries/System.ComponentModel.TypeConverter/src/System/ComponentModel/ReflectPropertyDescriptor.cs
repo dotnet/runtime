@@ -740,7 +740,7 @@ namespace System.ComponentModel
             // 1. Attributes of the property type. These are the lowest level and should be
             //     overwritten by any newer attributes.
             //
-            // 2. Attributes obtained from any SpecificTypeAttribute. These supercede attributes
+            // 2. Attributes obtained from any SpecificTypeAttribute. These supersede attributes
             //     for the property type.
             //
             // 3. Attributes of the property itself, from base class to most derived. This way
@@ -749,7 +749,7 @@ namespace System.ComponentModel
             // 4. Attributes from our base MemberDescriptor. While this seems opposite of what
             //     we want, MemberDescriptor only has attributes if someone passed in a new
             //     set in the constructor. Therefore, these attributes always
-            //     supercede existing values.
+            //     supersede existing values.
             //
 
 

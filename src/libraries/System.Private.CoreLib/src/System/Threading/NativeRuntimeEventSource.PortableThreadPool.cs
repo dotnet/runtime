@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
-    // Contains the implementation of ThreadPool events. This implemention is used by runtime not supporting NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs.
+    // Contains the implementation of ThreadPool events. This implementation is used by runtime not supporting NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.

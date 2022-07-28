@@ -1054,7 +1054,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        [return: NotNullIfNotNull("avt")]
+        [return: NotNullIfNotNull(nameof(avt))]
         private QilNode? CompileStringAvt(string? avt)
         {
             if (avt == null)
@@ -1681,7 +1681,7 @@ namespace System.Xml.Xsl.Xslt
         /// returning "1" if AVT evaluates to value1, or "0" if AVT evaluates to value0 or any other value.
         /// If AVT evaluates to neither value0 nor value1 and fwdCompat == false, an error is reported.
         /// </returns>
-        [return: NotNullIfNotNull("attName")]
+        [return: NotNullIfNotNull(nameof(attName))]
         private QilNode CompileOrderAttribute(string attName, string? attValue, string value0, string value1, bool fwdCompat)
         {
             QilNode? result = CompileStringAvt(attValue);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -201,41 +200,7 @@ namespace System.IO.Pipes
         public Task WaitForConnectionAsync(CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             IsAsync ? WaitForConnectionCoreAsync(cancellationToken).AsTask() :
-            AsyncOverSyncWaitForConnection(cancellationToken);
-
-        private async Task AsyncOverSyncWaitForConnection(CancellationToken cancellationToken)
-        {
-            // Create the work item state object.  This is used to pass around state through various APIs,
-            // while also serving double duty as the work item used to queue the operation to the thread pool.
-            var workItem = new SyncAsyncWorkItem();
-
-            // Queue the work to the thread pool.  This is implemented as a custom awaiter that queues the
-            // awaiter itself to the thread pool.
-            await workItem;
-
-            // Register for cancellation.
-            using (workItem.RegisterCancellation(cancellationToken))
-            {
-                try
-                {
-                    // Perform the wait.
-                    WaitForConnection();
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    // If the write fails because of cancellation, it will have been a Win32 error code
-                    // that WriteCore translated into an OperationCanceledException without a stored
-                    // CancellationToken.  We want to ensure the token is stored.
-                    throw new OperationCanceledException(cancellationToken);
-                }
-                finally
-                {
-                    // Prior to calling Dispose on the CancellationTokenRegistration, we need to tell
-                    // the registration callback to exit if it's currently running; otherwise, we could deadlock.
-                    workItem.ContinueTryingToCancel = false;
-                }
-            }
-        }
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.WaitForConnection(), this, cancellationToken).AsTask();
 
         public void Disconnect()
         {

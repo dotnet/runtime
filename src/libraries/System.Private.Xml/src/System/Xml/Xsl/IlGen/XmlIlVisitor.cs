@@ -3600,7 +3600,7 @@ namespace System.Xml.Xsl.IlGen
         /// Generate code for QilNodeType.XsltInvokeEarlyBound.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:RequiresUnreferencedCode",
-            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since we added " +
+            Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since we added " +
             "the attribute to this subclass' constructor. This allows us to not have to annotate the whole QilNode hirerarchy.")]
         protected override QilNode VisitXsltInvokeEarlyBound(QilInvokeEarlyBound ndInvoke)
         {

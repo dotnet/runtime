@@ -384,6 +384,7 @@ namespace Internal.IL
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
+            DefaultInterfaceMethodResolution staticResolution = default;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (_constrained != null)
@@ -398,7 +399,7 @@ namespace Internal.IL
                 if (constrained.IsRuntimeDeterminedSubtype)
                     constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod == null && constrained.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
@@ -419,7 +420,7 @@ namespace Internal.IL
                         || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
 
-                    exactType = constrained;
+                    exactType = directMethod.OwningType;
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -525,7 +526,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
+                    _dependencies.Add(_factory.FatFunctionPointer(targetMethod), reason);
                 }
             }
             else if (directCall)
@@ -676,6 +677,12 @@ namespace Internal.IL
                     _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
                 }
             }
+            else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+            {
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
+
+                ThrowHelper.ThrowBadImageFormatException();
+            }
             else if (method.Signature.IsStatic)
             {
                 // This should be an unresolved static virtual interface method call. Other static methods should
@@ -683,7 +690,14 @@ namespace Internal.IL
                 Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
 
                 var constrainedCallInfo = new ConstrainedCallInfo(_constrained, runtimeDeterminedMethod);
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ConstrainedDirectCall, constrainedCallInfo), reason);
+                var constrainedHelperId = ReadyToRunHelperId.ConstrainedDirectCall;
+
+                // Constant lookup doesn't make sense and we don't implement it. If we need constant lookup,
+                // the method wasn't implemented. Don't crash on it.
+                if (!_compilation.NeedsRuntimeLookup(constrainedHelperId, constrainedCallInfo))
+                    ThrowHelper.ThrowTypeLoadException(_constrained);
+
+                _dependencies.Add(GetGenericLookupHelper(constrainedHelperId, constrainedCallInfo), reason);
             }
             else if (method.HasInstantiation)
             {

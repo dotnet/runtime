@@ -1279,7 +1279,7 @@ void CLRCriticalSection::Leave()
     LeaveCriticalSection(&m_cs);
 }
 
-// An implementatino of GCEvent that delegates to
+// An implementation of GCEvent that delegates to
 // a CLREvent, which in turn delegates to the PAL. This event
 // is also host-aware.
 class GCEvent::Impl

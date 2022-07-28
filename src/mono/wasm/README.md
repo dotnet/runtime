@@ -163,11 +163,11 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 
 * console Hello world sample
 
-`dotnet build /t:RunSample console-v8-cjs/Wasm.Console.V8.CJS.Sample.csproj`
+`dotnet build /t:RunSample console-v8-es6/Wasm.Console.V8.Sample.csproj`
 
 * browser TestMeaning sample
 
-`dotnet build /t:RunSample browser/Wasm.Browser.CJS.Sample.csproj`
+`dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
 
 To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
 
@@ -188,7 +188,7 @@ Example use of the `wasmconsole` template:
     > dotnet new wasmconsole
     > dotnet publish
     > cd bin/Debug/net7.0/browser-wasm/AppBundle
-    > node main.cjs
+    > node main.mjs
     mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
     Hello World!
     Args:

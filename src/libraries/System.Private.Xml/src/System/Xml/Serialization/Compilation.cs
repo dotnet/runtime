@@ -561,7 +561,7 @@ namespace System.Xml.Serialization
             return xmlReader.IsStartElement(method.name!, method.ns!);
         }
 
-        [return: NotNullIfNotNull("encodingStyle")]
+        [return: NotNullIfNotNull(nameof(encodingStyle))]
         private string? ValidateEncodingStyle(string? encodingStyle, string methodKey)
         {
             if (encodingStyle != null && encodingStyle.Length > 0)

@@ -344,7 +344,7 @@ Histogram loopExitCountTable(loopExitCountBuckets);
 //                of the BYTE[] returned from getClassGClayout()
 //
 // Return Value:
-//    The corresponsing enum value from the JIT's var_types
+//    The corresponding enum value from the JIT's var_types
 //
 // Notes:
 //   The gcLayout of each field of a struct is returned from getClassGClayout()
@@ -9538,6 +9538,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_BOX_VALUE)
                 {
                     chars += printf("[BOX_VALUE]");
+                }
+
+                if (tree->gtFlags & GTF_BOX_CLONED)
+                {
+                    chars += printf("[BOX_CLONED]");
                 }
                 break;
 

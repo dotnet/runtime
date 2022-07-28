@@ -2122,7 +2122,21 @@ namespace System.Net.Sockets
             }
         }
 
-        // Determines the status of the socket.
+        /// <summary>Determines the status of the <see cref="Socket"/>.</summary>
+        /// <param name="microSeconds">The time to wait for a response, in microseconds.</param>
+        /// <param name="mode">One of the <see cref="SelectMode"/> values.</param>
+        /// <returns>
+        /// The status of the <see cref="Socket"/> based on the polling mode value passed in the <paramref name="mode"/> parameter.
+        /// For <see cref="SelectMode.SelectRead"/>, it returns <see langword="true"/> if <see cref="M:Listen"/> has been called and
+        /// a connection is pending, if data is available for reading, or if the connection has been closed, reset, or terminated.
+        /// For <see cref="SelectMode.SelectWrite"/>, it returns <see langword="true"/> if processing a <see cref="M:Connect"/> and
+        /// the connection has succeeded or if data can be sent.
+        /// For <see cref="SelectMode.SelectError"/>, it returns <see langword="true"/> if processing a <see cref="M:Connect"/> that
+        /// does not block and the connection has failed, or if OutOfBandInline is not set and out-of-band data is available.
+        /// Otherwise, it returns <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public bool Poll(int microSeconds, SelectMode mode)
         {
             ThrowIfDisposed();
@@ -2140,10 +2154,34 @@ namespace System.Net.Sockets
             return status;
         }
 
+        /// <summary>Determines the status of the <see cref="Socket"/>.</summary>
+        /// <param name="timeout">The time to wait for a response.</param>
+        /// <param name="mode">One of the <see cref="SelectMode"/> values.</param>
+        /// <returns>
+        /// The status of the <see cref="Socket"/> based on the polling mode value passed in the <paramref name="mode"/> parameter.
+        /// For <see cref="SelectMode.SelectRead"/>, it returns <see langword="true"/> if <see cref="M:Listen"/> has been called and
+        /// a connection is pending, if data is available for reading, or if the connection has been closed, reset, or terminated.
+        /// For <see cref="SelectMode.SelectWrite"/>, it returns <see langword="true"/> if processing a <see cref="M:Connect"/> and
+        /// the connection has succeeded or if data can be sent.
+        /// For <see cref="SelectMode.SelectError"/>, it returns <see langword="true"/> if processing a <see cref="M:Connect"/> that
+        /// does not block and the connection has failed, or if OutOfBandInline is not set and out-of-band data is available.
+        /// Otherwise, it returns <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than -1 milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public bool Poll(TimeSpan timeout, SelectMode mode) =>
             Poll(ToTimeoutMicroseconds(timeout), mode);
 
-        // Determines the status of a socket.
+        /// <summary>Determines the status of one or more sockets.</summary>
+        /// <param name="checkRead">An <see cref="IList"/> of <see cref="Socket"/> instances to check for readability.</param>
+        /// <param name="checkWrite">An <see cref="IList"/> of <see cref="Socket"/> instances to check for writability.</param>
+        /// <param name="checkError">An <see cref="IList"/> of <see cref="Socket"/> instances to check for errors.</param>
+        /// <param name="microSeconds">The timeout value, in microseconds. A -1 value indicates an infinite timeout.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter contains too many sockets.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">One or more sockets was disposed.</exception>
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
         {
             if ((checkRead == null || checkRead.Count == 0) &&
@@ -2175,7 +2213,18 @@ namespace System.Net.Sockets
             }
         }
 
-        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) => Select(checkRead, checkWrite, checkError, ToTimeoutMicroseconds(timeout));
+        /// <summary>Determines the status of one or more sockets.</summary>
+        /// <param name="checkRead">An <see cref="IList"/> of <see cref="Socket"/> instances to check for readability.</param>
+        /// <param name="checkWrite">An <see cref="IList"/> of <see cref="Socket"/> instances to check for writability.</param>
+        /// <param name="checkError">An <see cref="IList"/> of <see cref="Socket"/> instances to check for errors.</param>
+        /// <param name="timeout">The timeout value. A value equal to -1 microseconds indicates an infinite timeout.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter contains too many sockets.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="timeout"/> was less than -1 microseconds or greater than <see cref="int.MaxValue"/> microseconds</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">One or more sockets was disposed.</exception>
+        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) =>
+            Select(checkRead, checkWrite, checkError, ToTimeoutMicroseconds(timeout));
 
         private static int ToTimeoutMicroseconds(TimeSpan timeout)
         {

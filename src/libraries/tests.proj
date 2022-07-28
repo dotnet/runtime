@@ -278,6 +278,24 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection/tests/System.Reflection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels/tests/System.Threading.Channels.Tests.csproj" />
 
+    <!-- 
+      System.Formats.Cbor crashes on tvOS 
+    -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
+
+    <!--
+      Test apps that are too large and take too long to build 
+      Keep here until aggressive trimming targets can work on helix.
+
+      https://github.com/dotnet/runtime/issues/72834
+      https://github.com/dotnet/runtime/issues/72836
+    -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Tests.csproj" />
+
     <!-- Functional tests on devices have problems with return codes from mlaunch -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
   </ItemGroup>
@@ -310,14 +328,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
 
     <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions/tests/System.Linq.Expressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/PInvoke/iOS.Simulator.PInvoke.Test.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/tvOS/Simulator/AOT/tvOS.Simulator.Aot.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
@@ -359,6 +371,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnableThreads)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/72101 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
   </ItemGroup>
@@ -370,7 +389,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
+    <ProjectExclusions Condition="'$(TargetOS)' != 'iOS'" Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51708 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
@@ -511,7 +530,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Primitives\tests\System.Drawing.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\System.Globalization.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\NlsTests\System.Globalization.Nls.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />

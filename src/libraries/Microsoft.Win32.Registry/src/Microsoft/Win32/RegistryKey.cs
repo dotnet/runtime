@@ -509,11 +509,13 @@ namespace Microsoft.Win32
         /// <param name="name">Name of value to retrieve.</param>
         /// <param name="defaultValue">Value to return if <i>name</i> doesn't exist.</param>
         /// <returns>The data associated with the value.</returns>
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public object? GetValue(string? name, object? defaultValue)
         {
             return InternalGetValue(name, defaultValue, false);
         }
 
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public object? GetValue(string? name, object? defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
@@ -524,6 +526,7 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand);
         }
 
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         private object? InternalGetValue(string? name, object? defaultValue, bool doNotExpand)
         {
             EnsureNotDisposed();
@@ -764,7 +767,7 @@ namespace Microsoft.Win32
         {
             if (0 != (rights & ~RegistryRights.FullControl))
             {
-                // We need to throw SecurityException here for compatiblity reason,
+                // We need to throw SecurityException here for compatibility reason,
                 // although UnauthorizedAccessException will make more sense.
                 throw new SecurityException(SR.Security_RegistryPermission);
             }

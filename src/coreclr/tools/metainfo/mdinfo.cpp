@@ -2529,7 +2529,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
 {
     ULONG       cbCur = 0;
     ULONG       cb;
-    // 428793: Prefix complained correctly about unitialized data.
+    // 428793: Prefix complained correctly about uninitialized data.
     ULONG       ulData = (ULONG) IMAGE_CEE_CS_CALLCONV_MAX;
     ULONG       ulArgs;
     HRESULT     hr = NOERROR;

@@ -132,7 +132,7 @@ HRESULT ProfilingAPIDetach::Initialize()
 //        * The profiler must immediately call FreeLibraryAndExitThread() after
 //            RequestProfilerDetach returns.
 //
-//    The above invariants result in the following possiblities:
+//    The above invariants result in the following possibilities:
 //        * RequestProfilerDetach() may be called multi-threaded, but only from within
 //            profiler callbacks. As such, evacuation counters will have been incremented
 //            before entry into RequestProfilerDetach(), so the DetachThread will be

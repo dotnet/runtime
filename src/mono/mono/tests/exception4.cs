@@ -21,24 +21,24 @@ public class Ex {
 		return res;
 	}
 	public static int Main () {
-		int catched = 0;
+		int caught = 0;
 		try {
 			test (1);
 		} catch (MyEx ex) {
-			catched = 1;
+			caught = 1;
 		}
-		if (catched != 1)
+		if (caught != 1)
 			return 2;
 		try {
 			test (0);
 		} catch (MyEx ex) {
-			catched = 2;
+			caught = 2;
 		} catch {
 			// we should get here because rethrow rethrows the dividebyzero ex
 			// not the exception assigned to the local var (a MyEx)
-			catched = 3;
+			caught = 3;
 		}
-		if (catched != 3)
+		if (caught != 3)
 			return 3;
 		return 0;
 	}

@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
             //look for provider type in the cspParameters
             int providerType = cspParameters.ProviderType;
 
-            //look for provider name in the cspParamters
+            //look for provider name in the cspParameters
             //if CSP provider is not null then use the provider name from cspParameters
             if (null != cspParameters.ProviderName)
             {

@@ -203,7 +203,7 @@ namespace System.Xml.Schema
             }
         }
 
-        [return: NotNullIfNotNull("schemaSet")]
+        [return: NotNullIfNotNull(nameof(schemaSet))]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)

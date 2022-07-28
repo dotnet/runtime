@@ -4701,7 +4701,7 @@ namespace System.Text.RegularExpressions.Generator
             };
         }
 
-        /// <summary>Gets an identifer to describe a capture group.</summary>
+        /// <summary>Gets an identifier to describe a capture group.</summary>
         private static string DescribeCapture(int capNum, RegexMethod rm)
         {
             // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.

@@ -1636,7 +1636,7 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
 
         tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
-        // Pass in the InstatiationContext so contraints can be correctly evaluated
+        // Pass in the InstatiationContext so constraints can be correctly evaluated
         // if this is an instantiation where the type variable is in its open position
         if (!tyvar->SatisfiesConstraints(&typeContext,thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
         {

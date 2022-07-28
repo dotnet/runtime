@@ -338,9 +338,8 @@ namespace System.Net.Http
             lock (SyncObj)
             {
                 bool removed = _activeRequests.Remove(stream);
-                Debug.Assert(removed);
 
-                if (ShuttingDown)
+                if (removed && ShuttingDown)
                 {
                     CheckForShutdown();
                 }

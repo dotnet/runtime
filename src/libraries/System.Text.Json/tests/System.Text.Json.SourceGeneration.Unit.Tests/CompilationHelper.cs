@@ -31,7 +31,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string source,
             MetadataReference[] additionalReferences = null,
             string assemblyName = "TestAssembly",
-            bool includeSTJ = true)
+            bool includeSTJ = true,
+            Func<CSharpParseOptions, CSharpParseOptions> configureParseOptions = null)
         {
 
             List<MetadataReference> references = new List<MetadataReference> {
@@ -63,9 +64,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
             }
 
+            configureParseOptions ??= (options) => options;
+            var parseOptions = configureParseOptions(s_parseOptions);
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, s_parseOptions) },
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
                 references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
@@ -278,7 +281,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithInitOnlyProperties()
         {
             string source = @"
@@ -335,7 +338,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = @"
@@ -363,7 +366,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithRecordPositionalParameters()
         {
             string source = @"
@@ -393,7 +396,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
         public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
         {
             string source = @"
@@ -451,9 +454,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-            public static Compilation CreateReferencedSimpleLibRecordCompilation()
-            {
-                string source = @"
+        public static Compilation CreateReferencedSimpleLibRecordCompilation()
+        {
+            string source = @"
             using System.Text.Json.Serialization;
 
             namespace ReferencedAssembly
@@ -475,7 +478,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }
 ";
 
-                return CreateCompilation(source);
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateReferencedModelWithFullyDocumentedProperties()
+        {
+            string source = @"
+            namespace ReferencedAssembly
+            {
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class Model
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public int Property1 { get; set; }
+
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public int Property2 { get; set; }
+                }
+            }";
+
+            return CreateCompilation(source);
         }
 
         internal static void CheckDiagnosticMessages(

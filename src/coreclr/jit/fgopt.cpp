@@ -6041,7 +6041,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                     // case (b)
                     //
-                    // Note the asymetric checks for refs == 1 and refs > 1 ensures that we
+                    // Note the asymmetric checks for refs == 1 and refs > 1 ensures that we
                     // differentiate the roles played by bDest and bNextJumpDest. We need some
                     // sense of which arrangement is preferable to avoid getting stuck in a loop
                     // reversing and re-reversing.

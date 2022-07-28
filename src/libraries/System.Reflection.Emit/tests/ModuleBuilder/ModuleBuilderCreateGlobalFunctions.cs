@@ -17,6 +17,10 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             module.CreateGlobalFunctions();
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.Null(method.DeclaringType);
+            }
         }
 
         [Fact]
@@ -34,6 +38,10 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.EmitWriteLine("Hello World from global method again!");
 
             module.CreateGlobalFunctions();
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.Null(method.DeclaringType);
+            }
         }
 
         [Fact]
@@ -46,6 +54,10 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             module.CreateGlobalFunctions();
+            if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/72858", TestRuntimes.Mono)]
+            {
+                Assert.Null(method.DeclaringType);
+            }
             Assert.Throws<InvalidOperationException>(() => module.CreateGlobalFunctions());
         }
     }

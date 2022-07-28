@@ -578,7 +578,7 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
-// bbIsHanderBeg() returns true if "block" is the start of any handler or filter.
+// bbIsHandlerBeg() returns true if "block" is the start of any handler or filter.
 // Note that if a block is the beginning of a handler or filter, it must be the beginning
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
@@ -1686,7 +1686,7 @@ void Compiler::fgRemoveEH()
             // just deleting the blocks is sufficient. Note, however, that for every
             // BBJ_EHCATCHRET we delete, we need to fix up the reference count of the
             // block it points to (by subtracting one from its reference count).
-            // Note that the blocks for a filter immediately preceed the blocks for its associated filter-handler.
+            // Note that the blocks for a filter immediately precede the blocks for its associated filter-handler.
 
             BasicBlock* blkBeg  = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
             BasicBlock* blkLast = HBtab->ebdHndLast;

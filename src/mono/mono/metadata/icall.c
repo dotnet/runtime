@@ -268,7 +268,7 @@ static MonoTypeEnum
 get_normalized_integral_array_element_type (MonoTypeEnum elementType)
 {
 	// Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-	// Enums with interchangeable underlying types are interchangable
+	// Enums with interchangeable underlying types are interchangeable
 	// BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
 	switch (elementType) {
@@ -2764,6 +2764,10 @@ guint32
 ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle)
 {
 	MonoType *type = type_handle.type;
+
+	// Enums in generic classes should still return VALUETYPE
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
+		return MONO_TYPE_VALUETYPE;
 
 	if (m_type_is_byref (type))
 		return MONO_TYPE_BYREF;
@@ -6657,7 +6661,7 @@ mono_dangerous_add_internal_call_coop (const char *name, gconstpointer method)
 * Additionally, the method must switch to GC Safe mode to perform all blocking
 * operations: performing blocking I/O, taking locks, etc. The method can't throw or raise
 * exceptions or call other methods that will throw or raise exceptions since the runtime won't
-* be able to detect exeptions and unwinder won't be able to correctly find last managed frame in callstack.
+* be able to detect exceptions and unwinder won't be able to correctly find last managed frame in callstack.
 * This registration method is for icalls that needs very low overhead and follow all rules in their implementation.
 *
 */

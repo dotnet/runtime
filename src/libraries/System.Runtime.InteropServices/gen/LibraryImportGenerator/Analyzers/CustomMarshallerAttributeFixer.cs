@@ -70,9 +70,7 @@ namespace Microsoft.Interop.Analyzers
 
         public override ImmutableArray<string> FixableDiagnosticIds { get; } =
             ImmutableArray.Create(
-                AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape,
-                AnalyzerDiagnostics.Ids.MissingAllocatingMarshallingFallback,
-                AnalyzerDiagnostics.Ids.InvalidNativeMarshallingAttributeUsage);
+                AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape);
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {

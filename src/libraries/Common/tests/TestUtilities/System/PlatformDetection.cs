@@ -38,7 +38,8 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
-        public static bool IsNotAndroidX86 => !(IsAndroid && IsX86Process);
+        public static bool IsAndroidX86 => IsAndroid && IsX86Process;
+        public static bool IsNotAndroidX86 => !IsAndroidX86;
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));

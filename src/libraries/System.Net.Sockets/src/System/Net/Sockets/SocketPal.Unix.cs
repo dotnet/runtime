@@ -689,7 +689,7 @@ namespace System.Net.Sockets
             {
                 // Due to fd recyling, TryCompleteConnect may be called when there was a write event
                 // for the previous socket that used the fd.
-                // The SocketErrorOption in that case is the same as for a succesful connect.
+                // The SocketErrorOption in that case is the same as for a successful connect.
                 // To filter out these false events, we check whether the socket is writable, before
                 // reading the socket option.
                 Interop.PollEvents outEvents;

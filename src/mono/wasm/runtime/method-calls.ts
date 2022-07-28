@@ -6,7 +6,7 @@ import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
     VoidPtrNull, MonoObjectRef,
-    MonoStringRef, is_nullish
+    MonoStringRef, is_nullish, mono_assert
 } from "./types";
 import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
@@ -22,7 +22,6 @@ import {
 } from "./method-binding";
 import { conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
 import cwraps from "./cwraps";
-import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
 import { VoidPtr, Int32Ptr } from "./types/emscripten";
 import { assembly_load } from "./class-loader";
@@ -174,8 +173,7 @@ function _call_method_with_converted_args(
 }
 
 export function call_static_method(fqn: string, args: any[], signature: string/*ArgsMarshalString*/): any {
-    bindings_lazy_init();// TODO remove this once Blazor does better startup
-
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
     const method = mono_method_resolve(fqn);
 
     if (typeof signature === "undefined")
@@ -185,8 +183,7 @@ export function call_static_method(fqn: string, args: any[], signature: string/*
 }
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
-    bindings_lazy_init();// TODO remove this once Blazor does better startup
-
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
     const method = mono_method_resolve(fqn);
 
     if (typeof signature === "undefined")
@@ -196,8 +193,7 @@ export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMar
 }
 
 export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
-    bindings_lazy_init();// TODO remove this once Blazor does better startup
-
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
     const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
@@ -221,6 +217,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
 }
 
 export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string/*ArgsMarshalString*/): number {
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
     if (!args) {
         args = [[]];
     }

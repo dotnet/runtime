@@ -67,13 +67,9 @@ namespace System.Net.Sockets
             }
         }
 
-        public override bool IsInvalid
-        {
-            get
-            {
-                return IsClosed || base.IsInvalid;
-            }
-        }
+        /// <summary>Gets a value indicating whether the handle value is invalid.</summary>
+        /// <value><see langword="true"/> if the handle value is invalid; otherwise, <see langword="false"/>.</value>
+        public override bool IsInvalid => IsClosed || base.IsInvalid;
 
         protected override bool ReleaseHandle()
         {
