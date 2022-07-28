@@ -280,10 +280,10 @@ namespace System.Xml
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
 
-        [RegexGenerator("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        [GeneratedRegex("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
         private static partial Regex DecodeCharRegex();
 
-        [RegexGenerator("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        [GeneratedRegex("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
         private static partial Regex EncodeCharRegex();
 
         private static int FromHex(char digit)

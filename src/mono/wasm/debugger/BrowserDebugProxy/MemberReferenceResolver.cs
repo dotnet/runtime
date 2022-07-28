@@ -362,6 +362,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 JObject rootObject = null;
                 string elementAccessStrExpression = elementAccess.Expression.ToString();
+                var multiDimensionalArray = false;
                 rootObject = await Resolve(elementAccessStrExpression, token);
                 if (rootObject == null)
                 {
@@ -370,7 +371,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 if (rootObject != null)
                 {
-                    string elementIdxStr;
+                    string elementIdxStr = null;
                     int elementIdx = 0;
                     var elementAccessStr = elementAccess.ToString();
                     // x[1] or x[a] or x[a.b]
@@ -378,14 +379,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (elementAccess.ArgumentList != null)
                         {
-                            foreach (var arg in elementAccess.ArgumentList.Arguments)
+                            for (int i = 0 ; i < elementAccess.ArgumentList.Arguments.Count; i++)
                             {
+                                var arg = elementAccess.ArgumentList.Arguments[i];
+                                if (i != 0)
+                                {
+                                    elementIdxStr += ", ";
+                                    multiDimensionalArray = true;
+                                }
                                 // e.g. x[1]
                                 if (arg.Expression is LiteralExpressionSyntax)
                                 {
                                     var argParm = arg.Expression as LiteralExpressionSyntax;
-                                    elementIdxStr = argParm.ToString();
-                                    int.TryParse(elementIdxStr, out elementIdx);
+                                    elementIdxStr += argParm.ToString();
                                 }
 
                                 // e.g. x[a] or x[a.b]
@@ -401,10 +407,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     {
                                         indexObject = await Resolve(argParm.Identifier.Text, token);
                                     }
-                                    elementIdxStr = indexObject["value"].ToString();
-                                    int.TryParse(elementIdxStr, out elementIdx);
+                                    elementIdxStr += indexObject["value"].ToString();
                                 }
-
                                 // FixMe: indexing with expressions, e.g. x[a + 1]
                             }
                         }
@@ -413,9 +417,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     else
                     {
                         elementIdxStr = indexObject["value"].ToString();
-                        int.TryParse(elementIdxStr, out elementIdx);
                     }
-                    if (elementIdx >= 0)
+                    if (elementIdxStr != null)
                     {
                         var type = rootObject?["type"]?.Value<string>();
                         if (!DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
@@ -425,8 +428,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             case "array":
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                                return (JObject)rootObject["value"][elementIdx]["value"];
+                                if (!multiDimensionalArray)
+                                {
+                                    int.TryParse(elementIdxStr, out elementIdx);
+                                    return (JObject)rootObject["value"][elementIdx]["value"];
+                                }
+                                else
+                                {
+                                    return (JObject)(((JArray)rootObject["value"]).FirstOrDefault(x => x["name"].Value<string>() == elementIdxStr)["value"]);
+                                }
                             case "object":
+                                if (multiDimensionalArray)
+                                    throw new InvalidOperationException($"Cannot apply indexing with [,] to an object of type '{type}'");
+                                int.TryParse(elementIdxStr, out elementIdx);
                                 if (type == "string")
                                 {
                                     // ToArray() does not exist on string

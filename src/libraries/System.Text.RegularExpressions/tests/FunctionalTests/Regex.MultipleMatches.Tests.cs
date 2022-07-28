@@ -387,18 +387,29 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
 #if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
+                
+                yield return new object[]
+                {
+                    engine, "@(a*)+?", "@", RegexOptions.None, new[]
+                    {
+                        new CaptureData("@", 0, 1)
+                    }
+                };
+
+                if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
+                {
+                    yield return new object[]
+                    {
+                        engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
+                        {
+                            new CaptureData("x", 3, 1),
+                        }
+                    };
+                }
+
                 if (engine != RegexEngine.Interpreter && // these tests currently fail with RegexInterpreter
                     RuntimeFeature.IsDynamicCodeCompiled) // if dynamic code isn't compiled, RegexOptions.Compiled falls back to the interpreter, for which these tests currently fail
                 {
-                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
-                    yield return new object[]
-                    {
-                        engine, "@(a*)+?", "@", RegexOptions.None, new[]
-                        {
-                            new CaptureData("@", 0, 1)
-                        }
-                    };
-
                     // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
                     yield return new object[]
                     {
@@ -408,18 +419,6 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("", 1, 0)
                         }
                     };
-
-                    if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
-                    {
-                        // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
-                        yield return new object[]
-                        {
-                            engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
-                            {
-                                new CaptureData("x", 3, 1),
-                            }
-                        };
-                    }
                 }
 #endif
             }

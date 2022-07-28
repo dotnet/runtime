@@ -17,6 +17,7 @@
 //    Reflection.Execution.dll
 
 using System;
+using System.Reflection;
 using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -360,23 +361,23 @@ namespace Internal.Runtime.Augments
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
 
         [DebuggerGuidedStepThroughAttribute]
-        public static object CallDynamicInvokeMethod(
-            object thisPtr,
+        public static object? CallDynamicInvokeMethod(
+            object? thisPtr,
             IntPtr methodToCall,
             IntPtr dynamicInvokeHelperMethod,
             IntPtr dynamicInvokeHelperGenericDictionary,
-            object defaultParametersContext,
-            object[] parameters,
+            MethodBase targetMethod,
+            object?[]? parameters,
             BinderBundle binderBundle,
             bool wrapInTargetInvocationException,
             bool methodToCallIsThisCall)
         {
-            object result = InvokeUtils.CallDynamicInvokeMethod(
+            object? result = InvokeUtils.CallDynamicInvokeMethod(
                 thisPtr,
                 methodToCall,
                 dynamicInvokeHelperMethod,
                 dynamicInvokeHelperGenericDictionary,
-                defaultParametersContext,
+                targetMethod,
                 parameters,
                 binderBundle,
                 wrapInTargetInvocationException,

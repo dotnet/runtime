@@ -775,6 +775,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (!mustExpand && info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;
