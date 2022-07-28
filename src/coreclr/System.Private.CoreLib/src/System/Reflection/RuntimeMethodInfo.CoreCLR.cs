@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
@@ -168,44 +169,51 @@ namespace System.Reflection
 
         public override bool Equals(object? obj)
         {
-            if (!IsGenericMethod)
-                return obj == (object)this;
-
-            // We cannot do simple object identity comparisons for generic methods.
-            // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-            // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
-
-            RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
-
-            if (mi == null || !mi.IsGenericMethod)
-                return false;
-
-            // now we know that both operands are generic methods
-
-            IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
-            IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
-            if (handle1.Value.Value != handle2.Value.Value)
-                return false;
-
-            Type[] lhs = GetGenericArguments();
-            Type[] rhs = mi.GetGenericArguments();
-
-            if (lhs.Length != rhs.Length)
-                return false;
-
-            for (int i = 0; i < lhs.Length; i++)
+            if (IsGenericMethod)
             {
-                if (lhs[i] != rhs[i])
+                // We cannot do simple object identity comparisons for generic methods.
+                // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
+                // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
+
+                RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
+
+                if (mi == null || !mi.IsGenericMethod)
                     return false;
+
+                // now we know that both operands are generic methods
+
+                IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
+                IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
+                if (handle1.Value.Value != handle2.Value.Value)
+                    return false;
+
+                Type[] lhs = GetGenericArguments();
+                Type[] rhs = mi.GetGenericArguments();
+
+                if (lhs.Length != rhs.Length)
+                    return false;
+
+                for (int i = 0; i < lhs.Length; i++)
+                {
+                    if (lhs[i] != rhs[i])
+                        return false;
+                }
+
+                if (DeclaringType != mi.DeclaringType)
+                    return false;
+
+                if (ReflectedType != mi.ReflectedType)
+                    return false;
+
+                return true;
             }
 
-            if (DeclaringType != mi.DeclaringType)
-                return false;
+            return obj == (object)this ||
+                (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied &&
+                    obj is RuntimeMethodInfo m &&
+                    m.MetadataToken == MetadataToken &&
+                    RuntimeTypeHandle.GetModule(m_declaringType).Equals(RuntimeTypeHandle.GetModule(m.m_declaringType)));
 
-            if (ReflectedType != mi.ReflectedType)
-                return false;
-
-            return true;
         }
         #endregion
 

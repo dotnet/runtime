@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -118,6 +119,15 @@ namespace System.Reflection
 
             return m_toString;
         }
+
+        public override bool Equals(object? obj) =>
+            obj == (object)this ||
+                (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied &&
+                    obj is RuntimeConstructorInfo m &&
+                    MetadataToken == m.MetadataToken &&
+                    RuntimeTypeHandle.GetModule(m_declaringType).Equals(RuntimeTypeHandle.GetModule(m.m_declaringType)));
+
+        public override int GetHashCode() => base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

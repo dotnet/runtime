@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -46,6 +47,12 @@ namespace System.Reflection
 
         public override Module Module => GetRuntimeModule();
         public override bool IsCollectible => m_declaringType.IsCollectible;
+
+        public override bool Equals(object? obj) =>
+            obj == (object)this ||
+            (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied && CacheEquals(obj));
+
+        public override int GetHashCode() => base.GetHashCode();
         #endregion
 
         #region Object Overrides

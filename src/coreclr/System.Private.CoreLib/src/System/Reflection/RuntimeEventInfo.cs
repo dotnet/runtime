@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -68,6 +69,12 @@ namespace System.Reflection
 
             return m_addMethod.GetParametersNoCopy()[0].ParameterType.FormatTypeName() + " " + Name;
         }
+
+        public override bool Equals(object? obj) =>
+            obj == (object)this ||
+            (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied && CacheEquals(obj));
+
+        public override int GetHashCode() => base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

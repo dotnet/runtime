@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using MdToken = System.Reflection.MetadataToken;
 
@@ -496,6 +497,14 @@ namespace System.Reflection
                 m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
+        public override bool Equals(object? obj) =>
+            obj == (object)this ||
+                (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied &&
+                    obj is RuntimeParameterInfo m &&
+                    m_tkParamDef == m.m_tkParamDef &&
+                    GetRuntimeModule()!.Equals(m.GetRuntimeModule()));
+
+        public override int GetHashCode() => base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

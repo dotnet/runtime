@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Text;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -179,6 +180,12 @@ namespace System.Reflection
         public override Module Module => GetRuntimeModule();
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
         public override bool IsCollectible => m_declaringType.IsCollectible;
+
+        public override bool Equals(object? obj) =>
+            obj == (object)this ||
+                (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied && CacheEquals(obj));
+
+        public override int GetHashCode() => base.GetHashCode();
         #endregion
 
         #region PropertyInfo Overrides
