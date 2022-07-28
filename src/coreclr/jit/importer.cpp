@@ -4466,6 +4466,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     break;
                 }
 
+                if (!compOpportunisticallyDependsOn(InstructionSet_SSE2))
+                {
+                    break;
+                }
+
                 if (ni == NI_System_Math_Max)
                 {
                     // maxsd, maxss return op2 if both inputs are 0 of either sign
