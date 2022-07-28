@@ -137,8 +137,6 @@ function set_exit_code(exit_code, reason) {
             console.log("before App.INTERNAL.mono_wasm_exit")
             App.INTERNAL.mono_wasm_exit(exit_code);
             console.log("after App.INTERNAL.mono_wasm_exit")
-            if (typeof quit != "undefined") quit(exit_code);
-            console.log("after quit")
         }
     }
 }
