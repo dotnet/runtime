@@ -6194,6 +6194,9 @@ public:
             if (!GCToOSInterface::GetProcessorForHeap ((uint16_t)i, &proc_no, &node_no))
                 break;
 
+            if (node_no == NUMA_NODE_UNDEFINED)
+                node_no = 0;
+
             int start_heap = (int)numa_node_to_heap_map[node_no];
             int end_heap = (int)(numa_node_to_heap_map[node_no + 1]);
 
@@ -7090,7 +7093,7 @@ public:
     size_t recover_plug_info()
     {
         // We need to calculate the size for sweep case in order to correctly record the
-        // free_obj_space - sweep would've made these artifical gaps into free objects and
+        // free_obj_space - sweep would've made these artificial gaps into free objects and
         // we would need to deduct the size because now we are writing into those free objects.
         size_t recovered_sweep_size = 0;
 
@@ -12980,14 +12983,14 @@ uint32_t gc_heap::adjust_heaps_hard_limit (uint32_t nhp)
 
 size_t gc_heap::adjust_segment_size_hard_limit_va (size_t seg_size)
 {
-    return (use_large_pages_p ? 
-            align_on_segment_hard_limit (seg_size) : 
+    return (use_large_pages_p ?
+            align_on_segment_hard_limit (seg_size) :
             round_up_power2 (seg_size));
 }
 
 size_t gc_heap::adjust_segment_size_hard_limit (size_t limit, uint32_t nhp)
 {
-    if (!limit) 
+    if (!limit)
     {
         limit = min_segment_size_hard_limit;
     }
@@ -13169,7 +13172,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         // REGIONS TODO: we should reserve enough space at the end of what we reserved that's
         // big enough to accommodate if we were to materialize all the GC bookkeeping datastructures.
         // We only need to commit what we use and just need to commit more instead of having to
-        // relocate the exising table and then calling copy_brick_card_table.
+        // relocate the existing table and then calling copy_brick_card_table.
         // Right now all the non mark array portions are commmitted since I'm calling mark_card_table
         // on the whole range. This can be committed as needed.
         size_t reserve_size = regions_range;
@@ -15414,7 +15417,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #endif //USE_REGIONS
             {
                 size_t pad_size = aligned_min_obj_size;
-                dprintf (3, ("contigous ac: making min obj gap %Ix->%Ix(%Id)",
+                dprintf (3, ("contiguous ac: making min obj gap %Ix->%Ix(%Id)",
                     acontext->alloc_ptr, (acontext->alloc_ptr + pad_size), pad_size));
                 make_unused_array (acontext->alloc_ptr, pad_size);
                 acontext->alloc_ptr += pad_size;
@@ -16131,7 +16134,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
                 remove_gen_free (gen_number, free_list_size);
 
-                // Substract min obj size because limit_from_size adds it. Not needed for LOH
+                // Subtract min obj size because limit_from_size adds it. Not needed for LOH
                 size_t limit = limit_from_size (size - Align(min_obj_size, align_const), flags, free_list_size,
                                                 gen_number, align_const);
                 dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
@@ -20273,7 +20276,7 @@ int gc_heap::generation_to_condemn (int n_initial,
                     // For background GC we want to do blocking collections more eagerly because we don't
                     // want to get into the situation where the memory load becomes high while we are in
                     // a background GC and we'd have to wait for the background GC to finish to start
-                    // a blocking collection (right now the implemenation doesn't handle converting
+                    // a blocking collection (right now the implementation doesn't handle converting
                     // a background GC to a blocking collection midway.
                     dprintf (GTC_LOG, ("h%d: bgc - BLOCK", heap_number));
                     *blocking_collection_p = TRUE;
@@ -33790,7 +33793,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
             }
         }
 
-        dprintf (GC_TABLE_LOG, ("decommited [%Ix for address [%Ix", beg_word, seg));
+        dprintf (GC_TABLE_LOG, ("decommitted [%Ix for address [%Ix", beg_word, seg));
     }
 }
 
@@ -39595,7 +39598,7 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         if (gen_number == 0)
         {
             //compensate for dead finalizable objects promotion.
-            //they shoudn't be counted for growth.
+            //they shouldn't be counted for growth.
             size_t final_promoted = 0;
             final_promoted = min (finalization_promoted_bytes, out);
             // Prefast: this is clear from above but prefast needs to be told explicitly
@@ -41741,7 +41744,7 @@ void gc_heap::background_sweep()
                             else
                             {
                                 // this was not on the free list so it was already part of
-                                // free_obj_space, so no need to substract from it. However,
+                                // free_obj_space, so no need to subtract from it. However,
                                 // we do need to keep track in this gap's FO space.
                                 dprintf (3333, ("h%d: gen2FO: %Ix(%Id)->%Id (g: %Id)",
                                     heap_number, o, size_o,
@@ -44075,7 +44078,7 @@ HRESULT GCHeap::Initialize()
     seg_size = gc_heap::soh_segment_size;
 
 #ifndef USE_REGIONS
-    
+
     if (gc_heap::heap_hard_limit)
     {
         if (gc_heap::heap_hard_limit_oh[soh])
@@ -44528,8 +44531,6 @@ Object * GCHeap::NextObj (Object * object)
 #else
     unsigned int g = hp->object_gennum ((uint8_t*)object);
 #endif
-    if ((g == 0) && hp->settings.demotion)
-        return NULL;//could be racing with another core allocating.
     int align_const = get_alignment_constant (!large_object_p);
     uint8_t* nextobj = o + Align (size (o), align_const);
     if (nextobj <= o) // either overflow or 0 sized object.

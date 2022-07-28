@@ -9,8 +9,6 @@ using System.Threading;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-#nullable enable
-
 namespace TestUtilities;
 
 // Based on https://github.com/xunit/xunit/blob/v2/src/xunit.execution/Sdk/DefaultTestCaseOrderer.cs

@@ -526,7 +526,7 @@ pal::string_t to_upper(const pal::char_t* in) {
 // with test-only marker.
 bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 {
-    // This is a static variable which is embeded in the product binary (somewhere).
+    // This is a static variable which is embedded in the product binary (somewhere).
     // The marker values is a GUID so that it's unique and can be found by doing a simple search on the file
     // The first character is used as the decider:
     //  - Default value is 'd' (stands for disabled) - test only behavior is disabled

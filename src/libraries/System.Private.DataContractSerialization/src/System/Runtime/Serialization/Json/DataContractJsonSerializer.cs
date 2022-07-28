@@ -341,7 +341,7 @@ namespace System.Runtime.Serialization.Json
             return XmlConvert.DecodeName(xmlName);
         }
 
-        [return: NotNullIfNotNull("xmlName")]
+        [return: NotNullIfNotNull(nameof(xmlName))]
         internal static XmlDictionaryString? ConvertXmlNameToJsonName(XmlDictionaryString? xmlName)
         {
             return (xmlName == null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));

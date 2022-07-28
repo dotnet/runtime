@@ -2662,6 +2662,7 @@ PALIMPORT
 size_t
 PALAPI
 PAL_GetLogicalProcessorCacheSizeFromOS();
+#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
@@ -2669,7 +2670,7 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_P
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
 
-#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
+PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
 /* PAL_CS_NATIVE_DATA_SIZE is defined as sizeof(PAL_CRITICAL_SECTION_NATIVE_DATA) */
 

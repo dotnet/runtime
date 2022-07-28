@@ -228,11 +228,6 @@
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="runtime.cjs.iffe.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.pre.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.post.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="runtime.es6.iffe.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />

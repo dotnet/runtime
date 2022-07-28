@@ -1340,7 +1340,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     assert(op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
-    // Treat dst register as a homogenous vector with element size equal to the src size
+    // Treat dst register as a homogeneous vector with element size equal to the src size
     // Insert pieces in reverse order
     for (int i = regCount - 1; i >= 0; --i)
     {
@@ -2858,8 +2858,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
-    if (!node->gtBlkOpGcUnsafe &&
-        ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0) || (node->GetLayout()->HasGCPtr())))
+    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
     {
         // If node is not already marked as non-interruptible, and if are about to generate code
         // that produce GC references in temporary registers not reported, then mark the block
@@ -4475,7 +4474,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     assert(src->isUsedFromReg());
     regNumber srcReg = src->GetRegNum();
 
-    // Treat src register as a homogenous vector with element size equal to the reg size
+    // Treat src register as a homogeneous vector with element size equal to the reg size
     // Insert pieces in order
     unsigned regCount = retTypeDesc->GetReturnRegCount();
     for (unsigned i = 0; i < regCount; ++i)

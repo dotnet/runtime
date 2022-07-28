@@ -6,14 +6,14 @@
 ** Source:  test1.c
 **
 ** Purpose:  Call the cbrt function on a positive value, a positive value
-** with a decimal and on the maxium possible double value.  
+** with a decimal and on the maximum possible double value.
 **
 **
 **===================================================================*/
 
 #include <palsuite.h>
 
-// binary64 (double) has a machine epsilon of 2^-52 (approx. 2.22e-16). However, this 
+// binary64 (double) has a machine epsilon of 2^-52 (approx. 2.22e-16). However, this
 // is slightly too accurate when writing tests meant to run against libm implementations
 // for various platforms. 2^-50 (approx. 8.88e-16) seems to be as accurate as we can get.
 //
@@ -81,7 +81,7 @@ void __cdecl cbrt_test1_validate_isnan(double value)
 
 PALTEST(c_runtime_cbrt_test1_paltest_cbrt_test1, "c_runtime/cbrt/test1/paltest_cbrt_test1")
 {
-    struct test tests[] = 
+    struct test tests[] =
     {
         /* value                   expected                variance */
         {  0.31830988618379067,    0.68278406325529568,    PAL_EPSILON },       // value:  1 / pi
@@ -105,7 +105,7 @@ PALTEST(c_runtime_cbrt_test1_paltest_cbrt_test1, "c_runtime/cbrt/test1/paltest_c
     {
         return FAIL;
     }
-    
+
     cbrt_test1_validate(-0.0, -0.0, PAL_EPSILON);
     cbrt_test1_validate( 0.0,  0.0, PAL_EPSILON);
 
@@ -114,7 +114,7 @@ PALTEST(c_runtime_cbrt_test1_paltest_cbrt_test1, "c_runtime/cbrt/test1/paltest_c
         cbrt_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
         cbrt_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
-    
+
     cbrt_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();

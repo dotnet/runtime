@@ -305,7 +305,7 @@ namespace System.Xml
         //Hashtable namespaces;
         // linked list of pushed nametables (to support nested binary-xml documents)
         private NestedBinXml? _prevNameInfo;
-        // XmlTextReader to handle embeded text blocks
+        // XmlTextReader to handle embedded text blocks
         private XmlReader? _textXmlReader;
         // close input flag
         private readonly bool _closeInput;

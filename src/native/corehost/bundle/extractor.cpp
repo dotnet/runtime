@@ -32,7 +32,7 @@ pal::string_t& extractor_t::extraction_dir()
         // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...
         //
         // If DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set in the environment,
-        // a default is choosen within the temporary directory.
+        // a default is chosen within the temporary directory.
 
         if (!pal::getenv(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR"), &m_extraction_dir))
         {

@@ -39,7 +39,7 @@
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers

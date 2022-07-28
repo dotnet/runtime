@@ -16,16 +16,6 @@ namespace System.IO.Compression
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
 
-        public enum TestScenario
-        {
-            ReadByte,
-            ReadByteAsync,
-            Read,
-            ReadAsync,
-            Copy,
-            CopyAsync,
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
@@ -488,6 +478,7 @@ namespace System.IO.Compression
             Assert.True(optimalLength >= smallestLength);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Theory]
         [InlineData(TestScenario.ReadAsync)]
         [InlineData(TestScenario.Read)]
@@ -566,6 +557,16 @@ namespace System.IO.Compression
                 }
             }
         }
+    }
+
+    public enum TestScenario
+    {
+        ReadByte,
+        ReadByteAsync,
+        Read,
+        ReadAsync,
+        Copy,
+        CopyAsync
     }
 
     internal sealed class BadWrappedStream : MemoryStream

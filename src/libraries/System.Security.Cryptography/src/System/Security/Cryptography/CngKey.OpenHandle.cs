@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -34,7 +35,7 @@ namespace System.Security.Cryptography
                 // Get a handle to the key's provider.
                 providerHandle = new SafeNCryptProviderHandle();
                 IntPtr rawProviderHandle = keyHandle.GetPropertyAsIntPtr(KeyPropertyName.ProviderHandle, CngPropertyOptions.None);
-                providerHandle.SetHandleValue(rawProviderHandle);
+                Marshal.InitHandle(providerHandle, rawProviderHandle);
 
                 // If we're wrapping a handle to an ephemeral key, we need to make sure that IsEphemeral is
                 // set up to return true.  In the case that the handle is for an ephemeral key that was created
