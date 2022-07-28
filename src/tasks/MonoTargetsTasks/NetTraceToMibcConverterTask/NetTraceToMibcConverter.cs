@@ -15,20 +15,21 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Text.Json.Serialization;
 
+#nullable enable
 
 public class NetTraceToMibcConverter : ToolTask
 {
     /// <summary>
-    /// Entries for assemblies referenced in a .nettrace file. Important when you run traces against an executable on a different machine / device
+    /// List of all assemblies referenced in a .nettrace file. Important when you run traces against an executable on a different machine / device
     /// </summary>
     [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// NetTrace file to use when invoking dotnet-pgo for
+    /// Path to .nettrace file which should be converted to .mibc
     /// </summary>
     [Required]
-    public string NetTracePath { get; set; } = "";
+    public string NetTraceFilePath { get; set; } = "";
 
     /// <summary>
     /// Directory where the mibc file will be placed
@@ -41,7 +42,7 @@ public class NetTraceToMibcConverter : ToolTask
     /// The path to the mibc file generated from the converter.
     /// </summary>
     [Output]
-    public string? MibcProfilePath { get; set; }
+    public string? MibcFilePath { get; set; }
 
     protected override string ToolName { get; } = "NetTraceToMibcConverter";
 
@@ -78,9 +79,9 @@ public class NetTraceToMibcConverter : ToolTask
             return false;
         }
 
-        if (!File.Exists(NetTracePath))
+        if (!File.Exists(NetTraceFilePath))
         {
-            Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
+            Log.LogError($"{nameof(NetTraceFilePath)}='{NetTraceFilePath}' doesn't exist");
             return false;
         }
 
@@ -96,11 +97,10 @@ public class NetTraceToMibcConverter : ToolTask
 
     protected override string GenerateCommandLineCommands()
     {
-        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(NetTracePath), ".mibc"));
+        MibcFilePath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(NetTraceFilePath), ".mibc"));
 
-        StringBuilder mibcConverterArgsStr = new StringBuilder(string.Empty);
-        mibcConverterArgsStr.Append($"create-mibc");
-        mibcConverterArgsStr.Append($" --trace {NetTracePath} ");
+        StringBuilder mibcConverterArgsStr = new StringBuilder("create-mibc");
+        mibcConverterArgsStr.Append($" --trace \"{NetTraceFilePath}\" ");
 
         foreach (var refAsmItem in Assemblies)
         {
@@ -108,7 +108,7 @@ public class NetTraceToMibcConverter : ToolTask
             mibcConverterArgsStr.Append($" --reference \"{fullPath}\" ");
         }
 
-        mibcConverterArgsStr.Append($" --output {outputMibcPath} ");
+        mibcConverterArgsStr.Append($" --output \"{MibcFilePath}\"");
 
         return mibcConverterArgsStr.ToString();
     }
