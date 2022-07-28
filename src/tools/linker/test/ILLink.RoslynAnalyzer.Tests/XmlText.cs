@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	class XmlText : AdditionalText
+	sealed class XmlText : AdditionalText
 	{
 		public override string Path { get; }
 

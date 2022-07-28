@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	class TestCases
+	sealed class TestCases
 	{
 		// Maps from suite name to a set of testcase names.
 		// Suite name is:
@@ -179,7 +179,7 @@ namespace {TestNamespace}{suiteNamespacePart}
 		}
 	}
 
-	class ExistingTestCaseDiscoverer : ISyntaxContextReceiver
+	sealed class ExistingTestCaseDiscoverer : ISyntaxContextReceiver
 	{
 		public readonly TestCases ExistingTestCases = new TestCases ();
 

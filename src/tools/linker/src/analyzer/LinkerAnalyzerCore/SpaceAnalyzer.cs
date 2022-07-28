@@ -76,11 +76,12 @@ namespace LinkerAnalyzer.Core
 		int GetMethodSize (MethodDefinition method)
 		{
 			var key = GetKey (method);
+			int msize;
 
-			if (sizes.ContainsKey (key))
-				return sizes[key];
+			if (sizes.TryGetValue (key, out msize))
+				return msize;
 
-			var msize = method.Body.CodeSize;
+			msize = method.Body.CodeSize;
 			msize += method.Name.Length;
 
 			sizes.Add (key, msize);
@@ -148,9 +149,7 @@ namespace LinkerAnalyzer.Core
 
 		public int GetSize (VertexData vertex)
 		{
-			if (sizes.ContainsKey (vertex.value))
-				return sizes[vertex.value];
-			return 0;
+			return sizes.TryGetValue (vertex.value, out var size) ? size : 0;
 		}
 	}
 }
