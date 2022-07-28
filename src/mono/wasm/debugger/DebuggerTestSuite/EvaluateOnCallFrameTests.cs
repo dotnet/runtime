@@ -664,6 +664,71 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("j", TNumber(1)),
+                   ("f.idx1", TNumber(1)),
+                   ("f.numArray2D[0, 0]", TNumber(1)),
+                   ("f.numArray2D[0, 1]", TNumber(2)),
+                   ("f.numArray2D[1,  0]", TNumber(3)),
+                   ("f.numArray2D[1  ,1]", TNumber(4)),
+                   ("f.numArray3D[0, 0, 0]", TNumber(1)),
+                   ("f.numArray3D[0 ,0  ,1]", TNumber(2)),
+                   ("f.numArray3D[0  ,0,    2]", TNumber(3)),
+                   ("f.numArray3D[1,  1,        0]", TNumber(10)),
+                   ("f.numArray3D[1, 1,  1]", TNumber(11)),
+                   ("f.numArray3D[1 , 1, 2]", TNumber(12)),
+                   ("f.numArray2D[0,0]", TNumber(1)),
+                   ("f.numArray2D[0,1]", TNumber(2)),
+                   ("f.numArray2D[1,0]", TNumber(3)),
+                   ("f.numArray2D[1,1]", TNumber(4)),
+                   ("f.numArray3D[0,0,0]", TNumber(1)),
+                   ("f.numArray3D[0,0,1]", TNumber(2)),
+                   ("f.numArray3D[0,0,2]", TNumber(3)),
+                   ("f.numArray3D[1,1,0]", TNumber(10)),
+                   ("f.numArray3D[1,1,1]", TNumber(11)),
+                   ("f.numArray3D[1,1,2]", TNumber(12)),
+                   ("f.textArray2D[0,0]", TString("one")),
+                   ("f.textArray2D[0,1]", TString("two")),
+                   ("f.textArray2D[1,0]", TString("three")),
+                   ("f.textArray2D[1,1]", TString("four")),
+                   ("f.numArray2D[i,i]", TNumber(1)),
+                   ("f.numArray2D[i,j]", TNumber(2)),
+                   ("f.numArray2D[j,i]", TNumber(3)),
+                   ("f.numArray2D[j,j]", TNumber(4)),
+                   ("f.numArray3D[i,i,i]", TNumber(1)),
+                   ("f.numArray3D[i,i,j]", TNumber(2)),
+                   ("f.numArray3D[i,i,2]", TNumber(3)),
+                   ("f.numArray3D[j,j,i]", TNumber(10)),
+                   ("f.numArray3D[j,j,1]", TNumber(11)),
+                   ("f.numArray3D[j,j,2]", TNumber(12)),
+                   ("f.textArray2D[i,i]", TString("one")),
+                   ("f.textArray2D[i,j]", TString("two")),
+                   ("f.textArray2D[j,i]", TString("three")),
+                   ("f.textArray2D[j,j]", TString("four")),
+                   ("f.numArray2D[f.idx0,f.idx0]", TNumber(1)),
+                   ("f.numArray2D[f.idx0,f.idx1]", TNumber(2)),
+                   ("f.numArray2D[f.idx1,f.idx0]", TNumber(3)),
+                   ("f.numArray2D[f.idx1,f.idx1]", TNumber(4)),
+                   ("f.numArray3D[f.idx0,f.idx0,f.idx0]", TNumber(1)),
+                   ("f.numArray3D[f.idx0,f.idx0,f.idx1]", TNumber(2)),
+                   ("f.numArray3D[f.idx0,f.idx0,2]", TNumber(3)),
+                   ("f.numArray3D[f.idx1,f.idx1,f.idx0]", TNumber(10)),
+                   ("f.numArray3D[f.idx1,f.idx1,f.idx1]", TNumber(11)),
+                   ("f.numArray3D[f.idx1,f.idx1,2]", TNumber(12)),
+                   ("f.textArray2D[f.idx0,f.idx0]", TString("one")),
+                   ("f.textArray2D[f.idx0,f.idx1]", TString("two")),
+                   ("f.textArray2D[f.idx1,f.idx0]", TString("three")),
+                   ("f.textArray2D[f.idx1,f.idx1]", TString("four")));
+           });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingJagged() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>

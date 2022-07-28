@@ -543,6 +543,37 @@ namespace DebuggerTests
         }
     }
 
+    public class EvaluateLocalsWithMultidimensionalIndexingTests
+    {
+        public class TestEvaluate
+        {
+            public int[,] numArray2D;
+            public string[,] textArray2D;
+            public int[,,] numArray3D;
+            public int idx0;
+            public int idx1;
+
+            public void run()
+            {
+                numArray2D = new int[,] { { 1, 2 }, { 3, 4 }, { 5, 6 }, { 7, 8 } };
+                textArray2D = new string[3, 2] { { "one", "two" }, { "three", "four" },
+                                            { "five", "six" } };
+                numArray3D = new int[,,] { { { 1, 2, 3 }, { 4, 5, 6 } },
+                                    { { 7, 8, 9 }, { 10, 11, 12 } } };
+                idx0 = 0;
+                idx1 = 1;
+            }
+        }
+
+        public static void EvaluateLocals()
+        {
+            int i = 0;
+            int j = 1;
+            TestEvaluate f = new TestEvaluate();
+            f.run();
+        }
+    }
+
     public struct SampleStructure
     {
         public SampleStructure() { }
