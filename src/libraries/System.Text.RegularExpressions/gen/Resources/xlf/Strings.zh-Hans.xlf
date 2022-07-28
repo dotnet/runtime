@@ -104,12 +104,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeMessage">
         <source>The GeneratedRegexAttribute is malformed</source>
-        <target state="needs-review-translation">GeneratedRegexAttribute 格式不正确</target>
+        <target state="new">The GeneratedRegexAttribute is malformed</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeTitle">
         <source>Invalid GeneratedRegexAttribute usage</source>
-        <target state="needs-review-translation">无效的 GeneratedRegexAttribute 用法</target>
+        <target state="new">Invalid GeneratedRegexAttribute usage</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -129,7 +129,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
         <source>Regex generator limitation reached.</source>
-        <target state="needs-review-translation">已达到 GeneratedRegexAttribute 限制。</target>
+        <target state="new">Regex generator limitation reached.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -154,7 +154,7 @@
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
         <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
-        <target state="needs-review-translation">对同一方法应用了多个 GeneratedRegexAttribute，但只允许使用一个</target>
+        <target state="new">Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -199,7 +199,7 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="needs-review-translation">GeneratedRegexAttribute 方法必须是分部、无参数、非泛型、非抽象且返回正则表达式</target>
+        <target state="new">GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="needs-review-translation">在编译时使用 “GeneratedRegexAttribute” 生成正则表达式实现。</target>
+        <target state="new">Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="needs-review-translation">转换为 “GeneratedRegexAttribute”。</target>
+        <target state="new">Convert to 'GeneratedRegexAttribute'.</target>
         <note />
       </trans-unit>
     </body>
