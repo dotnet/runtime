@@ -212,7 +212,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
 {
     // No extra type information is needed for scalar/special HW Intrinsic.
     //
-    unsigned simdSize = 100;
+    unsigned simdSize = 0;
     if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
     {
         return false;
