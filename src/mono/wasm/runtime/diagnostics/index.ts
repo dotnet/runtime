@@ -94,12 +94,20 @@ export const diagnostics: Diagnostics = getDiagnostics();
 let suspendOnStartup = false;
 let diagnosticsServerEnabled = false;
 
-export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
+export async function mono_wasm_init_diagnostics(opts: "env" | DiagnosticOptions): Promise<void> {
     if (!monoWasmThreads) {
-        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics", options);
+        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics", opts);
         return;
     } else {
-        if (!is_nullish(options.server)) {
+        let options: DiagnosticOptions | null;
+        if (opts === "env") {
+            options = diagnostic_options_from_environment();
+            if (!options)
+                return;
+        } else {
+            options = opts;
+        }
+        if (!is_nullish(options?.server)) {
             if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
                 throw new Error("server.connectUrl must be a string");
             }
@@ -128,6 +136,74 @@ function boolsyOption(x: string | boolean): boolean {
             return false;
     }
     throw new Error(`invalid option: "${x}", should be true, false, or "true" or "false"`);
+}
+
+/// Parse environment variables for diagnostics configuration
+///
+/// The environment variables are:
+///  * DOTNET_DiagnosticPorts
+///
+function diagnostic_options_from_environment(): DiagnosticOptions | null {
+    const val = memory.getEnv("DOTNET_DiagnosticPorts");
+    if (is_nullish(val))
+        return null;
+    // TODO: consider also parsing the DOTNET_EnableEventPipe and DOTNET_EventPipeOutputPath, DOTNET_EvnetPipeConfig variables
+    // to configure the startup sessions that will dump output to the VFS.
+    return diagnostic_options_from_ports_spec(val);
+}
+
+/// Parse a DOTNET_DiagnosticPorts string and return a DiagnosticOptions object.
+/// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/diagnostic-port#configure-additional-diagnostic-ports
+function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | null {
+    if (val === "")
+        return null;
+    const ports = val.split(";");
+    if (ports.length === 0)
+        return null;
+    if (ports.length !== 1) {
+        console.warn("MONO_WASM: multiple diagnostic ports specified, only the last one will be used");
+    }
+    const portSpec = ports[ports.length - 1];
+    const components = portSpec.split(",");
+    if (components.length < 1 || components.length > 3) {
+        console.warn("MONO_WASM: invalid diagnostic port specification, should be of the form <port>[,<connect>],[<nosuspend|suspend>]");
+        return null;
+    }
+    const uri: string = components[0];
+    let connect = true;
+    let suspend = true;
+    // the C Diagnostic Server goes through these parts in reverse, do the same here.
+    for (let i = components.length - 1; i >= 1; i--) {
+        const component = components[i];
+        switch (component.toLowerCase()) {
+            case "nosuspend":
+                suspend = false;
+                break;
+            case "suspend":
+                suspend = true;
+                break;
+            case "listen":
+                connect = false;
+                break;
+            case "connect":
+                connect = true;
+                break;
+            default:
+                console.warn(`MONO_WASM: invalid diagnostic port specification component: ${component}`);
+                break;
+        }
+    }
+    if (!connect) {
+        console.warn("MONO_WASM: this runtime does not support listening on a diagnostic port; no diagnostic server started");
+        return null;
+    }
+    return {
+        server: {
+            connectUrl: uri,
+            suspend: suspend,
+        }
+    };
+
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
