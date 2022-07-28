@@ -3702,12 +3702,12 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             // matching SSA numbers (i.e., if a0 == b1 and b1 == c0 then a0 == c0) they don't need kill sets.
             if (optLocalAssertionProp)
             {
-                propLclVarCount++;
-                propLclVarIter += iterCount;
                 // Perform copy assertion prop.
                 GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 if (newTree != nullptr)
                 {
+                    propLclVarCount++;
+                    propLclVarIter += iterCount;
                     return newTree;
                 }
             }
@@ -3716,7 +3716,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         }
 
         // There are no constant assertions for structs.
-        //
+        // OK - Then why is the check inside the for-loop for global prop?
         if (varTypeIsStruct(tree))
         {
             continue;
