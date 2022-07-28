@@ -68,7 +68,11 @@ namespace System.Text.Json
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
 
-        // Required properties which have value assigned
+        // Represents required properties which have value assigned.
+        // Each bit corresponds to a required property.
+        // False means that property is not set (not yet occured in the payload).
+        // Length of the BitArray is equal to number of required properties.
+        // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
         public BitArray? RequiredPropertiesSet;
 
         public void EndConstructorParameter()
@@ -129,7 +133,7 @@ namespace System.Text.Json
 
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties, defaultValue: false);
+                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
             }
         }
 
