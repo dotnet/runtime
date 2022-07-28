@@ -431,8 +431,13 @@ namespace System.Text.Json
             Debug.Assert(queueTypeInfo.IsConfigured);
             JsonSerializerOptions options = queueTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
-            ReadStack readStack = default;
-            readStack.Initialize(queueTypeInfo, supportContinuation: true);
+            ReadStack readStack = new ReadStack
+            {
+                SupportContinuation = true
+            };
+
+            readStack.Initialize(queueTypeInfo);
+
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try
@@ -470,8 +475,11 @@ namespace System.Text.Json
             Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
-            ReadStack readStack = default;
-            readStack.Initialize(jsonTypeInfo, supportContinuation: true);
+            ReadStack readStack = new ReadStack
+            {
+                SupportContinuation = true
+            };
+            readStack.Initialize(jsonTypeInfo);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try
@@ -500,8 +508,11 @@ namespace System.Text.Json
             Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
-            ReadStack readStack = default;
-            readStack.Initialize(jsonTypeInfo, supportContinuation: true);
+            ReadStack readStack = new ReadStack
+            {
+                SupportContinuation = true
+            };
+            readStack.Initialize(jsonTypeInfo);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try

@@ -22,7 +22,9 @@ namespace System.Text.Json.Serialization
             // Bridge from resumable to value converters.
 
             ReadStack state = default;
-            state.Initialize(typeToConvert, options, supportContinuation: false);
+            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoInternal(typeToConvert);
+            state.Initialize(jsonTypeInfo);
+
             TryRead(ref reader, typeToConvert, options, ref state, out T? value);
             return value;
         }
