@@ -3784,7 +3784,7 @@ get_module_event_data (
 		if (image && image->aot_module)
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
-		module_data->module_il_path = image && image->filename ? image->filename : "";
+		module_data->module_il_path = image && image->filename ? image->filename : (image->name ? image->name : "");
 		module_data->module_il_pdb_path = "";
 		module_data->module_il_pdb_age = 0;
 
