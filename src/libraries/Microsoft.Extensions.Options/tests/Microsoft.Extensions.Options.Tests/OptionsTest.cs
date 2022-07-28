@@ -131,6 +131,24 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void Options_CanResolveDependency()
+        {
+            var services = new ServiceCollection().AddOptions();
+            services.AddSingleton<Random>();
+            services.Configure<FakeOptions>((o, sp) =>
+            {
+                var random = sp.GetRequiredService<Random>();
+                o.Message = $"Rand-{random.NextDouble()}";
+            });
+
+            var service = services.BuildServiceProvider().GetService<IOptions<FakeOptions>>();
+            Assert.NotNull(service);
+            var options = service.Value;
+            Assert.NotNull(options);
+            Assert.StartsWith("Rand-", options.Message);
+        }
+
+        [Fact]
         public void SetupCallsInOrder()
         {
             var services = new ServiceCollection().AddOptions();
