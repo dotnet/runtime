@@ -67,7 +67,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
-      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
+      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=40000" />
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
       <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
       <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
