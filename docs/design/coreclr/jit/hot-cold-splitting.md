@@ -2,7 +2,7 @@
 
 This document describes the current state of hot/cold splitting in the JIT.
 
-Hot/Cold splitting is a PGO optimization where generated code is split into frequently-executed ("hot") and
+Hot/Cold splitting is an optimization where generated code is split into frequently-executed ("hot") and
 rarely-executed ("cold") parts and placed in separate memory regions. Increased hot code density better leverages
 spatial locality, which can improve application performance via fewer instruction cache misses, less OS paging, and
 fewer TLB misses.
@@ -19,8 +19,8 @@ The below sections describe various improvements made to the JIT's hot/cold spli
 
 ## Testing the JIT Without Runtime Support
 
-Without runtime support for hot/cold splitting in .NET Core yet, testing the JIT's existing hot/cold splitting support
-is not as simple as turning the feature on. A new "fake" splitting mode, enabled by the
+Without runtime support for hot/cold splitting in .NET as of summer 2022, testing the JIT's existing hot/cold splitting
+support is not as simple as turning the feature on. A new "fake" splitting mode, enabled by the
 `COMPlus_JitFakeProcedureSplitting` environment variable, removes this dependency on runtime support. This mode allows
 the JIT to execute its hot/cold splitting workflow without changing the runtime's behavior. This workflow proceeds as
 follows:
