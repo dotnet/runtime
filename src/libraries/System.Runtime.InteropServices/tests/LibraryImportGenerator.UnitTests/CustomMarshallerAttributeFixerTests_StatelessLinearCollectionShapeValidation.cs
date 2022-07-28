@@ -35,8 +35,37 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static nint AllocateContainerForUnmanagedElements(ManagedType managed, out int numElements)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static System.ReadOnlySpan<nint> GetManagedValuesSource(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static System.Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementIn, "ManagedType"),
@@ -63,8 +92,34 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static nint AllocateContainerForUnmanagedElements(ManagedType m, out int numElements) => throw null;
+
+                    public static System.ReadOnlySpan<nint> GetManagedValuesSource(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static System.Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementIn, "ManagedType"));
@@ -87,12 +142,36 @@ namespace LibraryImportGenerator.UnitTests
                 {
                     public static nint AllocateContainerForUnmanagedElements(ManagedType m, out int numElements) => throw null;
 
-                    public static Span<byte> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+                    public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static nint AllocateContainerForUnmanagedElements(ManagedType m, out int numElements) => throw null;
+                
+                    public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+                
+                    public static ReadOnlySpan<nint> GetManagedValuesSource(ManagedType managed)
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementIn, "ManagedType"));
@@ -115,12 +194,36 @@ namespace LibraryImportGenerator.UnitTests
                 {
                     public static nint AllocateContainerForUnmanagedElements(ManagedType m, out int numElements) => throw null;
 
-                    public static Span<byte> GetManagedValuesSource(ManagedType m) => default;
+                    public static ReadOnlySpan<byte> GetManagedValuesSource(ManagedType m) => default;
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static nint AllocateContainerForUnmanagedElements(ManagedType m, out int numElements) => throw null;
+                
+                    public static ReadOnlySpan<byte> GetManagedValuesSource(ManagedType m) => default;
+
+                    public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements)
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementIn, "ManagedType"));
@@ -165,9 +268,9 @@ namespace LibraryImportGenerator.UnitTests
                 
                 class ManagedType {}
                 
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType<>|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|#1:MarshallerType<>|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|#2:MarshallerType<>|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType<>))]
                 [ContiguousCollectionMarshaller]
                 static class MarshallerType<T>
                 {
@@ -185,7 +288,7 @@ namespace LibraryImportGenerator.UnitTests
 
 
         [Fact]
-        public async Task ModeThatUsesManagedToUnmanagedShape_InvalidCollectionElementType_DoesNotReportDiagnostic()
+        public async Task ModeThatUsesManagedToUnmanagedShape_InvalidCollectionElementType_ReportsDiagnostic()
         {
             string source = """
                 using System;
@@ -231,8 +334,37 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static ManagedType AllocateContainerForManagedElements(nint unmanaged, int numElements)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static System.ReadOnlySpan<T> GetUnmanagedValuesSource(nint unmanaged, int numElements)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static System.Span<nint> GetManagedValuesDestination(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementOut, "ManagedType"),
@@ -259,8 +391,34 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static ManagedType AllocateContainerForManagedElements(nint m, int numElements) => throw null;
+
+                    public static System.ReadOnlySpan<T> GetUnmanagedValuesSource(nint unmanaged, int numElements)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static System.Span<nint> GetManagedValuesDestination(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementOut, "ManagedType"));
@@ -287,8 +445,32 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static ManagedType AllocateContainerForManagedElements(nint m, int numElements) => throw null;
+                
+                    public static Span<byte> GetManagedValuesDestination(ManagedType m) => default;
+
+                    public static ReadOnlySpan<T> GetUnmanagedValuesSource(nint unmanaged, int numElements)
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementOut, "ManagedType"));
@@ -309,14 +491,38 @@ namespace LibraryImportGenerator.UnitTests
                 [ContiguousCollectionMarshaller]
                 static class MarshallerType<T>
                 {
-                    public static ManagedType AllocateContainerForManagedElements(nint unmanaged, out int numElements) => throw null;
+                    public static ManagedType AllocateContainerForManagedElements(nint unmanaged, int numElements) => throw null;
 
-                    public static Span<byte> GetUnmanagedValuesSource(nint unmanaged, int numElements) => default;
+                    public static ReadOnlySpan<T> GetUnmanagedValuesSource(nint unmanaged, int numElements) => default;
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static ManagedType AllocateContainerForManagedElements(nint unmanaged, int numElements) => throw null;
+
+                    public static ReadOnlySpan<T> GetUnmanagedValuesSource(nint unmanaged, int numElements) => default;
+
+                    public static Span<nint> GetManagedValuesDestination(ManagedType managed)
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
                 VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementOut, "ManagedType"));
@@ -361,9 +567,9 @@ namespace LibraryImportGenerator.UnitTests
                 
                 class ManagedType {}
                 
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof({|#0:MarshallerType<>|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof({|#1:MarshallerType<>|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof({|#2:MarshallerType<>|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType<>))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType<>))]
                 [ContiguousCollectionMarshaller]
                 static class MarshallerType<T>
                 {
@@ -426,12 +632,39 @@ namespace LibraryImportGenerator.UnitTests
                 
                     public static ReadOnlySpan<int> GetManagedValuesSource(ManagedType m) => default;
                 
-                    public static Span<byte> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+                    public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(
+            string fixedSource = """
+                using System;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                [ContiguousCollectionMarshaller]
+                static class MarshallerType<T>
+                {
+                    public static nint AllocateContainerForUnmanagedElements(ManagedType m, Span<byte> b, out int numElements) => throw null;
+                
+                    public static ReadOnlySpan<int> GetManagedValuesSource(ManagedType m) => default;
+                
+                    public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+                
+                    public static int BufferSize
+                    {
+                        get
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
                 source,
+                fixedSource,
                 VerifyCS.Diagnostic(StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType<T>", "byte"));
         }
 
