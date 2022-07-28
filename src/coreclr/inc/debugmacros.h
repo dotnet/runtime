@@ -30,9 +30,6 @@ bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained =
 
 extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
 
-#define TRACE_BUFF_SIZE (cchMaxAssertStackLevelStringLen * cfrMaxAssertStackLevels + cchMaxAssertExprLen + 1)
-extern char g_szExprWithStack[TRACE_BUFF_SIZE];
-
 #define PRE_ASSERTE         /* if you need to change modes before doing asserts override */
 #define POST_ASSERTE        /* put it back */
 
@@ -78,9 +75,6 @@ extern char g_szExprWithStack[TRACE_BUFF_SIZE];
 
 
 #ifdef _DEBUG_IMPL
-
-// A macro to execute a statement only in _DEBUG_IMPL.
-#define DEBUG_IMPL_STMT(stmt) stmt
 
 #define _ASSERTE_IMPL(expr) _ASSERTE((expr))
 
@@ -129,8 +123,6 @@ do { hr = (EXPR); if(hr != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(hr); DebBrea
 #else // _DEBUG_IMPL
 
 #define _DbgBreak() {}
-
-#define DEBUG_IMPL_STMT(stmt)
 
 #define _ASSERTE_IMPL(expr)
 
@@ -190,14 +182,12 @@ unsigned DbgGetEXETimeStamp();
     (((DbgGetEXETimeStamp() * __LINE__ * ((hash) ? (hash) : 1)) % 9973) < \
      unsigned((fractionOn) * 9973))
 #define DbgRandomOnExe(fractionOn) DbgRandomOnHashAndExe(0, fractionOn)
-#define DbgRandomOnStringAndExe(string, fractionOn) DbgRandomOnHashAndExe(HashStringA(string), fractionOn)
 
 #else
 
 #define DbgGetEXETimeStamp() 0
 #define DbgRandomOnHashAndExe(hash, fractionOn)  0
 #define DbgRandomOnExe(fractionOn)  0
-#define DbgRandomOnStringAndExe(fractionOn)  0
 
 #endif // _DEBUG && !FEATUREPAL
 

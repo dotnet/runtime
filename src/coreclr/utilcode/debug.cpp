@@ -127,50 +127,6 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     return fRet != 0;
 }
 
-BOOL DebugBreakOnAssert()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC;
-
-    // ok for debug-only code to take locks
-    CONTRACT_VIOLATION(TakesLockViolation);
-
-    BOOL fRet = FALSE;
-
-#ifndef DACCESS_COMPILE
-    static ConfigDWORD fDebugBreak;
-    //
-    // we don't want this config key to affect mscordacwks as well!
-    //
-    EX_TRY
-    {
-        fRet = fDebugBreak.val(CLRConfig::INTERNAL_DebugBreakOnAssert);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-#endif // DACCESS_COMPILE
-
-    return fRet;
-}
-
-VOID DECLSPEC_NORETURN TerminateOnAssert()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    ShutdownLogging();
-#ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
-#endif
-    RaiseFailFastException(NULL, NULL, 0);
-}
-
 VOID LogAssert(
     LPCSTR      szFile,
     int         iLine,
@@ -192,8 +148,8 @@ VOID LogAssert(
     GetSystemTime(&st);
 #endif
 
-    PathString exename;
-    WszGetModuleFileName(NULL, exename);
+    SString exename;
+    GetExecutableFileNameUtf8(exename);
 
     LOG((LF_ASSERT,
          LL_FATALERROR,
@@ -212,7 +168,7 @@ VOID LogAssert(
          szFile,
          iLine,
          szExpr));
-    LOG((LF_ASSERT, LL_FATALERROR, "RUNNING EXE: %ws\n", exename.GetUnicode()));
+    LOG((LF_ASSERT, LL_FATALERROR, "RUNNING EXE: %s\n", exename.GetUTF8()));
 }
 
 //*****************************************************************************
@@ -312,12 +268,16 @@ bool _DbgBreakCheck(
         return false;       // don't stop debugger. No gui.
     }
 
-    if (IsDebuggerPresent() || DebugBreakOnAssert())
+    if (IsDebuggerPresent())
     {
         return true;       // like a retry
     }
 
-    TerminateOnAssert();
+    ShutdownLogging();
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+    RaiseFailFastException(NULL, NULL, 0);
     UNREACHABLE();
 }
 
