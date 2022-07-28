@@ -400,7 +400,7 @@ private:
         {
 #ifndef TARGET_64BIT
             // Don't expose TYP_LONG on 32bit
-            if (varTypeIsLong(cast->CastFromType()) && varTypeIsInt(expectedType))
+            if (varTypeIsLong(cast->CastFromType()))
             {
                 return op;
             }
