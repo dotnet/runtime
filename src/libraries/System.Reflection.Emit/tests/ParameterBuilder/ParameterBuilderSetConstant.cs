@@ -90,7 +90,7 @@ namespace System.Reflection.Emit.Tests
 
         private static ParameterInfo GetCreatedParameter(TypeBuilder type, string methodName, int parameterIndex)
         {
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod(methodName);
             if (parameterIndex > 0)
             {

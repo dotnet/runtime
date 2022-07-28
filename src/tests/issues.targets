@@ -190,9 +190,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/nested/nestedtry/throwinnestedtrycatch_il_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/66327</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -226,9 +223,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35821/GitHub_35821/*">
-            <Issue>https://github.com/dotnet/runtime/issues/66921</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
@@ -930,6 +924,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part2_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/63856</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
+            <Issue>https://github.com/dotnet/runtime/issues/72822</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2783,6 +2780,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72460</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
@@ -3069,6 +3070,10 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72460</Issue>
         </ExcludeList>
     </ItemGroup>
 

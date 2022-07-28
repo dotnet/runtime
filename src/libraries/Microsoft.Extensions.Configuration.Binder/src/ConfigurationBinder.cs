@@ -491,10 +491,19 @@ namespace Microsoft.Extensions.Configuration
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
+            bool keyTypeIsInteger =
+                keyType == typeof(sbyte) ||
+                keyType == typeof(byte) ||
+                keyType == typeof(short) ||
+                keyType == typeof(ushort) ||
+                keyType == typeof(int) ||
+                keyType == typeof(uint) ||
+                keyType == typeof(long) ||
+                keyType == typeof(ulong);
 
-            if (keyType != typeof(string) && !keyTypeIsEnum)
+            if (keyType != typeof(string) && !keyTypeIsEnum && !keyTypeIsInteger)
             {
-                // We only support string and enum keys
+                // We only support string, enum and integer (except nint-IntPtr and nuint-UIntPtr) keys
                 return null;
             }
 
@@ -543,10 +552,19 @@ namespace Microsoft.Extensions.Configuration
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
+            bool keyTypeIsInteger =
+                keyType == typeof(sbyte) ||
+                keyType == typeof(byte) ||
+                keyType == typeof(short) ||
+                keyType == typeof(ushort) ||
+                keyType == typeof(int) ||
+                keyType == typeof(uint) ||
+                keyType == typeof(long) ||
+                keyType == typeof(ulong);
 
-            if (keyType != typeof(string) && !keyTypeIsEnum)
+            if (keyType != typeof(string) && !keyTypeIsEnum && !keyTypeIsInteger)
             {
-                // We only support string and enum keys
+                // We only support string, enum and integer (except nint-IntPtr and nuint-UIntPtr) keys
                 return;
             }
 
@@ -558,7 +576,9 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) :
+                        keyTypeIsInteger ? Convert.ChangeType(child.Key, keyType) :
+                        child.Key;
                     var valueBindingPoint = new BindingPoint(
                         initialValueProvider: () =>
                         {

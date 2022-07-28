@@ -543,29 +543,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<byte> Create(byte value)
         {
-            if (AdvSimd.IsSupported)
+            byte* pResult = stackalloc byte[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<byte> SoftwareFallback(byte value)
-            {
-                byte* pResult = stackalloc byte[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<byte>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<byte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with all elements initialized to the specified value.</summary>
@@ -574,17 +563,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<double> Create(double value)
         {
-            if (AdvSimd.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<double> SoftwareFallback(double value)
-            {
-                return Unsafe.As<double, Vector64<double>>(ref value);
-            }
+            return Unsafe.As<double, Vector64<double>>(ref value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with all elements initialized to the specified value.</summary>
@@ -594,25 +573,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<short> Create(short value)
         {
-            if (AdvSimd.IsSupported)
+            short* pResult = stackalloc short[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<short> SoftwareFallback(short value)
-            {
-                short* pResult = stackalloc short[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<short>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<short>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with all elements initialized to the specified value.</summary>
@@ -622,23 +590,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<int> Create(int value)
         {
-            if (AdvSimd.IsSupported)
+            int* pResult = stackalloc int[2]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<int> SoftwareFallback(int value)
-            {
-                int* pResult = stackalloc int[2]
-                {
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<int>>(pResult);
-            }
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<int>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with all elements initialized to the specified value.</summary>
@@ -647,17 +604,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<long> Create(long value)
         {
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<long> SoftwareFallback(long value)
-            {
-                return Unsafe.As<long, Vector64<long>>(ref value);
-            }
+            return Unsafe.As<long, Vector64<long>>(ref value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
@@ -666,21 +613,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<nint> Create(nint value)
         {
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<nint> SoftwareFallback(nint value)
-            {
 #if TARGET_64BIT
-                return Create((long)value).AsNInt();
+            return Create((long)value).AsNInt();
 #else
-                return Create((int)value).AsNInt();
+            return Create((int)value).AsNInt();
 #endif
-            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
@@ -690,21 +627,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<nuint> Create(nuint value)
         {
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<nuint> SoftwareFallback(nuint value)
-            {
 #if TARGET_64BIT
-                return Create((ulong)value).AsNUInt();
+            return Create((ulong)value).AsNUInt();
 #else
-                return Create((uint)value).AsNUInt();
+            return Create((uint)value).AsNUInt();
 #endif
-            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with all elements initialized to the specified value.</summary>
@@ -715,29 +642,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte value)
         {
-            if (AdvSimd.IsSupported)
+            sbyte* pResult = stackalloc sbyte[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<sbyte> SoftwareFallback(sbyte value)
-            {
-                sbyte* pResult = stackalloc sbyte[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<sbyte>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<sbyte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with all elements initialized to the specified value.</summary>
@@ -746,23 +662,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<float> Create(float value)
         {
-            if (AdvSimd.IsSupported)
+            float* pResult = stackalloc float[2]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<float> SoftwareFallback(float value)
-            {
-                float* pResult = stackalloc float[2]
-                {
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<float>>(pResult);
-            }
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<float>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with all elements initialized to the specified value.</summary>
@@ -773,25 +678,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort value)
         {
-            if (AdvSimd.IsSupported)
+            ushort* pResult = stackalloc ushort[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<ushort> SoftwareFallback(ushort value)
-            {
-                ushort* pResult = stackalloc ushort[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<ushort>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<ushort>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with all elements initialized to the specified value.</summary>
@@ -802,23 +696,12 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint value)
         {
-            if (AdvSimd.IsSupported)
+            uint* pResult = stackalloc uint[2]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<uint> SoftwareFallback(uint value)
-            {
-                uint* pResult = stackalloc uint[2]
-                {
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector64<uint>>(pResult);
-            }
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector64<uint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with all elements initialized to the specified value.</summary>
@@ -828,17 +711,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ulong> Create(ulong value)
         {
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector64<ulong> SoftwareFallback(ulong value)
-            {
-                return Unsafe.As<ulong, Vector64<ulong>>(ref value);
-            }
+            return Unsafe.As<ulong, Vector64<ulong>>(ref value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> from a given array.</summary>
@@ -909,29 +782,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
-            if (AdvSimd.IsSupported)
+            byte* pResult = stackalloc byte[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector64<byte> SoftwareFallback(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
-            {
-                byte* pResult = stackalloc byte[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector64<byte>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector64<byte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -944,25 +806,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
-            if (AdvSimd.IsSupported)
+            short* pResult = stackalloc short[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector64<short> SoftwareFallback(short e0, short e1, short e2, short e3)
-            {
-                short* pResult = stackalloc short[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector64<short>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector64<short>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -973,23 +824,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
-            if (AdvSimd.IsSupported)
+            int* pResult = stackalloc int[2]
             {
-                return Create(e0, e1);
-            }
-
-            return SoftwareFallback(e0, e1);
-
-            static Vector64<int> SoftwareFallback(int e0, int e1)
-            {
-                int* pResult = stackalloc int[2]
-                {
-                    e0,
-                    e1,
-                };
-
-                return Unsafe.AsRef<Vector64<int>>(pResult);
-            }
+                e0,
+                e1,
+            };
+            return Unsafe.AsRef<Vector64<int>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1007,29 +847,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
-            if (AdvSimd.IsSupported)
+            sbyte* pResult = stackalloc sbyte[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector64<sbyte> SoftwareFallback(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
-            {
-                sbyte* pResult = stackalloc sbyte[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector64<sbyte>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector64<sbyte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1039,23 +868,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector64<float> Create(float e0, float e1)
         {
-            if (AdvSimd.IsSupported)
+            float* pResult = stackalloc float[2]
             {
-                return Create(e0, e1);
-            }
-
-            return SoftwareFallback(e0, e1);
-
-            static Vector64<float> SoftwareFallback(float e0, float e1)
-            {
-                float* pResult = stackalloc float[2]
-                {
-                    e0,
-                    e1,
-                };
-
-                return Unsafe.AsRef<Vector64<float>>(pResult);
-            }
+                e0,
+                e1,
+            };
+            return Unsafe.AsRef<Vector64<float>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1069,25 +887,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
-            if (AdvSimd.IsSupported)
+            ushort* pResult = stackalloc ushort[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector64<ushort> SoftwareFallback(ushort e0, ushort e1, ushort e2, ushort e3)
-            {
-                ushort* pResult = stackalloc ushort[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector64<ushort>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector64<ushort>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1099,23 +906,12 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)
         {
-            if (AdvSimd.IsSupported)
+            uint* pResult = stackalloc uint[2]
             {
-                return Create(e0, e1);
-            }
-
-            return SoftwareFallback(e0, e1);
-
-            static Vector64<uint> SoftwareFallback(uint e0, uint e1)
-            {
-                uint* pResult = stackalloc uint[2]
-                {
-                    e0,
-                    e1,
-                };
-
-                return Unsafe.AsRef<Vector64<uint>>(pResult);
-            }
+                e0,
+                e1,
+            };
+            return Unsafe.AsRef<Vector64<uint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>

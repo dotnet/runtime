@@ -32,7 +32,7 @@ namespace Microsoft.Interop.Analyzers
                 GetResourceString(nameof(SR.ConvertToLibraryImportMessage)),
                 Category,
                 DiagnosticSeverity.Info,
-                isEnabledByDefault: false,
+                isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConvertToLibraryImportDescription)));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToLibraryImport);

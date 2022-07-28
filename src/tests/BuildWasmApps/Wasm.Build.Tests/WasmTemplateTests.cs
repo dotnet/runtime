@@ -133,15 +133,19 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void ConsoleBuildAndRun(string config)
+        [InlineData("Debug", false)]
+        [InlineData("Debug", true)]
+        [InlineData("Release", false)]
+        [InlineData("Release", true)]
+        public void ConsoleBuildAndRun(string config, bool relinking)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             updateProgramCS();
+            if (relinking)
+                AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -149,7 +153,7 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: true,
+                            DotnetWasmFromRuntimePack: !relinking,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.mjs",
@@ -157,7 +161,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: "net7.0"
                             ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
             Assert.Equal(42, exitCode);
@@ -167,25 +171,28 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", false)]
-        [InlineData("Debug", true)]
-        [InlineData("Release", false)]
-        [InlineData("Release", true)]
-        public void ConsolePublishAndRun(string config, bool aot)
+        [InlineData("Debug", false, false)]
+        [InlineData("Debug", false, true)]
+        [InlineData("Debug", true, false)]
+        [InlineData("Release", false, false)] // Release relinks by default
+        [InlineData("Release", true, false)]
+        public void ConsolePublishAndRun(string config, bool aot, bool relinking)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             updateProgramCS();
-            
+
             if (aot)
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+            else if (relinking)
+                AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
 
             var buildArgs = new BuildArgs(projectName, config, aot, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            bool expectRelinking = config == "Release" || aot;
+            bool expectRelinking = config == "Release" || aot || relinking;
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -197,7 +204,15 @@ namespace Wasm.Build.Tests
                             TargetFramework: "net7.0",
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            if (!aot)
+            {
+                // These are disabled for AOT explicitly
+                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            }
+            else
+            {
+                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
+            }
 
             // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";
