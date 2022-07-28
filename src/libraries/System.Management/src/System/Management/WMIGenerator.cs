@@ -5175,7 +5175,7 @@ namespace System.Management
 
 
         /// <summary>
-        /// Converts a numberic value to appropriate type and adds it to array
+        /// Converts a numeric value to appropriate type and adds it to array
         /// </summary>
         private static string ConvertToNumericValueAndAddToArray(CimType cimType, string numericValue, ArrayList arrayToAdd, out string enumType)
         {
@@ -5269,7 +5269,7 @@ namespace System.Management
 
             CommentsString.Add("Name of the WMI class");    // IDS_COMMENT_CLASSNAME;
 
-            CommentsString.Add("Property pointing to a embeded object to get System properties of the WMI object"); // IDS_CommentSystemObject
+            CommentsString.Add("Property pointing to a embedded object to get System properties of the WMI object"); // IDS_CommentSystemObject
 
             CommentsString.Add("Underlying lateBound WMI object"); // IDS_CommentLateBoundObject
 
@@ -6665,7 +6665,7 @@ namespace System.Management
 
                     OffsetToBeAdjusted = UTCOffset-OffsetMins;
 
-                    // We have to substract the minutes from the time
+                    // We have to subtract the minutes from the time
                     datetime = datetime.AddMinutes((System.Double)(OffsetToBeAdjusted));
 
                 }

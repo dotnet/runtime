@@ -267,16 +267,16 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonTypeInfo? _elementTypeInfo;
 
         // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
-        internal bool HasSerialize { get; private protected set; }
+        internal bool HasSerializeHandler { get; private protected set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
-        // so it is allowed to be used for serialization but it will throw if used for deserialization
-        internal bool ThrowOnDeserialize { get; private protected set; }
+        // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
+        internal bool MetadataSerializationNotSupported { get; private protected set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ValidateCanBeUsedForDeserialization()
+        internal void ValidateCanBeUsedForMetadataSerialization()
         {
-            if (ThrowOnDeserialize)
+            if (MetadataSerializationNotSupported)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
@@ -527,7 +527,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
-            if (!Options.IsLockedInstance)
+            if (!Options.IsImmutable)
             {
                 Options.InitializeForMetadataGeneration();
             }
@@ -1053,7 +1053,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
-            protected override bool IsLockedInstance => _jsonTypeInfo.IsConfigured || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
+            protected override bool IsImmutable => _jsonTypeInfo.IsConfigured || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
             protected override void VerifyMutable()
             {
                 _jsonTypeInfo.VerifyMutable();
@@ -1071,6 +1071,6 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Type:{Type.Name}, TypeInfoKind:{Kind}";
+        private string DebuggerDisplay => $"Type = {Type.Name}, Kind = {Kind}";
     }
 }

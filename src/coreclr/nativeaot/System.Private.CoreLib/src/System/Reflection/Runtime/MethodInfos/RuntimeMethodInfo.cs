@@ -113,7 +113,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             MethodInfo method = this;
 
-            // For compat: Remove any instantation on generic methods.
+            // For compat: Remove any instantiation on generic methods.
             if (method.IsConstructedGenericMethod)
                 method = method.GetGenericMethodDefinition();
 
@@ -163,7 +163,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThroughAttribute]
         public sealed override object? Invoke(object? obj, BindingFlags invokeAttr, Binder binder, object?[]? parameters, CultureInfo culture)
         {
-            parameters ??= Array.Empty<object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
             object? result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();

@@ -1370,7 +1370,7 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
             IfFailGo(m_pStgdb->m_MiniMd.GetPropertyMapRecord(ridPropertyMap, &pPropertyMapRec));
             ridStart = pMiniMd->getPropertyListOfPropertyMap(pPropertyMapRec);
             IfFailGo(pMiniMd->getEndPropertyListOfPropertyMap(ridPropertyMap, &ridEnd));
-            ridMax = pMiniMd->getCountPropertys() + 1;
+            ridMax = pMiniMd->getCountProperties() + 1;
             if(ridStart == 0) ridStart = 1;
             if(ridEnd > ridMax) ridEnd = ridMax;
             if(ridStart > ridEnd) ridStart=ridEnd;
@@ -2191,7 +2191,7 @@ STDMETHODIMP RegMeta::EnumModuleRefs(         // S_OK or error.
         pEnum = *ppmdEnum;
     }
 
-    // we can only fill the minimun of what caller asked for or what we have left
+    // we can only fill the minimum of what caller asked for or what we have left
     IfFailGo(HENUMInternal::EnumWithCount(pEnum, cMax, rModuleRefs, pcModuleRefs));
 
 ErrExit:

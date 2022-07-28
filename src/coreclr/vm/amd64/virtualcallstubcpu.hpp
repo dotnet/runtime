@@ -214,7 +214,7 @@ attention needs to be paid to the effects on the BTB and branch prediction, both
 and in the large, i.e. it needs to run well in the face of BTB overflow--using static predictions.
 Note that since this stub is only used for mostly monomorphic callsites (ones that are not, get patched
 to something else), therefore the conditional jump "jne failure" is mostly not taken, and hence it is important
-that the branch prediction staticly predict this, which means it must be a forward jump.  The alternative
+that the branch prediction statically predict this, which means it must be a forward jump.  The alternative
 is to reverse the order of the jumps and make sure that the resulting conditional jump "je implTarget"
 is statically predicted as taken, i.e a backward jump. The current choice was taken since it was easier
 to control the placement of the stubs than control the placement of the jitted code and the stubs. */

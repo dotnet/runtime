@@ -2249,7 +2249,7 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
 // Notes:
 //    Assertion creation may fail either because the provided assertion
 //    operands aren't supported or because the assertion table is full.
-//    If an assertion is created succesfully then an attempt is made to also
+//    If an assertion is created successfully then an attempt is made to also
 //    create a second, complementary assertion. This may too fail, for the
 //    same reasons as the first one.
 //
@@ -2355,7 +2355,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return index;
     }
     // Loop condition like "(uint)i < (uint)bnd" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropiate edge)
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
     else if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
         assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
@@ -2813,7 +2813,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 // optAssertionIsSubrange: Find a subrange assertion for the given range and tree.
 //
 // This function will return the index of the first assertion in "assertions"
-// which claims that the value of "tree" is withing the bounds of the provided
+// which claims that the value of "tree" is within the bounds of the provided
 // "range" (i. e. "range.Contains(assertedRange)").
 //
 // Arguments:
@@ -3491,7 +3491,7 @@ bool Compiler::optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVar
 // Arguments:
 //    curAssertion - assertion triggering the possible copy
 //    tree         - tree use to consider replacing
-//    stmt         - statment containing the tree
+//    stmt         - statement containing the tree
 //    index        - index of the assertion
 //
 // Returns:

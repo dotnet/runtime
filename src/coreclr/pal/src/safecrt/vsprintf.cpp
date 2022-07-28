@@ -51,7 +51,7 @@ static int _vscprintf_helper ( OUTPUTFN outfn, const char *format, va_list ap);
 *
 *       Multi-thread: (1) Since there is no stream, this routine must never try
 *       to get the stream lock (i.e., there is no stream lock either).  (2)
-*       Also, since there is only one staticly allocated 'fake' iob, we must
+*       Also, since there is only one statically allocated 'fake' iob, we must
 *       lock/unlock to prevent collisions.
 *
 *Entry:

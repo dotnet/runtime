@@ -8,7 +8,7 @@ using System.Security.Principal;
 namespace System.Net.Security
 {
     /// <summary>
-    /// Represents a propery bag for server-side of an authentication exchange.
+    /// Represents a property bag for server-side of an authentication exchange.
     /// </summary>
     public class NegotiateAuthenticationServerOptions
     {

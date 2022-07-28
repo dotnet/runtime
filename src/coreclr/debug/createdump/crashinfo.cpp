@@ -520,7 +520,7 @@ CrashInfo::GetBaseAddressFromName(const char* moduleName)
     {
         std::string name = GetFileName(moduleInfo->ModuleName());
 #ifdef __APPLE__
-        // Module names are case insenstive on MacOS
+        // Module names are case insensitive on MacOS
         if (strcasecmp(name.c_str(), moduleName) == 0)
 #else
         if (name.compare(moduleName) == 0)

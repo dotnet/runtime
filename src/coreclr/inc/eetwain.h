@@ -707,7 +707,7 @@ struct hdrInfo
     bool                editNcontinue;  // has been compiled in EnC mode
     bool                varargs;        // is this a varargs routine
     bool                profCallbacks;  // does the method have Enter-Leave callbacks
-    bool                genericsContext;// has a reported generic context paramter
+    bool                genericsContext;// has a reported generic context parameter
     bool                genericsContextIsMethodDesc;// reported generic context parameter is methoddesc
     bool                isSpeculativeStackWalk; // is the stackwalk seeded by an untrusted source (e.g., sampling profiler)?
 

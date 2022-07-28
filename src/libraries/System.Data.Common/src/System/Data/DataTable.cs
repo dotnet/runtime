@@ -2086,7 +2086,7 @@ namespace System.Data
                     }
                     else
                     {
-                        Debug.Assert(value != null, "Value shoud not be null ??");
+                        Debug.Assert(value != null, "Value should not be null ??");
                         Debug.Assert(value.ColumnMapping == MappingType.SimpleContent, "should be text node here");
                         if (value != Columns[value.ColumnName])
                         {
@@ -4869,7 +4869,7 @@ namespace System.Data
             Justification = "Expression is null and potential problem with data type has already been reported when constructing parentKey")]
         internal DataColumn AddForeignKey(DataColumn parentKey)
         {
-            Debug.Assert(parentKey != null, "AddForeignKey: Invalid paramter.. related primary key is null");
+            Debug.Assert(parentKey != null, "AddForeignKey: Invalid parameter.. related primary key is null");
 
             string keyName = XMLSchema.GenUniqueColumnName(parentKey.ColumnName, this);
             DataColumn foreignKey = new DataColumn(keyName, parentKey.DataType, null, MappingType.Hidden);
@@ -5140,7 +5140,7 @@ namespace System.Data
                     switch (dataRow.RowState)
                     {
                         case DataRowState.Unchanged:
-                            // let see if the incomming value has the same values as existing row, so compare records
+                            // let see if the incoming value has the same values as existing row, so compare records
                             foreach (DataColumn dc in dataRow.Table.Columns)
                             {
                                 if (0 != dc.Compare(dataRow._newRecord, recordNo))

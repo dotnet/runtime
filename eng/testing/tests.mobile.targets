@@ -157,6 +157,8 @@
         EnvironmentVariables="@(_AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         StripDebugSymbols="False"
         OutputDir="$(BundleDir)"
         AppDir="$(PublishDir)">

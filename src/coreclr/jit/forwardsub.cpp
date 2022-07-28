@@ -758,7 +758,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // If the intial has truncate on store semantics, we need to replicate
+    // If the initial has truncate on store semantics, we need to replicate
     // that here with a cast.
     //
     if (varDsc->lvNormalizeOnStore() && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))

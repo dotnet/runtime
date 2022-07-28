@@ -22,7 +22,7 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor MarshallerEntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeMarshallingAttributeUsage,
-                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -32,7 +32,7 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor MarshallerEntryPointTypeMustBeNonNullRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeMarshallingAttributeUsage,
-                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.EntryPointTypeMustBeNonNullMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -42,7 +42,7 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeMarshallingAttributeUsage,
-                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -86,8 +86,8 @@ namespace Microsoft.Interop.Analyzers
                 AttributeSyntax syntax = (AttributeSyntax)context.Node;
                 ISymbol attributedSymbol = context.ContainingSymbol!;
 
-                AttributeData attr = GetAttributeData(syntax, attributedSymbol);
-                if (attr.AttributeClass?.ToDisplayString() == TypeNames.NativeMarshallingAttribute
+                AttributeData? attr = syntax.FindAttributeData(attributedSymbol);
+                if (attr?.AttributeClass?.ToDisplayString() == TypeNames.NativeMarshallingAttribute
                     && attr.AttributeConstructor is not null)
                 {
                     INamedTypeSymbol? entryType = (INamedTypeSymbol?)attr.ConstructorArguments[0].Value;
@@ -160,20 +160,6 @@ namespace Microsoft.Interop.Analyzers
                         MarshallerEntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeRule,
                         entryType.ToDisplayString(),
                         managedType.ToDisplayString());
-                }
-            }
-
-            private static AttributeData GetAttributeData(AttributeSyntax syntax, ISymbol symbol)
-            {
-                if (syntax.FirstAncestorOrSelf<AttributeListSyntax>().Target?.Identifier.IsKind(SyntaxKind.ReturnKeyword) == true)
-                {
-                    return ((IMethodSymbol)symbol).GetReturnTypeAttributes().First(attributeSyntaxLocationMatches);
-                }
-                return symbol.GetAttributes().First(attributeSyntaxLocationMatches);
-
-                bool attributeSyntaxLocationMatches(AttributeData attrData)
-                {
-                    return attrData.ApplicationSyntaxReference!.SyntaxTree == syntax.SyntaxTree && attrData.ApplicationSyntaxReference.Span == syntax.Span;
                 }
             }
 
