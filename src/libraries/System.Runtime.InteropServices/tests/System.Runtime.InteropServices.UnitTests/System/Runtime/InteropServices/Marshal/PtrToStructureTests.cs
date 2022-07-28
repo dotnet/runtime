@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_NonGenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_GenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
