@@ -3657,8 +3657,10 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
+    unsigned        iterCount = 0;
     while (iter.NextElem(&index))
     {
+        iterCount++;
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -3680,6 +3682,8 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             // matching SSA numbers (i.e., if a0 == b1 and b1 == c0 then a0 == c0) they don't need kill sets.
             if (optLocalAssertionProp)
             {
+                propLclVarCount++;
+                propLclVarIter += iterCount;
                 // Perform copy assertion prop.
                 GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 if (newTree != nullptr)
@@ -3714,12 +3718,16 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
                 // If local assertion prop, just perform constant prop.
                 if (optLocalAssertionProp)
                 {
+                    propLclVarCount++;
+                    propLclVarIter += iterCount;
                     return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 }
 
                 // If global assertion, perform constant propagation only if the VN's match.
                 if (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair))
                 {
+                    propLclVarCount++;
+                    propLclVarIter += iterCount;
                     return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 }
             }
@@ -3863,8 +3871,11 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
     }
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
+    unsigned        iterCount = 0;
     while (iter.NextElem(&index))
     {
+        iterCount++;
+
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -3879,6 +3890,8 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
             (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
         {
+            propEqualOrNotCount++;
+            propEqualOrNotIter += iterCount;
             return assertionIndex;
         }
 
@@ -3894,6 +3907,8 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
                 if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(indirAddr->gtVNPair)) &&
                     (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
                 {
+                    propEqualOrNotCount++;
+                    propEqualOrNotIter += iterCount;
                     return assertionIndex;
                 }
             }
@@ -3916,8 +3931,10 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
     }
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
+    unsigned        iterCount = 0;
     while (iter.NextElem(&index))
     {
+        iterCount++;
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -3932,6 +3949,9 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
         if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
             (curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet())))
         {
+            propEqualZeroCount++;
+            propEqualZeroIter += iterCount;
+
             return assertionIndex;
         }
     }
@@ -4585,8 +4605,10 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
         //
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
+        unsigned        iterCount = 0;
         while (iter.NextElem(&index))
         {
+            iterCount++;
             AssertionIndex assertionIndex = GetAssertionIndex(index);
             if (assertionIndex > optAssertionCount)
             {
@@ -4612,6 +4634,8 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
             *pVnBased = true;
 #endif
 
+            propNonNullCount++;
+            propNonNullIter += iterCount;
             return assertionIndex;
         }
     }
@@ -4771,8 +4795,10 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
+    unsigned         iterCount = 0;
     while (iter.NextElem(&index))
     {
+        iterCount++;
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -4865,6 +4891,8 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 #endif
         if (arrBndsChk == stmt->GetRootNode())
         {
+            propBndChkCount++;
+            propBndChkIter += iterCount;
             // We have a top-level bounds check node.
             // This can happen when trees are broken up due to inlining.
             // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).

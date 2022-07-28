@@ -6449,16 +6449,22 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compHasBackwardJumpInHandler = false;
 
 #ifdef DEBUG
-    addAssertionCount   = 0;
-    addAssertionIter    = 0;
-    subRangeCount       = 0;
-    subRangeIter        = 0;
-    subTypeCount        = 0;
-    subTypeIter         = 0;
-    equalOrNotEquaCount = 0;
-    equalOrNotEquaIter  = 0;
-    noNullCount         = 0;
-    noNullIter          = 0;
+
+#define ASSERTION_ZERO(name) \
+    name ## Count = 0;  \
+    name ## Iter = 0;  \
+    
+
+    ASSERTION_ZERO(addAssertion)
+    ASSERTION_ZERO(subRange)
+    ASSERTION_ZERO(subType)
+    ASSERTION_ZERO(equalOrNotEqua)
+    ASSERTION_ZERO(noNull)
+    ASSERTION_ZERO(propLclVar)
+    ASSERTION_ZERO(propEqualOrNot)
+    ASSERTION_ZERO(propEqualZero)
+    ASSERTION_ZERO(propNonNull)
+    ASSERTION_ZERO(propBndChk)
 
     compCurBB = nullptr;
     lvaTable  = nullptr;
@@ -8610,6 +8616,12 @@ ASSERTION_TITLE("SubType")
 ASSERTION_TITLE("SubRange")
 ASSERTION_TITLE("EqualOrNotEqual")
 ASSERTION_TITLE("NoNull")
+ASSERTION_TITLE("PropLclVar")
+ASSERTION_TITLE("PropEqualOrNot")
+ASSERTION_TITLE("PropEqualZero")
+ASSERTION_TITLE("PropNonNull")
+ASSERTION_TITLE("PropBndChk")
+
 #endif
 
             fprintf(s_csvFile, "\n,");
@@ -8681,16 +8693,16 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     }
 
     //fprintf(s_csvFile, "\"%s\",", methName);
-    if (index != 0)
+    //if (index != 0)
     {
         fprintf(s_csvFile, "%d,", index);
     }
-    else
-    {
-        const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
-            comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
-        fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
-    }
+    //else
+    //{
+    //    const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
+    //        comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
+    //    fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
+    //}
 
 
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
@@ -8716,6 +8728,11 @@ ASSERTION_STATS(subRange)
 ASSERTION_STATS(subType)
 ASSERTION_STATS(equalOrNotEqua)
 ASSERTION_STATS(noNull)
+ASSERTION_STATS(propLclVar)
+ASSERTION_STATS(propEqualOrNot)
+ASSERTION_STATS(propEqualZero)
+ASSERTION_STATS(propNonNull)
+ASSERTION_STATS(propBndChk)
 
 #endif
     fprintf(s_csvFile, "\n,");

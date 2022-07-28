@@ -7299,6 +7299,12 @@ ASSERTION_VAR(subType);
 ASSERTION_VAR(equalOrNotEqua);
 ASSERTION_VAR(noNull);
 
+ASSERTION_VAR(propLclVar);
+ASSERTION_VAR(propEqualOrNot);
+ASSERTION_VAR(propEqualZero);
+ASSERTION_VAR(propNonNull);
+ASSERTION_VAR(propBndChk);
+
 #endif
 
     struct AssertionDscKeyFuncs

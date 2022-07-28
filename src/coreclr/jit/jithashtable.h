@@ -236,6 +236,14 @@ public:
 
         unsigned index = GetIndexForKey(k);
 
+        //if (BucketIndex == 13)
+        //{
+        //    unsigned hash = KeyFuncs::GetHashCode(k);
+
+        //    unsigned index = m_tableSizeInfo.magicNumberRem(hash);
+        //    printf("hash= %d, index= %d\n", hash, index);
+        //}
+
         Node* pN = m_table[index];
         int   iterCount = 0;
         while ((pN != nullptr) && !KeyFuncs::Equals(k, pN->m_key))
@@ -244,7 +252,7 @@ public:
             pN = pN->m_next;
         }
 
-        assert(iterCount < BucketIndex);
+        //assert(iterCount < BucketIndex);
         if (pN != nullptr)
         {
             if (kind == SkipIfExist)
