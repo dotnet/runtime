@@ -2014,8 +2014,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 #ifdef DEBUG
             if (found)
             {
-                JITDUMP("HashCode= %u not found in map.\n",
-                        AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
+                JITDUMP("HashCode= %u not found in map.\n", AssertionDscKeyFuncs::GetHashCode(*newAssertion));
                 assert(false);
             }
 #endif
@@ -2037,7 +2036,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         if (found)
         {
             JITDUMP("HashCode=%u was not found in map and we added it.\n",
-                    AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
+                    AssertionDscKeyFuncs::GetHashCode(*newAssertion));
             assert(false);
         }
     }
