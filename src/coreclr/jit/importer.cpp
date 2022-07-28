@@ -4413,7 +4413,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
                 else if (op1->IsCnsFltOrDbl())
                 {
-                    cnsNode   = op1->AsDblCon();
+                    cnsNode = op1->AsDblCon();
                     otherNode = op2;
                 }
 
