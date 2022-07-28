@@ -9,7 +9,9 @@ import {
     JSMarshalerArgument, ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
     set_arg_length, get_arg, get_signature_type, get_signature_arg1_type, get_signature_arg2_type, cs_to_js_marshalers, js_to_cs_marshalers,
-    MarshalerToCs, MarshalerToJs, get_signature_res_type, JSMarshalerArguments, bound_js_function_symbol, set_arg_u16, JSMarshalerType, array_element_size, get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, MarshalerType, set_arg_i64_big, set_arg_intptr, IDisposable, set_arg_element_type, ManagedObject, alloc_stack_frame
+    MarshalerToCs, MarshalerToJs, get_signature_res_type, JSMarshalerArguments, bound_js_function_symbol, set_arg_u16, JSMarshalerType, array_element_size,
+    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, MarshalerType, set_arg_i64_big, set_arg_intptr, IDisposable,
+    set_arg_element_type, ManagedObject
 } from "./marshal";
 import { _zero_region } from "./memory";
 import { js_string_to_mono_string_root } from "./strings";
@@ -360,7 +362,6 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }
     mono_assert(isThenable(value), "Value is not a Promise");
 
-    const anyModule = Module as any;
     const gc_handle: GCHandle = runtimeHelpers.javaScriptExports._create_task_callback();
     set_gc_handle(arg, gc_handle);
     set_arg_type(arg, MarshalerType.Task);
@@ -368,37 +369,10 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     setup_managed_proxy(holder, gc_handle);
 
     value.then(data => {
-        const sp = anyModule.stackSave();
-        try {
-            const args = alloc_stack_frame(3);
-            const res = get_arg(args, 1);
-            set_gc_handle(res, <any>gc_handle);
-            const arg1 = get_arg(args, 2);
-            if (!res_converter) {
-                _marshal_cs_object_to_cs(arg1, data);
-            } else {
-                res_converter(arg1, data);
-            }
-            runtimeHelpers.javaScriptExports._complete_task(args);
-        } finally {
-            anyModule.stackRestore(sp);
-        }
+        runtimeHelpers.javaScriptExports._complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
     }).catch(reason => {
-        const sp = anyModule.stackSave();
-        try {
-            const args = alloc_stack_frame(3);
-            const res = get_arg(args, 1);
-            set_gc_handle(res, gc_handle);
-            const exc = get_arg(args, 0);
-            if (typeof reason === "string" || reason === null || reason === undefined) {
-                reason = new Error(reason || "");
-            }
-            marshal_exception_to_cs(exc, reason);
-            runtimeHelpers.javaScriptExports._complete_task(args);
-        } finally {
-            anyModule.stackRestore(sp);
-        }
+        runtimeHelpers.javaScriptExports._complete_task(gc_handle, reason, null, undefined);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
     });
 }

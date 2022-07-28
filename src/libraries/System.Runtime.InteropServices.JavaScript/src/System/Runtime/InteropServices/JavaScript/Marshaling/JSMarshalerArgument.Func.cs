@@ -386,15 +386,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // TODO: we could try to cache value -> existing GCHandle
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
-                try
-                {
-                    cpy.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                cpy.Invoke();
+                // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
@@ -409,17 +402,10 @@ namespace System.Runtime.InteropServices.JavaScript
             Action<T> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
-                ref JSMarshalerArgument arg1 = ref arguments[2];
-                try
-                {
-                    arg1Marshaler(ref arg1, out T arg1cs);
-                    cpy.Invoke(arg1cs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                ref JSMarshalerArgument arg2 = ref arguments[3]; // set by JS caller
+                arg1Marshaler(ref arg2, out T arg1cs);
+                cpy.Invoke(arg1cs);
+                // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
@@ -434,19 +420,12 @@ namespace System.Runtime.InteropServices.JavaScript
             Action<T1, T2> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
-                ref JSMarshalerArgument arg1 = ref arguments[2];
-                ref JSMarshalerArgument arg2 = ref arguments[3];
-                try
-                {
-                    arg1Marshaler(ref arg1, out T1 arg1cs);
-                    arg2Marshaler(ref arg2, out T2 arg2cs);
-                    cpy.Invoke(arg1cs, arg2cs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                ref JSMarshalerArgument arg2 = ref arguments[3];// set by JS caller
+                ref JSMarshalerArgument arg3 = ref arguments[4];// set by JS caller
+                arg1Marshaler(ref arg2, out T1 arg1cs);
+                arg2Marshaler(ref arg3, out T2 arg2cs);
+                cpy.Invoke(arg1cs, arg2cs);
+                // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
@@ -461,21 +440,14 @@ namespace System.Runtime.InteropServices.JavaScript
             Action<T1, T2, T3> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
-                ref JSMarshalerArgument arg1 = ref arguments[2];
-                ref JSMarshalerArgument arg2 = ref arguments[3];
-                ref JSMarshalerArgument arg3 = ref arguments[4];
-                try
-                {
-                    arg1Marshaler(ref arg1, out T1 arg1cs);
-                    arg2Marshaler(ref arg2, out T2 arg2cs);
-                    arg3Marshaler(ref arg3, out T3 arg3cs);
-                    cpy.Invoke(arg1cs, arg2cs, arg3cs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                ref JSMarshalerArgument arg2 = ref arguments[3];// set by JS caller
+                ref JSMarshalerArgument arg3 = ref arguments[4];// set by JS caller
+                ref JSMarshalerArgument arg4 = ref arguments[5];// set by JS caller
+                arg1Marshaler(ref arg2, out T1 arg1cs);
+                arg2Marshaler(ref arg3, out T2 arg2cs);
+                arg3Marshaler(ref arg4, out T3 arg3cs);
+                cpy.Invoke(arg1cs, arg2cs, arg3cs);
+                // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
@@ -490,17 +462,10 @@ namespace System.Runtime.InteropServices.JavaScript
             Func<TResult> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
                 ref JSMarshalerArgument res = ref arguments[1];
-                try
-                {
-                    TResult resCs = cpy.Invoke();
-                    resMarshaler(ref res, resCs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                TResult resCs = cpy.Invoke();
+                resMarshaler(ref res, resCs);
+                // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
@@ -515,19 +480,12 @@ namespace System.Runtime.InteropServices.JavaScript
             Func<T, TResult> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
                 ref JSMarshalerArgument res = ref arguments[1];
-                ref JSMarshalerArgument arg1 = ref arguments[2];
-                try
-                {
-                    arg1Marshaler(ref arg1, out T arg1cs);
-                    TResult resCs = cpy.Invoke(arg1cs);
-                    resMarshaler(ref res, resCs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                ref JSMarshalerArgument arg2 = ref arguments[3];// set by JS caller
+                arg1Marshaler(ref arg2, out T arg1cs);
+                TResult resCs = cpy.Invoke(arg1cs);
+                resMarshaler(ref res, resCs);
+                // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
@@ -542,24 +500,15 @@ namespace System.Runtime.InteropServices.JavaScript
             Func<T1, T2, TResult> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
                 ref JSMarshalerArgument res = ref arguments[1];
-                ref JSMarshalerArgument arg1 = ref arguments[2];
-                ref JSMarshalerArgument arg2 = ref arguments[3];
-                try
-                {
-                    arg1Marshaler(ref arg1, out T1 arg1cs);
-                    arg2Marshaler(ref arg2, out T2 arg2cs);
-                    TResult resCs = cpy.Invoke(arg1cs, arg2cs);
-                    resMarshaler(ref res, resCs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                ref JSMarshalerArgument arg2 = ref arguments[3];// set by JS caller
+                ref JSMarshalerArgument arg3 = ref arguments[4];// set by JS caller
+                arg1Marshaler(ref arg2, out T1 arg1cs);
+                arg2Marshaler(ref arg3, out T2 arg2cs);
+                TResult resCs = cpy.Invoke(arg1cs, arg2cs);
+                resMarshaler(ref res, resCs);
+                // eventual exception is handled by C# caller
             };
-
-
             slot.Type = MarshalerType.Function;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
         }
@@ -573,26 +522,17 @@ namespace System.Runtime.InteropServices.JavaScript
             Func<T1, T2, T3, TResult> cpy = value;
             JSHostImplementation.ToManagedCallback cb = (JSMarshalerArgument* arguments) =>
             {
-                ref JSMarshalerArgument exc = ref arguments[0];
                 ref JSMarshalerArgument res = ref arguments[1];
-                ref JSMarshalerArgument arg1 = ref arguments[2];
-                ref JSMarshalerArgument arg2 = ref arguments[3];
-                ref JSMarshalerArgument arg3 = ref arguments[4];
-                try
-                {
-                    arg1Marshaler(ref arg1, out T1 arg1cs);
-                    arg2Marshaler(ref arg2, out T2 arg2cs);
-                    arg3Marshaler(ref arg3, out T3 arg3cs);
-                    TResult resCs = cpy.Invoke(arg1cs, arg2cs, arg3cs);
-                    resMarshaler(ref res, resCs);
-                }
-                catch (Exception ex)
-                {
-                    exc.ToJS(ex);
-                }
+                ref JSMarshalerArgument arg2 = ref arguments[3];// set by JS caller
+                ref JSMarshalerArgument arg3 = ref arguments[4];// set by JS caller
+                ref JSMarshalerArgument arg4 = ref arguments[5];// set by JS caller
+                arg1Marshaler(ref arg2, out T1 arg1cs);
+                arg2Marshaler(ref arg3, out T2 arg2cs);
+                arg3Marshaler(ref arg4, out T3 arg3cs);
+                TResult resCs = cpy.Invoke(arg1cs, arg2cs, arg3cs);
+                resMarshaler(ref res, resCs);
+                // eventual exception is handled by C# caller
             };
-
-
             slot.Type = MarshalerType.Function;
             slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
         }

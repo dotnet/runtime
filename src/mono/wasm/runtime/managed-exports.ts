@@ -4,16 +4,22 @@
 import { GCHandle, MonoMethod, mono_assert } from "./types";
 import cwraps from "./cwraps";
 import { Module, runtimeHelpers } from "./imports";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, JSMarshalerArguments, set_gc_handle } from "./marshal";
+import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerToCs, MarshalerToJs, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
+import { marshal_exception_to_cs } from "./marshal-to-cs";
 
 // in all the exported internals methods, we use the same data structures for stack frame as normal full blow interop
+// see src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs
 export interface JavaScriptExports {
-    // see src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs
-    _release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;//ReleaseJSOwnedObjectByGCHandle
-    _create_task_callback(): GCHandle;// CreateTaskCallback
-    _complete_task(args: JSMarshalerArguments): void;// CompleteTask
-    _call_delegate(args: JSMarshalerArguments): void;// CallDelegate
+    // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
+    _release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
+    // the marshaled signature is: GCHandle CreateTaskCallback()
+    _create_task_callback(): GCHandle;
+    // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
+    _complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+    // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
+    _call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
+        res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): any;
 }
 
 export function init_managed_exports(): void {
@@ -57,7 +63,7 @@ export function init_managed_exports(): void {
     runtimeHelpers.javaScriptExports._create_task_callback = () => {
         const sp = anyModule.stackSave();
         try {
-            const args = alloc_stack_frame(3);
+            const args = alloc_stack_frame(2);
             invoke_method_and_handle_exception(create_task_callback_method, args);
             const res = get_arg(args, 1);
             return get_arg_gc_handle(res);
@@ -65,11 +71,57 @@ export function init_managed_exports(): void {
             anyModule.stackRestore(sp);
         }
     };
-    runtimeHelpers.javaScriptExports._complete_task = (args: JSMarshalerArguments) => {
-        invoke_method_and_handle_exception(complete_task_method, args);
+    runtimeHelpers.javaScriptExports._complete_task = (holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
+        const sp = anyModule.stackSave();
+        try {
+            const args = alloc_stack_frame(5);
+            const arg1 = get_arg(args, 2);
+            set_gc_handle(arg1, holder_gc_handle);
+            const arg2 = get_arg(args, 3);
+            if (error) {
+                marshal_exception_to_cs(arg2, error);
+            } else {
+                set_arg_type(arg2, MarshalerType.None);
+                const arg3 = get_arg(args, 4);
+                mono_assert(res_converter, "res_converter missing");
+                res_converter(arg3, data);
+            }
+            invoke_method_and_handle_exception(complete_task_method, args);
+        } finally {
+            anyModule.stackRestore(sp);
+        }
     };
-    runtimeHelpers.javaScriptExports._call_delegate = (args: JSMarshalerArguments) => {
-        invoke_method_and_handle_exception(call_delegate_method, args);
+    runtimeHelpers.javaScriptExports._call_delegate = (callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => {
+        const sp = anyModule.stackSave();
+        try {
+            const args = alloc_stack_frame(6);
+
+            const arg1 = get_arg(args, 2);
+            set_gc_handle(arg1, callback_gc_handle);
+            // payload arg numbers are shifted by one, the real first is a gc handle of the callback
+
+            if (arg1_converter) {
+                const arg2 = get_arg(args, 3);
+                arg1_converter(arg2, arg1_js);
+            }
+            if (arg2_converter) {
+                const arg3 = get_arg(args, 4);
+                arg2_converter(arg3, arg2_js);
+            }
+            if (arg3_converter) {
+                const arg4 = get_arg(args, 5);
+                arg3_converter(arg4, arg3_js);
+            }
+
+            invoke_method_and_handle_exception(call_delegate_method, args);
+
+            if (res_converter) {
+                const res = get_arg(args, 1);
+                return res_converter(res);
+            }
+        } finally {
+            anyModule.stackRestore(sp);
+        }
     };
 }
 
