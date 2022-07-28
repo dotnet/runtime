@@ -248,7 +248,7 @@ function initializeImportsAndExports(
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
-        module.disableDotnet6Compatibility = imports.isESM;
+        module.disableDotnet6Compatibility = true;
     }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
@@ -320,7 +320,7 @@ function initializeImportsAndExports(
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 
 // the methods would be visible to EMCC linker
-// --- keep in sync with dotnet.cjs.lib.js ---
+// --- keep in sync with dotnet.es6.lib.js ---
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_attached,
@@ -331,7 +331,7 @@ const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
 };
 
 // the methods would be visible to EMCC linker
-// --- keep in sync with dotnet.cjs.lib.js ---
+// --- keep in sync with dotnet.es6.lib.js ---
 export const __linker_exports: any = {
     // mini-wasm.c
     mono_set_timeout,

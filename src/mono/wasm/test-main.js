@@ -280,21 +280,8 @@ function applyArguments() {
 }
 
 async function loadDotnet(file) {
-    const cjsExport = new Promise((resolve) => {
-        globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
-            delete globalThis.__onDotnetRuntimeLoaded;
-            resolve(createDotnetRuntime);
-        };
-    });
-
     const { default: createDotnetRuntime } = await import(file);
-    if (createDotnetRuntime) {
-        // this runs when loaded module was ES6
-        delete globalThis.__onDotnetRuntimeLoaded;
-        return createDotnetRuntime;
-    }
-
-    return await cjsExport;
+    return createDotnetRuntime;
 }
 
 // this can't be function because of `arguments` scope
